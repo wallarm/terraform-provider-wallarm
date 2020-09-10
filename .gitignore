@@ -1,0 +1,7 @@
+.DS_Store
+.vscode/
+.terraform/
+terraform-provider-wallarm*
+terraform.tfstate*
+*.auto.tfvars
+*.log

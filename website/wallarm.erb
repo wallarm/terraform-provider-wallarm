@@ -1,0 +1,123 @@
+<% wrap_layout :inner do %>
+  <% content_for :sidebar do %>
+    <div class="docs-sidebar hidden-print affix-top" role="complementary">
+      <ul class="nav docs-sidenav">
+        <li<%= sidebar_current("docs-home") %>>
+          <a href="/docs/providers/index.html">All Providers</a>
+        </li>
+        <li<%= sidebar_current("docs-wallarm-index") %>>
+          <a href="/docs/providers/wallarm/index.html">Wallarm Provider</a>
+        </li>
+        <li<%= sidebar_current("docs-wallarm-examples") %>>
+          <a href="#">Examples</a>
+          <ul class="nav nav-visible">
+            <li<%= sidebar_current("docs-wallarm-example-point") %>>
+              <a href="/docs/providers/wallarm/e/point.html">point_example</a>
+            </li>
+          </ul>
+        </li>
+        <li<%= sidebar_current("docs-wallarm-datasource") %>>
+          <a href="#">Data Sources</a>
+          <ul class="nav nav-visible">
+            <li<%= sidebar_current("docs-wallarm-datasource-node") %>>
+              <a href="/docs/providers/wallarm/d/node.html">wallarm_node</a>
+            </li>
+            <li<%= sidebar_current("docs-wallarm-datasource-vuln") %>>
+              <a href="/docs/providers/wallarm/d/vuln.html">wallarm_vuln</a>
+            </li>
+          </ul>
+        </li>
+        <li<%= sidebar_current("docs-wallarm-resource") %>>
+          <a href="#">Resources</a>
+          <ul class="nav nav-visible">
+            <li<%= sidebar_current("docs-wallarm-resource-user") %>>
+              <a href="/docs/providers/wallarm/r/user.html">wallarm_user</a>
+            </li>
+            <li<%= sidebar_current("docs-wallarm-resource-rule-vpatch") %>>
+              <a href="/docs/providers/wallarm/r/rule_vpatch.html">wallarm_rule_vpatch</a>
+            </li>
+            <li<%= sidebar_current("docs-wallarm-resource-rule-regex") %>>
+              <a href="/docs/providers/wallarm/r/rule_regex.html">wallarm_rule_regex</a>
+            </li>
+            <li<%= sidebar_current("docs-wallarm-resource-rule-ignore-regex") %>>
+              <a href="/docs/providers/wallarm/r/rule_ignore_regex.html">wallarm_rule_ignore_regex</a>
+            </li>
+            <li<%= sidebar_current("docs-wallarm-resource-rule-mode") %>>
+              <a href="/docs/providers/wallarm/r/rule_mode.html">wallarm_rule_mode</a>
+            </li>
+            <li<%= sidebar_current("docs-wallarm-resource-rule-masking") %>>
+              <a href="/docs/providers/wallarm/r/rule_masking.html">wallarm_rule_masking</a>
+            </li>
+            <li<%= sidebar_current("docs-wallarm-resource-rule-ignore-regex") %>>
+              <a href="/docs/providers/wallarm/r/rule_ignore_regex.html">wallarm_rule_ignore_regex</a>
+            </li>
+            <li<%= sidebar_current("docs-wallarm-resource-rule-attack-rechecker") %>>
+              <a href="/docs/providers/wallarm/r/rule_attack_rechecker.html">wallarm_rule_attack_rechecker</a>
+            </li>
+            <li<%= sidebar_current("docs-wallarm-resource-rule-attack-rechecker-rewrite") %>>
+              <a href="/docs/providers/wallarm/r/rule_attack_rechecker_rewrite.html">wallarm_rule_attack_rechecker_rewrite</a>
+            </li>
+            <li<%= sidebar_current("docs-wallarm-resource-rule-set-response-header") %>>
+              <a href="/docs/providers/wallarm/r/rule_set_response_header.html">wallarm_rule_set_response_header</a>
+            </li>
+            <li<%= sidebar_current("docs-wallarm-resource-scanner") %>>
+              <a href="/docs/providers/wallarm/r/scanner.html">wallarm_scanner</a>
+            </li>
+            <li<%= sidebar_current("docs-wallarm-resource-node") %>>
+              <a href="/docs/providers/wallarm/r/node.html">wallarm_node</a>
+            </li>
+            <li<%= sidebar_current("docs-wallarm-resource-global-mode") %>>
+              <a href="/docs/providers/wallarm/r/global_mode.html">wallarm_global_mode</a>
+            </li>
+            <li<%= sidebar_current("docs-wallarm-resource-application") %>>
+              <a href="/docs/providers/wallarm/r/application.html">wallarm_application</a>
+            </li>
+            <li<%= sidebar_current("docs-wallarm-resource-trigger") %>>
+              <a href="/docs/providers/wallarm/r/trigger.html">wallarm_trigger</a>
+            </li>
+            <li<%= sidebar_current("docs-wallarm-resource-integration-email") %>>
+              <a href="/docs/providers/wallarm/r/integration_email.html">wallarm_integration_email</a>
+            </li>
+            <li<%= sidebar_current("docs-wallarm-resource-integration-insightconnect") %>>
+              <a href="/docs/providers/wallarm/r/integration_insightconnect.html">wallarm_integration_insightconnect</a>
+            </li>
+            <li<%= sidebar_current("docs-wallarm-resource-integration-opsgenie") %>>
+              <a href="/docs/providers/wallarm/r/integration_opsgenie.html">wallarm_integration_opsgenie</a>
+            </li>
+            <li<%= sidebar_current("docs-wallarm-resource-integration-pagerduty") %>>
+              <a href="/docs/providers/wallarm/r/integration_pagerduty.html">wallarm_integration_pagerduty</a>
+            </li>
+            <li<%= sidebar_current("docs-wallarm-resource-integration-slack") %>>
+              <a href="/docs/providers/wallarm/r/integration_slack.html">wallarm_integration_slack</a>
+            </li>
+            <li<%= sidebar_current("docs-wallarm-resource-integration-splunk") %>>
+              <a href="/docs/providers/wallarm/r/integration_splunk.html">wallarm_integration_splunk</a>
+            </li>
+            <li<%= sidebar_current("docs-wallarm-resource-integration-sumologic") %>>
+              <a href="/docs/providers/wallarm/r/integration_sumologic.html">wallarm_integration_sumologic</a>
+            </li>
+            <li<%= sidebar_current("docs-wallarm-resource-integration-webhook") %>>
+              <a href="/docs/providers/wallarm/r/integration_webhook.html">wallarm_integration_webhook</a>
+            </li>
+            <li<%= sidebar_current("docs-wallarm-extra-resource") %>>
+              <a href="#">Extra resources</a>
+              <ul class="nav nav-visible">
+                <li<%= sidebar_current("docs-wallarm-extra-resource-rule-attack-rechecker") %>>
+                  <a href="/docs/providers/wallarm/re/attack_rechecker.html">wallarm_rule_attack_rechecker</a>
+                </li>
+                <li<%= sidebar_current("docs-wallarm-extra-resource-rule-attack-rechecker-rewrite") %>>
+                  <a href="/docs/providers/wallarm/re/attack_rechecker_rewrite.html">wallarm_rule_attack_rechecker_rewrite</a>
+                </li>
+                <li<%= sidebar_current("docs-wallarm-extra-resource-rule-set-response-header") %>>
+                  <a href="/docs/providers/wallarm/re/rule_set_response_header.html">wallarm_rule_set_response_header</a>
+                </li>
+              </ul>
+            </ul>
+          </li>
+        </ul>
+      </li>
+    </ul>
+  </div>
+<% end %>
+<%= yield %>
+<% end %>
