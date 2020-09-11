@@ -36,9 +36,10 @@ provider "wallarm" {
 # # Blacklist section
 # # 
 # resource "wallarm_blacklist" "blacklist" {
-#   ip_range = ["1.1.1.1/23"]
+#   ip_range = ["1.1.1.1/18"]
 #   application = [1]
 #   reason = "TEST BLACKLIST"
+#   time_format = "Minutes"
 #   time = 60 # Minutes
 # }
 

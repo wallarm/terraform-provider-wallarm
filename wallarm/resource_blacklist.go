@@ -4,12 +4,14 @@ import (
 	"errors"
 	"fmt"
 	"net"
+	"strconv"
 	"strings"
 	"time"
 
 	wallarm "github.com/416e64726579/wallarm-go"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 )
 
 func resourceWallarmBlacklist() *schema.Resource {
@@ -33,7 +35,6 @@ func resourceWallarmBlacklist() *schema.Resource {
 					return
 				},
 			},
-
 			"ip_range": {
 				Type:     schema.TypeList,
 				Optional: true,
@@ -45,11 +46,14 @@ func resourceWallarmBlacklist() *schema.Resource {
 				Optional: true,
 				Elem:     &schema.Schema{Type: schema.TypeInt},
 			},
+			"time_format": {
+				Type:         schema.TypeString,
+				Required:     true,
+				ValidateFunc: validation.StringInSlice([]string{"Minutes", "RFC3339"}, false),
+			},
 			"time": {
-				Type:     schema.TypeInt,
+				Type:     schema.TypeString,
 				Required: true,
-				// TODO: respect Date as an input
-				// ValidateFunc: validation.ValidateRFC3339TimeString,
 			},
 			"reason": {
 				Type:     schema.TypeString,
@@ -88,6 +92,15 @@ func resourceWallarmBlacklistCreate(d *schema.ResourceData, m interface{}) error
 	if v, ok := d.GetOk("ip_range"); ok {
 		IPRange := v.([]interface{})
 		for _, v := range IPRange {
+			if strings.Contains(v.(string), "/") {
+				subNetwork, err := strconv.Atoi(strings.Split(v.(string), "/")[1])
+				if err != nil {
+					return fmt.Errorf("cannot parse subnet to integer. must be the number, got %v", err)
+				}
+				if subNetwork < 20 {
+					return fmt.Errorf("subnet must be >= /20, got %v", subNetwork)
+				}
+			}
 			ips = append(ips, v.(string))
 		}
 	} else {
@@ -119,13 +132,26 @@ func resourceWallarmBlacklistCreate(d *schema.ResourceData, m interface{}) error
 		}
 	}
 
-	expireTime := d.Get("time").(int)
-	if expireTime == 0 {
-		expireTime = 60045120
+	var unixTime int
+	switch d.Get("time_format") {
+	case "Minutes":
+		expireTime, err := strconv.Atoi(d.Get("time").(string))
+		if err != nil {
+			return fmt.Errorf("cannot parse time to integer. must be the number when `time_format` equals `Minute`, got %v", err)
+		}
+		if expireTime == 0 {
+			expireTime = 60045120
+		}
+		currTime := time.Now()
+		shiftTime := currTime.Add(time.Minute * time.Duration(expireTime))
+		unixTime = int(shiftTime.Unix())
+	case "RFC3339":
+		expireTime, err := time.Parse(time.RFC3339, d.Get("time").(string))
+		if err != nil {
+			return fmt.Errorf("cannot parse time to integer. must be the valid RFC3339 time when `time_format` equals `RFC3339`, got %v.\nExample: 2006-01-02T15:04:05+07:00", err)
+		}
+		unixTime = int(expireTime.Unix())
 	}
-	currTime := time.Now()
-	shiftTime := currTime.Add(time.Minute * time.Duration(expireTime))
-	unixTime := int(shiftTime.Unix())
 
 	reason := d.Get("reason").(string)
 	var bulk []wallarm.Bulk
