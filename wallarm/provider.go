@@ -138,7 +138,8 @@ func providerConfigure(d *schema.ResourceData, terraformVersion string) (interfa
 		options = append(options, wallarm.UsingLogger(log.New(os.Stderr, "", log.LstdFlags|log.Lshortfile)))
 	}
 
-	c := cleanhttp.DefaultClient()
+	// c := cleanhttp.DefaultClient()
+	c := cleanhttp.DefaultPooledClient()
 	c.Transport = logging.NewTransport("Wallarm", c.Transport)
 	options = append(options, wallarm.HTTPClient(c))
 
