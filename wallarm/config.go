@@ -1,10 +1,10 @@
 package wallarm
 
 import (
-	"fmt"
 	"log"
 
 	wallarm "github.com/416e64726579/wallarm-go"
+	"github.com/pkg/errors"
 )
 
 // Config specifies client related parameters used within calls.
@@ -24,7 +24,7 @@ func (c *Config) Client() (*wallarm.API, error) {
 
 	client, err = wallarm.New(c.apiURL, c.Options...)
 	if err != nil {
-		return nil, fmt.Errorf("Error creating a new Wallarm client: %s", err)
+		return nil, errors.Wrap(err, "error creating a new Wallarm client")
 	}
 	log.Printf("Wallarm Client configured for the user with UUID: %s", c.apiUUID)
 	return client, nil
