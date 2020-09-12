@@ -351,7 +351,7 @@ func resourceWallarmIgnoreRegexDelete(d *schema.ResourceData, m interface{}) err
 
 	rule := &wallarm.ActionRead{
 		Filter: &wallarm.ActionFilter{
-			HintsCount: [][]interface{}{{1, nil}},
+			HintsCount: wallarm.TwoDimensionalSlice{{1, nil}},
 			HintType:   []string{"disable_regex"},
 			Clientid:   []int{clientID},
 			ID:         []int{actionID},

@@ -316,7 +316,7 @@ func resourceWallarmModeDelete(d *schema.ResourceData, m interface{}) error {
 
 	rule := &wallarm.ActionRead{
 		Filter: &wallarm.ActionFilter{
-			HintsCount: [][]interface{}{{1, nil}},
+			HintsCount: wallarm.TwoDimensionalSlice{{1, nil}},
 			HintType:   []string{"wallarm_mode"},
 			Clientid:   []int{clientID},
 			ID:         []int{actionID},
