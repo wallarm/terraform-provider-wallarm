@@ -34,7 +34,7 @@ func TestAccRuleRegexCreateUserAgent(t *testing.T) {
 func TestAccRuleRegexCreateOpenDir(t *testing.T) {
 	rnd := generateRandomResourceName(5)
 	name := "wallarm_rule_regex." + rnd
-	resource.ParallelTest(t, resource.TestCase{
+	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckWallarmRuleRegexDestroy,

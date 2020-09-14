@@ -64,9 +64,10 @@ func resourceWallarmSplunk() *schema.Resource {
 			},
 
 			"api_token": {
-				Type:      schema.TypeString,
-				Required:  true,
-				Sensitive: true,
+				Type:         schema.TypeString,
+				Required:     true,
+				Sensitive:    true,
+				ValidateFunc: validation.IsUUID,
 			},
 
 			"api_url": {

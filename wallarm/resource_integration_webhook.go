@@ -73,7 +73,7 @@ func resourceWallarmWebhook() *schema.Resource {
 			"webhook_url": {
 				Type:         schema.TypeString,
 				Required:     true,
-				ValidateFunc: validation.IsURLWithHTTPorHTTPS,
+				ValidateFunc: validation.IsURLWithHTTPS,
 				Sensitive:    true,
 			},
 

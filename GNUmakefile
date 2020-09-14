@@ -3,6 +3,7 @@ GOFMT_FILES?=$$(find . -name '*.go' |grep -v vendor)
 GOOS?=$$(go env GOOS)
 GOARCH?=$$(go env GOARCH)
 VERSION?=$$(git describe --abbrev=0 --tags)
+TESTTIMEOUT=120m
 
 default: build
 
@@ -25,14 +26,14 @@ init-plugin: build
 	@terraform init
 
 test:
-	go test ./... -v -timeout=30s -parallel=4 -race -cover
+	go test $(TEST) -v -timeout=30s -parallel=4 -race -cover
 
 testacc: fmtcheck
-	TF_ACC=1 go test ./... -v -timeout 120m -race -cover
+	TF_ACC=1 go test $(TEST) -v $(TESTARGS) -timeout $(TESTTIMEOUT) -race -cover -ldflags="-X=github.com/416e64726579/terraform-provider-wallarm/version.ProviderVersion=acc"
 
 vet:
 	@echo "go vet ."
-	@go vet $$(go list ./...) ; if [ $$? -eq 1 ]; then \
+	@go vet $(TEST) ; if [ $$? -eq 1 ]; then \
 		echo ""; \
 		echo "Vet found suspicious constructs. Please check the reported constructs"; \
 		echo "and fix them if necessary before submitting the code for review."; \
