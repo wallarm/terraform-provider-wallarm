@@ -1,7 +1,6 @@
 package wallarm
 
 import (
-	"errors"
 	"fmt"
 	"net"
 	"strconv"
@@ -37,8 +36,7 @@ func resourceWallarmBlacklist() *schema.Resource {
 			},
 			"ip_range": {
 				Type:     schema.TypeList,
-				Optional: true,
-				Computed: true,
+				Required: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 			},
 			"application": {
@@ -89,22 +87,19 @@ func resourceWallarmBlacklistCreate(d *schema.ResourceData, m interface{}) error
 	clientID := retrieveClientID(d, client)
 
 	var ips []string
-	if v, ok := d.GetOk("ip_range"); ok {
-		IPRange := v.([]interface{})
-		for _, v := range IPRange {
-			if strings.Contains(v.(string), "/") {
-				subNetwork, err := strconv.Atoi(strings.Split(v.(string), "/")[1])
-				if err != nil {
-					return fmt.Errorf("cannot parse subnet to integer. must be the number, got %v", err)
-				}
-				if subNetwork < 20 {
-					return fmt.Errorf("subnet must be >= /20, got %v", subNetwork)
-				}
+	v := d.Get("ip_range")
+	IPRange := v.([]interface{})
+	for _, v := range IPRange {
+		if strings.Contains(v.(string), "/") {
+			subNetwork, err := strconv.Atoi(strings.Split(v.(string), "/")[1])
+			if err != nil {
+				return fmt.Errorf("cannot parse subnet to integer. must be the number, got %v", err)
 			}
-			ips = append(ips, v.(string))
+			if subNetwork < 20 {
+				return fmt.Errorf("subnet must be >= /20, got %v", subNetwork)
+			}
 		}
-	} else {
-		return errors.New(`"ip_range" must be specified, got an empty atribute`)
+		ips = append(ips, v.(string))
 	}
 
 	apps := []int{}
@@ -243,10 +238,6 @@ func resourceWallarmBlacklistRead(d *schema.ResourceData, m interface{}) error {
 	derivedIPaddr := make([]string, len(blacklistFromTerraform))
 	for k, b := range blacklistFromTerraform {
 		derivedIPaddr[k] = b.IP
-	}
-
-	if err := d.Set("ip_range", IPRange); err != nil {
-		return fmt.Errorf("cannot set content for ip_range: %v", err)
 	}
 
 	blacklistFromAPI, err := client.BlacklistRead(clientID)
