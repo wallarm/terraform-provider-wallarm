@@ -7,7 +7,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccIntegrationWebhook_RequiredFields(t *testing.T) {
+func TestAccIntegrationWebhookRequiredFields(t *testing.T) {
 	name := "wallarm_integration_webhook.test"
 	rnd := generateRandomResourceName(10)
 
@@ -25,21 +25,57 @@ func TestAccIntegrationWebhook_RequiredFields(t *testing.T) {
 	})
 }
 
-func TestAccIntegrationWebhook_FullSettings(t *testing.T) {
-	name := "wallarm_integration_webhook.test"
-	rnd := generateRandomResourceName(10)
+func TestAccIntegrationWebhookFullSettings(t *testing.T) {
+	rnd := generateRandomResourceName(5)
+	name := "wallarm_integration_webhook." + rnd
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:  func() { testAccPreCheck(t) },
 		Providers: testAccProviders,
 		Steps: []resource.TestStep{
 			{
-				Config: testWallarmIntegrationWebhookFullConfig("tf-test-"+rnd, fmt.Sprintf("https://%s.wallarm.com", rnd), "POST", "Basic SGkgYXR0ZW50aXZlIFdhbGxhcm0gdXNlcg==", "application/json"),
+				Config: testWallarmIntegrationWebhookFullConfig(rnd, "tf-test-"+rnd, fmt.Sprintf("https://%s.wallarm.com", rnd), "POST", "Basic SGkgYXR0ZW50aXZlIFdhbGxhcm0gdXNlcg==", "application/json", "true"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(name, "name", "tf-test-"+rnd),
 					resource.TestCheckResourceAttr(name, "webhook_url", fmt.Sprintf("https://%s.wallarm.com", rnd)),
 					resource.TestCheckResourceAttr(name, "http_method", "POST"),
 					resource.TestCheckResourceAttr(name, "active", "true"),
+					resource.TestCheckResourceAttr(name, "headers.Authorization", "Basic SGkgYXR0ZW50aXZlIFdhbGxhcm0gdXNlcg=="),
+					resource.TestCheckResourceAttr(name, "headers.Content-Type", "application/json"),
+					resource.TestCheckResourceAttr(name, "event.#", "4"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccIntegrationWebhookCreateThenUpdate(t *testing.T) {
+	rnd := generateRandomResourceName(5)
+	name := "wallarm_integration_webhook." + rnd
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:  func() { testAccPreCheck(t) },
+		Providers: testAccProviders,
+		Steps: []resource.TestStep{
+			{
+				Config: testWallarmIntegrationWebhookFullConfig(rnd, "tf-test-"+rnd, fmt.Sprintf("https://%s.wallarm.com", rnd), "POST", "Basic SGkgYXR0ZW50aXZlIFdhbGxhcm0gdXNlcg==", "application/json", "true"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(name, "name", "tf-test-"+rnd),
+					resource.TestCheckResourceAttr(name, "webhook_url", fmt.Sprintf("https://%s.wallarm.com", rnd)),
+					resource.TestCheckResourceAttr(name, "http_method", "POST"),
+					resource.TestCheckResourceAttr(name, "active", "true"),
+					resource.TestCheckResourceAttr(name, "headers.Authorization", "Basic SGkgYXR0ZW50aXZlIFdhbGxhcm0gdXNlcg=="),
+					resource.TestCheckResourceAttr(name, "headers.Content-Type", "application/json"),
+					resource.TestCheckResourceAttr(name, "event.#", "4"),
+				),
+			},
+			{
+				Config: testWallarmIntegrationWebhookFullConfig(rnd, "tf-updated-"+rnd, fmt.Sprintf("https://%s.wallarm.com", rnd), "POST", "Basic SGkgYXR0ZW50aXZlIFdhbGxhcm0gdXNlcg==", "application/json", "false"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(name, "name", "tf-updated-"+rnd),
+					resource.TestCheckResourceAttr(name, "webhook_url", fmt.Sprintf("https://%s.wallarm.com", rnd)),
+					resource.TestCheckResourceAttr(name, "http_method", "POST"),
+					resource.TestCheckResourceAttr(name, "active", "false"),
 					resource.TestCheckResourceAttr(name, "headers.Authorization", "Basic SGkgYXR0ZW50aXZlIFdhbGxhcm0gdXNlcg=="),
 					resource.TestCheckResourceAttr(name, "headers.Content-Type", "application/json"),
 					resource.TestCheckResourceAttr(name, "event.#", "4"),
@@ -56,13 +92,13 @@ resource "wallarm_integration_webhook" "test" {
 }`, url)
 }
 
-func testWallarmIntegrationWebhookFullConfig(name, url, httpMethod, auth, cntype string) string {
+func testWallarmIntegrationWebhookFullConfig(resourceID, name, url, httpMethod, auth, cntype, active string) string {
 	return fmt.Sprintf(`
-resource "wallarm_integration_webhook" "test" {
-	name = "%[1]s"
-	webhook_url = "%[2]s"
-	http_method = "%[3]s"
-	active = true
+resource "wallarm_integration_webhook" "%[1]s" {
+	name = "%[2]s"
+	webhook_url = "%[3]s"
+	http_method = "%[4]s"
+	active = %[7]s
 	
 	event {
 		event_type = "hit"
@@ -70,7 +106,7 @@ resource "wallarm_integration_webhook" "test" {
 	}
 	event {
 		event_type = "vuln"
-		active = true
+		active = %[7]s
 	}
 	event {
 		event_type = "system"
@@ -78,12 +114,12 @@ resource "wallarm_integration_webhook" "test" {
 	}
 	event {
 		event_type = "scope"
-		active = true
+		active = %[7]s
 	}
 
 	headers = {
-		Authorization = "%[4]s"
-		Content-Type = "%[5]s"
+		Authorization = "%[5]s"
+		Content-Type = "%[6]s"
 	}
-}`, name, url, httpMethod, auth, cntype)
+}`, resourceID, name, url, httpMethod, auth, cntype, active)
 }

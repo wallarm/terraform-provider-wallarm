@@ -35,7 +35,7 @@ func TestAccIntegrationSlackFullSettings(t *testing.T) {
 		Providers: testAccProviders,
 		Steps: []resource.TestStep{
 			{
-				Config: testWallarmIntegrationSlackFullConfig(rnd, "tf-test-"+rnd, "https://hooks.slack.com/services/T00000000/B00000000/XXXXXXXXXXXXXXXXXXXXXXXX"),
+				Config: testWallarmIntegrationSlackFullConfig(rnd, "tf-test-"+rnd, "https://hooks.slack.com/services/T00000000/B00000000/XXXXXXXXXXXXXXXXXXXXXXXX", "true"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(name, "name", "tf-test-"+rnd),
 					resource.TestCheckResourceAttr(name, "webhook_url", "https://hooks.slack.com/services/T00000000/B00000000/XXXXXXXXXXXXXXXXXXXXXXXX"),
@@ -61,6 +61,35 @@ func TestAccIntegrationSlackIncorrectEvents(t *testing.T) {
 		},
 	})
 }
+func TestAccIntegrationSlackCreateThenUpdate(t *testing.T) {
+	rnd := generateRandomResourceName(5)
+	name := "wallarm_integration_slack." + rnd
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:  func() { testAccPreCheck(t) },
+		Providers: testAccProviders,
+		Steps: []resource.TestStep{
+			{
+				Config: testWallarmIntegrationSlackFullConfig(rnd, "tf-test-"+rnd, "https://hooks.slack.com/services/T00000000/B00000000/XXXXXXXXXXXXXXXXXXXXXXXX", "true"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(name, "name", "tf-test-"+rnd),
+					resource.TestCheckResourceAttr(name, "webhook_url", "https://hooks.slack.com/services/T00000000/B00000000/XXXXXXXXXXXXXXXXXXXXXXXX"),
+					resource.TestCheckResourceAttr(name, "active", "true"),
+					resource.TestCheckResourceAttr(name, "event.#", "3"),
+				),
+			},
+			{
+				Config: testWallarmIntegrationSlackFullConfig(rnd, "tf-updated-"+rnd, "https://hooks.slack.com/services/T00000000/B00000000/XXXXXXXXXXXXXXXXXXXXXXXX", "false"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(name, "name", "tf-updated-"+rnd),
+					resource.TestCheckResourceAttr(name, "webhook_url", "https://hooks.slack.com/services/T00000000/B00000000/XXXXXXXXXXXXXXXXXXXXXXXX"),
+					resource.TestCheckResourceAttr(name, "active", "false"),
+					resource.TestCheckResourceAttr(name, "event.#", "3"),
+				),
+			},
+		},
+	})
+}
 
 func testWallarmIntegrationSlackRequiredOnly(resourceID, token string) string {
 	return fmt.Sprintf(`
@@ -69,26 +98,26 @@ resource "wallarm_integration_slack" "%[1]s" {
 }`, resourceID, token)
 }
 
-func testWallarmIntegrationSlackFullConfig(resourceID, name, token string) string {
+func testWallarmIntegrationSlackFullConfig(resourceID, name, token, active string) string {
 	return fmt.Sprintf(`
 resource "wallarm_integration_slack" "%[1]s" {
 	name = "%[2]s"
 	webhook_url = "%[3]s"
-	active = true
+	active = %[4]s
 	
 	event {
 		event_type = "system"
-		active = true
+		active = %[4]s
 	}
 	event {
 		event_type = "scope"
-		active = true
+		active = %[4]s
 	}
 	event {
 		event_type = "vuln"
-		active = true
+		active = %[4]s
 	}
-}`, resourceID, name, token)
+}`, resourceID, name, token, active)
 }
 
 func testWallarmIntegrationSlackIncorrectEvents(resourceID, url string) string {
