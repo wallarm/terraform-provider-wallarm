@@ -179,9 +179,8 @@ func resourceWallarmSplunkUpdate(d *schema.ResourceData, m interface{}) error {
 			Token: apiToken,
 			API:   apiURL,
 		},
-		Clientid: clientID,
-		Type:     "splunk",
-		Events:   events,
+		Type:   "splunk",
+		Events: events,
 	}
 
 	updateRes, err := client.IntegrationWithAPIUpdate(&splunkBody, splunk.ID)

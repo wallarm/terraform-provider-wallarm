@@ -179,9 +179,9 @@ func resourceWallarmInsightConnectUpdate(d *schema.ResourceData, m interface{}) 
 			Token: apiToken,
 			API:   apiURL,
 		},
-		Clientid: clientID,
-		Type:     "insight_connect",
-		Events:   events,
+		// Clientid: clientID,
+		Type:   "insight_connect",
+		Events: events,
 	}
 
 	updateRes, err := client.IntegrationWithAPIUpdate(&insightBody, insight.ID)

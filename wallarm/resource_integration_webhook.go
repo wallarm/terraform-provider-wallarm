@@ -233,9 +233,8 @@ func resourceWallarmWebhookUpdate(d *schema.ResourceData, m interface{}) error {
 			CaVerify:    caVerify,
 			Headers:     headers,
 		},
-		Clientid: clientID,
-		Type:     "web_hooks",
-		Events:   events,
+		Type:   "web_hooks",
+		Events: events,
 	}
 
 	updateRes, err := client.IntegrationWithAPIUpdate(&webhookBody, webhook.ID)
