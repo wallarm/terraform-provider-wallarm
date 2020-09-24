@@ -169,8 +169,8 @@ func hashResponseActionDetails(v interface{}) int {
 	return hashcode.String(buf.String())
 }
 
-func expandPointsToTwoDimensionalArray(ps []interface{}) ([][]interface{}, error) {
-	points := make([][]interface{}, len(ps))
+func expandPointsToTwoDimensionalArray(ps []interface{}) (wallarm.TwoDimensionalSlice, error) {
+	points := make(wallarm.TwoDimensionalSlice, len(ps))
 	for i, point := range ps {
 		pointSlice := point.([]interface{})
 		switch pointSlice[0] {
@@ -489,7 +489,7 @@ func existsAction(d *schema.ResourceData, m interface{}, hintType string) (strin
 
 	rule := &wallarm.ActionRead{
 		Filter: &wallarm.ActionFilter{
-			HintsCount: [][]interface{}{{1, nil}},
+			HintsCount: wallarm.TwoDimensionalSlice{{1, nil}},
 			HintType:   []string{hintType},
 			Clientid:   []int{clientID},
 		},

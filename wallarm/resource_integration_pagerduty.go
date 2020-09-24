@@ -67,6 +67,13 @@ func resourceWallarmPagerDuty() *schema.Resource {
 				Type:      schema.TypeString,
 				Required:  true,
 				Sensitive: true,
+				ValidateFunc: func(val interface{}, key string) (warns []string, errs []error) {
+					v := val.(string)
+					if len(v) != 32 {
+						errs = append(errs, fmt.Errorf("length of %q must be equal to 32, got: %d", key, len(v)))
+					}
+					return
+				},
 			},
 
 			"event": {

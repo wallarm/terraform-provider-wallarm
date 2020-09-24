@@ -25,7 +25,6 @@ provider "wallarm" {
 # # 
 # resource "wallarm_user" "user" {
 #   email = "testuser+6039@wallarm.com"
-#   phone = "+2 900 123 45 67"
 #   permissions = "deploy"
 #   realname = "Test Deploy"
 #   password = "vJdlSKJ_sdh2749sj!"
@@ -36,9 +35,10 @@ provider "wallarm" {
 # # Blacklist section
 # # 
 # resource "wallarm_blacklist" "blacklist" {
-#   ip_range = ["1.1.1.1/32", "2.2.2.2"]
-#   application = [1, 2]
+#   ip_range = ["1.1.1.1/18"]
+#   application = [1]
 #   reason = "TEST BLACKLIST"
+#   time_format = "Minutes"
 #   time = 60 # Minutes
 # }
 
@@ -534,4 +534,31 @@ provider "wallarm" {
 #   }
 #   point = [["header", "X-LOGIN"]]
 #   depends_on = [wallarm_rule_regex.scanner_rule]
+# }
+
+# resource "wallarm_integration_insightconnect" "insight_integration" {
+#   name = "New Terraform InsightConnect Integration"
+#   api_url = "https://us.api.insight.rapid7.com/connect/v1/workflows/d1763a97-e41b-1020-a651-26c1427657081/events/execute"
+#   api_token = "c038033e-550a-0260-aa00-a102e5b356a7"
+#   active = true
+
+#   event {
+#     event_type = "hit"
+#     active = true
+#   }
+
+#   event {
+#     event_type = "scope"
+#     active = true
+#   }
+
+#   event {
+#     event_type = "system"
+#     active = false
+#   }
+  
+#   event {
+#     event_type = "vuln"
+#     active = true
+#   }
 # }

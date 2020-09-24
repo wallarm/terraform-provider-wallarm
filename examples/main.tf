@@ -3,7 +3,7 @@ provider "wallarm" {
   api_secret = "${var.api_secret}"
   api_host = "${var.api_host}"
   api_client_logging = true
-  # client_id = 6039
+  client_id = 6039
 }
 
 # resource "wallarm_user" "user" {
@@ -22,6 +22,7 @@ provider "wallarm" {
 #   ip_range = ["1.1.1.1/32"]
 #   application = [1]
 #   reason = "TEST BLACKLIST"
+#   time_format = "Minutes"
 #   time = 60
 # }
 

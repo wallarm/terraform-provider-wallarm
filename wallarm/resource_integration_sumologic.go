@@ -64,9 +64,10 @@ func resourceWallarmSumologic() *schema.Resource {
 			},
 
 			"sumologic_url": {
-				Type:      schema.TypeString,
-				Required:  true,
-				Sensitive: true,
+				Type:         schema.TypeString,
+				Required:     true,
+				Sensitive:    true,
+				ValidateFunc: validation.IsURLWithHTTPorHTTPS,
 			},
 
 			"event": {

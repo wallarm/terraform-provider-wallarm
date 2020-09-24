@@ -64,9 +64,10 @@ func resourceWallarmSplunk() *schema.Resource {
 			},
 
 			"api_token": {
-				Type:      schema.TypeString,
-				Required:  true,
-				Sensitive: true,
+				Type:         schema.TypeString,
+				Required:     true,
+				Sensitive:    true,
+				ValidateFunc: validation.IsUUID,
 			},
 
 			"api_url": {
@@ -178,9 +179,8 @@ func resourceWallarmSplunkUpdate(d *schema.ResourceData, m interface{}) error {
 			Token: apiToken,
 			API:   apiURL,
 		},
-		Clientid: clientID,
-		Type:     "splunk",
-		Events:   events,
+		Type:   "splunk",
+		Events: events,
 	}
 
 	updateRes, err := client.IntegrationWithAPIUpdate(&splunkBody, splunk.ID)
