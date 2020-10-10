@@ -5,17 +5,20 @@
         <li<%= sidebar_current("docs-home") %>>
           <a href="/docs/providers/index.html">All Providers</a>
         </li>
+
         <li<%= sidebar_current("docs-wallarm-index") %>>
           <a href="/docs/providers/wallarm/index.html">Wallarm Provider</a>
         </li>
+
         <li<%= sidebar_current("docs-wallarm-examples") %>>
           <a href="#">Examples</a>
           <ul class="nav nav-visible">
             <li<%= sidebar_current("docs-wallarm-example-point") %>>
-              <a href="/docs/providers/wallarm/e/point.html">point_example</a>
+              <a href="/docs/providers/wallarm/e/point.html">point</a>
             </li>
           </ul>
         </li>
+
         <li<%= sidebar_current("docs-wallarm-datasource") %>>
           <a href="#">Data Sources</a>
           <ul class="nav nav-visible">
@@ -27,6 +30,7 @@
             </li>
           </ul>
         </li>
+
         <li<%= sidebar_current("docs-wallarm-resource") %>>
           <a href="#">Resources</a>
           <ul class="nav nav-visible">
@@ -102,25 +106,26 @@
             <li<%= sidebar_current("docs-wallarm-resource-integration-webhook") %>>
               <a href="/docs/providers/wallarm/r/integration_webhook.html">wallarm_integration_webhook</a>
             </li>
-            <li<%= sidebar_current("docs-wallarm-extra-resource") %>>
-              <a href="#">Extra resources</a>
-              <ul class="nav nav-visible">
-                <li<%= sidebar_current("docs-wallarm-extra-resource-rule-attack-rechecker") %>>
-                  <a href="/docs/providers/wallarm/re/attack_rechecker.html">wallarm_rule_attack_rechecker</a>
-                </li>
-                <li<%= sidebar_current("docs-wallarm-extra-resource-rule-attack-rechecker-rewrite") %>>
-                  <a href="/docs/providers/wallarm/re/attack_rechecker_rewrite.html">wallarm_rule_attack_rechecker_rewrite</a>
-                </li>
-                <li<%= sidebar_current("docs-wallarm-extra-resource-rule-set-response-header") %>>
-                  <a href="/docs/providers/wallarm/re/rule_set_response_header.html">wallarm_rule_set_response_header</a>
-                </li>
-              </ul>
+          </ul>
+        </li>
+
+        <li<%= sidebar_current("docs-wallarm-extra-resource") %>>
+            <a href="#">Extra resources</a>
+            <ul class="nav nav-visible">
+              <li<%= sidebar_current("docs-wallarm-extra-resource-rule-attack-rechecker") %>>
+                <a href="/docs/providers/wallarm/re/attack_rechecker.html">wallarm_rule_attack_rechecker</a>
+              </li>
+              <li<%= sidebar_current("docs-wallarm-extra-resource-rule-attack-rechecker-rewrite") %>>
+                <a href="/docs/providers/wallarm/re/attack_rechecker_rewrite.html">wallarm_rule_attack_rechecker_rewrite</a>
+              </li>
+              <li<%= sidebar_current("docs-wallarm-extra-resource-rule-set-response-header") %>>
+                <a href="/docs/providers/wallarm/re/rule_set_response_header.html">wallarm_rule_set_response_header</a>
+              </li>
             </ul>
-          </li>
-        </ul>
-      </li>
-    </ul>
-  </div>
+        </li>
+
+      </ul>
+    </div>
 <% end %>
 <%= yield %>
 <% end %>
