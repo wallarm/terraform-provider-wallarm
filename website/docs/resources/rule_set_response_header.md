@@ -1,50 +1,62 @@
 ---
 layout: "wallarm"
-page_title: "Wallarm: wallarm_rule_attack_rechecker"
+page_title: "Wallarm: wallarm_rule_set_response_header"
 sidebar_current: "docs-wallarm-resource-rule-attack-rechecker"
 description: |-
-  Provides the "Disable/Enable attack verification" rule resource.
+  Provides the "Specify a response header" rule resource.
 ---
 
-# wallarm_rule_attack_rechecker
+# wallarm_rule_set_response_header
 
-Provides the resource to manage rules with the "Disable/Enable attack verification" action type. This rule type is used to enable or disable checking attacks in specified request parts.
+*THIS RESOURCE REQUIRES ADDITIONAL PERMISSIONS!*
+
+Provides the resource to manage rules with the "Specify a response header" action type. This rule type is used to configure supplementary headers appended or replaced by a Wallarm WAF node.
 
 ## Example Usage
 
 ```hcl
-# Disables the attacks checking for requests sent to the application with ID 7
+# Append the "Server" header with the "Wallarm WAF" value
+# and the "Blocked" header with the "Blocked by Wallarm" value
+# to the requests sent to the application with ID 3
 
-resource "wallarm_rule_attack_rechecker" "disable_rechecker" {
-  enabled =  false
+resource "wallarm_rule_set_response_header" "resp_headers" {
+  mode = "append"
 
   action {
     point = {
-      instance = 7
+      instance = 3
     }
   }
+
+  headers = {
+    Server = "Wallarm WAF"
+    Blocked = "Blocked by Wallarm"
+  }
+
 }
 
 ```
 
 ## Argument Reference
 
-* `enabled` - (Required) Indicator to enable (`true`) or disable (`false`) attacks checking.
-* `action` - (Optional) Rule conditions. Possible attributes are described below.
+* `mode` - (Required) Mode of header processing. Valid options: `append`, `replace`
+* `headers` - (Required) The associative array of key/value headers. Might be defined as much headers as need at once. 
+* `action` - (Optional) A series of conditions, see below for a
+  a full list .
 
 **action**
 
 `action` argument shares the available
 conditions which can be applied. The conditions are:
 
-* `type` - (Optional) Condition type. Can be: `equal`, `iequal`, `regex`, `absent`. Must be omitted for the `instance` parameter in `point`.
-  For more details, see the offical [Wallarm documentation](https://docs.wallarm.com/user-guides/rules/add-rule/#condition-types)
+* `type` - (Optional) The type of comparison. Possible values: `equal`, `iequal`, `regex`, `absent`.
+  For more information, see the [docs](https://docs.wallarm.com/user-guides/rules/add-rule/#condition-types)
   Example:
   `type = "absent"`
-* `value` - (Optional) Value of the parameter to match with. Must be omitted for the `instance` parameter in `point` or if `type` is `absent`.
+* `value` - (Optional) A value of the parameter to match with.
   Example:
   `value = "example.com"`
-* `point` - (Optional) Request parameters that trigger the rule. Possible values are described below. For more details, see the official [Wallarm documentatioon](https://docs.wallarm.com/user-guides/rules/request-processing/#identifying-and-parsing-the-request-parts).
+* `point` - (Optional) A series of arguments, see below for a a full list . See the [docs](https://docs.wallarm.com/user-guides/rules/request-processing/#parameter-parsing).
 
 ### Nested Objects
 

@@ -1,54 +1,33 @@
 ---
 layout: "wallarm"
-page_title: "Wallarm: wallarm_rule_masking"
-sidebar_current: "docs-wallarm-resource-rule-masking"
+page_title: "Wallarm: wallarm_rule_attack_rechecker_rewrite"
+sidebar_current: "docs-wallarm-resource-rule-attack-rechecker-rewrite"
 description: |-
-  Provides the "Mark as sensitive data" rule resource.
+  Provides the "Rewrite request before attack replaying" rule resource.
 ---
 
-# wallarm_rule_masking
+# wallarm_rule_attack_rechecker_rewrite
 
-Provides the resource to manage rules with the "Mark as sensitive data" action type. This rule type is used to cut out sensitive information such as passwords or cookies from the uploading to the Wallarm Cloud making such data hidden.
+*THIS RESOURCE REQUIRES ADDITIONAL PERMISSIONS!*
 
-The real values of the specified parameters will be replaced by `*` and will not be accessible either in the Wallarm Cloud or in the local post-analysis module. This method ensures that the protected data cannot leak outside the trusted environment.
+Provides the resource to manage rules with the "Rewrite request before attack replaying" action type. This rule type is used to perform verification tests not for the production application but a similar application (for example, in test, staging, development environments that do not require authentication or there are test credentials to access these applications). The rule is commonly used for Wallarm Attack Rechecker.
 
 ## Example Usage
 
 ```hcl
-# Masks the "field" value of the "hash" parameter
-# in the JSON body for the requests sent to the `../masking` URL
+# Rewrites the value of the header "HOST" to "my.staging-application.com"
+# for all the verification tests
 
-resource "wallarm_rule_masking" "masking_json" {
-
-  action {
-    type = "equal"
-    point = {
-      action_name = "masking"
-    }
-  }
-  
-  action {
-    type = "absent"
-    point = {
-      path = 0
-     }
-  }
-
-  action {
-    type = "absent"
-    point = {
-      action_ext = ""
-    }
-  }
-
-  point = [["post"],["json_doc"],["hash", "field"]]
+resource "wallarm_rule_attack_rechecker_rewrite" "default_rewrite" {
+  rules =  ["my.staging-application.com"]
+  point = [["header", "HOST"]]
 }
 
 ```
 
 ## Argument Reference
 
-* `client_id` - (Optional) ID of the client to apply the rules to. The value is required for multi-tenant scenarios.
+* `rules` - (Required) A list of new values for parameters specified in `point`.
 * `action` - (Optional) Rule conditions. Possible attributes are described below.
 * `point` - (Required) Request parts to apply the rules to. The full list of possible values is available in the [Wallarm official documentation](https://docs.wallarm.com/user-guides/rules/request-processing/#identifying-and-parsing-the-request-parts).
   |     POINT      |POSSIBLE VALUES|
@@ -70,7 +49,7 @@ resource "wallarm_rule_masking" "masking_json" {
   |`json_doc`   |`array`, `array_all`, `array_default`, `hash`, `hash_all`, `hash_default`, `hash_name`, `json_array`, `json_array_all`, `json_array_default`, `json_obj`, `json_obj_all`, `json_obj_default`, `json_obj_name`|
   |`instance`      | Integer ID of the application the request was sent to. |
 
-  [Examples](https://registry.terraform.io/providers/416e64726579/wallarm/latest/docs/examples/point)
+  [Examples](https://registry.terraform.io/providers/416e64726579/wallarm/latest/docs/guides/point)
 
 **action**
 
@@ -177,16 +156,3 @@ When `type` is `absent`
 * `rule_id` - ID of the created rule.
 * `action_id` - The action ID (The conditions to apply on request).
 * `rule_type` - Type of   created rule. For example, `rule_type = "ignore_regex"`.
-
-## Import
-
-The rule can be imported using a composite ID formed of client ID, action ID, rule ID and rule type.
-
-```
-$ terraform import wallarm_rule_masking.masking_json 6039/563855/11086881/wallarm_rule_masking
-```
-
-* `6039` - Client ID.
-* `563855` - Action ID.
-* `11086881` - Rule ID.
-* `wallarm_rule_masking` - Rule type.

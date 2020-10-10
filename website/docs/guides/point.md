@@ -1,7 +1,7 @@
 ---
 layout: "wallarm"
-page_title: "Wallarm: point_example"
-sidebar_current: "docs-wallarm-example-point"
+page_title: "Wallarm: point"
+sidebar_current: "docs-wallarm-guides-point"
 description: |-
   Provides examples of the point argument.
 ---
