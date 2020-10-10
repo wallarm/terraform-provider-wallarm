@@ -315,11 +315,11 @@ provider "wallarm" {
 #   point = [["header", "HOST"]]
 # }
 
-# Test
-resource "wallarm_node" "terraform" {
-  client_id = 6039
-  hostname = "Terraform Tests"
-}
+# # Test
+# resource "wallarm_node" "terraform" {
+#   client_id = 6039
+#   hostname = "Terraform Tests"
+# }
 
 
 # resource "wallarm_rule_mode" "test" {
