@@ -1,14 +1,14 @@
-# #
-# # Define the source of a provider. Required by Terraform 0.13+
-# #
-# terraform {
-#   required_providers {
-#     wallarm = {
-#       source  = "github.com/wallarm/wallarm"
-#       version = "0.0.1"
-#     }
-#   }
-# }
+#
+# Define the source of a provider. Required by Terraform 0.13+
+#
+terraform {
+  required_providers {
+    wallarm = {
+      source  = "416e64726579/wallarm"
+      version = ">= 0.0.2"
+    }
+  }
+}
 
 # 
 # Define provider parameters
@@ -315,11 +315,11 @@ provider "wallarm" {
 #   point = [["header", "HOST"]]
 # }
 
-# # Test
-# resource "wallarm_node" "terraform" {
-#   client_id = 6039
-#   hostname = "Terraform Tests"
-# }
+# Test
+resource "wallarm_node" "terraform" {
+  client_id = 6039
+  hostname = "Terraform Tests"
+}
 
 
 # resource "wallarm_rule_mode" "test" {

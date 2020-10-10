@@ -1,5 +1,19 @@
-0.0.1 (September 10, 2020)
+# v0.0.2 (September 16, 2020)
 
-NOTES:
+## FEATURES:
+
+**New Resource:** `wallarm_blacklist` - is used to manage the blacklist
+
+## ENHANCEMENTS:
+
+**Resource:** `wallarm_rule_*` - bumped a client library version to comply with the new struct for `[][]interface{}`
+
+## BUG FIXES:
+
+**Resource:** - fixed 400 HTTP response code when there is an incorrect JSON body for requests on the update call
+
+# v0.0.1 (September 10, 2020)
+
+## NOTES:
 
 * The first public release
