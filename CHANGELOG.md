@@ -1,3 +1,9 @@
+# v0.0.3 (October 10, 2020)
+
+## NOTES:
+
+* Automatic GO release have been added
+
 # v0.0.2 (September 16, 2020)
 
 ## FEATURES:
