@@ -1,3 +1,9 @@
+# v0.0.7 (October 23, 2020)
+
+## NOTES:
+
+* Documentation layout have been modified
+
 # v0.0.3 (October 10, 2020)
 
 ## NOTES:
