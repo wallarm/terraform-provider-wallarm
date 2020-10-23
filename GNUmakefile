@@ -4,8 +4,6 @@ GOOS?=$$(go env GOOS)
 GOARCH?=$$(go env GOARCH)
 VERSION?=$$(git describe --abbrev=0 --tags)
 TESTTIMEOUT=120m
-WEBSITE_REPO=github.com/hashicorp/terraform-website
-PKG_NAME=wallarm
 
 default: build
 
@@ -56,22 +54,4 @@ destroy: build init
 	@echo "Running .tf files in the folder..."
 	@terraform destroy
 
-website:
-ifeq (,$(wildcard $(GOPATH)/src/$(WEBSITE_REPO)))
-	echo "$(WEBSITE_REPO) not found in your GOPATH (necessary for layouts and assets), get-ting..."
-	git clone https://$(WEBSITE_REPO) $(GOPATH)/src/$(WEBSITE_REPO)
-endif
-	ln -sf ../../../../ext/providers/wallarm/website/docs $(GOPATH)/src/github.com/hashicorp/terraform-website/content/source/docs/providers/wallarm
-	ln -sf ../../../ext/providers/wallarm/website/wallarm.erb $(GOPATH)/src/github.com/hashicorp/terraform-website/content/source/layouts/wallarm.erb
-	@$(MAKE) -C $(GOPATH)/src/$(WEBSITE_REPO) website-provider PROVIDER_PATH=$(shell pwd) PROVIDER_NAME=$(PKG_NAME)
-
-website-test:
-ifeq (,$(wildcard $(GOPATH)/src/$(WEBSITE_REPO)))
-	echo "$(WEBSITE_REPO) not found in your GOPATH (necessary for layouts and assets), get-ting..."
-	git clone https://$(WEBSITE_REPO) $(GOPATH)/src/$(WEBSITE_REPO)
-endif
-	ln -sf ../../../../ext/providers/wallarm/website/docs $(GOPATH)/src/github.com/hashicorp/terraform-website/content/source/docs/providers/wallarm
-	ln -sf ../../../ext/providers/wallarm/website/wallarm.erb $(GOPATH)/src/github.com/hashicorp/terraform-website/content/source/layouts/wallarm.erb
-	@$(MAKE) -C $(GOPATH)/src/$(WEBSITE_REPO) website-provider-test PROVIDER_PATH=$(shell pwd) PROVIDER_NAME=$(PKG_NAME)
-
-.PHONY: install build init init-plugin test testacc vet fmt fmtcheck apply destroy website website-test
+.PHONY: install build init init-plugin test testacc vet fmt fmtcheck apply destroy
