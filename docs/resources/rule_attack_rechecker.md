@@ -8,7 +8,7 @@ description: |-
 
 # wallarm_rule_attack_rechecker
 
-*THIS RESOURCE REQUIRES ADDITIONAL PERMISSIONS!*
+!> The resource requires additional permission. Ask the support team to obtain them.
 
 Provides the resource to manage rules with the "Disable/Enable attack verification" action type. This rule type is used to enable or disable checking attacks in specified request parts.
 

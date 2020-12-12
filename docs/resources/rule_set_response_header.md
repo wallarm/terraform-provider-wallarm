@@ -8,7 +8,7 @@ description: |-
 
 # wallarm_rule_set_response_header
 
-*THIS RESOURCE REQUIRES ADDITIONAL PERMISSIONS!*
+!> The resource requires additional permission. Ask the support team to obtain them.
 
 Provides the resource to manage rules with the "Specify a response header" action type. This rule type is used to configure supplementary headers appended or replaced by a Wallarm WAF node.
 

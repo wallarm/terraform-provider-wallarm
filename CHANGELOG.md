@@ -1,3 +1,9 @@
+# v0.0.8 (December 2, 2020)
+
+## NOTES:
+
+* Minor changes in markdown
+
 # v0.0.7 (October 23, 2020)
 
 ## NOTES:
