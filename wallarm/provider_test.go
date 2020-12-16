@@ -39,7 +39,13 @@ type preCheckFunc = func(*testing.T)
 func testAccPreCheck(t *testing.T) {
 
 	if v := os.Getenv("WALLARM_API_HOST"); v == "" {
-		t.Fatal("WALLARM_API_HOST must be set for acceptance tests")
+		t.Fatal(`
+		WALLARM_API_HOST must be set for acceptance tests
+		Possible values:
+		for EU cloud: https://api.wallarm.com
+		for US cloud: https://us1.api.wallarm.com
+		for RU cloud: https://api.wallarm.ru
+		`)
 	}
 
 	if v := os.Getenv("WALLARM_API_UUID"); v == "" {

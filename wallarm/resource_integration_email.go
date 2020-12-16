@@ -161,17 +161,32 @@ func resourceWallarmEmailUpdate(d *schema.ResourceData, m interface{}) error {
 		return err
 	}
 
-	emailBody := wallarm.EmailIntegrationCreate{
-		Name:   name,
-		Active: active,
-		Target: emails,
-		Type:   "email",
-		Events: events,
+	var updateRes *wallarm.IntegrationCreateResp
+
+	if d.HasChange("active") {
+		emailBody := wallarm.EmailIntegrationCreate{
+			Active: active,
+		}
+
+		updateRes, err = client.EmailIntegrationUpdate(&emailBody, email.ID)
+		if err != nil {
+			return err
+		}
 	}
 
-	updateRes, err := client.EmailIntegrationUpdate(&emailBody, email.ID)
-	if err != nil {
-		return err
+	if d.HasChange("name") || d.HasChange("emails") || d.HasChange("event") {
+		emailBody := wallarm.EmailIntegrationCreate{
+			Name:   name,
+			Active: active,
+			Target: emails,
+			Type:   "email",
+			Events: events,
+		}
+
+		updateRes, err = client.EmailIntegrationUpdate(&emailBody, email.ID)
+		if err != nil {
+			return err
+		}
 	}
 
 	d.Set("integration_id", updateRes.Body.ID)
@@ -185,11 +200,11 @@ func resourceWallarmEmailUpdate(d *schema.ResourceData, m interface{}) error {
 func resourceWallarmEmailDelete(d *schema.ResourceData, m interface{}) error {
 	client := m.(*wallarm.API)
 	clientID := retrieveClientID(d, client)
-	opsGenie, err := client.IntegrationRead(clientID, d.Get("integration_id").(int))
+	email, err := client.IntegrationRead(clientID, d.Get("integration_id").(int))
 	if err != nil {
 		return err
 	}
-	if err := client.IntegrationDelete(opsGenie.ID); err != nil {
+	if err := client.IntegrationDelete(email.ID); err != nil {
 		return err
 	}
 	return nil

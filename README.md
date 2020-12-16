@@ -6,8 +6,8 @@
 
 ## Requirements
 
--	[Terraform](https://www.terraform.io/downloads.html) 0.12.x
--	[Go](https://golang.org/doc/install) 1.14 (to build the provider plugin)
+-	[Terraform](https://www.terraform.io/downloads.html) 0.12.x+
+-	[Go](https://golang.org/doc/install) 1.14+ (to build the provider plugin)
 
 
 ## Building The Provider
@@ -41,27 +41,9 @@ $ cd $GOPATH/src/terraform-provider-wallarm
 $ make build
 ```
 
-#### `make init-plugin` and build and initialize
-
-*Note: only for MacOS and Linux*
-
-Terraform looks up the provider in the next folder while testing
-
-```sh
-~/.terraform.d/plugins/$GOOS_$GOARCH/terraform-provider-wallarm_v0.0.0
-```
-To find environment variables use:
-```sh
-go env
-```
-
-The above command builds provider locally and copies to the needed folder.  
-
-### Disclaimer
-
 #### terraform 0.12 and earlier
 
-*Since this is still in a development phase and not posted in the official terraform repo, you have to either sideload a binary with the correct name. Terraform searches for plugins in the format of:*
+*You have to either sideload a binary with the correct name. Terraform searches for plugins in the format of:*
 
 ```
 terraform-<TYPE>-<NAME>
@@ -131,7 +113,7 @@ api_secret = "000000000000000000000000000000000000000000"
 
 ### Assistance commands
 
-***It is assumed that some of the following commands will be removed***
+*It is assumed that some of the following commands will be removed*
 
 #### `make apply` and apply local `.tf` files
 
@@ -145,7 +127,7 @@ It builds, initializes the provider and destroys the created resources.
 
 ## Using The Provider
 
-Some of the examples are divided by the resource name, however, most of them still defined in the `examples/main.tf`.
+Some of the examples are divided by the resource/data source name, however, most of them still defined in the `examples/main.tf`.
 
 For instance, this rule configures the blocking mode for GET requests to `dvwa.wallarm-demo.com`.
 

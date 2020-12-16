@@ -23,9 +23,9 @@ jobs:
 
       - name: Set build variables
         run: |
-          echo "::set-env name=MAKE_TARGET::${{ matrix.make_target }}"
-          echo "::set-env name=GO_FLAGS::-mod=vendor"
-          echo "::set-env name=GO111MODULE::on"
+          echo "MAKE_TARGET=${{ matrix.make_target }}" >> $GITHUB_ENV
+          echo "GO_FLAGS=-mod=vendor" >> $GITHUB_ENV
+          echo "GO111MODULE=on" >> $GITHUB_ENV
       - name: Run ${{matrix.make_target}}
         run: |
           make $MAKE_TARGET

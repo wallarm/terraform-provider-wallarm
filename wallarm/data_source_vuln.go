@@ -2,7 +2,8 @@ package wallarm
 
 import (
 	"fmt"
-	"strconv"
+	"log"
+	"time"
 
 	wallarm "github.com/416e64726579/wallarm-go"
 
@@ -36,10 +37,10 @@ func dataSourceWallarmVuln() *schema.Resource {
 				MaxItems: 1,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
-
 						"status": {
 							Type:         schema.TypeString,
 							Optional:     true,
+							Default:      "open",
 							ValidateFunc: validation.StringInSlice([]string{"open", "closed", "falsepositive"}, false),
 						},
 
@@ -129,7 +130,6 @@ func dataSourceWallarmVuln() *schema.Resource {
 
 func dataSourceWallarmVulnRead(d *schema.ResourceData, m interface{}) error {
 	client := m.(*wallarm.API)
-	clientID := retrieveClientID(d, client)
 
 	// Prepare the filters to be applied to the search
 	filter, err := expandWallarmVuln(d.Get("filter"))
@@ -172,7 +172,8 @@ func dataSourceWallarmVulnRead(d *schema.ResourceData, m interface{}) error {
 			"detection_method": v.DetectionMethod,
 		})
 	}
-	d.SetId(strconv.Itoa(clientID))
+
+	d.SetId(fmt.Sprintf("Vulns_%s", time.Now().UTC().String()))
 
 	if err = d.Set("vuln", vulns); err != nil {
 		return fmt.Errorf("Error setting Vulns: %s", err)
@@ -182,7 +183,12 @@ func dataSourceWallarmVulnRead(d *schema.ResourceData, m interface{}) error {
 
 func expandWallarmVuln(d interface{}) (*searchFilterWallarmVuln, error) {
 	cfg := d.([]interface{})
-	filter := &searchFilterWallarmVuln{}
+	log.Println("CFG", cfg)
+	filter := &searchFilterWallarmVuln{
+		Status: "open",
+		Limit:  1000,
+		Offset: 0,
+	}
 	if len(cfg) == 0 || cfg[0] == nil {
 		return filter, nil
 	}
