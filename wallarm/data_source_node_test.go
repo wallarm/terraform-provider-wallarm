@@ -39,6 +39,8 @@ func TestAccWallarmDataNodeFilterType(t *testing.T) {
 	})
 }
 
+// Only for regular nodes
+/*
 func TestAccWallarmDataNodeFilterUUID(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck:  func() { testAccPreCheck(t) },
@@ -68,6 +70,7 @@ func TestAccWallarmDataNodeFilterHostname(t *testing.T) {
 		},
 	})
 }
+*/
 
 func testAccWallarmDataNode(n string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
@@ -119,14 +122,16 @@ data "wallarm_node" "waf" {
 }
 `
 
+// This cannot be applied to nodes of type cloud_node
 const testAccWallarmDataNodeFilterUUID = `
 data "wallarm_node" "waf" {
 	filter {
-		uuid = "508b4d0a-ee91-4588-9e31-e40aa261a8a3"
+		uuid = "13ef5f5e-01ca-4db1-85ac-8d969d688f25"
 	}
 }
 `
 
+// This cannot be applied to nodes of type cloud_node
 const testAccWallarmDataNodeFilterHostname = `
 data "wallarm_node" "waf" {
 	filter {

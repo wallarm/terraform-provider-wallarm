@@ -23,6 +23,8 @@ github.com/416e64726579/wallarm-go v0.0.13 h1:llUs+GI2a454psFA40Nh5gAEMcAPHrt8hf
 github.com/416e64726579/wallarm-go v0.0.13/go.mod h1:KXFHNIwKOjWr5kacMm/VVlzPK4ycUMcoMH4z7t645k0=
 github.com/416e64726579/wallarm-go v0.0.14 h1:CYKVrJyjxn5UHi6RgROQJ35tq1lj4foluRGqao3mBqA=
 github.com/416e64726579/wallarm-go v0.0.14/go.mod h1:KXFHNIwKOjWr5kacMm/VVlzPK4ycUMcoMH4z7t645k0=
+github.com/416e64726579/wallarm-go v0.0.15 h1:R5DKFNBetSWUlmSewBSewDjGqH+utJF82LOLoFhop6I=
+github.com/416e64726579/wallarm-go v0.0.15/go.mod h1:KXFHNIwKOjWr5kacMm/VVlzPK4ycUMcoMH4z7t645k0=
 github.com/BurntSushi/toml v0.3.1/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03qcyfWMU=
 github.com/BurntSushi/xgb v0.0.0-20160522181843-27f122750802/go.mod h1:IVnqGOEym/WlBOVXweHU+Q+/VP0lqqI8lqeDx9IjBqo=
 github.com/agext/levenshtein v1.2.1/go.mod h1:JEDfjyjHDjOF/1e4FlBE/PkbqA9OfWu2ki2W0IB5558=

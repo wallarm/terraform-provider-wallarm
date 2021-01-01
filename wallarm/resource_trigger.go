@@ -108,6 +108,11 @@ func resourceWallarmTrigger() *schema.Resource {
 						"lock_time": {
 							Type:     schema.TypeInt,
 							Optional: true,
+							// 5/15/30 minutes, 1/2/6/12 hours, 1/2/7/30 days, forever
+							ValidateFunc: validation.IntInSlice([]int{300, 900, 1800,
+								3600, 7200, 21600, 43200,
+								86400, 172800, 604800, 2592000,
+								7776000}),
 						},
 					},
 				},

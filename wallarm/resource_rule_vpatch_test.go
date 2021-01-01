@@ -2,7 +2,6 @@ package wallarm
 
 import (
 	"fmt"
-	"os"
 	"strconv"
 	"testing"
 
@@ -22,20 +21,15 @@ type vpatchTestingRule struct {
 func TestAccRuleVpatchCreate_Basic(t *testing.T) {
 	rnd := generateRandomResourceName(5)
 	name := "wallarm_rule_vpatch." + rnd
-	var clientID string
-	var ok bool
-	if clientID, ok = os.LookupEnv("WALLARM_API_CLIENT_ID"); !ok {
-		clientID = "6039"
-	}
+
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckWallarmRuleVpatchDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testWallarmRuleVpatchBasicConfig(rnd, clientID, "xss", "iequal", "vpatch.wallarm.com", "HOST", "get_all"),
+				Config: testWallarmRuleVpatchBasicConfig(rnd, "xss", "iequal", "vpatch.wallarm.com", "HOST", "get_all"),
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr(name, "client_id", clientID),
 					resource.TestCheckResourceAttr(name, "attack_type.0", "xss"),
 					resource.TestCheckResourceAttr(name, "action.#", "1"),
 					resource.TestCheckResourceAttr(name, "point.0.0", "get_all"),
@@ -114,10 +108,9 @@ func TestAccRuleVpatchCreate_FullSettings(t *testing.T) {
 	})
 }
 
-func testWallarmRuleVpatchBasicConfig(resourceID, clientID, attackType, actionType, actionValue, actionPoint, point string) string {
+func testWallarmRuleVpatchBasicConfig(resourceID, attackType, actionType, actionValue, actionPoint, point string) string {
 	return fmt.Sprintf(`
-resource "wallarm_rule_vpatch" "%[7]s" {
-  client_id = %[1]s
+resource "wallarm_rule_vpatch" "%[1]s" {
   attack_type = ["%[2]s"]
   action {
     type = "%[3]s"
@@ -127,7 +120,7 @@ resource "wallarm_rule_vpatch" "%[7]s" {
     }
   }
   point = [["%[6]s"]]
-}`, clientID, attackType, actionType, actionValue, actionPoint, point, resourceID)
+}`, resourceID, attackType, actionType, actionValue, actionPoint, point)
 }
 
 func testWallarmRuleVpatchDefaultBranchConfig(resourceID, attackType, point string) string {
