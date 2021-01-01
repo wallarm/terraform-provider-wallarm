@@ -14,6 +14,7 @@ jobs:
       WALLARM_API_HOST: ${{ secrets.WALLARM_API_HOST }}
       WALLARM_API_UUID: ${{ secrets.WALLARM_API_UUID }}
       WALLARM_API_SECRET: ${{ secrets.WALLARM_API_SECRET }}
+      WALLARM_GLOBAL_ADMIN: true
 
     steps:
 

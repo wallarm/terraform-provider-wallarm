@@ -8,7 +8,7 @@ description: |-
 
 # wallarm_rule_attack_rechecker_rewrite
 
-!> The resource requires additional permission. Ask the support team to obtain them.
+!> The resource requires additional permissions. Ask the support team to obtain them.
 
 Provides the resource to manage rules with the "Rewrite request before attack replaying" action type. This rule type is used to perform verification tests not for the production application but a similar application (for example, in test, staging, development environments that do not require authentication or there are test credentials to access these applications). The rule is commonly used for Wallarm Attack Rechecker.
 
