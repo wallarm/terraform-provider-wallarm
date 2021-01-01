@@ -2,6 +2,7 @@ package wallarm
 
 import (
 	"fmt"
+	"os"
 	"regexp"
 	"testing"
 
@@ -105,6 +106,10 @@ func TestAccWallarmUser_RequiredFieldsReadOnly(t *testing.T) {
 }
 
 func TestAccWallarmUser_RequiredFieldsGlobalAdmin(t *testing.T) {
+	if os.Getenv("WALLARM_GLOBAL_ADMIN") == "" {
+		t.Skip("Skipping not finished test")
+	}
+
 	rnd := generateRandomResourceName(5)
 	name := "wallarm_user." + rnd
 	emailName := generateRandomResourceName(8)
@@ -130,6 +135,10 @@ func TestAccWallarmUser_RequiredFieldsGlobalAdmin(t *testing.T) {
 }
 
 func TestAccWallarmUser_RequiredFieldsGlobalAnalyst(t *testing.T) {
+	if os.Getenv("WALLARM_GLOBAL_ADMIN") == "" {
+		t.Skip("Skipping not finished test")
+	}
+
 	rnd := generateRandomResourceName(5)
 	name := "wallarm_user." + rnd
 	emailName := generateRandomResourceName(8)
@@ -155,6 +164,10 @@ func TestAccWallarmUser_RequiredFieldsGlobalAnalyst(t *testing.T) {
 }
 
 func TestAccWallarmUser_RequiredFieldsGlobalReadOnly(t *testing.T) {
+	if os.Getenv("WALLARM_GLOBAL_ADMIN") == "" {
+		t.Skip("Skipping not finished test")
+	}
+
 	rnd := generateRandomResourceName(5)
 	name := "wallarm_user." + rnd
 	emailName := generateRandomResourceName(8)

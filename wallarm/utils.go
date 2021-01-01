@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"log"
 	"math/rand"
 	"sort"
 	"strconv"
@@ -164,7 +163,6 @@ func hashResponseActionDetails(v interface{}) int {
 			m["point"] = pointMap
 		}
 		buf.WriteString(fmt.Sprintf("%v-", m["point"]))
-		log.Println("POINT: ", p)
 	}
 	return hashcode.String(buf.String())
 }

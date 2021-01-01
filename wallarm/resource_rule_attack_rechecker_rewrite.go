@@ -215,7 +215,7 @@ func resourceWallarmAttackRecheckerRewriteCreate(d *schema.ResourceData, m inter
 	d.Set("rule_type", actionResp.Body.Type)
 	d.Set("client_id", clientID)
 
-	resID := fmt.Sprintf("%d/%d/%d/%s", clientID, actionID, actionResp.Body.ID, "attack_rechecker_rewrite")
+	resID := fmt.Sprintf("%d/%d/%d", clientID, actionID, actionResp.Body.ID)
 	d.SetId(resID)
 
 	return nil

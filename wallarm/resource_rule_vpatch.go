@@ -3,6 +3,8 @@ package wallarm
 import (
 	"fmt"
 	"log"
+	"strconv"
+	"strings"
 
 	wallarm "github.com/416e64726579/wallarm-go"
 
@@ -22,6 +24,9 @@ func resourceWallarmVpatch() *schema.Resource {
 		Read:   resourceWallarmVpatchRead,
 		Update: resourceWallarmVpatchUpdate,
 		Delete: resourceWallarmVpatchDelete,
+		Importer: &schema.ResourceImporter{
+			State: resourceWallarmVpatchImport,
+		},
 
 		Schema: map[string]*schema.Schema{
 
@@ -161,7 +166,7 @@ func resourceWallarmVpatch() *schema.Resource {
 										ValidateFunc: func(val interface{}, key string) (warns []string, errs []error) {
 											v := val.(int)
 											if v < -1 {
-												errs = append(errs, fmt.Errorf("%q must be between greater then -1 inclusive, got: %d", key, v))
+												errs = append(errs, fmt.Errorf("%q must be be greater than -1 inclusive, got: %d", key, v))
 											}
 											return
 										},
@@ -407,4 +412,69 @@ func resourceWallarmVpatchUpdate(d *schema.ResourceData, m interface{}) error {
 		return err
 	}
 	return resourceWallarmVpatchCreate(d, m)
+}
+
+func resourceWallarmVpatchImport(d *schema.ResourceData, m interface{}) ([]*schema.ResourceData, error) {
+	client := m.(wallarm.API)
+	idAttr := strings.SplitN(d.Id(), "/", 3)
+	if len(idAttr) == 3 {
+		clientID, err := strconv.Atoi(idAttr[0])
+		if err != nil {
+			return nil, err
+		}
+		actionID, err := strconv.Atoi(idAttr[1])
+		if err != nil {
+			return nil, err
+		}
+		ruleID, err := strconv.Atoi(idAttr[2])
+		if err != nil {
+			return nil, err
+		}
+		d.Set("action_id", actionID)
+		d.Set("rule_id", ruleID)
+		d.Set("rule_type", "vpatch")
+
+		hint := &wallarm.HintRead{
+			Limit:     1000,
+			Offset:    0,
+			OrderBy:   "updated_at",
+			OrderDesc: true,
+			Filter: &wallarm.HintFilter{
+				Clientid: []int{clientID},
+				ID:       []int{ruleID},
+				Type:     []string{"vpatch"},
+			},
+		}
+		actionHints, err := client.HintRead(hint)
+		if err != nil {
+			return nil, err
+		}
+		actionsSet := schema.Set{
+			F: hashResponseActionDetails,
+		}
+		var actsSlice []map[string]interface{}
+		if len((*actionHints.Body)) != 0 && len((*actionHints.Body)[0].Action) != 0 {
+			for _, a := range (*actionHints.Body)[0].Action {
+				acts, err := actionDetailsToMap(a)
+				if err != nil {
+					return nil, err
+				}
+				actsSlice = append(actsSlice, acts)
+				actionsSet.Add(acts)
+			}
+			if err := d.Set("action", &actionsSet); err != nil {
+				return nil, err
+			}
+		}
+
+		existingID := fmt.Sprintf("%d/%d/%d", clientID, actionID, ruleID)
+		d.SetId(existingID)
+
+	} else {
+		return nil, fmt.Errorf("invalid id (%q) specified, should be in format \"{clientID}/{actionID}/{ruleID}\"", d.Id())
+	}
+
+	resourceWallarmVpatchRead(d, m)
+
+	return []*schema.ResourceData{d}, nil
 }

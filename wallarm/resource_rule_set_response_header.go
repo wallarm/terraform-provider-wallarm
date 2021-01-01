@@ -159,7 +159,7 @@ func resourceWallarmSetResponseHeader() *schema.Resource {
 										ValidateFunc: func(val interface{}, key string) (warns []string, errs []error) {
 											v := val.(int)
 											if v < -1 {
-												errs = append(errs, fmt.Errorf("%q must be between greater then -1 inclusive, got: %d", key, v))
+												errs = append(errs, fmt.Errorf("%q must be be greater than -1 inclusive, got: %d", key, v))
 											}
 											return
 										},
@@ -207,7 +207,7 @@ func resourceWallarmSetResponseHeaderCreate(d *schema.ResourceData, m interface{
 
 		ruleIDs = append(ruleIDs, actionResp.Body.ID)
 
-		resID := fmt.Sprintf("%d/%d/%d/%s", clientID, actionID, actionResp.Body.ID, "set_response_header")
+		resID := fmt.Sprintf("%d/%d/%d", clientID, actionID, actionResp.Body.ID)
 		d.SetId(resID)
 
 	}

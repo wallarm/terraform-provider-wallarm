@@ -151,7 +151,7 @@ func resourceWallarmAttackRechecker() *schema.Resource {
 										ValidateFunc: func(val interface{}, key string) (warns []string, errs []error) {
 											v := val.(int)
 											if v < -1 {
-												errs = append(errs, fmt.Errorf("%q must be between greater then -1 inclusive, got: %d", key, v))
+												errs = append(errs, fmt.Errorf("%q must be greater than -1 inclusive, got: %d", key, v))
 											}
 											return
 										},
@@ -196,7 +196,7 @@ func resourceWallarmAttackRecheckerCreate(d *schema.ResourceData, m interface{})
 	d.Set("rule_type", actionResp.Body.Type)
 	d.Set("client_id", clientID)
 
-	resID := fmt.Sprintf("%d/%d/%d/%s", clientID, actionID, actionResp.Body.ID, "attack_rechecker")
+	resID := fmt.Sprintf("%d/%d/%d", clientID, actionID, actionResp.Body.ID)
 	d.SetId(resID)
 
 	return nil
