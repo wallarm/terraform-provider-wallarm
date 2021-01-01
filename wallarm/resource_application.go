@@ -56,7 +56,7 @@ func resourceWallarmApp() *schema.Resource {
 }
 
 func resourceWallarmAppCreate(d *schema.ResourceData, m interface{}) error {
-	client := m.(*wallarm.API)
+	client := m.(wallarm.API)
 	clientID := retrieveClientID(d, client)
 	name := d.Get("name").(string)
 	appID := d.Get("app_id").(int)
@@ -85,7 +85,7 @@ func resourceWallarmAppCreate(d *schema.ResourceData, m interface{}) error {
 }
 
 func resourceWallarmAppRead(d *schema.ResourceData, m interface{}) error {
-	client := m.(*wallarm.API)
+	client := m.(wallarm.API)
 	clientID := retrieveClientID(d, client)
 	name := d.Get("name").(string)
 	appID := d.Get("app_id").(int)
@@ -114,7 +114,7 @@ func resourceWallarmAppRead(d *schema.ResourceData, m interface{}) error {
 }
 
 func resourceWallarmAppUpdate(d *schema.ResourceData, m interface{}) error {
-	client := m.(*wallarm.API)
+	client := m.(wallarm.API)
 	clientID := retrieveClientID(d, client)
 	appID := d.Get("app_id").(int)
 	name := d.Get("name").(string)
@@ -144,7 +144,7 @@ func resourceWallarmAppUpdate(d *schema.ResourceData, m interface{}) error {
 }
 
 func resourceWallarmAppDelete(d *schema.ResourceData, m interface{}) error {
-	client := m.(*wallarm.API)
+	client := m.(wallarm.API)
 	clientID := retrieveClientID(d, client)
 	appID := d.Get("app_id").(int)
 
@@ -163,7 +163,7 @@ func resourceWallarmAppDelete(d *schema.ResourceData, m interface{}) error {
 }
 
 func resourceWallarmAppImport(d *schema.ResourceData, m interface{}) ([]*schema.ResourceData, error) {
-	client := m.(*wallarm.API)
+	client := m.(wallarm.API)
 	idAttr := strings.SplitN(d.Id(), "/", 3)
 	if len(idAttr) == 3 {
 		clientID, err := strconv.Atoi(idAttr[0])

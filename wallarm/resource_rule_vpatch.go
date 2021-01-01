@@ -189,7 +189,7 @@ func resourceWallarmVpatch() *schema.Resource {
 }
 
 func resourceWallarmVpatchCreate(d *schema.ResourceData, m interface{}) error {
-	client := m.(*wallarm.API)
+	client := m.(wallarm.API)
 	clientID := retrieveClientID(d, client)
 	attackType := d.Get("attack_type").([]interface{})
 	var attacks []string
@@ -258,7 +258,7 @@ func resourceWallarmVpatchCreate(d *schema.ResourceData, m interface{}) error {
 }
 
 func resourceWallarmVpatchRead(d *schema.ResourceData, m interface{}) error {
-	client := m.(*wallarm.API)
+	client := m.(wallarm.API)
 	clientID := retrieveClientID(d, client)
 	actionID := d.Get("action_id").(int)
 
@@ -376,7 +376,7 @@ out:
 }
 
 func resourceWallarmVpatchDelete(d *schema.ResourceData, m interface{}) error {
-	client := m.(*wallarm.API)
+	client := m.(wallarm.API)
 	clientID := retrieveClientID(d, client)
 
 	var ruleIDInterface []interface{}

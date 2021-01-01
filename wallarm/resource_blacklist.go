@@ -83,7 +83,7 @@ func resourceWallarmBlacklist() *schema.Resource {
 }
 
 func resourceWallarmBlacklistCreate(d *schema.ResourceData, m interface{}) error {
-	client := m.(*wallarm.API)
+	client := m.(wallarm.API)
 	clientID := retrieveClientID(d, client)
 
 	var ips []string
@@ -175,7 +175,7 @@ func resourceWallarmBlacklistCreate(d *schema.ResourceData, m interface{}) error
 }
 
 func resourceWallarmBlacklistRead(d *schema.ResourceData, m interface{}) error {
-	client := m.(*wallarm.API)
+	client := m.(wallarm.API)
 	clientID := retrieveClientID(d, client)
 	IPRange := d.Get("ip_range").([]interface{})
 	ips := make([]string, len(IPRange))
@@ -272,7 +272,7 @@ func resourceWallarmBlacklistUpdate(d *schema.ResourceData, m interface{}) error
 }
 
 func resourceWallarmBlacklistDelete(d *schema.ResourceData, m interface{}) error {
-	client := m.(*wallarm.API)
+	client := m.(wallarm.API)
 	clientID := retrieveClientID(d, client)
 	addrIDInterface := d.Get("address_id").([]interface{})
 	addrIDs := make([]map[string]interface{}, len(addrIDInterface))

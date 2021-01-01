@@ -176,7 +176,7 @@ func resourceWallarmAttackRecheckerRewrite() *schema.Resource {
 }
 
 func resourceWallarmAttackRecheckerRewriteCreate(d *schema.ResourceData, m interface{}) error {
-	client := m.(*wallarm.API)
+	client := m.(wallarm.API)
 	clientID := retrieveClientID(d, client)
 	rules := expandInterfaceToStringList(d.Get("rules"))
 
@@ -222,7 +222,7 @@ func resourceWallarmAttackRecheckerRewriteCreate(d *schema.ResourceData, m inter
 }
 
 func resourceWallarmAttackRecheckerRewriteRead(d *schema.ResourceData, m interface{}) error {
-	client := m.(*wallarm.API)
+	client := m.(wallarm.API)
 	clientID := retrieveClientID(d, client)
 	actionID := d.Get("action_id").(int)
 	ruleID := d.Get("rule_id").(int)
@@ -309,7 +309,7 @@ func resourceWallarmAttackRecheckerRewriteRead(d *schema.ResourceData, m interfa
 }
 
 func resourceWallarmAttackRecheckerRewriteDelete(d *schema.ResourceData, m interface{}) error {
-	client := m.(*wallarm.API)
+	client := m.(wallarm.API)
 	clientID := retrieveClientID(d, client)
 
 	ruleID := d.Get("rule_id").(int)

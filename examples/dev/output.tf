@@ -1,3 +1,3 @@
-# output "password" {
-#   value = wallarm_user.user.generated_password
-# }
+output "password" {
+  value = wallarm_user.user.generated_password
+}

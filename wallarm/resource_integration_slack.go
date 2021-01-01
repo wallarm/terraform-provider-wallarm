@@ -95,7 +95,7 @@ func resourceWallarmSlack() *schema.Resource {
 }
 
 func resourceWallarmSlackCreate(d *schema.ResourceData, m interface{}) error {
-	client := m.(*wallarm.API)
+	client := m.(wallarm.API)
 	clientID := retrieveClientID(d, client)
 	name := d.Get("name").(string)
 	webhookURL := d.Get("webhook_url").(string)
@@ -128,7 +128,7 @@ func resourceWallarmSlackCreate(d *schema.ResourceData, m interface{}) error {
 }
 
 func resourceWallarmSlackRead(d *schema.ResourceData, m interface{}) error {
-	client := m.(*wallarm.API)
+	client := m.(wallarm.API)
 	clientID := retrieveClientID(d, client)
 	slack, err := client.IntegrationRead(clientID, d.Get("integration_id").(int))
 	if err != nil {
@@ -145,7 +145,7 @@ func resourceWallarmSlackRead(d *schema.ResourceData, m interface{}) error {
 }
 
 func resourceWallarmSlackUpdate(d *schema.ResourceData, m interface{}) error {
-	client := m.(*wallarm.API)
+	client := m.(wallarm.API)
 	clientID := retrieveClientID(d, client)
 	name := d.Get("name").(string)
 	webhookURL := d.Get("webhook_url").(string)
@@ -182,7 +182,7 @@ func resourceWallarmSlackUpdate(d *schema.ResourceData, m interface{}) error {
 }
 
 func resourceWallarmSlackDelete(d *schema.ResourceData, m interface{}) error {
-	client := m.(*wallarm.API)
+	client := m.(wallarm.API)
 	clientID := retrieveClientID(d, client)
 	slack, err := client.IntegrationRead(clientID, d.Get("integration_id").(int))
 	if err != nil {

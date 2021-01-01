@@ -1,3 +1,0 @@
-terraform.tfstate*
-*.auto.tfvars
-*.log

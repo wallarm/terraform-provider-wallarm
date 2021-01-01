@@ -220,7 +220,7 @@ func resourceWallarmRegexCreate(d *schema.ResourceData, m interface{}) error {
 		}
 	}
 
-	client := m.(*wallarm.API)
+	client := m.(wallarm.API)
 	clientID := retrieveClientID(d, client)
 	regex := d.Get("regex").(string)
 	attackType := d.Get("attack_type").(string)
@@ -267,7 +267,7 @@ func resourceWallarmRegexCreate(d *schema.ResourceData, m interface{}) error {
 }
 
 func resourceWallarmRegexRead(d *schema.ResourceData, m interface{}) error {
-	client := m.(*wallarm.API)
+	client := m.(wallarm.API)
 	clientID := retrieveClientID(d, client)
 	actionID := d.Get("action_id").(int)
 	ruleID := d.Get("rule_id").(int)
@@ -394,7 +394,7 @@ func resourceWallarmRegexRead(d *schema.ResourceData, m interface{}) error {
 }
 
 func resourceWallarmRegexDelete(d *schema.ResourceData, m interface{}) error {
-	client := m.(*wallarm.API)
+	client := m.(wallarm.API)
 	clientID := retrieveClientID(d, client)
 
 	ruleID := d.Get("rule_id").(int)
@@ -413,7 +413,7 @@ func resourceWallarmRegexDelete(d *schema.ResourceData, m interface{}) error {
 }
 
 func resourceWallarmRegexImport(d *schema.ResourceData, m interface{}) ([]*schema.ResourceData, error) {
-	client := m.(*wallarm.API)
+	client := m.(wallarm.API)
 	idAttr := strings.SplitN(d.Id(), "/", 4)
 	if len(idAttr) == 4 {
 		clientID, err := strconv.Atoi(idAttr[0])

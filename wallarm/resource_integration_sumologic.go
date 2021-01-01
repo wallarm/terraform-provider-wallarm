@@ -95,7 +95,7 @@ func resourceWallarmSumologic() *schema.Resource {
 }
 
 func resourceWallarmSumologicCreate(d *schema.ResourceData, m interface{}) error {
-	client := m.(*wallarm.API)
+	client := m.(wallarm.API)
 	clientID := retrieveClientID(d, client)
 	name := d.Get("name").(string)
 	apiToken := d.Get("sumologic_url").(string)
@@ -128,7 +128,7 @@ func resourceWallarmSumologicCreate(d *schema.ResourceData, m interface{}) error
 }
 
 func resourceWallarmSumologicRead(d *schema.ResourceData, m interface{}) error {
-	client := m.(*wallarm.API)
+	client := m.(wallarm.API)
 	clientID := retrieveClientID(d, client)
 	sumo, err := client.IntegrationRead(clientID, d.Get("integration_id").(int))
 	if err != nil {
@@ -146,7 +146,7 @@ func resourceWallarmSumologicRead(d *schema.ResourceData, m interface{}) error {
 }
 
 func resourceWallarmSumologicUpdate(d *schema.ResourceData, m interface{}) error {
-	client := m.(*wallarm.API)
+	client := m.(wallarm.API)
 	clientID := retrieveClientID(d, client)
 	name := d.Get("name").(string)
 	sumologicURL := d.Get("sumologic_url").(string)
@@ -183,7 +183,7 @@ func resourceWallarmSumologicUpdate(d *schema.ResourceData, m interface{}) error
 }
 
 func resourceWallarmSumologicDelete(d *schema.ResourceData, m interface{}) error {
-	client := m.(*wallarm.API)
+	client := m.(wallarm.API)
 	clientID := retrieveClientID(d, client)
 	sumo, err := client.IntegrationRead(clientID, d.Get("integration_id").(int))
 	if err != nil {

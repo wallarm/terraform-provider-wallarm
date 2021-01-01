@@ -245,11 +245,11 @@ func reverseMap(m map[string]int) map[int]string {
 	return n
 }
 
-func retrieveClientID(d *schema.ResourceData, client *wallarm.API) (clientID int) {
+func retrieveClientID(d *schema.ResourceData, client wallarm.API) int {
 	if v, ok := d.GetOk("client_id"); ok {
 		return v.(int)
 	}
-	return client.ClientID
+	return ClientID
 }
 
 func diffStringSlice(a, b []string) []string {
@@ -478,7 +478,7 @@ func actionPointsEqual(listA, listB []interface{}) bool {
 }
 
 func existsAction(d *schema.ResourceData, m interface{}, hintType string) (string, bool, error) {
-	client := m.(*wallarm.API)
+	client := m.(wallarm.API)
 	clientID := retrieveClientID(d, client)
 
 	actionsFromState := d.Get("action").(*schema.Set)
@@ -526,7 +526,7 @@ func existsAction(d *schema.ResourceData, m interface{}, hintType string) (strin
 }
 
 func existsHint(d *schema.ResourceData, m interface{}, actionID int, hintType string) (string, bool, error) {
-	client := m.(*wallarm.API)
+	client := m.(wallarm.API)
 	clientID := retrieveClientID(d, client)
 
 	hint := &wallarm.HintRead{

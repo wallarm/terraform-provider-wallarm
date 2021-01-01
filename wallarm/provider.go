@@ -7,6 +7,7 @@ import (
 	"os"
 	"regexp"
 
+	"github.com/416e64726579/terraform-provider-wallarm/version"
 	wallarm "github.com/416e64726579/wallarm-go"
 
 	cleanhttp "github.com/hashicorp/go-cleanhttp"
@@ -144,9 +145,10 @@ func providerConfigure(d *schema.ResourceData, terraformVersion string) (interfa
 	options = append(options, wallarm.HTTPClient(c))
 
 	tfUserAgent := httpclient.TerraformUserAgent(terraformVersion)
-	providerUserAgent := fmt.Sprintf("terraform-provider-wallarm")
-	ua := fmt.Sprintf("%s %s", tfUserAgent, providerUserAgent)
+	providerUserAgent := fmt.Sprintf("terraform-provider-wallarm/")
+	ua := fmt.Sprintf("%s/%s/%s", tfUserAgent, providerUserAgent, version.ProviderVersion)
 	options = append(options, wallarm.UserAgent(ua))
+	options = append(options, wallarm.UsingBaseURL(apiURL))
 
 	authHeaders := make(http.Header)
 	config := Config{Options: options}
@@ -176,14 +178,13 @@ func providerConfigure(d *schema.ResourceData, terraformVersion string) (interfa
 	}
 
 	if v, ok := d.GetOk("client_id"); ok {
-		clientID := v.(int)
-		client.ClientID = clientID
+		ClientID = v.(int)
 	} else {
 		u, err := client.UserDetails()
 		if err != nil {
 			return nil, err
 		}
-		client.ClientID = u.Body.Clientid
+		ClientID = u.Body.Clientid
 	}
 
 	return client, err

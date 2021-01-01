@@ -182,7 +182,7 @@ func resourceWallarmModeCreate(d *schema.ResourceData, m interface{}) error {
 			return ImportAsExistsError("wallarm_rule_mode", existingID)
 		}
 	}
-	client := m.(*wallarm.API)
+	client := m.(wallarm.API)
 	clientID := retrieveClientID(d, client)
 	actionsFromState := d.Get("action").(*schema.Set)
 	mode := d.Get("mode").(string)
@@ -215,7 +215,7 @@ func resourceWallarmModeCreate(d *schema.ResourceData, m interface{}) error {
 }
 
 func resourceWallarmModeRead(d *schema.ResourceData, m interface{}) error {
-	client := m.(*wallarm.API)
+	client := m.(wallarm.API)
 	clientID := retrieveClientID(d, client)
 	actionID := d.Get("action_id").(int)
 	ruleID := d.Get("rule_id").(int)
@@ -310,7 +310,7 @@ func resourceWallarmModeRead(d *schema.ResourceData, m interface{}) error {
 }
 
 func resourceWallarmModeDelete(d *schema.ResourceData, m interface{}) error {
-	client := m.(*wallarm.API)
+	client := m.(wallarm.API)
 	clientID := retrieveClientID(d, client)
 	actionID := d.Get("action_id").(int)
 
@@ -350,7 +350,7 @@ func resourceWallarmModeDelete(d *schema.ResourceData, m interface{}) error {
 }
 
 func resourceWallarmModeImport(d *schema.ResourceData, m interface{}) ([]*schema.ResourceData, error) {
-	client := m.(*wallarm.API)
+	client := m.(wallarm.API)
 	idAttr := strings.SplitN(d.Id(), "/", 4)
 	if len(idAttr) == 4 {
 		clientID, err := strconv.Atoi(idAttr[0])

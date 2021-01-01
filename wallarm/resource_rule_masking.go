@@ -185,7 +185,7 @@ func resourceWallarmSensitiveDataCreate(d *schema.ResourceData, m interface{}) e
 			return ImportAsExistsError("wallarm_rule_masking", existingID)
 		}
 	}
-	client := m.(*wallarm.API)
+	client := m.(wallarm.API)
 	clientID := retrieveClientID(d, client)
 
 	ps := d.Get("point").([]interface{})
@@ -228,7 +228,7 @@ func resourceWallarmSensitiveDataCreate(d *schema.ResourceData, m interface{}) e
 }
 
 func resourceWallarmSensitiveDataRead(d *schema.ResourceData, m interface{}) error {
-	client := m.(*wallarm.API)
+	client := m.(wallarm.API)
 	clientID := retrieveClientID(d, client)
 	actionID := d.Get("action_id").(int)
 	ruleID := d.Get("rule_id").(int)
@@ -335,7 +335,7 @@ func resourceWallarmSensitiveDataRead(d *schema.ResourceData, m interface{}) err
 }
 
 func resourceWallarmSensitiveDataDelete(d *schema.ResourceData, m interface{}) error {
-	client := m.(*wallarm.API)
+	client := m.(wallarm.API)
 	clientID := retrieveClientID(d, client)
 	actionID := d.Get("action_id").(int)
 
@@ -375,7 +375,7 @@ func resourceWallarmSensitiveDataDelete(d *schema.ResourceData, m interface{}) e
 }
 
 func resourceWallarmSensitiveDataImport(d *schema.ResourceData, m interface{}) ([]*schema.ResourceData, error) {
-	client := m.(*wallarm.API)
+	client := m.(wallarm.API)
 	idAttr := strings.SplitN(d.Id(), "/", 4)
 	if len(idAttr) == 4 {
 		clientID, err := strconv.Atoi(idAttr[0])

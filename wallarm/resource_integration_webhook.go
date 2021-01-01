@@ -133,7 +133,7 @@ func resourceWallarmWebhook() *schema.Resource {
 }
 
 func resourceWallarmWebhookCreate(d *schema.ResourceData, m interface{}) error {
-	client := m.(*wallarm.API)
+	client := m.(wallarm.API)
 	clientID := retrieveClientID(d, client)
 	name := d.Get("name").(string)
 	active := d.Get("active").(bool)
@@ -181,7 +181,7 @@ func resourceWallarmWebhookCreate(d *schema.ResourceData, m interface{}) error {
 }
 
 func resourceWallarmWebhookRead(d *schema.ResourceData, m interface{}) error {
-	client := m.(*wallarm.API)
+	client := m.(wallarm.API)
 	clientID := retrieveClientID(d, client)
 	webhook, err := client.IntegrationRead(clientID, d.Get("integration_id").(int))
 	if err != nil {
@@ -199,7 +199,7 @@ func resourceWallarmWebhookRead(d *schema.ResourceData, m interface{}) error {
 }
 
 func resourceWallarmWebhookUpdate(d *schema.ResourceData, m interface{}) error {
-	client := m.(*wallarm.API)
+	client := m.(wallarm.API)
 	clientID := retrieveClientID(d, client)
 	name := d.Get("name").(string)
 	active := d.Get("active").(bool)
@@ -251,7 +251,7 @@ func resourceWallarmWebhookUpdate(d *schema.ResourceData, m interface{}) error {
 }
 
 func resourceWallarmWebhookDelete(d *schema.ResourceData, m interface{}) error {
-	client := m.(*wallarm.API)
+	client := m.(wallarm.API)
 	clientID := retrieveClientID(d, client)
 	webhook, err := client.IntegrationRead(clientID, d.Get("integration_id").(int))
 	if err != nil {

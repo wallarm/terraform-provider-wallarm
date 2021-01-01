@@ -193,7 +193,7 @@ func resourceWallarmIgnoreRegexCreate(d *schema.ResourceData, m interface{}) err
 			return ImportAsExistsError("wallarm_rule_ignore_regex", existingID)
 		}
 	}
-	client := m.(*wallarm.API)
+	client := m.(wallarm.API)
 	clientID := retrieveClientID(d, client)
 	regexID := d.Get("regex_id").(int)
 
@@ -237,7 +237,7 @@ func resourceWallarmIgnoreRegexCreate(d *schema.ResourceData, m interface{}) err
 }
 
 func resourceWallarmIgnoreRegexRead(d *schema.ResourceData, m interface{}) error {
-	client := m.(*wallarm.API)
+	client := m.(wallarm.API)
 	clientID := retrieveClientID(d, client)
 	actionID := d.Get("action_id").(int)
 	ruleID := d.Get("rule_id").(int)
@@ -345,7 +345,7 @@ func resourceWallarmIgnoreRegexRead(d *schema.ResourceData, m interface{}) error
 }
 
 func resourceWallarmIgnoreRegexDelete(d *schema.ResourceData, m interface{}) error {
-	client := m.(*wallarm.API)
+	client := m.(wallarm.API)
 	clientID := retrieveClientID(d, client)
 	actionID := d.Get("action_id").(int)
 
@@ -386,7 +386,7 @@ func resourceWallarmIgnoreRegexDelete(d *schema.ResourceData, m interface{}) err
 }
 
 func resourceWallarmIgnoreRegexImport(d *schema.ResourceData, m interface{}) ([]*schema.ResourceData, error) {
-	client := m.(*wallarm.API)
+	client := m.(wallarm.API)
 	idAttr := strings.SplitN(d.Id(), "/", 4)
 	if len(idAttr) == 4 {
 		clientID, err := strconv.Atoi(idAttr[0])

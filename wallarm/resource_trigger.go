@@ -154,7 +154,7 @@ func resourceWallarmTriggerCreate(d *schema.ResourceData, m interface{}) error {
 		triggerResp *wallarm.TriggerCreateResp
 	)
 
-	client := m.(*wallarm.API)
+	client := m.(wallarm.API)
 	clientID := retrieveClientID(d, client)
 	name := d.Get("name").(string)
 	comment := d.Get("comment").(string)
@@ -185,7 +185,7 @@ func resourceWallarmTriggerCreate(d *schema.ResourceData, m interface{}) error {
 		}
 
 		triggerBody := wallarm.TriggerCreate{
-			Trigger: &wallarm.Trigger{
+			Trigger: &wallarm.TriggerParam{
 				Name:       name,
 				Comment:    comment,
 				TemplateID: templateID,
@@ -203,7 +203,7 @@ func resourceWallarmTriggerCreate(d *schema.ResourceData, m interface{}) error {
 
 	} else {
 		triggerBody := wallarm.TriggerCreate{
-			Trigger: &wallarm.Trigger{
+			Trigger: &wallarm.TriggerParam{
 				Name:       name,
 				Comment:    comment,
 				TemplateID: templateID,
@@ -243,7 +243,7 @@ func resourceWallarmTriggerCreate(d *schema.ResourceData, m interface{}) error {
 }
 
 func resourceWallarmTriggerRead(d *schema.ResourceData, m interface{}) error {
-	client := m.(*wallarm.API)
+	client := m.(wallarm.API)
 	clientID := retrieveClientID(d, client)
 	triggerID := d.Get("trigger_id").(int)
 
@@ -269,7 +269,7 @@ func resourceWallarmTriggerUpdate(d *schema.ResourceData, m interface{}) error {
 		triggerResp *wallarm.TriggerResp
 	)
 
-	client := m.(*wallarm.API)
+	client := m.(wallarm.API)
 	clientID := retrieveClientID(d, client)
 	name := d.Get("name").(string)
 	comment := d.Get("comment").(string)
@@ -294,7 +294,7 @@ func resourceWallarmTriggerUpdate(d *schema.ResourceData, m interface{}) error {
 		}
 
 		triggerBody := wallarm.TriggerCreate{
-			Trigger: &wallarm.Trigger{
+			Trigger: &wallarm.TriggerParam{
 				Name:       name,
 				Comment:    comment,
 				TemplateID: templateID,
@@ -312,7 +312,7 @@ func resourceWallarmTriggerUpdate(d *schema.ResourceData, m interface{}) error {
 
 	} else {
 		triggerBody := wallarm.TriggerCreate{
-			Trigger: &wallarm.Trigger{
+			Trigger: &wallarm.TriggerParam{
 				Name:       name,
 				Comment:    comment,
 				TemplateID: templateID,
@@ -339,7 +339,7 @@ func resourceWallarmTriggerUpdate(d *schema.ResourceData, m interface{}) error {
 }
 
 func resourceWallarmTriggerDelete(d *schema.ResourceData, m interface{}) error {
-	client := m.(*wallarm.API)
+	client := m.(wallarm.API)
 	clientID := retrieveClientID(d, client)
 	triggerID := d.Get("trigger_id").(int)
 

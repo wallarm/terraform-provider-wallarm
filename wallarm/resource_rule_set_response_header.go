@@ -175,7 +175,7 @@ func resourceWallarmSetResponseHeader() *schema.Resource {
 }
 
 func resourceWallarmSetResponseHeaderCreate(d *schema.ResourceData, m interface{}) error {
-	client := m.(*wallarm.API)
+	client := m.(wallarm.API)
 	clientID := retrieveClientID(d, client)
 	mode := d.Get("mode").(string)
 	headers := d.Get("headers").(map[string]interface{})
@@ -219,7 +219,7 @@ func resourceWallarmSetResponseHeaderCreate(d *schema.ResourceData, m interface{
 }
 
 func resourceWallarmSetResponseHeaderRead(d *schema.ResourceData, m interface{}) error {
-	client := m.(*wallarm.API)
+	client := m.(wallarm.API)
 	clientID := retrieveClientID(d, client)
 	actionID := d.Get("action_id").(int)
 	mode := d.Get("mode").(string)
@@ -312,7 +312,7 @@ func resourceWallarmSetResponseHeaderRead(d *schema.ResourceData, m interface{})
 }
 
 func resourceWallarmSetResponseHeaderDelete(d *schema.ResourceData, m interface{}) error {
-	client := m.(*wallarm.API)
+	client := m.(wallarm.API)
 	clientID := retrieveClientID(d, client)
 
 	var ruleIDInterface []interface{}
