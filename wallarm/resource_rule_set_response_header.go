@@ -50,6 +50,12 @@ func resourceWallarmSetResponseHeader() *schema.Resource {
 				},
 			},
 
+			"comment": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+
 			"mode": {
 				Type:         schema.TypeString,
 				Required:     true,
@@ -177,6 +183,7 @@ func resourceWallarmSetResponseHeader() *schema.Resource {
 func resourceWallarmSetResponseHeaderCreate(d *schema.ResourceData, m interface{}) error {
 	client := m.(wallarm.API)
 	clientID := retrieveClientID(d, client)
+	comment := d.Get("comment").(string)
 	mode := d.Get("mode").(string)
 	headers := d.Get("headers").(map[string]interface{})
 
@@ -196,6 +203,7 @@ func resourceWallarmSetResponseHeaderCreate(d *schema.ResourceData, m interface{
 			Name:      k,
 			Values:    []string{v.(string)},
 			Validated: false,
+			Comment:   comment,
 		}
 		actionResp, err := client.HintCreate(vp)
 		if err != nil {

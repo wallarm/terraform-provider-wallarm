@@ -53,6 +53,12 @@ func resourceWallarmIgnoreRegex() *schema.Resource {
 				},
 			},
 
+			"comment": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+
 			"regex_id": {
 				Type:     schema.TypeInt,
 				Required: true,
@@ -195,6 +201,7 @@ func resourceWallarmIgnoreRegexCreate(d *schema.ResourceData, m interface{}) err
 	}
 	client := m.(wallarm.API)
 	clientID := retrieveClientID(d, client)
+	comment := d.Get("comment").(string)
 	regexID := d.Get("regex_id").(int)
 
 	ps := d.Get("point").([]interface{})
@@ -219,6 +226,7 @@ func resourceWallarmIgnoreRegexCreate(d *schema.ResourceData, m interface{}) err
 		Action:   &action,
 		Point:    points,
 		RegexID:  regexID,
+		Comment:  comment,
 	}
 
 	actionResp, err := client.HintCreate(vp)

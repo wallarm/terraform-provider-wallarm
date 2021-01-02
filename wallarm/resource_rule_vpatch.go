@@ -60,6 +60,12 @@ func resourceWallarmVpatch() *schema.Resource {
 				},
 			},
 
+			"comment": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+
 			"attack_type": {
 				Type:     schema.TypeList,
 				Required: true,
@@ -196,6 +202,7 @@ func resourceWallarmVpatch() *schema.Resource {
 func resourceWallarmVpatchCreate(d *schema.ResourceData, m interface{}) error {
 	client := m.(wallarm.API)
 	clientID := retrieveClientID(d, client)
+	comment := d.Get("comment").(string)
 	attackType := d.Get("attack_type").([]interface{})
 	var attacks []string
 	for _, attack := range attackType {
@@ -228,6 +235,7 @@ func resourceWallarmVpatchCreate(d *schema.ResourceData, m interface{}) error {
 			Action:     &action,
 			Point:      points,
 			Validated:  false,
+			Comment:    comment,
 		}
 
 		actionResp, err := client.HintCreate(vp)

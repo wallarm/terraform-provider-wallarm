@@ -58,6 +58,12 @@ func resourceWallarmRegex() *schema.Resource {
 				},
 			},
 
+			"comment": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+
 			"attack_type": {
 				Type:     schema.TypeString,
 				Required: true,
@@ -222,6 +228,7 @@ func resourceWallarmRegexCreate(d *schema.ResourceData, m interface{}) error {
 
 	client := m.(wallarm.API)
 	clientID := retrieveClientID(d, client)
+	comment := d.Get("comment").(string)
 	regex := d.Get("regex").(string)
 	attackType := d.Get("attack_type").(string)
 
@@ -249,6 +256,7 @@ func resourceWallarmRegexCreate(d *schema.ResourceData, m interface{}) error {
 		Point:      points,
 		Regex:      regex,
 		Validated:  false,
+		Comment:    comment,
 	}
 	regexResp, err := client.HintCreate(rx)
 	if err != nil {

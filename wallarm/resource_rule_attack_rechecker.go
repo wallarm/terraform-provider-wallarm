@@ -49,6 +49,12 @@ func resourceWallarmAttackRechecker() *schema.Resource {
 				},
 			},
 
+			"comment": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+
 			"enabled": {
 				Type:     schema.TypeBool,
 				Required: true,
@@ -169,6 +175,7 @@ func resourceWallarmAttackRechecker() *schema.Resource {
 func resourceWallarmAttackRecheckerCreate(d *schema.ResourceData, m interface{}) error {
 	client := m.(wallarm.API)
 	clientID := retrieveClientID(d, client)
+	comment := d.Get("comment").(string)
 	enabled := d.Get("enabled").(bool)
 
 	actionsFromState := d.Get("action").(*schema.Set)
@@ -183,6 +190,7 @@ func resourceWallarmAttackRecheckerCreate(d *schema.ResourceData, m interface{})
 		Action:    &action,
 		Enabled:   &enabled,
 		Validated: false,
+		Comment:   comment,
 	}
 
 	actionResp, err := client.HintCreate(ar)

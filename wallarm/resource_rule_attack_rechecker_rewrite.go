@@ -49,6 +49,12 @@ func resourceWallarmAttackRecheckerRewrite() *schema.Resource {
 				},
 			},
 
+			"comment": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+
 			"action": {
 				Type:     schema.TypeSet,
 				Optional: true,
@@ -178,6 +184,7 @@ func resourceWallarmAttackRecheckerRewrite() *schema.Resource {
 func resourceWallarmAttackRecheckerRewriteCreate(d *schema.ResourceData, m interface{}) error {
 	client := m.(wallarm.API)
 	clientID := retrieveClientID(d, client)
+	comment := d.Get("comment").(string)
 	rules := expandInterfaceToStringList(d.Get("rules"))
 
 	ps := d.Get("point").([]interface{})
@@ -203,6 +210,7 @@ func resourceWallarmAttackRecheckerRewriteCreate(d *schema.ResourceData, m inter
 		Point:     points,
 		Rules:     rules,
 		Validated: false,
+		Comment:   comment,
 	}
 	actionResp, err := client.HintCreate(vp)
 	if err != nil {

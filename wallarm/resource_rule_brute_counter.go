@@ -54,6 +54,12 @@ func resourceWallarmBruteForceCounter() *schema.Resource {
 				},
 			},
 
+			"comment": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+
 			"counter": {
 				Type:         schema.TypeString,
 				Required:     true,
@@ -185,6 +191,7 @@ func resourceWallarmBruteForceCounterCreate(d *schema.ResourceData, m interface{
 	}
 	client := m.(wallarm.API)
 	clientID := retrieveClientID(d, client)
+	comment := d.Get("comment").(string)
 	actionsFromState := d.Get("action").(*schema.Set)
 	counter := d.Get("counter").(string)
 
@@ -198,6 +205,7 @@ func resourceWallarmBruteForceCounterCreate(d *schema.ResourceData, m interface{
 		Action:    &action,
 		Counter:   counter,
 		Validated: false,
+		Comment:   comment,
 	}
 
 	actionResp, err := client.HintCreate(wm)

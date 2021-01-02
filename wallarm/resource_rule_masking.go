@@ -53,6 +53,12 @@ func resourceWallarmSensitiveData() *schema.Resource {
 				},
 			},
 
+			"comment": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+
 			"action": {
 				Type:     schema.TypeSet,
 				Optional: true,
@@ -187,6 +193,7 @@ func resourceWallarmSensitiveDataCreate(d *schema.ResourceData, m interface{}) e
 	}
 	client := m.(wallarm.API)
 	clientID := retrieveClientID(d, client)
+	comment := d.Get("comment").(string)
 
 	ps := d.Get("point").([]interface{})
 	if err := d.Set("point", ps); err != nil {
@@ -210,6 +217,7 @@ func resourceWallarmSensitiveDataCreate(d *schema.ResourceData, m interface{}) e
 		Action:    &action,
 		Point:     points,
 		Validated: false,
+		Comment:   comment,
 	}
 
 	actionResp, err := client.HintCreate(wm)

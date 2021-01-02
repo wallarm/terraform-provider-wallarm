@@ -53,6 +53,12 @@ func resourceWallarmMode() *schema.Resource {
 				},
 			},
 
+			"comment": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+
 			"mode": {
 				Type:         schema.TypeString,
 				Required:     true,
@@ -184,6 +190,7 @@ func resourceWallarmModeCreate(d *schema.ResourceData, m interface{}) error {
 	}
 	client := m.(wallarm.API)
 	clientID := retrieveClientID(d, client)
+	comment := d.Get("comment").(string)
 	actionsFromState := d.Get("action").(*schema.Set)
 	mode := d.Get("mode").(string)
 
@@ -197,6 +204,7 @@ func resourceWallarmModeCreate(d *schema.ResourceData, m interface{}) error {
 		Action:    &action,
 		Mode:      mode,
 		Validated: false,
+		Comment:   comment,
 	}
 
 	actionResp, err := client.HintCreate(wm)
