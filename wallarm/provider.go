@@ -120,6 +120,8 @@ func Provider() terraform.ResourceProvider {
 			"wallarm_rule_attack_rechecker":         resourceWallarmAttackRechecker(),
 			"wallarm_rule_attack_rechecker_rewrite": resourceWallarmAttackRecheckerRewrite(),
 			"wallarm_rule_set_response_header":      resourceWallarmSetResponseHeader(),
+			"wallarm_rule_bruteforce_counter":       resourceWallarmBruteForceCounter(),
+			"wallarm_rule_dirbust_counter":          resourceWallarmDirbustCounter(),
 		},
 	}
 

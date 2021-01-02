@@ -106,8 +106,8 @@ func TestAccWallarmUser_RequiredFieldsReadOnly(t *testing.T) {
 }
 
 func TestAccWallarmUser_RequiredFieldsGlobalAdmin(t *testing.T) {
-	if os.Getenv("WALLARM_GLOBAL_ADMIN") == "" {
-		t.Skip("Skipping not finished test")
+	if os.Getenv("WALLARM_GLOBAL_ADMIN") != "" {
+		t.Skip("Skipping test as it requires 'WALLARM_GLOBAL_ADMIN' set")
 	}
 
 	rnd := generateRandomResourceName(5)
@@ -135,8 +135,8 @@ func TestAccWallarmUser_RequiredFieldsGlobalAdmin(t *testing.T) {
 }
 
 func TestAccWallarmUser_RequiredFieldsGlobalAnalyst(t *testing.T) {
-	if os.Getenv("WALLARM_GLOBAL_ADMIN") == "" {
-		t.Skip("Skipping not finished test")
+	if os.Getenv("WALLARM_GLOBAL_ADMIN") != "" {
+		t.Skip("Skipping test as it requires 'WALLARM_GLOBAL_ADMIN' set")
 	}
 
 	rnd := generateRandomResourceName(5)
@@ -164,8 +164,8 @@ func TestAccWallarmUser_RequiredFieldsGlobalAnalyst(t *testing.T) {
 }
 
 func TestAccWallarmUser_RequiredFieldsGlobalReadOnly(t *testing.T) {
-	if os.Getenv("WALLARM_GLOBAL_ADMIN") == "" {
-		t.Skip("Skipping not finished test")
+	if os.Getenv("WALLARM_GLOBAL_ADMIN") != "" {
+		t.Skip("Skipping test as it requires 'WALLARM_GLOBAL_ADMIN' set")
 	}
 
 	rnd := generateRandomResourceName(5)
