@@ -1,6 +1,6 @@
 module github.com/416e64726579/terraform-provider-wallarm
 
-go 1.14
+go 1.15
 
 require (
 	github.com/416e64726579/wallarm-go v0.0.16
