@@ -10,10 +10,19 @@ import (
 )
 
 func TestAccWallarmDataNodeDefault(t *testing.T) {
+	rnd := generateRandomResourceName(10)
+	name := "wallarm_node." + rnd
+
 	resource.Test(t, resource.TestCase{
 		PreCheck:  func() { testAccPreCheck(t) },
 		Providers: testAccProviders,
 		Steps: []resource.TestStep{
+			{
+				Config: testWallarmNodeConfig(rnd, "tf-test-"+rnd),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(name, "hostname", "tf-test-"+rnd),
+				),
+			},
 			{
 				Config: testAccWallarmDataNodeDefault,
 				Check: resource.ComposeTestCheckFunc(
@@ -25,10 +34,19 @@ func TestAccWallarmDataNodeDefault(t *testing.T) {
 }
 
 func TestAccWallarmDataNodeFilterType(t *testing.T) {
+	rnd := generateRandomResourceName(10)
+	name := "wallarm_node." + rnd
+
 	resource.Test(t, resource.TestCase{
 		PreCheck:  func() { testAccPreCheck(t) },
 		Providers: testAccProviders,
 		Steps: []resource.TestStep{
+			{
+				Config: testWallarmNodeConfig(rnd, "tf-test-"+rnd),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(name, "hostname", "tf-test-"+rnd),
+				),
+			},
 			{
 				Config: testAccWallarmDataNodeFilterType,
 				Check: resource.ComposeTestCheckFunc(
