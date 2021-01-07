@@ -1,9 +1,9 @@
 module github.com/416e64726579/terraform-provider-wallarm
 
-go 1.14
+go 1.15
 
 require (
-	github.com/416e64726579/wallarm-go v0.0.14
+	github.com/416e64726579/wallarm-go v0.0.16
 	github.com/google/go-cmp v0.5.2
 	github.com/hashicorp/go-cleanhttp v0.5.1
 	github.com/hashicorp/terraform-plugin-sdk v1.15.0

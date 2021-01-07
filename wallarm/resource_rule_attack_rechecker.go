@@ -49,6 +49,12 @@ func resourceWallarmAttackRechecker() *schema.Resource {
 				},
 			},
 
+			"comment": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+
 			"enabled": {
 				Type:     schema.TypeBool,
 				Required: true,
@@ -151,7 +157,7 @@ func resourceWallarmAttackRechecker() *schema.Resource {
 										ValidateFunc: func(val interface{}, key string) (warns []string, errs []error) {
 											v := val.(int)
 											if v < -1 {
-												errs = append(errs, fmt.Errorf("%q must be between greater then -1 inclusive, got: %d", key, v))
+												errs = append(errs, fmt.Errorf("%q must be greater than -1 inclusive, got: %d", key, v))
 											}
 											return
 										},
@@ -167,8 +173,9 @@ func resourceWallarmAttackRechecker() *schema.Resource {
 }
 
 func resourceWallarmAttackRecheckerCreate(d *schema.ResourceData, m interface{}) error {
-	client := m.(*wallarm.API)
+	client := m.(wallarm.API)
 	clientID := retrieveClientID(d, client)
+	comment := d.Get("comment").(string)
 	enabled := d.Get("enabled").(bool)
 
 	actionsFromState := d.Get("action").(*schema.Set)
@@ -183,6 +190,7 @@ func resourceWallarmAttackRecheckerCreate(d *schema.ResourceData, m interface{})
 		Action:    &action,
 		Enabled:   &enabled,
 		Validated: false,
+		Comment:   comment,
 	}
 
 	actionResp, err := client.HintCreate(ar)
@@ -196,14 +204,14 @@ func resourceWallarmAttackRecheckerCreate(d *schema.ResourceData, m interface{})
 	d.Set("rule_type", actionResp.Body.Type)
 	d.Set("client_id", clientID)
 
-	resID := fmt.Sprintf("%d/%d/%d/%s", clientID, actionID, actionResp.Body.ID, "attack_rechecker")
+	resID := fmt.Sprintf("%d/%d/%d", clientID, actionID, actionResp.Body.ID)
 	d.SetId(resID)
 
 	return nil
 }
 
 func resourceWallarmAttackRecheckerRead(d *schema.ResourceData, m interface{}) error {
-	client := m.(*wallarm.API)
+	client := m.(wallarm.API)
 	clientID := retrieveClientID(d, client)
 	actionID := d.Get("action_id").(int)
 	ruleID := d.Get("rule_id").(int)
@@ -279,7 +287,7 @@ func resourceWallarmAttackRecheckerRead(d *schema.ResourceData, m interface{}) e
 }
 
 func resourceWallarmAttackRecheckerDelete(d *schema.ResourceData, m interface{}) error {
-	client := m.(*wallarm.API)
+	client := m.(wallarm.API)
 	clientID := retrieveClientID(d, client)
 	ruleID := d.Get("rule_id").(int)
 

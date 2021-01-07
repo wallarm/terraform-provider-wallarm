@@ -4,8 +4,8 @@
 terraform {
   required_providers {
     wallarm = {
-      source = "416e64726579/wallarm"
-      version = ">= 0.0.6"
+      source = "wallarm/wallarm"
+      version = ">= 0.0.8"
     }
   }
 }
@@ -255,9 +255,9 @@ provider "wallarm" {
 # }
 
 
-# 
-# Node section
-# 
+# #
+# # Node section
+# #
 # variable "node_names" {
 #   description = "Create Node names"
 #   type        = list(string)
@@ -561,4 +561,25 @@ provider "wallarm" {
 #     event_type = "vuln"
 #     active = true
 #   }
+# }
+
+# locals {
+#   deploy = 1
+# }
+
+# resource "wallarm_rule_masking" "mask_headers" {
+
+#   for_each = {for value in csvdecode(file("./RuleMasking.csv")):
+#     value.name => value.type
+#     if value.type == "headers" && local.deploy == 1
+#   }
+
+#   action {
+# 		point = {
+# 		  method = "POST|GET|PATCH"
+# 		}
+#     type = "regex"
+# 	}
+
+#   point = [["header", each.value]]
 # }

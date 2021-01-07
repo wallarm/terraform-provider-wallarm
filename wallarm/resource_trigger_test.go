@@ -90,7 +90,7 @@ func TestAccWallarmTriggerAttacksWithResponse5xx(t *testing.T) {
 		Providers: testAccProviders,
 		Steps: []resource.TestStep{
 			{
-				Config: testWallarmTriggerAttacksWithResponse5xx(rnd, "attacks_exceeded", "send_notification", "wallarm_integration_email.test.integration_id"),
+				Config: testWallarmTriggerAttacksWithResponse5xx(rnd, "attacks_exceeded", "send_notification"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(name, "template_id", "attacks_exceeded"),
 					resource.TestCheckResourceAttr(name, "actions.#", "1"),
@@ -117,7 +117,7 @@ func TestAccWallarmTriggerBruteforce(t *testing.T) {
 					resource.TestCheckResourceAttr(name, "actions.#", "2"),
 					resource.TestCheckResourceAttr(name, "filters.#", "2"),
 					resource.TestCheckResourceAttr(name, "filters.0.filter_id", "url"),
-					resource.TestCheckResourceAttr(name, "filters.0.value.0", "example.com/brute"),
+					resource.TestCheckResourceAttr(name, "filters.0.value.0", "example.com:443/brute"),
 					resource.TestCheckResourceAttr(name, "filters.1.filter_id", "ip_address"),
 					resource.TestCheckResourceAttr(name, "filters.1.value.0", "1.1.1.1"),
 					resource.TestCheckResourceAttr(name, "threshold.%", "3"),
@@ -240,9 +240,15 @@ resource "wallarm_trigger" "%[1]s" {
 }`, resourceID, templateID, actionID, integrationID)
 }
 
-func testWallarmTriggerAttacksWithResponse5xx(resourceID, templateID, actionID, integrationID string) string {
+func testWallarmTriggerAttacksWithResponse5xx(resourceID, templateID, actionID string) string {
 	return fmt.Sprintf(`
-resource "wallarm_integration_email" "test" {
+
+resource "wallarm_application" "%[1]s" {
+		name = "tf-testacc-app"
+		app_id = 42
+}
+
+resource "wallarm_integration_email" "%[1]s" {
 	name = "New Terraform Integration"
 	emails = ["%[1]s@wallarm.com"]
 	
@@ -256,7 +262,7 @@ resource "wallarm_trigger" "%[1]s" {
 	template_id = "%[2]s"
 	actions {
 		action_id = "%[3]s"
-		integration_id = [%[4]s]
+		integration_id = [wallarm_integration_email.%[1]s.integration_id]
 	}
 
 	filters {
@@ -268,7 +274,7 @@ resource "wallarm_trigger" "%[1]s" {
 	filters {
 		filter_id = "pool"
 		operator = "eq"
-		value = [9]
+		value = [wallarm_application.%[1]s.app_id]
 	}
 
 	filters {
@@ -300,7 +306,7 @@ resource "wallarm_trigger" "%[1]s" {
 		operator = "gt"
 		count = 1
 	}
-}`, resourceID, templateID, actionID, integrationID)
+}`, resourceID, templateID, actionID)
 }
 
 func testWallarmTriggerBruteforce(resourceID, templateID, actionID, actionIDExtra string) string {
@@ -311,8 +317,8 @@ resource "wallarm_trigger" "%[1]s" {
 	filters {
 		filter_id = "url"
 		operator = "eq"
-		value = ["example.com/brute"]
-	  }
+		value = ["example.com:443/brute"]
+	}
 	
 	filters {
 		filter_id = "ip_address"
@@ -326,7 +332,7 @@ resource "wallarm_trigger" "%[1]s" {
 	  
 	actions {
 		action_id = "%[4]s"
-		lock_time = 60
+		lock_time = 2592000
 	}
 
 	threshold = {
@@ -338,7 +344,7 @@ resource "wallarm_trigger" "%[1]s" {
 }
 
 func testAccCheckWallarmTriggerDestroy(s *terraform.State) error {
-	client := testAccProvider.Meta().(*wallarm.API)
+	client := testAccProvider.Meta().(wallarm.API)
 
 	for _, rs := range s.RootModule().Resources {
 		if rs.Type != "wallarm_trigger" {

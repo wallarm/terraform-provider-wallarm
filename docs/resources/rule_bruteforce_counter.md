@@ -1,37 +1,40 @@
 ---
 layout: "wallarm"
-page_title: "Wallarm: wallarm_rule_attack_rechecker"
+page_title: "Wallarm: wallarm_rule_bruteforce_counter"
 subcategory: "Rule"
 description: |-
-  Provides the "Disable/Enable attack verification" rule resource.
+  Provides the "Define brute-force attacks counter" rule resource.
 ---
 
-# wallarm_rule_attack_rechecker
+# wallarm_rule_bruteforce_counter
 
-!> The resource requires additional permissions. Ask the support team to obtain them.
+Provides the resource to manage rules with the "Define brute-force attacks counter" action type. For detecting brute-force attacks, with every request, one of the statistical counters is incremented. By default, the counter name is automatically defined based on the domain name and the request path.
 
-Provides the resource to manage rules with the "Disable/Enable attack verification" action type. This rule type is used to enable or disable checking attacks in specified request parts.
+In cases where part of the URI does not matter, you can override the counter name for all such requests.
 
 ## Example Usage
 
 ```hcl
-# Disables the attacks checking for requests sent to the application with ID 7
+# Sets the `b:root` counter on the root `/` path
 
-resource "wallarm_rule_attack_rechecker" "disable_rechecker" {
-  enabled =  false
+resource "wallarm_rule_bruteforce_counter" "root_counter" {
+	counter = "b:root"
 
-  action {
-    point = {
-      instance = 7
-    }
-  }
+	action {
+		type = "iequal"
+		value = "/"
+		point = {
+			path = 0
+		}
+	}
+
 }
-
 ```
 
 ## Argument Reference
 
-* `enabled` - (Required) Indicator to enable (`true`) or disable (`false`) attacks checking.
+* `counter` - (Required) Name of the counter always starts with `b:`.
+* `client_id` - (Optional) ID of the client to apply the rules to. The value is required for multi-tenant scenarios.
 * `action` - (Optional) Rule conditions. Possible attributes are described below.
 
 **action**
@@ -50,31 +53,30 @@ conditions which can be applied. The conditions are:
 
 ### Nested Objects
 
-* `point`
+**point**
 
-The **point** attribute supports the following fields:
-  * `header` - (Optional) A header name. It requres arbitrary value for the parameter.
+  * `header` - (Optional) Arbitrary HEADER parameter name.
   Example:
   `header = "HOST"`
-  * `method` - (Optional) An HTTP method. It requires one of the values: `GET`, `HEAD`, `POST`, `PUT`, `DELETE`, `CONNECT`, `OPTIONS`, `TRACE`, `PATCH`
+  * `method` - (Optional) Request method. Can be: `GET`, `HEAD`, `POST`, `PUT`, `DELETE`, `CONNECT`, `OPTIONS`, `TRACE`, `PATCH`.
   Example:
   `method = "POST"`
-  * `path` - (Optional) A part of the request URI.
+  * `path` - (Optional) Array with URL parts separated by the `/` symbol (the last URL part is not included in the array). If there is only one part in the URL, the array will be empty.
   Example:
   `path = 0`
-  * `action_name` - (Optional) The last part of the URL after the `/` symbol and before the first period `.`. This part of the URL is always present in the request even if its value is an empty string.
+  * `action_name` - (Optional) The last part of the URL after the `/` symbol and before the first period (`.`). This part of the URL is always present in the request even if its value is an empty string.
   Example:
   `action_name = "login"`
-  * `action_ext` - (Optional) The part of the URL after the last period `.`. It may be missing in the request.
+  * `action_ext` - (Optional) The part of the URL after the last period (`.`). It may be missing in the request.
   Example:
   `action_ext = "php"`
   * `proto` - (Optional) Version of the HTTP Protocol.
   Example:
   `proto = "1.1"`
-  * `scheme` - (Optional) http/https.
+  * `scheme` - (Optional) `http`/`https`.
   Example:
   `scheme = "https"` 
-  * `uri` - (Optional) String with the original URL value.
+  * `uri` - (Optional) Part of the request URL without domain.
   Example:
   `uri = "/api/login"` 
   * `instance` - (Optional) ID of the application.
@@ -84,7 +86,7 @@ The **point** attribute supports the following fields:
 Example:
 
   ```hcl
-  # ... other configuration
+  # ... omitted
 
   action {
     type = "equal"
@@ -128,18 +130,11 @@ Example:
     }
   }
 
-  # ... skipped
+  # ... omitted
   ```
 
 > **_NOTE:_**
 See below what limitations apply
-
-`type` must be omitted when:
-- `point` is made up for `instance`
-
-`value` must be omitted when: 
-- `type` is `absent`
-- `point` is made up for `instance`
 
 When `type` is `absent`
 `point` must contain key with the default value. For `action_name`, `action_ext`, `method`, `proto`, `scheme`, `uri` default value is `""` (empty string)
@@ -148,4 +143,16 @@ When `type` is `absent`
 
 * `rule_id` - ID of the created rule.
 * `action_id` - The action ID (The conditions to apply on request).
-* `rule_type` - Type of   created rule. For example, `rule_type = "ignore_regex"`.
+* `rule_type` - Type of the created rule. For example, `rule_type = "brute_counter"`.
+
+## Import
+
+The rule can be imported using a composite ID formed of client ID, action ID, rule ID and rule type.
+
+```
+$ terraform import wallarm_rule_bruteforce_counter.root_counter 6039/563854/11086884
+```
+
+* `6039` - Client ID.
+* `563854` - Action ID.
+* `11086884` - Rule ID.

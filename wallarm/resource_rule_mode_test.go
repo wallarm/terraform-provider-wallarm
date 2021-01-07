@@ -2,7 +2,6 @@ package wallarm
 
 import (
 	"fmt"
-	"os"
 	"strconv"
 	"testing"
 
@@ -21,20 +20,14 @@ type wmodeTestingRule struct {
 func TestAccRuleWmodeCreate_Basic(t *testing.T) {
 	rnd := generateRandomResourceName(5)
 	name := "wallarm_rule_mode." + rnd
-	var clientID string
-	var ok bool
-	if clientID, ok = os.LookupEnv("WALLARM_API_CLIENT_ID"); !ok {
-		clientID = "6039"
-	}
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckWallarmRuleWmodeDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testWallarmRuleWmodeBasicConfig(rnd, clientID, "monitoring", "iequal", "wmode.wallarm.com", "HOST"),
+				Config: testWallarmRuleWmodeBasicConfig(rnd, "monitoring", "iequal", "wmode.wallarm.com", "HOST"),
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr(name, "client_id", clientID),
 					resource.TestCheckResourceAttr(name, "mode", "monitoring"),
 					resource.TestCheckResourceAttr(name, "action.#", "1"),
 				),
@@ -91,19 +84,18 @@ func TestAccRuleWmodeCreate_FullSettings(t *testing.T) {
 	})
 }
 
-func testWallarmRuleWmodeBasicConfig(resourceID, clientID, mode, actionType, actionValue, actionPoint string) string {
+func testWallarmRuleWmodeBasicConfig(resourceID, mode, actionType, actionValue, actionPoint string) string {
 	return fmt.Sprintf(`
 resource "wallarm_rule_mode" "%[1]s" {
-  client_id = %[2]s
-  mode = "%[3]s"
+  mode = "%[2]s"
   action {
-    type = "%[4]s"
-    value = "%[5]s"
+    type = "%[3]s"
+    value = "%[4]s"
     point = {
-      header = "%[6]s"
+      header = "%[5]s"
     }
   }
-}`, resourceID, clientID, mode, actionType, actionValue, actionPoint)
+}`, resourceID, mode, actionType, actionValue, actionPoint)
 }
 
 func testWallarmRuleWmodeDefaultBranchConfig(resourceID, mode string) string {
@@ -206,7 +198,7 @@ resource "wallarm_rule_mode" "%[7]s" {
 }
 
 func testAccCheckWallarmRuleWmodeDestroy(s *terraform.State) error {
-	client := testAccProvider.Meta().(*wallarm.API)
+	client := testAccProvider.Meta().(wallarm.API)
 
 	for _, rs := range s.RootModule().Resources {
 		if rs.Type != "wallarm_rule_mode" {

@@ -9,7 +9,7 @@ description: |-
 # wallarm_blacklist
 
 Provides the resource to manage blacklist in the account providing functionality to block for a desired time either 
-via `Date` or `Minute` formats.
+via `Date` or `Minutes` formats.
 
 ## Example Usage
 

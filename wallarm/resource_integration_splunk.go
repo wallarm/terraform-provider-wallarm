@@ -102,7 +102,7 @@ func resourceWallarmSplunk() *schema.Resource {
 }
 
 func resourceWallarmSplunkCreate(d *schema.ResourceData, m interface{}) error {
-	client := m.(*wallarm.API)
+	client := m.(wallarm.API)
 	clientID := retrieveClientID(d, client)
 	name := d.Get("name").(string)
 	apiURL := d.Get("api_url").(string)
@@ -139,7 +139,7 @@ func resourceWallarmSplunkCreate(d *schema.ResourceData, m interface{}) error {
 }
 
 func resourceWallarmSplunkRead(d *schema.ResourceData, m interface{}) error {
-	client := m.(*wallarm.API)
+	client := m.(wallarm.API)
 	clientID := retrieveClientID(d, client)
 	splunk, err := client.IntegrationRead(clientID, d.Get("integration_id").(int))
 	if err != nil {
@@ -156,7 +156,7 @@ func resourceWallarmSplunkRead(d *schema.ResourceData, m interface{}) error {
 }
 
 func resourceWallarmSplunkUpdate(d *schema.ResourceData, m interface{}) error {
-	client := m.(*wallarm.API)
+	client := m.(wallarm.API)
 	clientID := retrieveClientID(d, client)
 	name := d.Get("name").(string)
 	apiURL := d.Get("api_url").(string)
@@ -197,7 +197,7 @@ func resourceWallarmSplunkUpdate(d *schema.ResourceData, m interface{}) error {
 }
 
 func resourceWallarmSplunkDelete(d *schema.ResourceData, m interface{}) error {
-	client := m.(*wallarm.API)
+	client := m.(wallarm.API)
 	clientID := retrieveClientID(d, client)
 	splunk, err := client.IntegrationRead(clientID, d.Get("integration_id").(int))
 	if err != nil {

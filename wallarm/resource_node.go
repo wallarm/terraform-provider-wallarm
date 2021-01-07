@@ -60,7 +60,7 @@ func resourceWallarmNode() *schema.Resource {
 }
 
 func resourceWallarmNodeCreate(d *schema.ResourceData, m interface{}) error {
-	client := m.(*wallarm.API)
+	client := m.(wallarm.API)
 	clientID := retrieveClientID(d, client)
 	hostname := d.Get("hostname").(string)
 
@@ -99,11 +99,11 @@ func resourceWallarmNodeCreate(d *schema.ResourceData, m interface{}) error {
 }
 
 func resourceWallarmNodeRead(d *schema.ResourceData, m interface{}) error {
-	client := m.(*wallarm.API)
+	client := m.(wallarm.API)
 	clientID := retrieveClientID(d, client)
 	hostname := d.Get("hostname").(string)
 
-	nodes, err := client.GetNodeRead(clientID, "all")
+	nodes, err := client.NodeRead(clientID, "all")
 	if err != nil {
 		return err
 	}
@@ -138,7 +138,7 @@ func resourceWallarmNodeRead(d *schema.ResourceData, m interface{}) error {
 }
 
 func resourceWallarmNodeDelete(d *schema.ResourceData, m interface{}) error {
-	client := m.(*wallarm.API)
+	client := m.(wallarm.API)
 	nodeID := d.Get("node_id").(int)
 	if err := client.NodeDelete(nodeID); err != nil {
 		return err
@@ -147,7 +147,7 @@ func resourceWallarmNodeDelete(d *schema.ResourceData, m interface{}) error {
 }
 
 func resourceWallarmNodeImport(d *schema.ResourceData, m interface{}) ([]*schema.ResourceData, error) {
-	client := m.(*wallarm.API)
+	client := m.(wallarm.API)
 	idAttr := strings.SplitN(d.Id(), "/", 2)
 	if len(idAttr) == 2 {
 		clientID, err := strconv.Atoi(idAttr[0])
@@ -157,7 +157,7 @@ func resourceWallarmNodeImport(d *schema.ResourceData, m interface{}) ([]*schema
 		hostname := idAttr[1]
 
 		d.Set("hostname", hostname)
-		nodes, err := client.GetNodeRead(clientID, "all")
+		nodes, err := client.NodeRead(clientID, "all")
 		if err != nil {
 			return nil, err
 		}

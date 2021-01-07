@@ -7,7 +7,7 @@ resource "wallarm_blacklist" "blacklist_minutes" {
 }
 
 resource "wallarm_blacklist" "blacklist_date" {
-  ip_range = ["1.1.1.1/32"]
+  ip_range = ["2.2.2.2/32"]
   application = [1]
   reason = "TEST BLACKLIST"
   time_format = "RFC3339"

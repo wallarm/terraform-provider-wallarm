@@ -108,6 +108,11 @@ func resourceWallarmTrigger() *schema.Resource {
 						"lock_time": {
 							Type:     schema.TypeInt,
 							Optional: true,
+							// 5/15/30 minutes, 1/2/6/12 hours, 1/2/7/30 days, forever
+							ValidateFunc: validation.IntInSlice([]int{300, 900, 1800,
+								3600, 7200, 21600, 43200,
+								86400, 172800, 604800, 2592000,
+								7776000}),
 						},
 					},
 				},
@@ -154,7 +159,7 @@ func resourceWallarmTriggerCreate(d *schema.ResourceData, m interface{}) error {
 		triggerResp *wallarm.TriggerCreateResp
 	)
 
-	client := m.(*wallarm.API)
+	client := m.(wallarm.API)
 	clientID := retrieveClientID(d, client)
 	name := d.Get("name").(string)
 	comment := d.Get("comment").(string)
@@ -185,7 +190,7 @@ func resourceWallarmTriggerCreate(d *schema.ResourceData, m interface{}) error {
 		}
 
 		triggerBody := wallarm.TriggerCreate{
-			Trigger: &wallarm.Trigger{
+			Trigger: &wallarm.TriggerParam{
 				Name:       name,
 				Comment:    comment,
 				TemplateID: templateID,
@@ -203,7 +208,7 @@ func resourceWallarmTriggerCreate(d *schema.ResourceData, m interface{}) error {
 
 	} else {
 		triggerBody := wallarm.TriggerCreate{
-			Trigger: &wallarm.Trigger{
+			Trigger: &wallarm.TriggerParam{
 				Name:       name,
 				Comment:    comment,
 				TemplateID: templateID,
@@ -243,7 +248,7 @@ func resourceWallarmTriggerCreate(d *schema.ResourceData, m interface{}) error {
 }
 
 func resourceWallarmTriggerRead(d *schema.ResourceData, m interface{}) error {
-	client := m.(*wallarm.API)
+	client := m.(wallarm.API)
 	clientID := retrieveClientID(d, client)
 	triggerID := d.Get("trigger_id").(int)
 
@@ -269,7 +274,7 @@ func resourceWallarmTriggerUpdate(d *schema.ResourceData, m interface{}) error {
 		triggerResp *wallarm.TriggerResp
 	)
 
-	client := m.(*wallarm.API)
+	client := m.(wallarm.API)
 	clientID := retrieveClientID(d, client)
 	name := d.Get("name").(string)
 	comment := d.Get("comment").(string)
@@ -294,7 +299,7 @@ func resourceWallarmTriggerUpdate(d *schema.ResourceData, m interface{}) error {
 		}
 
 		triggerBody := wallarm.TriggerCreate{
-			Trigger: &wallarm.Trigger{
+			Trigger: &wallarm.TriggerParam{
 				Name:       name,
 				Comment:    comment,
 				TemplateID: templateID,
@@ -312,7 +317,7 @@ func resourceWallarmTriggerUpdate(d *schema.ResourceData, m interface{}) error {
 
 	} else {
 		triggerBody := wallarm.TriggerCreate{
-			Trigger: &wallarm.Trigger{
+			Trigger: &wallarm.TriggerParam{
 				Name:       name,
 				Comment:    comment,
 				TemplateID: templateID,
@@ -339,7 +344,7 @@ func resourceWallarmTriggerUpdate(d *schema.ResourceData, m interface{}) error {
 }
 
 func resourceWallarmTriggerDelete(d *schema.ResourceData, m interface{}) error {
-	client := m.(*wallarm.API)
+	client := m.(wallarm.API)
 	clientID := retrieveClientID(d, client)
 	triggerID := d.Get("trigger_id").(int)
 

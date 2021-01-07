@@ -135,7 +135,7 @@ resource "wallarm_rule_regex" "%[1]s" {
 }
 
 func testAccCheckWallarmRuleRegexDestroy(s *terraform.State) error {
-	client := testAccProvider.Meta().(*wallarm.API)
+	client := testAccProvider.Meta().(wallarm.API)
 
 	for _, rs := range s.RootModule().Resources {
 		if rs.Type != "wallarm_rule_regex" {

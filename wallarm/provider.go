@@ -7,6 +7,7 @@ import (
 	"os"
 	"regexp"
 
+	"github.com/416e64726579/terraform-provider-wallarm/version"
 	wallarm "github.com/416e64726579/wallarm-go"
 
 	cleanhttp "github.com/hashicorp/go-cleanhttp"
@@ -119,6 +120,8 @@ func Provider() terraform.ResourceProvider {
 			"wallarm_rule_attack_rechecker":         resourceWallarmAttackRechecker(),
 			"wallarm_rule_attack_rechecker_rewrite": resourceWallarmAttackRecheckerRewrite(),
 			"wallarm_rule_set_response_header":      resourceWallarmSetResponseHeader(),
+			"wallarm_rule_bruteforce_counter":       resourceWallarmBruteForceCounter(),
+			"wallarm_rule_dirbust_counter":          resourceWallarmDirbustCounter(),
 		},
 	}
 
@@ -145,8 +148,9 @@ func providerConfigure(d *schema.ResourceData, terraformVersion string) (interfa
 
 	tfUserAgent := httpclient.TerraformUserAgent(terraformVersion)
 	providerUserAgent := fmt.Sprintf("terraform-provider-wallarm")
-	ua := fmt.Sprintf("%s %s", tfUserAgent, providerUserAgent)
+	ua := fmt.Sprintf("%s/%s/%s", tfUserAgent, providerUserAgent, version.ProviderVersion)
 	options = append(options, wallarm.UserAgent(ua))
+	options = append(options, wallarm.UsingBaseURL(apiURL))
 
 	authHeaders := make(http.Header)
 	config := Config{Options: options}
@@ -176,14 +180,13 @@ func providerConfigure(d *schema.ResourceData, terraformVersion string) (interfa
 	}
 
 	if v, ok := d.GetOk("client_id"); ok {
-		clientID := v.(int)
-		client.ClientID = clientID
+		ClientID = v.(int)
 	} else {
 		u, err := client.UserDetails()
 		if err != nil {
 			return nil, err
 		}
-		client.ClientID = u.Body.Clientid
+		ClientID = u.Body.Clientid
 	}
 
 	return client, err

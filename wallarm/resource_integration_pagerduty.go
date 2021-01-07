@@ -101,7 +101,7 @@ func resourceWallarmPagerDuty() *schema.Resource {
 }
 
 func resourceWallarmPagerDutyCreate(d *schema.ResourceData, m interface{}) error {
-	client := m.(*wallarm.API)
+	client := m.(wallarm.API)
 	clientID := retrieveClientID(d, client)
 	name := d.Get("name").(string)
 	apiToken := d.Get("integration_key").(string)
@@ -134,7 +134,7 @@ func resourceWallarmPagerDutyCreate(d *schema.ResourceData, m interface{}) error
 }
 
 func resourceWallarmPagerDutyRead(d *schema.ResourceData, m interface{}) error {
-	client := m.(*wallarm.API)
+	client := m.(wallarm.API)
 	clientID := retrieveClientID(d, client)
 	pagerduty, err := client.IntegrationRead(clientID, d.Get("integration_id").(int))
 	if err != nil {
@@ -152,7 +152,7 @@ func resourceWallarmPagerDutyRead(d *schema.ResourceData, m interface{}) error {
 }
 
 func resourceWallarmPagerDutyUpdate(d *schema.ResourceData, m interface{}) error {
-	client := m.(*wallarm.API)
+	client := m.(wallarm.API)
 	clientID := retrieveClientID(d, client)
 	name := d.Get("name").(string)
 	integrationKey := d.Get("integration_key").(string)
@@ -189,7 +189,7 @@ func resourceWallarmPagerDutyUpdate(d *schema.ResourceData, m interface{}) error
 }
 
 func resourceWallarmPagerDutyDelete(d *schema.ResourceData, m interface{}) error {
-	client := m.(*wallarm.API)
+	client := m.(wallarm.API)
 	clientID := retrieveClientID(d, client)
 	pagerduty, err := client.IntegrationRead(clientID, d.Get("integration_id").(int))
 	if err != nil {

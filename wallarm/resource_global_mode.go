@@ -55,7 +55,7 @@ func resourceWallarmGlobalMode() *schema.Resource {
 }
 
 func resourceWallarmGlobalModeCreate(d *schema.ResourceData, m interface{}) error {
-	client := m.(*wallarm.API)
+	client := m.(wallarm.API)
 	clientID := retrieveClientID(d, client)
 
 	wafMode := d.Get("waf_mode").(string)
@@ -94,7 +94,7 @@ func resourceWallarmGlobalModeCreate(d *schema.ResourceData, m interface{}) erro
 }
 
 func resourceWallarmGlobalModeRead(d *schema.ResourceData, m interface{}) error {
-	client := m.(*wallarm.API)
+	client := m.(wallarm.API)
 	clientID := retrieveClientID(d, client)
 	clientInfo := &wallarm.ClientRead{
 		Filter: &wallarm.ClientReadFilter{

@@ -91,7 +91,7 @@ func resourceWallarmUser() *schema.Resource {
 }
 
 func resourceWallarmUserCreate(d *schema.ResourceData, m interface{}) error {
-	client := m.(*wallarm.API)
+	client := m.(wallarm.API)
 	clientID := retrieveClientID(d, client)
 	email := d.Get("email").(string)
 	realname := d.Get("realname").(string)
@@ -150,7 +150,7 @@ func resourceWallarmUserCreate(d *schema.ResourceData, m interface{}) error {
 	return resourceWallarmUserRead(d, m)
 }
 func resourceWallarmUserRead(d *schema.ResourceData, m interface{}) error {
-	client := m.(*wallarm.API)
+	client := m.(wallarm.API)
 	clientID := retrieveClientID(d, client)
 	userID := d.Get("user_id").(int)
 	user := &wallarm.UserGet{
@@ -207,7 +207,7 @@ func resourceWallarmUserUpdate(d *schema.ResourceData, m interface{}) error {
 			return err
 		}
 	} else {
-		client := m.(*wallarm.API)
+		client := m.(wallarm.API)
 		clientID := retrieveClientID(d, client)
 		email := d.Get("email").(string)
 		realname := d.Get("realname").(string)
@@ -244,7 +244,7 @@ func resourceWallarmUserUpdate(d *schema.ResourceData, m interface{}) error {
 }
 
 func resourceWallarmUserDelete(d *schema.ResourceData, m interface{}) error {
-	client := m.(*wallarm.API)
+	client := m.(wallarm.API)
 	userID := d.Get("user_id").(int)
 	userBody := &wallarm.UserDelete{
 		Filter: &wallarm.UserFilter{

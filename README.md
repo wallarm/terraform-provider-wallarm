@@ -49,7 +49,7 @@ $ make build
 terraform-<TYPE>-<NAME>
 ````
 
-*In the case above, the plugin is of type `provider` and of name `wallarm` as it is required by Terraform.*
+*In the case above, the plugin is of type `provider` and of name `wallarm` as per requirements by Terraform.*
 
 #### terraform 0.13+
 
@@ -69,27 +69,26 @@ then run `terraform init`
 
 ## Development The Provider
 
-To start using this provider you should set up you environment with the required variables:
+To start using this provider you have to set up you environment with the required variables:
 ```sh
 WALLARM_API_UUID
 WALLARM_API_SECRET
 ```
 Optional:
-`WALLARM_API_HOST` with default value `https://api.wallarm.com`
+`WALLARM_API_HOST` with the default value `https://api.wallarm.com`
 
-Another method to do the same is to defined a provider via `.tf` files:
+Another variant is to define the provider attributes within HCL files:
 
 ```hcl
 provider "wallarm" {
   api_host = var.api_host
   api_uuid = var.api_uuid
   api_secret = var.api_secret
-  client_id = 1
 }
 ```
-**DO NOT** forget to create the files `variables.tf` and `variables.auto.tfvars` which is by agreement a secret and is exported nowhere as it contains sensitive information.
+Create the files `variables.tf` and `variables.auto.tfvars`
 
-Example of `variables.tf`:
+`variables.tf`:
 ```hcl
 variable "api_host" {
   type    = string
@@ -105,31 +104,17 @@ variable "api_secret" {
 }
 
 ```
-And corresponding `variables.auto.tfvars`:
+`variables.auto.tfvars`:
 ```
 api_uuid = "00000000-0000-0000-0000-000000000000"
 api_secret = "000000000000000000000000000000000000000000"
 ```
 
-### Assistance commands
-
-*It is assumed that some of the following commands will be removed*
-
-#### `make apply` and apply local `.tf` files
-
-This is a testing command which will be removed once the development stage is over. It helps to stick to business.
-It builds, initializes the provider and applies changes in a plan.
-
-#### `make destroy` and destroy created resources
-
-It builds, initializes the provider and destroys the created resources.
-
-
 ## Using The Provider
 
-Some of the examples are divided by the resource/data source name, however, most of them still defined in the `examples/main.tf`.
+All the examples have been divided by the resource or datasource name in the `examples` folder.
 
-For instance, this rule configures the blocking mode for GET requests to `dvwa.wallarm-demo.com`.
+For instance, this rule configures the blocking mode for GET requests aiming to `dvwa.wallarm-demo.com`.
 
 ```hcl
 resource "wallarm_rule_mode" "dvwa_mode" {

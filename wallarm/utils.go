@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"log"
 	"math/rand"
 	"sort"
 	"strconv"
@@ -142,10 +141,34 @@ func hashResponseActionDetails(v interface{}) int {
 	if val, ok := m["point"]; ok {
 		p = val.([]interface{})
 		switch p[0].(string) {
-		case "action_name", "action_ext", "method",
-			"proto", "scheme", "uri":
+		case "action_name":
 			pointMap := make(map[string]string)
 			pointMap["proto"] = m["value"].(string)
+			m["point"] = pointMap
+			m["value"] = ""
+		case "action_ext":
+			pointMap := make(map[string]string)
+			pointMap["action_ext"] = m["value"].(string)
+			m["point"] = pointMap
+			m["value"] = ""
+		case "scheme":
+			pointMap := make(map[string]string)
+			pointMap["scheme"] = m["value"].(string)
+			m["point"] = pointMap
+			m["value"] = ""
+		case "uri":
+			pointMap := make(map[string]string)
+			pointMap["uri"] = m["value"].(string)
+			m["point"] = pointMap
+			m["value"] = ""
+		case "proto":
+			pointMap := make(map[string]string)
+			pointMap["proto"] = m["value"].(string)
+			m["point"] = pointMap
+			m["value"] = ""
+		case "method":
+			pointMap := make(map[string]string)
+			pointMap["method"] = m["value"].(string)
 			m["point"] = pointMap
 			m["value"] = ""
 		case "path":
@@ -164,7 +187,6 @@ func hashResponseActionDetails(v interface{}) int {
 			m["point"] = pointMap
 		}
 		buf.WriteString(fmt.Sprintf("%v-", m["point"]))
-		log.Println("POINT: ", p)
 	}
 	return hashcode.String(buf.String())
 }
@@ -245,11 +267,11 @@ func reverseMap(m map[string]int) map[int]string {
 	return n
 }
 
-func retrieveClientID(d *schema.ResourceData, client *wallarm.API) (clientID int) {
+func retrieveClientID(d *schema.ResourceData, client wallarm.API) int {
 	if v, ok := d.GetOk("client_id"); ok {
 		return v.(int)
 	}
-	return client.ClientID
+	return ClientID
 }
 
 func diffStringSlice(a, b []string) []string {
@@ -478,7 +500,7 @@ func actionPointsEqual(listA, listB []interface{}) bool {
 }
 
 func existsAction(d *schema.ResourceData, m interface{}, hintType string) (string, bool, error) {
-	client := m.(*wallarm.API)
+	client := m.(wallarm.API)
 	clientID := retrieveClientID(d, client)
 
 	actionsFromState := d.Get("action").(*schema.Set)
@@ -526,7 +548,7 @@ func existsAction(d *schema.ResourceData, m interface{}, hintType string) (strin
 }
 
 func existsHint(d *schema.ResourceData, m interface{}, actionID int, hintType string) (string, bool, error) {
-	client := m.(*wallarm.API)
+	client := m.(wallarm.API)
 	clientID := retrieveClientID(d, client)
 
 	hint := &wallarm.HintRead{

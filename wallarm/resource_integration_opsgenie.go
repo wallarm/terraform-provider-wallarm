@@ -94,7 +94,7 @@ func resourceWallarmOpsGenie() *schema.Resource {
 }
 
 func resourceWallarmOpsGenieCreate(d *schema.ResourceData, m interface{}) error {
-	client := m.(*wallarm.API)
+	client := m.(wallarm.API)
 	clientID := retrieveClientID(d, client)
 	name := d.Get("name").(string)
 	apiToken := d.Get("api_token").(string)
@@ -127,7 +127,7 @@ func resourceWallarmOpsGenieCreate(d *schema.ResourceData, m interface{}) error 
 }
 
 func resourceWallarmOpsGenieRead(d *schema.ResourceData, m interface{}) error {
-	client := m.(*wallarm.API)
+	client := m.(wallarm.API)
 	clientID := retrieveClientID(d, client)
 	opsGenie, err := client.IntegrationRead(clientID, d.Get("integration_id").(int))
 	if err != nil {
@@ -145,7 +145,7 @@ func resourceWallarmOpsGenieRead(d *schema.ResourceData, m interface{}) error {
 }
 
 func resourceWallarmOpsGenieUpdate(d *schema.ResourceData, m interface{}) error {
-	client := m.(*wallarm.API)
+	client := m.(wallarm.API)
 	clientID := retrieveClientID(d, client)
 	name := d.Get("name").(string)
 	apiToken := d.Get("api_token").(string)
@@ -182,7 +182,7 @@ func resourceWallarmOpsGenieUpdate(d *schema.ResourceData, m interface{}) error 
 }
 
 func resourceWallarmOpsGenieDelete(d *schema.ResourceData, m interface{}) error {
-	client := m.(*wallarm.API)
+	client := m.(wallarm.API)
 	clientID := retrieveClientID(d, client)
 	opsGenie, err := client.IntegrationRead(clientID, d.Get("integration_id").(int))
 	if err != nil {

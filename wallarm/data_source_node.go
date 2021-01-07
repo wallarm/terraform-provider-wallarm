@@ -126,7 +126,7 @@ func dataSourceWallarmNode() *schema.Resource {
 }
 
 func dataSourceWallarmNodeRead(d *schema.ResourceData, m interface{}) error {
-	client := m.(*wallarm.API)
+	client := m.(wallarm.API)
 	clientID := retrieveClientID(d, client)
 	// Prepare the filters to be applied to the search
 	filter, err := expandWallarmNode(d.Get("filter"))
@@ -138,9 +138,9 @@ func dataSourceWallarmNodeRead(d *schema.ResourceData, m interface{}) error {
 	}
 
 	nodes := make([]interface{}, 0)
-	var node *wallarm.GetNode
-	var nodePOST *wallarm.GetNodePOST
-	nodeReadBody := wallarm.GetNodeReadByFilter{
+	var node *wallarm.NodeRead
+	var nodePOST *wallarm.NodeReadPOST
+	nodeReadBody := wallarm.NodeReadByFilter{
 		Filter:    &wallarm.NodeFilter{},
 		Limit:     1000,
 		Offset:    0,
@@ -151,20 +151,20 @@ func dataSourceWallarmNodeRead(d *schema.ResourceData, m interface{}) error {
 	switch {
 	case filter.UUID != "":
 		nodeReadBody.Filter.UUID = filter.UUID
-		nodePOST, err = client.GetNodeReadByFilter(&nodeReadBody)
+		nodePOST, err = client.NodeReadByFilter(&nodeReadBody)
 		if err != nil {
 			return err
 		}
 		POST = true
 	case filter.Hostname != "":
 		nodeReadBody.Filter.Hostname = filter.Hostname
-		nodePOST, err = client.GetNodeReadByFilter(&nodeReadBody)
+		nodePOST, err = client.NodeReadByFilter(&nodeReadBody)
 		if err != nil {
 			return err
 		}
 		POST = true
 	default:
-		node, err = client.GetNodeRead(clientID, filter.Type)
+		node, err = client.NodeRead(clientID, filter.Type)
 		if err != nil {
 			return err
 		}

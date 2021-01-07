@@ -53,6 +53,12 @@ func resourceWallarmSensitiveData() *schema.Resource {
 				},
 			},
 
+			"comment": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+
 			"action": {
 				Type:     schema.TypeSet,
 				Optional: true,
@@ -83,7 +89,6 @@ func resourceWallarmSensitiveData() *schema.Resource {
 										Type:     schema.TypeList,
 										Optional: true,
 										ForceNew: true,
-										Computed: true,
 										Elem:     &schema.Schema{Type: schema.TypeString},
 									},
 									"method": {
@@ -111,28 +116,25 @@ func resourceWallarmSensitiveData() *schema.Resource {
 										Type:     schema.TypeString,
 										Optional: true,
 										ForceNew: true,
-										Computed: true,
 									},
 
 									"action_ext": {
 										Type:     schema.TypeString,
 										Optional: true,
 										ForceNew: true,
-										Computed: true,
 									},
 
 									"proto": {
-										Type:     schema.TypeString,
-										Optional: true,
-										ForceNew: true,
-										Computed: true,
+										Type:         schema.TypeString,
+										Optional:     true,
+										ForceNew:     true,
+										ValidateFunc: validation.StringInSlice([]string{"1.0", "1.1", "2.0", "3.0"}, false),
 									},
 
 									"scheme": {
 										Type:         schema.TypeString,
 										Optional:     true,
 										ForceNew:     true,
-										Computed:     true,
 										ValidateFunc: validation.StringInSlice([]string{"http", "https"}, true),
 									},
 
@@ -140,7 +142,6 @@ func resourceWallarmSensitiveData() *schema.Resource {
 										Type:     schema.TypeString,
 										Optional: true,
 										ForceNew: true,
-										Computed: true,
 									},
 
 									"instance": {
@@ -150,7 +151,7 @@ func resourceWallarmSensitiveData() *schema.Resource {
 										ValidateFunc: func(val interface{}, key string) (warns []string, errs []error) {
 											v := val.(int)
 											if v < -1 {
-												errs = append(errs, fmt.Errorf("%q must be between greater then -1 inclusive, got: %d", key, v))
+												errs = append(errs, fmt.Errorf("%q must be be greater than -1 inclusive, got: %d", key, v))
 											}
 											return
 										},
@@ -185,8 +186,9 @@ func resourceWallarmSensitiveDataCreate(d *schema.ResourceData, m interface{}) e
 			return ImportAsExistsError("wallarm_rule_masking", existingID)
 		}
 	}
-	client := m.(*wallarm.API)
+	client := m.(wallarm.API)
 	clientID := retrieveClientID(d, client)
+	comment := d.Get("comment").(string)
 
 	ps := d.Get("point").([]interface{})
 	if err := d.Set("point", ps); err != nil {
@@ -210,6 +212,7 @@ func resourceWallarmSensitiveDataCreate(d *schema.ResourceData, m interface{}) e
 		Action:    &action,
 		Point:     points,
 		Validated: false,
+		Comment:   comment,
 	}
 
 	actionResp, err := client.HintCreate(wm)
@@ -221,14 +224,14 @@ func resourceWallarmSensitiveDataCreate(d *schema.ResourceData, m interface{}) e
 	d.Set("action_id", actionResp.Body.ActionID)
 	d.Set("rule_type", actionResp.Body.Type)
 
-	resID := fmt.Sprintf("%d/%d/%d/%s", clientID, actionResp.Body.ActionID, actionResp.Body.ID, actionResp.Body.Type)
+	resID := fmt.Sprintf("%d/%d/%d", clientID, actionResp.Body.ActionID, actionResp.Body.ID)
 	d.SetId(resID)
 
 	return resourceWallarmSensitiveDataRead(d, m)
 }
 
 func resourceWallarmSensitiveDataRead(d *schema.ResourceData, m interface{}) error {
-	client := m.(*wallarm.API)
+	client := m.(wallarm.API)
 	clientID := retrieveClientID(d, client)
 	actionID := d.Get("action_id").(int)
 	ruleID := d.Get("rule_id").(int)
@@ -246,18 +249,16 @@ func resourceWallarmSensitiveDataRead(d *schema.ResourceData, m interface{}) err
 		return err
 	}
 
-	actionsSet := schema.Set{
-		F: hashResponseActionDetails,
-	}
-	var actsSlice []map[string]interface{}
+	var actsSlice []interface{}
 	for _, a := range action {
 		acts, err := actionDetailsToMap(a)
 		if err != nil {
 			return err
 		}
 		actsSlice = append(actsSlice, acts)
-		actionsSet.Add(acts)
 	}
+
+	actionsSet := schema.NewSet(hashResponseActionDetails, actsSlice)
 
 	hint := &wallarm.HintRead{
 		Limit:     1000,
@@ -335,7 +336,7 @@ func resourceWallarmSensitiveDataRead(d *schema.ResourceData, m interface{}) err
 }
 
 func resourceWallarmSensitiveDataDelete(d *schema.ResourceData, m interface{}) error {
-	client := m.(*wallarm.API)
+	client := m.(wallarm.API)
 	clientID := retrieveClientID(d, client)
 	actionID := d.Get("action_id").(int)
 
@@ -375,9 +376,9 @@ func resourceWallarmSensitiveDataDelete(d *schema.ResourceData, m interface{}) e
 }
 
 func resourceWallarmSensitiveDataImport(d *schema.ResourceData, m interface{}) ([]*schema.ResourceData, error) {
-	client := m.(*wallarm.API)
-	idAttr := strings.SplitN(d.Id(), "/", 4)
-	if len(idAttr) == 4 {
+	client := m.(wallarm.API)
+	idAttr := strings.SplitN(d.Id(), "/", 3)
+	if len(idAttr) == 3 {
 		clientID, err := strconv.Atoi(idAttr[0])
 		if err != nil {
 			return nil, err
@@ -390,7 +391,6 @@ func resourceWallarmSensitiveDataImport(d *schema.ResourceData, m interface{}) (
 		if err != nil {
 			return nil, err
 		}
-		hintType := idAttr[3]
 		d.Set("action_id", actionID)
 		d.Set("rule_id", ruleID)
 		d.Set("rule_type", "sensitive_data")
@@ -428,11 +428,11 @@ func resourceWallarmSensitiveDataImport(d *schema.ResourceData, m interface{}) (
 			}
 		}
 
-		existingID := fmt.Sprintf("%d/%d/%d/%s", clientID, actionID, ruleID, hintType)
+		existingID := fmt.Sprintf("%d/%d/%d", clientID, actionID, ruleID)
 		d.SetId(existingID)
 
 	} else {
-		return nil, fmt.Errorf("invalid id (%q) specified, should be in format \"{clientID}/{actionID}/{ruleID}/sensitive_data\"", d.Id())
+		return nil, fmt.Errorf("invalid id (%q) specified, should be in format \"{clientID}/{actionID}/{ruleID}\"", d.Id())
 	}
 
 	resourceWallarmSensitiveDataRead(d, m)

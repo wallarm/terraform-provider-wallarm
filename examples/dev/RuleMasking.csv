@@ -1,0 +1,4 @@
+type,name
+json_doc,login
+json_doc,PII
+headers,AUTHORIZATION

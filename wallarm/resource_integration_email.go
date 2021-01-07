@@ -95,7 +95,7 @@ func resourceWallarmEmail() *schema.Resource {
 }
 
 func resourceWallarmIntegrationCreate(d *schema.ResourceData, m interface{}) error {
-	client := m.(*wallarm.API)
+	client := m.(wallarm.API)
 	clientID := retrieveClientID(d, client)
 	name := d.Get("name").(string)
 	active := d.Get("active").(bool)
@@ -128,7 +128,7 @@ func resourceWallarmIntegrationCreate(d *schema.ResourceData, m interface{}) err
 }
 
 func resourceWallarmEmailRead(d *schema.ResourceData, m interface{}) error {
-	client := m.(*wallarm.API)
+	client := m.(wallarm.API)
 	clientID := retrieveClientID(d, client)
 	email, err := client.IntegrationRead(clientID, d.Get("integration_id").(int))
 	if err != nil {
@@ -146,7 +146,7 @@ func resourceWallarmEmailRead(d *schema.ResourceData, m interface{}) error {
 }
 
 func resourceWallarmEmailUpdate(d *schema.ResourceData, m interface{}) error {
-	client := m.(*wallarm.API)
+	client := m.(wallarm.API)
 	clientID := retrieveClientID(d, client)
 	name := d.Get("name").(string)
 	active := d.Get("active").(bool)
@@ -198,7 +198,7 @@ func resourceWallarmEmailUpdate(d *schema.ResourceData, m interface{}) error {
 }
 
 func resourceWallarmEmailDelete(d *schema.ResourceData, m interface{}) error {
-	client := m.(*wallarm.API)
+	client := m.(wallarm.API)
 	clientID := retrieveClientID(d, client)
 	email, err := client.IntegrationRead(clientID, d.Get("integration_id").(int))
 	if err != nil {

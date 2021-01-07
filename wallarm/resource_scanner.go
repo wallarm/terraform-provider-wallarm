@@ -55,7 +55,7 @@ func resourceWallarmScanner() *schema.Resource {
 }
 
 func resourceWallarmScannerCreate(d *schema.ResourceData, m interface{}) error {
-	client := m.(*wallarm.API)
+	client := m.(wallarm.API)
 	clientID := retrieveClientID(d, client)
 	elementInterface := d.Get("element").([]interface{})
 	var element []string
@@ -131,7 +131,7 @@ func resourceWallarmScannerRead(d *schema.ResourceData, m interface{}) error {
 }
 
 func resourceWallarmScannerUpdate(d *schema.ResourceData, m interface{}) error {
-	client := m.(*wallarm.API)
+	client := m.(wallarm.API)
 	clientID := retrieveClientID(d, client)
 	elementInterface := d.Get("element").([]interface{})
 	var element []string
@@ -243,7 +243,7 @@ func resourceWallarmScannerUpdate(d *schema.ResourceData, m interface{}) error {
 }
 
 func resourceWallarmScannerDelete(d *schema.ResourceData, m interface{}) error {
-	client := m.(*wallarm.API)
+	client := m.(wallarm.API)
 	clientID := retrieveClientID(d, client)
 
 	switch resourceIDs := d.Get("resource_id").(type) {
@@ -263,7 +263,7 @@ func resourceWallarmScannerDelete(d *schema.ResourceData, m interface{}) error {
 	return nil
 }
 
-func scopeDeletion(client *wallarm.API, clientID int, resourceIDs map[string]interface{}, delElements []string) ([]int, error) {
+func scopeDeletion(client wallarm.API, clientID int, resourceIDs map[string]interface{}, delElements []string) ([]int, error) {
 	var deleteIP []int
 	var deleteDomain []int
 

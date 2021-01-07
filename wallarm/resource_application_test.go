@@ -109,7 +109,7 @@ func testAccCheckWallarmAppResourceExists(n string) resource.TestCheckFunc {
 		}
 
 		// retrieve the configured client from the test setup
-		conn := testAccProvider.Meta().(*wallarm.API)
+		conn := testAccProvider.Meta().(wallarm.API)
 		name := rs.Primary.Attributes["name"]
 		clientID, err := strconv.Atoi(rs.Primary.Attributes["client_id"])
 		if err != nil {

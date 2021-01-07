@@ -129,7 +129,7 @@ func dataSourceWallarmVuln() *schema.Resource {
 }
 
 func dataSourceWallarmVulnRead(d *schema.ResourceData, m interface{}) error {
-	client := m.(*wallarm.API)
+	client := m.(wallarm.API)
 
 	// Prepare the filters to be applied to the search
 	filter, err := expandWallarmVuln(d.Get("filter"))

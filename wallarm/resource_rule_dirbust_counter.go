@@ -3,6 +3,9 @@ package wallarm
 import (
 	"fmt"
 	"log"
+	"regexp"
+	"strconv"
+	"strings"
 
 	wallarm "github.com/416e64726579/wallarm-go"
 
@@ -11,12 +14,14 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 )
 
-func resourceWallarmAttackRecheckerRewrite() *schema.Resource {
+func resourceWallarmDirbustCounter() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceWallarmAttackRecheckerRewriteCreate,
-		Read:   resourceWallarmAttackRecheckerRewriteRead,
-		Update: resourceWallarmAttackRecheckerRewriteUpdate,
-		Delete: resourceWallarmAttackRecheckerRewriteDelete,
+		Create: resourceWallarmDirbustCounterCreate,
+		Read:   resourceWallarmDirbustCounterRead,
+		Delete: resourceWallarmDirbustCounterDelete,
+		Importer: &schema.ResourceImporter{
+			State: resourceWallarmDirbustCounterImport,
+		},
 
 		Schema: map[string]*schema.Schema{
 
@@ -55,6 +60,13 @@ func resourceWallarmAttackRecheckerRewrite() *schema.Resource {
 				ForceNew: true,
 			},
 
+			"counter": {
+				Type:         schema.TypeString,
+				Required:     true,
+				ValidateFunc: validation.StringMatch(regexp.MustCompile(`^d:.+$`), `name of the counter always starts with "d:"`),
+				ForceNew:     true,
+			},
+
 			"action": {
 				Type:     schema.TypeSet,
 				Optional: true,
@@ -85,7 +97,6 @@ func resourceWallarmAttackRecheckerRewrite() *schema.Resource {
 										Type:     schema.TypeList,
 										Optional: true,
 										ForceNew: true,
-										Computed: true,
 										Elem:     &schema.Schema{Type: schema.TypeString},
 									},
 									"method": {
@@ -113,28 +124,25 @@ func resourceWallarmAttackRecheckerRewrite() *schema.Resource {
 										Type:     schema.TypeString,
 										Optional: true,
 										ForceNew: true,
-										Computed: true,
 									},
 
 									"action_ext": {
 										Type:     schema.TypeString,
 										Optional: true,
 										ForceNew: true,
-										Computed: true,
 									},
 
 									"proto": {
-										Type:     schema.TypeString,
-										Optional: true,
-										ForceNew: true,
-										Computed: true,
+										Type:         schema.TypeString,
+										Optional:     true,
+										ForceNew:     true,
+										ValidateFunc: validation.StringInSlice([]string{"1.0", "1.1", "2.0", "3.0"}, false),
 									},
 
 									"scheme": {
 										Type:         schema.TypeString,
 										Optional:     true,
 										ForceNew:     true,
-										Computed:     true,
 										ValidateFunc: validation.StringInSlice([]string{"http", "https"}, true),
 									},
 
@@ -142,7 +150,6 @@ func resourceWallarmAttackRecheckerRewrite() *schema.Resource {
 										Type:     schema.TypeString,
 										Optional: true,
 										ForceNew: true,
-										Computed: true,
 									},
 
 									"instance": {
@@ -152,7 +159,7 @@ func resourceWallarmAttackRecheckerRewrite() *schema.Resource {
 										ValidateFunc: func(val interface{}, key string) (warns []string, errs []error) {
 											v := val.(int)
 											if v < -1 {
-												errs = append(errs, fmt.Errorf("%q must be between greater then -1 inclusive, got: %d", key, v))
+												errs = append(errs, fmt.Errorf("%q must be be greater than -1 inclusive, got: %d", key, v))
 											}
 											return
 										},
@@ -163,91 +170,76 @@ func resourceWallarmAttackRecheckerRewrite() *schema.Resource {
 					},
 				},
 			},
-
-			"point": {
-				Type:     schema.TypeList,
-				Required: true,
-				Elem: &schema.Schema{
-					Type: schema.TypeList,
-					Elem: &schema.Schema{Type: schema.TypeString}},
-			},
-
-			"rules": {
-				Type:     schema.TypeList,
-				Required: true,
-				Elem:     &schema.Schema{Type: schema.TypeString},
-			},
 		},
 	}
 }
 
-func resourceWallarmAttackRecheckerRewriteCreate(d *schema.ResourceData, m interface{}) error {
+func resourceWallarmDirbustCounterCreate(d *schema.ResourceData, m interface{}) error {
+	if d.IsNewResource() {
+		existingID, exists, err := existsAction(d, m, "dirbust_counter")
+		if err != nil {
+			return err
+		}
+		if exists {
+			return ImportAsExistsError("dirbust_counter", existingID)
+		}
+	}
 	client := m.(wallarm.API)
 	clientID := retrieveClientID(d, client)
 	comment := d.Get("comment").(string)
-	rules := expandInterfaceToStringList(d.Get("rules"))
-
-	ps := d.Get("point").([]interface{})
-	if err := d.Set("point", ps); err != nil {
-		return err
-	}
-
-	points, err := expandPointsToTwoDimensionalArray(ps)
-	if err != nil {
-		return err
-	}
-
 	actionsFromState := d.Get("action").(*schema.Set)
+	counter := d.Get("counter").(string)
+
 	action, err := expandSetToActionDetailsList(actionsFromState)
 	if err != nil {
 		return err
 	}
-
-	vp := &wallarm.ActionCreate{
-		Type:      "attack_rechecker_rewrite",
+	wm := &wallarm.ActionCreate{
+		Type:      "dirbust_counter",
 		Clientid:  clientID,
 		Action:    &action,
-		Point:     points,
-		Rules:     rules,
+		Counter:   counter,
 		Validated: false,
 		Comment:   comment,
 	}
-	actionResp, err := client.HintCreate(vp)
+
+	actionResp, err := client.HintCreate(wm)
 	if err != nil {
 		return err
 	}
-	actionID := actionResp.Body.ActionID
 
 	d.Set("rule_id", actionResp.Body.ID)
 	d.Set("action_id", actionResp.Body.ActionID)
 	d.Set("rule_type", actionResp.Body.Type)
-	d.Set("client_id", clientID)
 
-	resID := fmt.Sprintf("%d/%d/%d", clientID, actionID, actionResp.Body.ID)
+	resID := fmt.Sprintf("%d/%d/%d", clientID, actionResp.Body.ActionID, actionResp.Body.ID)
 	d.SetId(resID)
 
-	return nil
+	return resourceWallarmDirbustCounterRead(d, m)
 }
 
-func resourceWallarmAttackRecheckerRewriteRead(d *schema.ResourceData, m interface{}) error {
+func resourceWallarmDirbustCounterRead(d *schema.ResourceData, m interface{}) error {
 	client := m.(wallarm.API)
 	clientID := retrieveClientID(d, client)
 	actionID := d.Get("action_id").(int)
 	ruleID := d.Get("rule_id").(int)
-	rules := expandInterfaceToStringList(d.Get("rules"))
-
-	ps := d.Get("point").([]interface{})
-	var points []interface{}
-	for _, point := range ps {
-		p := point.([]interface{})
-		points = append(points, p...)
-	}
-
 	actionsFromState := d.Get("action").(*schema.Set)
+
 	action, err := expandSetToActionDetailsList(actionsFromState)
 	if err != nil {
 		return err
 	}
+
+	var actsSlice []interface{}
+	for _, a := range action {
+		acts, err := actionDetailsToMap(a)
+		if err != nil {
+			return err
+		}
+		actsSlice = append(actsSlice, acts)
+	}
+
+	actionsSet := schema.NewSet(hashResponseActionDetails, actsSlice)
 
 	hint := &wallarm.HintRead{
 		Limit:     1000,
@@ -257,6 +249,7 @@ func resourceWallarmAttackRecheckerRewriteRead(d *schema.ResourceData, m interfa
 		Filter: &wallarm.HintFilter{
 			Clientid: []int{clientID},
 			ActionID: []int{actionID},
+			Type:     []string{"dirbust_counter"},
 		},
 	}
 	actionHints, err := client.HintRead(hint)
@@ -270,9 +263,8 @@ func resourceWallarmAttackRecheckerRewriteRead(d *schema.ResourceData, m interfa
 
 	expectedRule := wallarm.ActionBody{
 		ActionID: actionID,
-		Type:     "attack_rechecker_rewrite",
-		Rules:    rules,
-		Point:    points,
+		Type:     "dirbust_counter",
+		Action:   action,
 	}
 
 	var notFoundRules []int
@@ -283,15 +275,10 @@ func resourceWallarmAttackRecheckerRewriteRead(d *schema.ResourceData, m interfa
 			continue
 		}
 
-		// The response has a different structure so we have to align them
-		// to uniform view then to compare.
-		alignedPoints := alignPointScheme(rule.Point)
-
 		actualRule := &wallarm.ActionBody{
 			ActionID: rule.ActionID,
 			Type:     rule.Type,
-			Rules:    rule.Rules,
-			Point:    alignedPoints,
+			Action:   rule.Action,
 		}
 
 		if cmp.Equal(expectedRule, *actualRule) && equalWithoutOrder(action, rule.Action) {
@@ -308,6 +295,14 @@ func resourceWallarmAttackRecheckerRewriteRead(d *schema.ResourceData, m interfa
 
 	d.Set("client_id", clientID)
 
+	if actionsSet.Len() != 0 {
+		if err := d.Set("action", &actionsSet); err != nil {
+			return err
+		}
+	} else {
+		log.Printf("[WARN] action was empty so it either doesn't exist or it is a default branch which has no conditions. Actions: %v", &actionsSet)
+	}
+
 	if updatedRuleID == 0 {
 		log.Printf("[WARN] these rule IDs: %v have been found under the action ID: %d. But it isn't in the Terraform Plan.", notFoundRules, actionID)
 		d.SetId("")
@@ -316,28 +311,107 @@ func resourceWallarmAttackRecheckerRewriteRead(d *schema.ResourceData, m interfa
 	return nil
 }
 
-func resourceWallarmAttackRecheckerRewriteDelete(d *schema.ResourceData, m interface{}) error {
+func resourceWallarmDirbustCounterDelete(d *schema.ResourceData, m interface{}) error {
 	client := m.(wallarm.API)
 	clientID := retrieveClientID(d, client)
+	actionID := d.Get("action_id").(int)
 
-	ruleID := d.Get("rule_id").(int)
-	h := &wallarm.HintDelete{
-		Filter: &wallarm.HintDeleteFilter{
-			Clientid: []int{clientID},
-			ID:       ruleID,
+	rule := &wallarm.ActionRead{
+		Filter: &wallarm.ActionFilter{
+			HintsCount: wallarm.TwoDimensionalSlice{{1, nil}},
+			HintType:   []string{"dirbust_counter"},
+			Clientid:   []int{clientID},
+			ID:         []int{actionID},
 		},
+		Limit:  1000,
+		Offset: 0,
+	}
+	respRules, err := client.RuleRead(rule)
+	if err != nil {
+		return err
 	}
 
-	if err := client.HintDelete(h); err != nil {
-		return err
+	if len(respRules.Body) == 1 && respRules.Body[0].Hints == 1 && respRules.Body[0].GroupedHintsCount == 1 {
+		if err := client.RuleDelete(actionID); err != nil {
+			return err
+		}
+	} else {
+		ruleID := d.Get("rule_id").(int)
+		h := &wallarm.HintDelete{
+			Filter: &wallarm.HintDeleteFilter{
+				Clientid: []int{clientID},
+				ID:       ruleID,
+			},
+		}
+		if err := client.HintDelete(h); err != nil {
+			return err
+		}
 	}
 
 	return nil
 }
 
-func resourceWallarmAttackRecheckerRewriteUpdate(d *schema.ResourceData, m interface{}) error {
-	if err := resourceWallarmAttackRecheckerRewriteDelete(d, m); err != nil {
-		return err
+func resourceWallarmDirbustCounterImport(d *schema.ResourceData, m interface{}) ([]*schema.ResourceData, error) {
+	client := m.(wallarm.API)
+	idAttr := strings.SplitN(d.Id(), "/", 3)
+	if len(idAttr) == 4 {
+		clientID, err := strconv.Atoi(idAttr[0])
+		if err != nil {
+			return nil, err
+		}
+		actionID, err := strconv.Atoi(idAttr[1])
+		if err != nil {
+			return nil, err
+		}
+		ruleID, err := strconv.Atoi(idAttr[2])
+		if err != nil {
+			return nil, err
+		}
+		d.Set("action_id", actionID)
+		d.Set("rule_id", ruleID)
+		d.Set("rule_type", "dirbust_counter")
+
+		hint := &wallarm.HintRead{
+			Limit:     1000,
+			Offset:    0,
+			OrderBy:   "updated_at",
+			OrderDesc: true,
+			Filter: &wallarm.HintFilter{
+				Clientid: []int{clientID},
+				ID:       []int{ruleID},
+				Type:     []string{"dirbust_counter"},
+			},
+		}
+		actionHints, err := client.HintRead(hint)
+		if err != nil {
+			return nil, err
+		}
+		actionsSet := schema.Set{
+			F: hashResponseActionDetails,
+		}
+		var actsSlice []map[string]interface{}
+		if len((*actionHints.Body)) != 0 && len((*actionHints.Body)[0].Action) != 0 {
+			for _, a := range (*actionHints.Body)[0].Action {
+				acts, err := actionDetailsToMap(a)
+				if err != nil {
+					return nil, err
+				}
+				actsSlice = append(actsSlice, acts)
+				actionsSet.Add(acts)
+			}
+			if err := d.Set("action", &actionsSet); err != nil {
+				return nil, err
+			}
+		}
+
+		existingID := fmt.Sprintf("%d/%d/%d", clientID, actionID, ruleID)
+		d.SetId(existingID)
+
+	} else {
+		return nil, fmt.Errorf("invalid id (%q) specified, should be in format \"{clientID}/{actionID}/{ruleID}\"", d.Id())
 	}
-	return resourceWallarmAttackRecheckerRewriteCreate(d, m)
+
+	resourceWallarmDirbustCounterRead(d, m)
+
+	return []*schema.ResourceData{d}, nil
 }

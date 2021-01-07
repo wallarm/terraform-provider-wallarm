@@ -53,6 +53,12 @@ func resourceWallarmMode() *schema.Resource {
 				},
 			},
 
+			"comment": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+
 			"mode": {
 				Type:         schema.TypeString,
 				Required:     true,
@@ -90,7 +96,6 @@ func resourceWallarmMode() *schema.Resource {
 										Type:     schema.TypeList,
 										Optional: true,
 										ForceNew: true,
-										Computed: true,
 										Elem:     &schema.Schema{Type: schema.TypeString},
 									},
 									"method": {
@@ -118,28 +123,25 @@ func resourceWallarmMode() *schema.Resource {
 										Type:     schema.TypeString,
 										Optional: true,
 										ForceNew: true,
-										Computed: true,
 									},
 
 									"action_ext": {
 										Type:     schema.TypeString,
 										Optional: true,
 										ForceNew: true,
-										Computed: true,
 									},
 
 									"proto": {
-										Type:     schema.TypeString,
-										Optional: true,
-										ForceNew: true,
-										Computed: true,
+										Type:         schema.TypeString,
+										Optional:     true,
+										ForceNew:     true,
+										ValidateFunc: validation.StringInSlice([]string{"1.0", "1.1", "2.0", "3.0"}, false),
 									},
 
 									"scheme": {
 										Type:         schema.TypeString,
 										Optional:     true,
 										ForceNew:     true,
-										Computed:     true,
 										ValidateFunc: validation.StringInSlice([]string{"http", "https"}, true),
 									},
 
@@ -147,7 +149,6 @@ func resourceWallarmMode() *schema.Resource {
 										Type:     schema.TypeString,
 										Optional: true,
 										ForceNew: true,
-										Computed: true,
 									},
 
 									"instance": {
@@ -157,7 +158,7 @@ func resourceWallarmMode() *schema.Resource {
 										ValidateFunc: func(val interface{}, key string) (warns []string, errs []error) {
 											v := val.(int)
 											if v < -1 {
-												errs = append(errs, fmt.Errorf("%q must be between greater then -1 inclusive, got: %d", key, v))
+												errs = append(errs, fmt.Errorf("%q must be be greater than -1 inclusive, got: %d", key, v))
 											}
 											return
 										},
@@ -182,8 +183,9 @@ func resourceWallarmModeCreate(d *schema.ResourceData, m interface{}) error {
 			return ImportAsExistsError("wallarm_rule_mode", existingID)
 		}
 	}
-	client := m.(*wallarm.API)
+	client := m.(wallarm.API)
 	clientID := retrieveClientID(d, client)
+	comment := d.Get("comment").(string)
 	actionsFromState := d.Get("action").(*schema.Set)
 	mode := d.Get("mode").(string)
 
@@ -197,6 +199,7 @@ func resourceWallarmModeCreate(d *schema.ResourceData, m interface{}) error {
 		Action:    &action,
 		Mode:      mode,
 		Validated: false,
+		Comment:   comment,
 	}
 
 	actionResp, err := client.HintCreate(wm)
@@ -215,7 +218,7 @@ func resourceWallarmModeCreate(d *schema.ResourceData, m interface{}) error {
 }
 
 func resourceWallarmModeRead(d *schema.ResourceData, m interface{}) error {
-	client := m.(*wallarm.API)
+	client := m.(wallarm.API)
 	clientID := retrieveClientID(d, client)
 	actionID := d.Get("action_id").(int)
 	ruleID := d.Get("rule_id").(int)
@@ -226,18 +229,16 @@ func resourceWallarmModeRead(d *schema.ResourceData, m interface{}) error {
 		return err
 	}
 
-	actionsSet := schema.Set{
-		F: hashResponseActionDetails,
-	}
-	var actsSlice []map[string]interface{}
+	var actsSlice []interface{}
 	for _, a := range action {
 		acts, err := actionDetailsToMap(a)
 		if err != nil {
 			return err
 		}
 		actsSlice = append(actsSlice, acts)
-		actionsSet.Add(acts)
 	}
+
+	actionsSet := schema.NewSet(hashResponseActionDetails, actsSlice)
 
 	hint := &wallarm.HintRead{
 		Limit:     1000,
@@ -310,7 +311,7 @@ func resourceWallarmModeRead(d *schema.ResourceData, m interface{}) error {
 }
 
 func resourceWallarmModeDelete(d *schema.ResourceData, m interface{}) error {
-	client := m.(*wallarm.API)
+	client := m.(wallarm.API)
 	clientID := retrieveClientID(d, client)
 	actionID := d.Get("action_id").(int)
 
@@ -350,7 +351,7 @@ func resourceWallarmModeDelete(d *schema.ResourceData, m interface{}) error {
 }
 
 func resourceWallarmModeImport(d *schema.ResourceData, m interface{}) ([]*schema.ResourceData, error) {
-	client := m.(*wallarm.API)
+	client := m.(wallarm.API)
 	idAttr := strings.SplitN(d.Id(), "/", 4)
 	if len(idAttr) == 4 {
 		clientID, err := strconv.Atoi(idAttr[0])

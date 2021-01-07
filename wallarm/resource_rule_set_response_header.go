@@ -50,6 +50,12 @@ func resourceWallarmSetResponseHeader() *schema.Resource {
 				},
 			},
 
+			"comment": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+
 			"mode": {
 				Type:         schema.TypeString,
 				Required:     true,
@@ -92,7 +98,6 @@ func resourceWallarmSetResponseHeader() *schema.Resource {
 										Type:     schema.TypeList,
 										Optional: true,
 										ForceNew: true,
-										Computed: true,
 										Elem:     &schema.Schema{Type: schema.TypeString},
 									},
 									"method": {
@@ -120,28 +125,25 @@ func resourceWallarmSetResponseHeader() *schema.Resource {
 										Type:     schema.TypeString,
 										Optional: true,
 										ForceNew: true,
-										Computed: true,
 									},
 
 									"action_ext": {
 										Type:     schema.TypeString,
 										Optional: true,
 										ForceNew: true,
-										Computed: true,
 									},
 
 									"proto": {
-										Type:     schema.TypeString,
-										Optional: true,
-										ForceNew: true,
-										Computed: true,
+										Type:         schema.TypeString,
+										Optional:     true,
+										ForceNew:     true,
+										ValidateFunc: validation.StringInSlice([]string{"1.0", "1.1", "2.0", "3.0"}, false),
 									},
 
 									"scheme": {
 										Type:         schema.TypeString,
 										Optional:     true,
 										ForceNew:     true,
-										Computed:     true,
 										ValidateFunc: validation.StringInSlice([]string{"http", "https"}, true),
 									},
 
@@ -149,7 +151,6 @@ func resourceWallarmSetResponseHeader() *schema.Resource {
 										Type:     schema.TypeString,
 										Optional: true,
 										ForceNew: true,
-										Computed: true,
 									},
 
 									"instance": {
@@ -159,7 +160,7 @@ func resourceWallarmSetResponseHeader() *schema.Resource {
 										ValidateFunc: func(val interface{}, key string) (warns []string, errs []error) {
 											v := val.(int)
 											if v < -1 {
-												errs = append(errs, fmt.Errorf("%q must be between greater then -1 inclusive, got: %d", key, v))
+												errs = append(errs, fmt.Errorf("%q must be be greater than -1 inclusive, got: %d", key, v))
 											}
 											return
 										},
@@ -175,8 +176,9 @@ func resourceWallarmSetResponseHeader() *schema.Resource {
 }
 
 func resourceWallarmSetResponseHeaderCreate(d *schema.ResourceData, m interface{}) error {
-	client := m.(*wallarm.API)
+	client := m.(wallarm.API)
 	clientID := retrieveClientID(d, client)
+	comment := d.Get("comment").(string)
 	mode := d.Get("mode").(string)
 	headers := d.Get("headers").(map[string]interface{})
 
@@ -196,6 +198,7 @@ func resourceWallarmSetResponseHeaderCreate(d *schema.ResourceData, m interface{
 			Name:      k,
 			Values:    []string{v.(string)},
 			Validated: false,
+			Comment:   comment,
 		}
 		actionResp, err := client.HintCreate(vp)
 		if err != nil {
@@ -207,7 +210,7 @@ func resourceWallarmSetResponseHeaderCreate(d *schema.ResourceData, m interface{
 
 		ruleIDs = append(ruleIDs, actionResp.Body.ID)
 
-		resID := fmt.Sprintf("%d/%d/%d/%s", clientID, actionID, actionResp.Body.ID, "set_response_header")
+		resID := fmt.Sprintf("%d/%d/%d", clientID, actionID, actionResp.Body.ID)
 		d.SetId(resID)
 
 	}
@@ -219,7 +222,7 @@ func resourceWallarmSetResponseHeaderCreate(d *schema.ResourceData, m interface{
 }
 
 func resourceWallarmSetResponseHeaderRead(d *schema.ResourceData, m interface{}) error {
-	client := m.(*wallarm.API)
+	client := m.(wallarm.API)
 	clientID := retrieveClientID(d, client)
 	actionID := d.Get("action_id").(int)
 	mode := d.Get("mode").(string)
@@ -312,7 +315,7 @@ func resourceWallarmSetResponseHeaderRead(d *schema.ResourceData, m interface{})
 }
 
 func resourceWallarmSetResponseHeaderDelete(d *schema.ResourceData, m interface{}) error {
-	client := m.(*wallarm.API)
+	client := m.(wallarm.API)
 	clientID := retrieveClientID(d, client)
 
 	var ruleIDInterface []interface{}

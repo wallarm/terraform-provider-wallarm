@@ -12,7 +12,7 @@ install: fmtcheck
 	@go install terraform-provider-wallarm_$(VERSION) .
 
 build: fmtcheck
-	@echo "Building the sideloaded provider..."
+	@echo "Building a sideloaded provider..."
 	@go build -o terraform-provider-wallarm_$(VERSION) .
 	@echo "Binary has been built to $(CURDIR)"
 
@@ -46,12 +46,4 @@ fmt:
 fmtcheck:
 	@sh -c "'$(CURDIR)/scripts/gofmtcheck.sh'"
 
-apply: build init
-	@echo "Running .tf files in the folder..."
-	@terraform apply
-
-destroy: build init
-	@echo "Running .tf files in the folder..."
-	@terraform destroy
-
-.PHONY: install build init init-plugin test testacc vet fmt fmtcheck apply destroy
+.PHONY: install build init init-plugin test testacc vet fmt fmtcheck

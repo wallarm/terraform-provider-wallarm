@@ -101,7 +101,7 @@ func resourceWallarmInsightConnect() *schema.Resource {
 }
 
 func resourceWallarmInsightConnectCreate(d *schema.ResourceData, m interface{}) error {
-	client := m.(*wallarm.API)
+	client := m.(wallarm.API)
 	clientID := retrieveClientID(d, client)
 	name := d.Get("name").(string)
 	apiURL := d.Get("api_url").(string)
@@ -138,7 +138,7 @@ func resourceWallarmInsightConnectCreate(d *schema.ResourceData, m interface{}) 
 }
 
 func resourceWallarmInsightConnectRead(d *schema.ResourceData, m interface{}) error {
-	client := m.(*wallarm.API)
+	client := m.(wallarm.API)
 	clientID := retrieveClientID(d, client)
 	insight, err := client.IntegrationRead(clientID, d.Get("integration_id").(int))
 	if err != nil {
@@ -156,7 +156,7 @@ func resourceWallarmInsightConnectRead(d *schema.ResourceData, m interface{}) er
 }
 
 func resourceWallarmInsightConnectUpdate(d *schema.ResourceData, m interface{}) error {
-	client := m.(*wallarm.API)
+	client := m.(wallarm.API)
 	clientID := retrieveClientID(d, client)
 	name := d.Get("name").(string)
 	apiURL := d.Get("api_url").(string)
@@ -198,7 +198,7 @@ func resourceWallarmInsightConnectUpdate(d *schema.ResourceData, m interface{}) 
 }
 
 func resourceWallarmInsightConnectDelete(d *schema.ResourceData, m interface{}) error {
-	client := m.(*wallarm.API)
+	client := m.(wallarm.API)
 	clientID := retrieveClientID(d, client)
 	insight, err := client.IntegrationRead(clientID, d.Get("integration_id").(int))
 	if err != nil {

@@ -53,6 +53,12 @@ func resourceWallarmIgnoreRegex() *schema.Resource {
 				},
 			},
 
+			"comment": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+
 			"regex_id": {
 				Type:     schema.TypeInt,
 				Required: true,
@@ -89,7 +95,6 @@ func resourceWallarmIgnoreRegex() *schema.Resource {
 										Type:     schema.TypeList,
 										Optional: true,
 										ForceNew: true,
-										Computed: true,
 										Elem:     &schema.Schema{Type: schema.TypeString},
 									},
 									"method": {
@@ -117,28 +122,25 @@ func resourceWallarmIgnoreRegex() *schema.Resource {
 										Type:     schema.TypeString,
 										Optional: true,
 										ForceNew: true,
-										Computed: true,
 									},
 
 									"action_ext": {
 										Type:     schema.TypeString,
 										Optional: true,
 										ForceNew: true,
-										Computed: true,
 									},
 
 									"proto": {
-										Type:     schema.TypeString,
-										Optional: true,
-										ForceNew: true,
-										Computed: true,
+										Type:         schema.TypeString,
+										Optional:     true,
+										ForceNew:     true,
+										ValidateFunc: validation.StringInSlice([]string{"1.0", "1.1", "2.0", "3.0"}, false),
 									},
 
 									"scheme": {
 										Type:         schema.TypeString,
 										Optional:     true,
 										ForceNew:     true,
-										Computed:     true,
 										ValidateFunc: validation.StringInSlice([]string{"http", "https"}, true),
 									},
 
@@ -146,7 +148,6 @@ func resourceWallarmIgnoreRegex() *schema.Resource {
 										Type:     schema.TypeString,
 										Optional: true,
 										ForceNew: true,
-										Computed: true,
 									},
 
 									"instance": {
@@ -156,7 +157,7 @@ func resourceWallarmIgnoreRegex() *schema.Resource {
 										ValidateFunc: func(val interface{}, key string) (warns []string, errs []error) {
 											v := val.(int)
 											if v < -1 {
-												errs = append(errs, fmt.Errorf("%q must be between greater then -1 inclusive, got: %d", key, v))
+												errs = append(errs, fmt.Errorf("%q must be be greater than -1 inclusive, got: %d", key, v))
 											}
 											return
 										},
@@ -193,8 +194,9 @@ func resourceWallarmIgnoreRegexCreate(d *schema.ResourceData, m interface{}) err
 			return ImportAsExistsError("wallarm_rule_ignore_regex", existingID)
 		}
 	}
-	client := m.(*wallarm.API)
+	client := m.(wallarm.API)
 	clientID := retrieveClientID(d, client)
+	comment := d.Get("comment").(string)
 	regexID := d.Get("regex_id").(int)
 
 	ps := d.Get("point").([]interface{})
@@ -219,6 +221,7 @@ func resourceWallarmIgnoreRegexCreate(d *schema.ResourceData, m interface{}) err
 		Action:   &action,
 		Point:    points,
 		RegexID:  regexID,
+		Comment:  comment,
 	}
 
 	actionResp, err := client.HintCreate(vp)
@@ -237,7 +240,7 @@ func resourceWallarmIgnoreRegexCreate(d *schema.ResourceData, m interface{}) err
 }
 
 func resourceWallarmIgnoreRegexRead(d *schema.ResourceData, m interface{}) error {
-	client := m.(*wallarm.API)
+	client := m.(wallarm.API)
 	clientID := retrieveClientID(d, client)
 	actionID := d.Get("action_id").(int)
 	ruleID := d.Get("rule_id").(int)
@@ -256,18 +259,16 @@ func resourceWallarmIgnoreRegexRead(d *schema.ResourceData, m interface{}) error
 		return err
 	}
 
-	actionsSet := schema.Set{
-		F: hashResponseActionDetails,
-	}
-	var actsSlice []map[string]interface{}
+	var actsSlice []interface{}
 	for _, a := range action {
 		acts, err := actionDetailsToMap(a)
 		if err != nil {
 			return err
 		}
 		actsSlice = append(actsSlice, acts)
-		actionsSet.Add(acts)
 	}
+
+	actionsSet := schema.NewSet(hashResponseActionDetails, actsSlice)
 
 	hint := &wallarm.HintRead{
 		Limit:     1000,
@@ -345,7 +346,7 @@ func resourceWallarmIgnoreRegexRead(d *schema.ResourceData, m interface{}) error
 }
 
 func resourceWallarmIgnoreRegexDelete(d *schema.ResourceData, m interface{}) error {
-	client := m.(*wallarm.API)
+	client := m.(wallarm.API)
 	clientID := retrieveClientID(d, client)
 	actionID := d.Get("action_id").(int)
 
@@ -386,9 +387,9 @@ func resourceWallarmIgnoreRegexDelete(d *schema.ResourceData, m interface{}) err
 }
 
 func resourceWallarmIgnoreRegexImport(d *schema.ResourceData, m interface{}) ([]*schema.ResourceData, error) {
-	client := m.(*wallarm.API)
-	idAttr := strings.SplitN(d.Id(), "/", 4)
-	if len(idAttr) == 4 {
+	client := m.(wallarm.API)
+	idAttr := strings.SplitN(d.Id(), "/", 3)
+	if len(idAttr) == 3 {
 		clientID, err := strconv.Atoi(idAttr[0])
 		if err != nil {
 			return nil, err
@@ -401,7 +402,6 @@ func resourceWallarmIgnoreRegexImport(d *schema.ResourceData, m interface{}) ([]
 		if err != nil {
 			return nil, err
 		}
-		hintType := idAttr[3]
 		d.Set("action_id", actionID)
 		d.Set("rule_id", ruleID)
 		d.Set("rule_type", "disable_regex")
@@ -445,11 +445,11 @@ func resourceWallarmIgnoreRegexImport(d *schema.ResourceData, m interface{}) ([]
 			d.Set("point", (*actionHints.Body)[0].Point)
 		}
 
-		existingID := fmt.Sprintf("%d/%d/%d/%s", clientID, actionID, ruleID, hintType)
+		existingID := fmt.Sprintf("%d/%d/%d", clientID, actionID, ruleID)
 		d.SetId(existingID)
 
 	} else {
-		return nil, fmt.Errorf("invalid id (%q) specified, should be in format \"{clientID}/{actionID}/{ruleID}/disable_regex\"", d.Id())
+		return nil, fmt.Errorf("invalid id (%q) specified, should be in format \"{clientID}/{actionID}/{ruleID}\"", d.Id())
 	}
 
 	resourceWallarmIgnoreRegexRead(d, m)
