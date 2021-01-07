@@ -141,7 +141,6 @@ func providerConfigure(d *schema.ResourceData, terraformVersion string) (interfa
 		options = append(options, wallarm.UsingLogger(log.New(os.Stderr, "", log.LstdFlags|log.Lshortfile)))
 	}
 
-	// c := cleanhttp.DefaultClient()
 	c := cleanhttp.DefaultPooledClient()
 	c.Transport = logging.NewTransport("Wallarm", c.Transport)
 	options = append(options, wallarm.HTTPClient(c))
@@ -150,10 +149,9 @@ func providerConfigure(d *schema.ResourceData, terraformVersion string) (interfa
 	providerUserAgent := fmt.Sprintf("terraform-provider-wallarm")
 	ua := fmt.Sprintf("%s/%s/%s", tfUserAgent, providerUserAgent, version.ProviderVersion)
 	options = append(options, wallarm.UserAgent(ua))
-	options = append(options, wallarm.UsingBaseURL(apiURL))
 
 	authHeaders := make(http.Header)
-	config := Config{Options: options}
+	config := Config{}
 
 	if v, ok := d.GetOk("api_uuid"); ok {
 		config.apiUUID = v.(string)
@@ -162,14 +160,13 @@ func providerConfigure(d *schema.ResourceData, terraformVersion string) (interfa
 		return nil, wallarm.ErrInvalidCredentials
 	}
 	if v, ok := d.GetOk("api_secret"); ok {
-		config.apiSecret = v.(string)
 		authHeaders.Add("X-WallarmAPI-Secret", v.(string))
 	} else {
 		return nil, wallarm.ErrInvalidCredentials
 	}
 
 	if v, ok := d.GetOk("api_host"); ok {
-		config.apiURL = v.(string)
+		options = append(options, wallarm.UsingBaseURL(v.(string)))
 	}
 	options = append(options, wallarm.Headers(authHeaders))
 	config.Options = options
