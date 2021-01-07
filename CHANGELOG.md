@@ -1,3 +1,14 @@
+# v0.0.11 (January 2, 2021)
+
+## NOTES:
+
+* Fix bug with the incorrect state
+* Now `PASSPHRASE` for Release workflow is taken from `secrets.PASSPHRASE` as per best practices
+* Added support of `go 1.15` in tests
+* Two newly created resources: `wallarm_rule_bruteforce_counter` and `wallarm_rule_dirbust_counter`. The source code and documentation have been included altogether.
+* `Trigger` arbitrary time value replaced by enum type
+* New `wallarm-go` library structure approach
+
 # v0.0.8 (December 2, 2020)
 
 ## NOTES:
