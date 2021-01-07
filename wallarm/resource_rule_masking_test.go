@@ -38,6 +38,34 @@ func TestAccRuleMaskingCreate_Basic(t *testing.T) {
 	})
 }
 
+func TestAccRuleMaskingCreateRecreate(t *testing.T) {
+	rnd := generateRandomResourceName(5)
+	name := "wallarm_rule_masking." + rnd
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckWallarmRuleMaskingDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccRuleMaskingCreateRecreate(rnd),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(name, "action.#", "1"),
+					resource.TestCheckResourceAttr(name, "point.0.0", "header"),
+					resource.TestCheckResourceAttr(name, "point.0.1", "headers"),
+				),
+			},
+			{
+				Config: testAccRuleMaskingCreateRecreate(rnd),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(name, "action.#", "1"),
+					resource.TestCheckResourceAttr(name, "point.0.0", "header"),
+					resource.TestCheckResourceAttr(name, "point.0.1", "headers"),
+				),
+			},
+		},
+	})
+}
+
 func TestAccRuleMaskingCreate_DefaultBranch(t *testing.T) {
 	rnd := generateRandomResourceName(5)
 	name := "wallarm_rule_masking." + rnd
@@ -119,6 +147,20 @@ func testWallarmRuleMaskingDefaultBranchConfig(resourceID, point string) string 
 resource "wallarm_rule_masking" "%[1]s" {
 	point = [%[2]s]
 }`, resourceID, point)
+}
+
+func testAccRuleMaskingCreateRecreate(resourceID string) string {
+	return fmt.Sprintf(`
+resource "wallarm_rule_masking" "%[1]s" {
+	action {
+		point = {
+		  method = "POST|GET|PATCH"
+		}
+    	type = "regex"
+	}
+
+  point = [["header", "headers"]]
+}`, resourceID)
 }
 
 func testWallarmRuleMaskingFullSettingsConfig(resourceID string, rule maskingTestingRule) string {

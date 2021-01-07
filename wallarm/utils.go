@@ -141,10 +141,34 @@ func hashResponseActionDetails(v interface{}) int {
 	if val, ok := m["point"]; ok {
 		p = val.([]interface{})
 		switch p[0].(string) {
-		case "action_name", "action_ext", "method",
-			"proto", "scheme", "uri":
+		case "action_name":
 			pointMap := make(map[string]string)
 			pointMap["proto"] = m["value"].(string)
+			m["point"] = pointMap
+			m["value"] = ""
+		case "action_ext":
+			pointMap := make(map[string]string)
+			pointMap["action_ext"] = m["value"].(string)
+			m["point"] = pointMap
+			m["value"] = ""
+		case "scheme":
+			pointMap := make(map[string]string)
+			pointMap["scheme"] = m["value"].(string)
+			m["point"] = pointMap
+			m["value"] = ""
+		case "uri":
+			pointMap := make(map[string]string)
+			pointMap["uri"] = m["value"].(string)
+			m["point"] = pointMap
+			m["value"] = ""
+		case "proto":
+			pointMap := make(map[string]string)
+			pointMap["proto"] = m["value"].(string)
+			m["point"] = pointMap
+			m["value"] = ""
+		case "method":
+			pointMap := make(map[string]string)
+			pointMap["method"] = m["value"].(string)
 			m["point"] = pointMap
 			m["value"] = ""
 		case "path":

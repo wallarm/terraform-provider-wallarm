@@ -97,7 +97,6 @@ func resourceWallarmDirbustCounter() *schema.Resource {
 										Type:     schema.TypeList,
 										Optional: true,
 										ForceNew: true,
-										Computed: true,
 										Elem:     &schema.Schema{Type: schema.TypeString},
 									},
 									"method": {
@@ -125,28 +124,25 @@ func resourceWallarmDirbustCounter() *schema.Resource {
 										Type:     schema.TypeString,
 										Optional: true,
 										ForceNew: true,
-										Computed: true,
 									},
 
 									"action_ext": {
 										Type:     schema.TypeString,
 										Optional: true,
 										ForceNew: true,
-										Computed: true,
 									},
 
 									"proto": {
-										Type:     schema.TypeString,
-										Optional: true,
-										ForceNew: true,
-										Computed: true,
+										Type:         schema.TypeString,
+										Optional:     true,
+										ForceNew:     true,
+										ValidateFunc: validation.StringInSlice([]string{"1.0", "1.1", "2.0", "3.0"}, false),
 									},
 
 									"scheme": {
 										Type:         schema.TypeString,
 										Optional:     true,
 										ForceNew:     true,
-										Computed:     true,
 										ValidateFunc: validation.StringInSlice([]string{"http", "https"}, true),
 									},
 
@@ -154,7 +150,6 @@ func resourceWallarmDirbustCounter() *schema.Resource {
 										Type:     schema.TypeString,
 										Optional: true,
 										ForceNew: true,
-										Computed: true,
 									},
 
 									"instance": {
@@ -235,18 +230,16 @@ func resourceWallarmDirbustCounterRead(d *schema.ResourceData, m interface{}) er
 		return err
 	}
 
-	actionsSet := schema.Set{
-		F: hashResponseActionDetails,
-	}
-	var actsSlice []map[string]interface{}
+	var actsSlice []interface{}
 	for _, a := range action {
 		acts, err := actionDetailsToMap(a)
 		if err != nil {
 			return err
 		}
 		actsSlice = append(actsSlice, acts)
-		actionsSet.Add(acts)
 	}
+
+	actionsSet := schema.NewSet(hashResponseActionDetails, actsSlice)
 
 	hint := &wallarm.HintRead{
 		Limit:     1000,
