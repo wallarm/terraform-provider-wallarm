@@ -1,4 +1,11 @@
-# v0.0.11 (January 2, 2021)
+# v0.0.10 (August 4, 2021)
+
+## NOTES:
+
+* Minor dependency fixes
+* Fixes for broken links in the docs
+
+# v0.0.9 (January 8, 2021)
 
 ## NOTES:
 
@@ -9,7 +16,7 @@
 * `Trigger` arbitrary time value replaced by enum type
 * New `wallarm-go` library structure approach
 
-# v0.0.8 (December 2, 2020)
+# v0.0.8 (December 16, 2020)
 
 ## NOTES:
 
