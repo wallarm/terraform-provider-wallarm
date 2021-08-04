@@ -7,7 +7,7 @@ import (
 	"os"
 	"regexp"
 
-	"github.com/416e64726579/terraform-provider-wallarm/version"
+	"github.com/wallarm/terraform-provider-wallarm/version"
 	wallarm "github.com/wallarm/wallarm-go"
 
 	cleanhttp "github.com/hashicorp/go-cleanhttp"

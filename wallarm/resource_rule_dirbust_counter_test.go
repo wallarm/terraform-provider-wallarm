@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	wallarm "github.com/wallarm/wallarm-go"
+
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/terraform"
 )

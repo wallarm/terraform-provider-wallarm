@@ -1,4 +1,4 @@
-module github.com/416e64726579/terraform-provider-wallarm
+module github.com/wallarm/terraform-provider-wallarm
 
 go 1.15
 
