@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	wallarm "github.com/416e64726579/wallarm-go"
+	wallarm "github.com/wallarm/wallarm-go"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
