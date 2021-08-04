@@ -86,7 +86,7 @@ resource "wallarm_rule_regex" "scanner_rule" {
   |`json_doc`   |`array`, `array_all`, `array_default`, `hash`, `hash_all`, `hash_default`, `hash_name`, `json_array`, `json_array_all`, `json_array_default`, `json_obj`, `json_obj_all`, `json_obj_default`, `json_obj_name`|
   |`instance`      | Integer ID of the application the request was sent to. |
 
-  [Examples](https://registry.terraform.io/providers/416e64726579/wallarm/latest/docs/guides/point)
+  [Examples](https://registry.terraform.io/providers/wallarm/wallarm/latest/docs/guides/point)
 
 `action` argument shares the available
 conditions which can be applied. The conditions are:
