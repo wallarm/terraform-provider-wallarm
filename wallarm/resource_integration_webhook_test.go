@@ -7,18 +7,21 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
+var (
+	webhookURL = "https://example.com/webhook"
+)
+
 func TestAccIntegrationWebhookRequiredFields(t *testing.T) {
 	name := "wallarm_integration_webhook.test"
-	rnd := generateRandomResourceName(10)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:  func() { testAccPreCheck(t) },
 		Providers: testAccProviders,
 		Steps: []resource.TestStep{
 			{
-				Config: testWallarmIntegrationWebhookRequiredOnly(fmt.Sprintf("https://%s.wallarm.com", rnd)),
+				Config: testWallarmIntegrationWebhookRequiredOnly(webhookURL),
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr(name, "webhook_url", fmt.Sprintf("https://%s.wallarm.com", rnd)),
+					resource.TestCheckResourceAttr(name, "webhook_url", webhookURL),
 				),
 			},
 		},
@@ -34,10 +37,10 @@ func TestAccIntegrationWebhookFullSettings(t *testing.T) {
 		Providers: testAccProviders,
 		Steps: []resource.TestStep{
 			{
-				Config: testWallarmIntegrationWebhookFullConfig(rnd, "tf-test-"+rnd, fmt.Sprintf("https://%s.wallarm.com", rnd), "POST", "Basic SGkgYXR0ZW50aXZlIFdhbGxhcm0gdXNlcg==", "application/json", "true"),
+				Config: testWallarmIntegrationWebhookFullConfig(rnd, "tf-test-"+rnd, webhookURL, "POST", "Basic SGkgYXR0ZW50aXZlIFdhbGxhcm0gdXNlcg==", "application/json", "true"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(name, "name", "tf-test-"+rnd),
-					resource.TestCheckResourceAttr(name, "webhook_url", fmt.Sprintf("https://%s.wallarm.com", rnd)),
+					resource.TestCheckResourceAttr(name, "webhook_url", webhookURL),
 					resource.TestCheckResourceAttr(name, "http_method", "POST"),
 					resource.TestCheckResourceAttr(name, "active", "true"),
 					resource.TestCheckResourceAttr(name, "headers.Authorization", "Basic SGkgYXR0ZW50aXZlIFdhbGxhcm0gdXNlcg=="),
@@ -58,10 +61,10 @@ func TestAccIntegrationWebhookCreateThenUpdate(t *testing.T) {
 		Providers: testAccProviders,
 		Steps: []resource.TestStep{
 			{
-				Config: testWallarmIntegrationWebhookFullConfig(rnd, "tf-test-"+rnd, fmt.Sprintf("https://%s.wallarm.com", rnd), "POST", "Basic SGkgYXR0ZW50aXZlIFdhbGxhcm0gdXNlcg==", "application/json", "true"),
+				Config: testWallarmIntegrationWebhookFullConfig(rnd, "tf-test-"+rnd, webhookURL, "POST", "Basic SGkgYXR0ZW50aXZlIFdhbGxhcm0gdXNlcg==", "application/json", "true"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(name, "name", "tf-test-"+rnd),
-					resource.TestCheckResourceAttr(name, "webhook_url", fmt.Sprintf("https://%s.wallarm.com", rnd)),
+					resource.TestCheckResourceAttr(name, "webhook_url", webhookURL),
 					resource.TestCheckResourceAttr(name, "http_method", "POST"),
 					resource.TestCheckResourceAttr(name, "active", "true"),
 					resource.TestCheckResourceAttr(name, "headers.Authorization", "Basic SGkgYXR0ZW50aXZlIFdhbGxhcm0gdXNlcg=="),
@@ -70,10 +73,10 @@ func TestAccIntegrationWebhookCreateThenUpdate(t *testing.T) {
 				),
 			},
 			{
-				Config: testWallarmIntegrationWebhookFullConfig(rnd, "tf-updated-"+rnd, fmt.Sprintf("https://%s.wallarm.com", rnd), "POST", "Basic SGkgYXR0ZW50aXZlIFdhbGxhcm0gdXNlcg==", "application/json", "false"),
+				Config: testWallarmIntegrationWebhookFullConfig(rnd, "tf-updated-"+rnd, webhookURL, "POST", "Basic SGkgYXR0ZW50aXZlIFdhbGxhcm0gdXNlcg==", "application/json", "false"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(name, "name", "tf-updated-"+rnd),
-					resource.TestCheckResourceAttr(name, "webhook_url", fmt.Sprintf("https://%s.wallarm.com", rnd)),
+					resource.TestCheckResourceAttr(name, "webhook_url", webhookURL),
 					resource.TestCheckResourceAttr(name, "http_method", "POST"),
 					resource.TestCheckResourceAttr(name, "active", "false"),
 					resource.TestCheckResourceAttr(name, "headers.Authorization", "Basic SGkgYXR0ZW50aXZlIFdhbGxhcm0gdXNlcg=="),
