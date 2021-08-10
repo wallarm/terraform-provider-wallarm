@@ -7,6 +7,10 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
+var (
+	opsgenieAlertsEndpoint = "https://api.opsgenie.com/v2/alerts"
+)
+
 func TestAccIntegrationOpsGenieRequiredFields(t *testing.T) {
 	rnd := generateRandomResourceName(5)
 	name := "wallarm_integration_opsgenie." + rnd
@@ -17,8 +21,9 @@ func TestAccIntegrationOpsGenieRequiredFields(t *testing.T) {
 		Providers: testAccProviders,
 		Steps: []resource.TestStep{
 			{
-				Config: testWallarmIntegrationOpsGenieRequiredOnly(rnd, rndToken),
+				Config: testWallarmIntegrationOpsGenieRequiredOnly(rnd, opsgenieAlertsEndpoint, rndToken),
 				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(name, "api_url", opsgenieAlertsEndpoint),
 					resource.TestCheckResourceAttr(name, "api_token", rndToken),
 				),
 			},
@@ -36,9 +41,10 @@ func TestAccIntegrationOpsGenieFullSettings(t *testing.T) {
 		Providers: testAccProviders,
 		Steps: []resource.TestStep{
 			{
-				Config: testWallarmIntegrationOpsGenieFullConfig(rnd, "tf-test-"+rnd, rndToken, "true"),
+				Config: testWallarmIntegrationOpsGenieFullConfig(rnd, "tf-test-"+rnd, opsgenieAlertsEndpoint, rndToken, "true"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(name, "name", "tf-test-"+rnd),
+					resource.TestCheckResourceAttr(name, "api_url", opsgenieAlertsEndpoint),
 					resource.TestCheckResourceAttr(name, "api_token", rndToken),
 					resource.TestCheckResourceAttr(name, "active", "true"),
 					resource.TestCheckResourceAttr(name, "event.#", "2"),
@@ -58,18 +64,20 @@ func TestAccIntegrationOpsGenieCreateThenUpdate(t *testing.T) {
 		Providers: testAccProviders,
 		Steps: []resource.TestStep{
 			{
-				Config: testWallarmIntegrationOpsGenieFullConfig(rnd, "tf-test-"+rnd, rndToken, "true"),
+				Config: testWallarmIntegrationOpsGenieFullConfig(rnd, "tf-test-"+rnd, opsgenieAlertsEndpoint, rndToken, "true"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(name, "name", "tf-test-"+rnd),
+					resource.TestCheckResourceAttr(name, "api_url", opsgenieAlertsEndpoint),
 					resource.TestCheckResourceAttr(name, "api_token", rndToken),
 					resource.TestCheckResourceAttr(name, "active", "true"),
 					resource.TestCheckResourceAttr(name, "event.#", "2"),
 				),
 			},
 			{
-				Config: testWallarmIntegrationOpsGenieFullConfig(rnd, "tf-updated-"+rnd, rndToken, "false"),
+				Config: testWallarmIntegrationOpsGenieFullConfig(rnd, "tf-updated-"+rnd, opsgenieAlertsEndpoint, rndToken, "false"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(name, "name", "tf-updated-"+rnd),
+					resource.TestCheckResourceAttr(name, "api_url", opsgenieAlertsEndpoint),
 					resource.TestCheckResourceAttr(name, "api_token", rndToken),
 					resource.TestCheckResourceAttr(name, "active", "false"),
 					resource.TestCheckResourceAttr(name, "event.#", "2"),
@@ -79,19 +87,21 @@ func TestAccIntegrationOpsGenieCreateThenUpdate(t *testing.T) {
 	})
 }
 
-func testWallarmIntegrationOpsGenieRequiredOnly(resourceID, token string) string {
+func testWallarmIntegrationOpsGenieRequiredOnly(resourceID, url, token string) string {
 	return fmt.Sprintf(`
 resource "wallarm_integration_opsgenie" "%[1]s" {
-	api_token = "%[2]s"
-}`, resourceID, token)
+    api_url = "%[2]s"
+	api_token = "%[3]s"
+}`, resourceID, url, token)
 }
 
-func testWallarmIntegrationOpsGenieFullConfig(resourceID, name, token, active string) string {
+func testWallarmIntegrationOpsGenieFullConfig(resourceID, name, url, token, active string) string {
 	return fmt.Sprintf(`
 resource "wallarm_integration_opsgenie" "%[1]s" {
 	name = "%[2]s"
-	api_token = "%[3]s"
-	active = "%[4]s"
+	api_url = "%[3]s"
+	api_token = "%[4]s"
+	active = "%[5]s"
 	
 	event {
 		event_type = "hit"
@@ -99,7 +109,7 @@ resource "wallarm_integration_opsgenie" "%[1]s" {
 	}
 	event {
 		event_type = "vuln"
-		active = "%[4]s"
+		active = "%[5]s"
 	}
-}`, resourceID, name, token, active)
+}`, resourceID, name, url, token, active)
 }

@@ -69,6 +69,13 @@ func resourceWallarmOpsGenie() *schema.Resource {
 				Sensitive: true,
 			},
 
+			"api_url": {
+				Type:         schema.TypeString,
+				Required:     true,
+				Sensitive:    true,
+				ValidateFunc: validation.IsURLWithHTTPorHTTPS,
+			},
+
 			"event": {
 				Type:     schema.TypeSet,
 				Optional: true,
@@ -97,6 +104,7 @@ func resourceWallarmOpsGenieCreate(d *schema.ResourceData, m interface{}) error 
 	client := m.(wallarm.API)
 	clientID := retrieveClientID(d, client)
 	name := d.Get("name").(string)
+	apiURL := d.Get("api_url").(string)
 	apiToken := d.Get("api_token").(string)
 	active := d.Get("active").(bool)
 	events, err := expandWallarmEventToIntEvents(d.Get("event").(interface{}), "opsgenie")
@@ -104,16 +112,19 @@ func resourceWallarmOpsGenieCreate(d *schema.ResourceData, m interface{}) error 
 		return err
 	}
 
-	opsGenieBody := wallarm.IntegrationCreate{
-		Name:     name,
-		Active:   active,
-		Target:   apiToken,
+	opsGenieBody := wallarm.IntegrationWithAPICreate{
+		Name:   name,
+		Active: active,
+		Target: &wallarm.IntegrationWithAPITarget{
+			Token: apiToken,
+			API:   apiURL,
+		},
 		Clientid: clientID,
 		Type:     "opsgenie",
 		Events:   events,
 	}
 
-	createRes, err := client.IntegrationCreate(&opsGenieBody)
+	createRes, err := client.IntegrationWithAPICreate(&opsGenieBody)
 	if err != nil {
 		return err
 	}
@@ -148,6 +159,7 @@ func resourceWallarmOpsGenieUpdate(d *schema.ResourceData, m interface{}) error 
 	client := m.(wallarm.API)
 	clientID := retrieveClientID(d, client)
 	name := d.Get("name").(string)
+	apiURL := d.Get("api_url").(string)
 	apiToken := d.Get("api_token").(string)
 	active := d.Get("active").(bool)
 	events, err := expandWallarmEventToIntEvents(d.Get("event").(interface{}), "opsgenie")
@@ -160,15 +172,18 @@ func resourceWallarmOpsGenieUpdate(d *schema.ResourceData, m interface{}) error 
 		return err
 	}
 
-	opsgenieBody := wallarm.IntegrationCreate{
+	opsgenieBody := wallarm.IntegrationWithAPICreate{
 		Name:   name,
 		Active: active,
-		Target: apiToken,
+		Target: &wallarm.IntegrationWithAPITarget{
+			Token: apiToken,
+			API:   apiURL,
+		},
 		Type:   "opsgenie",
 		Events: events,
 	}
 
-	updateRes, err := client.IntegrationUpdate(&opsgenieBody, opsgenie.ID)
+	updateRes, err := client.IntegrationWithAPIUpdate(&opsgenieBody, opsgenie.ID)
 	if err != nil {
 		return err
 	}

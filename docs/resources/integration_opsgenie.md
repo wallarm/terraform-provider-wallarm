@@ -21,6 +21,7 @@ The types of events available to be sent to OpsGenie:
 
 resource "wallarm_integration_opsgenie" "opsgenie_integration" {
   name = "New Terraform OpsGenie Integration"
+  api_url = "https://api.opsgenie.com/v2/alerts"
   api_token = "b035033e-540a-0390-aa00-a102e5b556a7"
   active = true
 
@@ -44,6 +45,7 @@ resource "wallarm_integration_opsgenie" "opsgenie_integration" {
 Default: `false`
 * `name` - (Optional) Integration name.
 * `api_token` - (Required) OpsGenie API token. Sensitive.
+* `api_url` - (Required) OpsGenie alerts API endpoint. If you're using the [EU instance](https://support.atlassian.com/opsgenie/docs/european-service-region) of OpsGenie, set the value to https://api.eu.opsgenie.com/v2/alerts. Otherwise, set it to https://api.opsgenie.com/v2/alerts.
 
 ## Event
 
