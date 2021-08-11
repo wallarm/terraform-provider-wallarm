@@ -7,9 +7,12 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
+var (
+	insightConnectURL = "https://example.com/insight/connect"
+)
+
 func TestAccIntegrationInsightConnectRequiredFields(t *testing.T) {
 	name := "wallarm_integration_insightconnect.test"
-	rnd := generateRandomResourceName(10)
 	rndToken := generateRandomUUID()
 
 	resource.Test(t, resource.TestCase{
@@ -17,9 +20,9 @@ func TestAccIntegrationInsightConnectRequiredFields(t *testing.T) {
 		Providers: testAccProviders,
 		Steps: []resource.TestStep{
 			{
-				Config: testWallarmIntegrationInsightConnectRequiredOnly(fmt.Sprintf("https://%s.wallarm.com", rnd), rndToken),
+				Config: testWallarmIntegrationInsightConnectRequiredOnly(insightConnectURL, rndToken),
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr(name, "api_url", fmt.Sprintf("https://%s.wallarm.com", rnd)),
+					resource.TestCheckResourceAttr(name, "api_url", insightConnectURL),
 					resource.TestCheckResourceAttr(name, "api_token", rndToken),
 				),
 			},
@@ -37,10 +40,10 @@ func TestAccIntegrationInsightConnectFullSettings(t *testing.T) {
 		Providers: testAccProviders,
 		Steps: []resource.TestStep{
 			{
-				Config: testWallarmIntegrationInsightConnectFullConfig("tf-test-"+rnd, fmt.Sprintf("https://%s.wallarm.com", rnd), rndToken, "true"),
+				Config: testWallarmIntegrationInsightConnectFullConfig("tf-test-"+rnd, insightConnectURL, rndToken, "true"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(name, "name", "tf-test-"+rnd),
-					resource.TestCheckResourceAttr(name, "api_url", fmt.Sprintf("https://%s.wallarm.com", rnd)),
+					resource.TestCheckResourceAttr(name, "api_url", insightConnectURL),
 					resource.TestCheckResourceAttr(name, "api_token", rndToken),
 					resource.TestCheckResourceAttr(name, "active", "true"),
 					resource.TestCheckResourceAttr(name, "event.#", "4"),
@@ -60,20 +63,20 @@ func TestAccIntegrationInsightConnectCreateThenUpdate(t *testing.T) {
 		Providers: testAccProviders,
 		Steps: []resource.TestStep{
 			{
-				Config: testWallarmIntegrationInsightConnectFullConfig("tf-test-"+rnd, fmt.Sprintf("https://%s.wallarm.com", rnd), rndToken, "true"),
+				Config: testWallarmIntegrationInsightConnectFullConfig("tf-test-"+rnd, insightConnectURL, rndToken, "true"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(name, "name", "tf-test-"+rnd),
-					resource.TestCheckResourceAttr(name, "api_url", fmt.Sprintf("https://%s.wallarm.com", rnd)),
+					resource.TestCheckResourceAttr(name, "api_url", insightConnectURL),
 					resource.TestCheckResourceAttr(name, "api_token", rndToken),
 					resource.TestCheckResourceAttr(name, "active", "true"),
 					resource.TestCheckResourceAttr(name, "event.#", "4"),
 				),
 			},
 			{
-				Config: testWallarmIntegrationInsightConnectFullConfig("tf-updated-"+rnd, fmt.Sprintf("https://%s.wallarm.com", rnd), rndToken, "false"),
+				Config: testWallarmIntegrationInsightConnectFullConfig("tf-updated-"+rnd, insightConnectURL, rndToken, "false"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(name, "name", "tf-updated-"+rnd),
-					resource.TestCheckResourceAttr(name, "api_url", fmt.Sprintf("https://%s.wallarm.com", rnd)),
+					resource.TestCheckResourceAttr(name, "api_url", insightConnectURL),
 					resource.TestCheckResourceAttr(name, "api_token", rndToken),
 					resource.TestCheckResourceAttr(name, "active", "false"),
 					resource.TestCheckResourceAttr(name, "event.#", "4"),

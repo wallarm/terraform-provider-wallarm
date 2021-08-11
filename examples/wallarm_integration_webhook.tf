@@ -1,6 +1,6 @@
 resource "wallarm_integration_webhook" "wh_integration" {
   name = "New Terraform WebHook Integration"
-  webhook_url = "https://webhook.example.com"
+  webhook_url = "https://example.com/webhook"
   http_method = "POST"
 
   event {

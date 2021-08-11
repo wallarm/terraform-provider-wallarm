@@ -7,6 +7,10 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
+var (
+	splunkURL = "https://example.com/splunk"
+)
+
 func TestAccIntegrationSplunkRequiredFields(t *testing.T) {
 	rnd := generateRandomResourceName(5)
 	name := "wallarm_integration_splunk." + rnd
@@ -16,9 +20,9 @@ func TestAccIntegrationSplunkRequiredFields(t *testing.T) {
 		Providers: testAccProviders,
 		Steps: []resource.TestStep{
 			{
-				Config: testWallarmIntegrationSplunkRequiredOnly(rnd, "http://splunk.wallarm.com", "b1e2d6dc-e4b5-400d-9dae-270c39c5daa2"),
+				Config: testWallarmIntegrationSplunkRequiredOnly(rnd, splunkURL, "b1e2d6dc-e4b5-400d-9dae-270c39c5daa2"),
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr(name, "api_url", "http://splunk.wallarm.com"),
+					resource.TestCheckResourceAttr(name, "api_url", splunkURL),
 					resource.TestCheckResourceAttr(name, "api_token", "b1e2d6dc-e4b5-400d-9dae-270c39c5daa2"),
 				),
 			},
@@ -35,10 +39,10 @@ func TestAccIntegrationSplunkFullSettings(t *testing.T) {
 		Providers: testAccProviders,
 		Steps: []resource.TestStep{
 			{
-				Config: testWallarmIntegrationSplunkFullConfig(rnd, "tf-test-"+rnd, "http://splunk.wallarm.com", "b1e2d6dc-e4b5-400d-9dae-270c39c5daa2", "true"),
+				Config: testWallarmIntegrationSplunkFullConfig(rnd, "tf-test-"+rnd, splunkURL, "b1e2d6dc-e4b5-400d-9dae-270c39c5daa2", "true"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(name, "name", "tf-test-"+rnd),
-					resource.TestCheckResourceAttr(name, "api_url", "http://splunk.wallarm.com"),
+					resource.TestCheckResourceAttr(name, "api_url", splunkURL),
 					resource.TestCheckResourceAttr(name, "api_token", "b1e2d6dc-e4b5-400d-9dae-270c39c5daa2"),
 					resource.TestCheckResourceAttr(name, "active", "true"),
 					resource.TestCheckResourceAttr(name, "event.#", "4"),
@@ -57,20 +61,20 @@ func TestAccIntegrationSplunkCreateThenUpdate(t *testing.T) {
 		Providers: testAccProviders,
 		Steps: []resource.TestStep{
 			{
-				Config: testWallarmIntegrationSplunkFullConfig(rnd, "tf-test-"+rnd, "http://splunk.wallarm.com", "b1e2d6dc-e4b5-400d-9dae-270c39c5daa2", "true"),
+				Config: testWallarmIntegrationSplunkFullConfig(rnd, "tf-test-"+rnd, splunkURL, "b1e2d6dc-e4b5-400d-9dae-270c39c5daa2", "true"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(name, "name", "tf-test-"+rnd),
-					resource.TestCheckResourceAttr(name, "api_url", "http://splunk.wallarm.com"),
+					resource.TestCheckResourceAttr(name, "api_url", splunkURL),
 					resource.TestCheckResourceAttr(name, "api_token", "b1e2d6dc-e4b5-400d-9dae-270c39c5daa2"),
 					resource.TestCheckResourceAttr(name, "active", "true"),
 					resource.TestCheckResourceAttr(name, "event.#", "4"),
 				),
 			},
 			{
-				Config: testWallarmIntegrationSplunkFullConfig(rnd, "tf-updated-"+rnd, "http://splunk.wallarm.com", "b1e2d6dc-e4b5-400d-9dae-270c39c5daa2", "false"),
+				Config: testWallarmIntegrationSplunkFullConfig(rnd, "tf-updated-"+rnd, apiURL, "b1e2d6dc-e4b5-400d-9dae-270c39c5daa2", "false"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(name, "name", "tf-updated-"+rnd),
-					resource.TestCheckResourceAttr(name, "api_url", "http://splunk.wallarm.com"),
+					resource.TestCheckResourceAttr(name, "api_url", apiURL),
 					resource.TestCheckResourceAttr(name, "api_token", "b1e2d6dc-e4b5-400d-9dae-270c39c5daa2"),
 					resource.TestCheckResourceAttr(name, "active", "false"),
 					resource.TestCheckResourceAttr(name, "event.#", "4"),

@@ -24,7 +24,7 @@ The types of events available to be sent via WebHooks:
 
 resource "wallarm_integration_webhook" "wh_integration" {
   name = "New Terraform WebHook Integration"
-  webhook_url = "https://webhook.example.com/api/v1/webhook/"
+  webhook_url = "https://example.com/api/v1/webhook/"
   http_method = "POST"
   active = true
   
