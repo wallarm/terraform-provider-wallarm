@@ -8,7 +8,7 @@ import (
 )
 
 var (
-	splunkURL = "https://example.com/splunk"
+	splunkURL = "https://example.com:8088"
 )
 
 func TestAccIntegrationSplunkRequiredFields(t *testing.T) {
