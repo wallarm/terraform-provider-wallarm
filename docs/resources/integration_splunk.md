@@ -23,7 +23,7 @@ The types of events available to be sent to Splunk:
 
 resource "wallarm_integration_splunk" "splunk_integration" {
   name = "New Terraform Splunk Integration"
-  api_url = "https://example.com/splunk"
+  api_url = "https://example.com:8088"
   api_token = "b1e2d6dc-e4b5-400d-9dae-270c39c5daa2"
 
   event {
