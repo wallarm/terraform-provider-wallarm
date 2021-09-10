@@ -3,7 +3,7 @@ layout: "wallarm"
 page_title: "Wallarm: wallarm_node"
 subcategory: "Common"
 description: |-
-  Provides the resource to manage modes of the account.
+  Provides the resource to manage nodes of the account.
 ---
 
 # wallarm_user
