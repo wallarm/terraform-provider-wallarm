@@ -1,9 +1,13 @@
-# v0.0.10 (August 4, 2021)
+# v0.0.10 (September 10, 2021)
+
+## BUG FIXES:
+
+* Fixed Opsgenie integration resource
 
 ## NOTES:
 
-* Minor dependency fixes
-* Fixes for broken links in the docs
+* Minor changes in the dependencies
+* Fixed broken links and typos in the docs
 
 # v0.0.9 (January 8, 2021)
 
