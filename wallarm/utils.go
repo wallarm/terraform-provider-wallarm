@@ -70,6 +70,8 @@ func expandSetToActionDetailsList(action *schema.Set) ([]wallarm.ActionDetails, 
 						// This is required by the API when case is insensitive
 						if actionMap["type"] == "iequal" {
 							a.Value = strings.ToLower(pointValue.(string))
+						} else if actionMap["type"] == "absent" {
+							a.Value = nil
 						} else {
 							a.Value = pointValue.(string)
 						}

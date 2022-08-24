@@ -112,9 +112,12 @@ func Provider() terraform.ResourceProvider {
 			"wallarm_integration_splunk":            resourceWallarmSplunk(),
 			"wallarm_integration_webhook":           resourceWallarmWebhook(),
 			"wallarm_trigger":                       resourceWallarmTrigger(),
+			"wallarm_rule_binary_data":              resourceWallarmBinaryData(),
+			"wallarm_rule_disable_attack_type":      resourceWallarmDisableAttackType(),
 			"wallarm_rule_vpatch":                   resourceWallarmVpatch(),
 			"wallarm_rule_mode":                     resourceWallarmMode(),
 			"wallarm_rule_masking":                  resourceWallarmSensitiveData(),
+			"wallarm_rule_parser_state":             resourceWallarmParserState(),
 			"wallarm_rule_regex":                    resourceWallarmRegex(),
 			"wallarm_rule_ignore_regex":             resourceWallarmIgnoreRegex(),
 			"wallarm_rule_attack_rechecker":         resourceWallarmAttackRechecker(),
@@ -122,6 +125,7 @@ func Provider() terraform.ResourceProvider {
 			"wallarm_rule_set_response_header":      resourceWallarmSetResponseHeader(),
 			"wallarm_rule_bruteforce_counter":       resourceWallarmBruteForceCounter(),
 			"wallarm_rule_dirbust_counter":          resourceWallarmDirbustCounter(),
+			"wallarm_rule_uploads":                  resourceWallarmUploads(),
 		},
 	}
 

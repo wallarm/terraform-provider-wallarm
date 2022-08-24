@@ -11,22 +11,22 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/terraform"
 )
 
-type maskingTestingRule struct {
+type binaryDataTestingRule struct {
 	point     string
 	matchType []string
 	value     string
 }
 
-func TestAccRuleMaskingCreate_Basic(t *testing.T) {
+func TestAccRuleBinaryDataCreate_Basic(t *testing.T) {
 	rnd := generateRandomResourceName(5)
-	name := "wallarm_rule_masking." + rnd
+	name := "wallarm_rule_binary_data." + rnd
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckWallarmRuleMaskingDestroy,
+		CheckDestroy: testAccCheckWallarmRuleBinaryDataDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testWallarmRuleMaskingBasicConfig(rnd, "iequal", "masking.wallarm.com", "HOST", `["post"],["form_urlencoded","query"]`),
+				Config: testWallarmRuleBinaryDataBasicConfig(rnd, "iequal", "binary.wallarm.com", "HOST", `["post"],["form_urlencoded","query"]`),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(name, "action.#", "1"),
 					resource.TestCheckResourceAttr(name, "point.0.0", "post"),
@@ -38,16 +38,16 @@ func TestAccRuleMaskingCreate_Basic(t *testing.T) {
 	})
 }
 
-func TestAccRuleMaskingCreateRecreate(t *testing.T) {
+func TestAccRuleBinaryDataCreateRecreate(t *testing.T) {
 	rnd := generateRandomResourceName(5)
-	name := "wallarm_rule_masking." + rnd
+	name := "wallarm_rule_binary_data." + rnd
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckWallarmRuleMaskingDestroy,
+		CheckDestroy: testAccCheckWallarmRuleBinaryDataDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccRuleMaskingCreateRecreate(rnd),
+				Config: testAccRuleBinaryDataCreateRecreate(rnd),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(name, "action.#", "1"),
 					resource.TestCheckResourceAttr(name, "point.0.0", "header"),
@@ -55,7 +55,7 @@ func TestAccRuleMaskingCreateRecreate(t *testing.T) {
 				),
 			},
 			{
-				Config: testAccRuleMaskingCreateRecreate(rnd),
+				Config: testAccRuleBinaryDataCreateRecreate(rnd),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(name, "action.#", "1"),
 					resource.TestCheckResourceAttr(name, "point.0.0", "header"),
@@ -66,18 +66,18 @@ func TestAccRuleMaskingCreateRecreate(t *testing.T) {
 	})
 }
 
-func TestAccRuleMaskingCreate_DefaultBranch(t *testing.T) {
+func TestAccRuleBinaryDataCreate_DefaultBranch(t *testing.T) {
 	rnd := generateRandomResourceName(5)
-	name := "wallarm_rule_masking." + rnd
+	name := "wallarm_rule_binary_data." + rnd
 	point := `["header","HOST"],["pollution"]`
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckWallarmRuleMaskingDestroy,
+		CheckDestroy: testAccCheckWallarmRuleBinaryDataDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testWallarmRuleMaskingDefaultBranchConfig(rnd, point),
+				Config: testWallarmRuleBinaryDataDefaultBranchConfig(rnd, point),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(name, "point.0.0", "header"),
 					resource.TestCheckResourceAttr(name, "point.0.1", "HOST"),
@@ -89,14 +89,14 @@ func TestAccRuleMaskingCreate_DefaultBranch(t *testing.T) {
 	})
 }
 
-func TestAccRuleMaskingCreate_FullSettings(t *testing.T) {
+func TestAccRuleBinaryDataCreate_FullSettings(t *testing.T) {
 	rnd := generateRandomResourceName(5)
-	name := "wallarm_rule_masking." + rnd
+	name := "wallarm_rule_binary_data." + rnd
 	point := `["post"],["xml"],["array_all"],["xml_attr","CDATA"]`
 	matchType := []string{"equal", "iequal", "regex", "absent"}
 	value := generateRandomResourceName(10) + ".wallarm.com"
 
-	rule := maskingTestingRule{
+	rule := binaryDataTestingRule{
 		point:     point,
 		matchType: matchType,
 		value:     value,
@@ -105,10 +105,10 @@ func TestAccRuleMaskingCreate_FullSettings(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckWallarmRuleMaskingDestroy,
+		CheckDestroy: testAccCheckWallarmRuleBinaryDataDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testWallarmRuleMaskingFullSettingsConfig(rnd, rule),
+				Config: testWallarmRuleBinaryDataFullSettingsConfig(rnd, rule),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(name, "action.#", "9"),
 					resource.TestCheckResourceAttr(name, "point.#", "4"),
@@ -128,9 +128,9 @@ func TestAccRuleMaskingCreate_FullSettings(t *testing.T) {
 	})
 }
 
-func testWallarmRuleMaskingBasicConfig(resourceID, actionType, actionValue, actionPoint, point string) string {
+func testWallarmRuleBinaryDataBasicConfig(resourceID, actionType, actionValue, actionPoint, point string) string {
 	return fmt.Sprintf(`
-resource "wallarm_rule_masking" "%[1]s" {
+resource "wallarm_rule_binary_data" "%[1]s" {
   action {
     type = "%[2]s"
     value = "%[3]s"
@@ -142,16 +142,16 @@ resource "wallarm_rule_masking" "%[1]s" {
 }`, resourceID, actionType, actionValue, actionPoint, point)
 }
 
-func testWallarmRuleMaskingDefaultBranchConfig(resourceID, point string) string {
+func testWallarmRuleBinaryDataDefaultBranchConfig(resourceID, point string) string {
 	return fmt.Sprintf(`
-resource "wallarm_rule_masking" "%[1]s" {
+resource "wallarm_rule_binary_data" "%[1]s" {
 	point = [%[2]s]
 }`, resourceID, point)
 }
 
-func testAccRuleMaskingCreateRecreate(resourceID string) string {
+func testAccRuleBinaryDataCreateRecreate(resourceID string) string {
 	return fmt.Sprintf(`
-resource "wallarm_rule_masking" "%[1]s" {
+resource "wallarm_rule_binary_data" "%[1]s" {
 	action {
 		point = {
 		  method = "POST|GET|PATCH"
@@ -163,13 +163,13 @@ resource "wallarm_rule_masking" "%[1]s" {
 }`, resourceID)
 }
 
-func testWallarmRuleMaskingFullSettingsConfig(resourceID string, rule maskingTestingRule) string {
+func testWallarmRuleBinaryDataFullSettingsConfig(resourceID string, rule binaryDataTestingRule) string {
 	equal := rule.matchType[0]
 	iequal := rule.matchType[1]
 	regex := rule.matchType[2]
 	absent := rule.matchType[3]
 	return fmt.Sprintf(`
-resource "wallarm_rule_masking" "%[7]s" {
+resource "wallarm_rule_binary_data" "%[7]s" {
 
 	action {
 		point = {
@@ -186,14 +186,14 @@ resource "wallarm_rule_masking" "%[7]s" {
 	action {
 		type = "%[2]s"
 		point = {
-		  action_name = "masking"
+		  action_name = "foobar"
 		}
 	}
 
 	action {
 		type = "%[2]s"
 		point = {
-		  action_name = "masking"
+		  action_name = "foobar"
 		}
 	}
 
@@ -203,7 +203,7 @@ resource "wallarm_rule_masking" "%[7]s" {
 		  action_ext = ""
 		}
 	}
-	  
+
 	action {
 		type = "%[4]s"
 		point = {
@@ -251,11 +251,11 @@ resource "wallarm_rule_masking" "%[7]s" {
 }`, equal, iequal, regex, absent, rule.value, rule.point, resourceID)
 }
 
-func testAccCheckWallarmRuleMaskingDestroy(s *terraform.State) error {
+func testAccCheckWallarmRuleBinaryDataDestroy(s *terraform.State) error {
 	client := testAccProvider.Meta().(wallarm.API)
 
 	for _, rs := range s.RootModule().Resources {
-		if rs.Type != "wallarm_rule_masking" {
+		if rs.Type != "wallarm_rule_binary_data" {
 			continue
 		}
 
@@ -276,13 +276,13 @@ func testAccCheckWallarmRuleMaskingDestroy(s *terraform.State) error {
 			Filter: &wallarm.HintFilter{
 				Clientid: []int{clientID},
 				ActionID: []int{actionID},
-				Type:     []string{"sensitive_data"},
+				Type:     []string{"binary_data"},
 			},
 		}
 
 		rule, err := client.HintRead(hint)
 		if err != nil && len(*rule.Body) != 0 {
-			return fmt.Errorf("Sensitive Data Masking rule still exists")
+			return fmt.Errorf("Allow Binary Data rule still exists")
 		}
 	}
 
