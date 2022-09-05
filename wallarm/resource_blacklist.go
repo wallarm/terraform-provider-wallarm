@@ -67,10 +67,6 @@ func resourceWallarmBlacklist() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
-						"app": {
-							Type:     schema.TypeInt,
-							Computed: true,
-						},
 						"ip_id": {
 							Type:     schema.TypeInt,
 							Computed: true,
@@ -149,24 +145,20 @@ func resourceWallarmBlacklistCreate(d *schema.ResourceData, m interface{}) error
 	}
 
 	reason := d.Get("reason").(string)
-	var bulk []wallarm.Bulk
+
 	for _, ip := range ips {
-		for _, app := range apps {
-			b := wallarm.Bulk{
-				IP:       ip,
-				Poolid:   app,
-				ExpireAt: unixTime,
-				Reason:   reason,
-				Clientid: clientID,
-			}
-			bulk = append(bulk, b)
+		params := wallarm.IPRuleCreationParams{
+			ExpiredAt: unixTime,
+			List:      "black",
+			Pools:     apps,
+			Reason:    reason,
+			RuleType:  "ip_range",
+			Subnet:    ip,
 		}
-	}
 
-	blacklistBody := wallarm.BlacklistCreate{Bulks: &bulk}
-
-	if err := client.BlacklistCreate(&blacklistBody); err != nil {
-		return err
+		if err := client.BlacklistCreate(clientID, params); err != nil {
+			return err
+		}
 	}
 
 	d.SetId(reason)
@@ -240,25 +232,22 @@ func resourceWallarmBlacklistRead(d *schema.ResourceData, m interface{}) error {
 		derivedIPaddr[k] = b.IP
 	}
 
-	blacklistFromAPI, err := client.BlacklistRead(clientID)
+	blacklistsFromAPI, err := client.BlacklistRead(clientID)
 	if err != nil {
 		return err
 	}
 
-	addrAppIDs := make([]interface{}, 0)
-	for _, maxEntry := range blacklistFromAPI {
-		for _, IPcontainer := range maxEntry.Body.Objects {
-			if wallarm.Contains(derivedIPaddr, IPcontainer.IP) {
-				addrAppIDs = append(addrAppIDs, map[string]interface{}{
-					"ip_addr": IPcontainer.IP,
-					"app":     IPcontainer.Poolid,
-					"ip_id":   IPcontainer.ID,
-				})
-			}
+	addrIDs := make([]interface{}, 0)
+	for _, blacklist := range blacklistsFromAPI {
+		if wallarm.Contains(derivedIPaddr, strings.Split(blacklist.Subnet, "/")[0]) {
+			addrIDs = append(addrIDs, map[string]interface{}{
+				"ip_addr": blacklist.Subnet,
+				"ip_id":   blacklist.ID,
+			})
 		}
 	}
 
-	if err := d.Set("address_id", addrAppIDs); err != nil {
+	if err := d.Set("address_id", addrIDs); err != nil {
 		return fmt.Errorf("cannot set content for ip_range: %v", err)
 	}
 
