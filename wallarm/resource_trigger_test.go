@@ -243,11 +243,6 @@ resource "wallarm_trigger" "%[1]s" {
 func testWallarmTriggerAttacksWithResponse5xx(resourceID, templateID, actionID string) string {
 	return fmt.Sprintf(`
 
-resource "wallarm_application" "%[1]s" {
-		name = "tf-testacc-app"
-		app_id = 42
-}
-
 resource "wallarm_integration_email" "%[1]s" {
 	name = "New Terraform Integration"
 	emails = ["%[1]s@wallarm.com"]
@@ -274,7 +269,7 @@ resource "wallarm_trigger" "%[1]s" {
 	filters {
 		filter_id = "pool"
 		operator = "eq"
-		value = [wallarm_application.%[1]s.app_id]
+		value = [42]
 	}
 
 	filters {

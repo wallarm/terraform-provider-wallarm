@@ -107,8 +107,8 @@ func resourceWallarmAttackRechecker() *schema.Resource {
 										ForceNew: true,
 										ValidateFunc: func(val interface{}, key string) (warns []string, errs []error) {
 											v := val.(int)
-											if v < 0 || v > 2048 {
-												errs = append(errs, fmt.Errorf("%q must be between 0 and 2048 inclusive, got: %d", key, v))
+											if v < 0 || v > 60 {
+												errs = append(errs, fmt.Errorf("%q must be between 0 and 60 inclusive, got: %d", key, v))
 											}
 											return
 										},
