@@ -298,6 +298,8 @@ github.com/wallarm/wallarm-go v0.0.18 h1:nqGrTNudK/yInbJi9canXmY1KqTb7isS890I4Rs
 github.com/wallarm/wallarm-go v0.0.18/go.mod h1:KQxO+EBaGpIgOqBoByKW4KNMEJFgkxR64FSiA4U/52I=
 github.com/wallarm/wallarm-go v0.0.19 h1:lA9efJ/toRfZnzzzU8NWsb61VdUar5wNzc5XeR5D1Qg=
 github.com/wallarm/wallarm-go v0.0.19/go.mod h1:KQxO+EBaGpIgOqBoByKW4KNMEJFgkxR64FSiA4U/52I=
+github.com/wallarm/wallarm-go v0.0.20 h1:/vrKn9aSDMsOjOQ0xJ4y7VMcseCb1g8tqvFuWVvzlUY=
+github.com/wallarm/wallarm-go v0.0.20/go.mod h1:KQxO+EBaGpIgOqBoByKW4KNMEJFgkxR64FSiA4U/52I=
 github.com/xanzy/ssh-agent v0.2.1 h1:TCbipTQL2JiiCprBWx9frJ2eJlCYT00NmctrHxVAr70=
 github.com/xanzy/ssh-agent v0.2.1/go.mod h1:mLlQY/MoOhWBj+gOGMQkOeiEvkx+8pJSI+0Bx9h2kr4=
 github.com/yuin/goldmark v1.1.25/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=

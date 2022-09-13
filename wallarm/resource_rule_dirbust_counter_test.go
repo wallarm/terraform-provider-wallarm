@@ -21,10 +21,10 @@ func TestAccRuleDirbustCounterCreate(t *testing.T) {
 		CheckDestroy: testAccCheckWallarmRuleDirbustCounterDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccRuleDirbustCounterCreate(rnd, "d:login"),
+				Config: testAccRuleDirbustCounterCreate(rnd),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(name, "action.#", "3"),
-					resource.TestCheckResourceAttr(name, "counter", "d:login"),
+					resource.TestMatchResourceAttr(name, "counter", regexp.MustCompile("^d:.+")),
 				),
 				ExpectNonEmptyPlan: true,
 			},
@@ -32,29 +32,9 @@ func TestAccRuleDirbustCounterCreate(t *testing.T) {
 	})
 }
 
-func TestAccRuleDirbustCounterIncorrectName(t *testing.T) {
-	rnd := generateRandomResourceName(5)
-	name := "wallarm_rule_dirbust_counter." + rnd
-	resource.Test(t, resource.TestCase{
-		PreCheck:  func() { testAccPreCheck(t) },
-		Providers: testAccProviders,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccRuleDirbustCounterIncorrectName(rnd, "aspx"),
-				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr(name, "action.#", "1"),
-					resource.TestCheckResourceAttr(name, "counter", "aspx"),
-				),
-				ExpectError: regexp.MustCompile(`config is invalid: invalid value for counter \(name of the counter always starts with "d:"\)`),
-			},
-		},
-	})
-}
-
-func testAccRuleDirbustCounterCreate(resourceID, counter string) string {
+func testAccRuleDirbustCounterCreate(resourceID string) string {
 	return fmt.Sprintf(`
 resource "wallarm_rule_dirbust_counter" "%[1]s" {
-	counter = "%[2]s"
 	comment = "This is a comment for a test case"
 
 	action {
@@ -76,20 +56,7 @@ resource "wallarm_rule_dirbust_counter" "%[1]s" {
 			action_ext = "aspx"
     	}
   	}
-}`, resourceID, counter)
-}
-
-func testAccRuleDirbustCounterIncorrectName(resourceID, counter string) string {
-	return fmt.Sprintf(`
-resource "wallarm_rule_dirbust_counter" "%[1]s" {
-	counter = "%[2]s"
-	action {
-    	type = "iequal"
-    	point = {
-      		action_ext = "aspx"
-    	}
-  	}
-}`, resourceID, counter)
+}`, resourceID)
 }
 
 func testAccCheckWallarmRuleDirbustCounterDestroy(s *terraform.State) error {
