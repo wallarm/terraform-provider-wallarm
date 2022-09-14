@@ -54,5 +54,4 @@ resource "wallarm_blacklist" "blacklist_date" {
 `address_id` - Addresses ID attributes in the `key=value` format. Possible keys:
 
 - `ip_addr` - Discrete IP address.
-- `app` - Application ID.
 - `ip_id` - ID of the entry with the concrete IP address.

@@ -84,3 +84,46 @@ resource "wallarm_trigger" "vector_trigger" {
     lock_time = 10000
   }
 }
+
+resource "wallarm_rule_bruteforce_counter" "brute_counter" {
+    action {
+		type = "iequal"
+		value = "example.com"
+		point = {
+			header = "HOST"
+		}
+	}
+
+	action {
+		type = "iequal"
+		value = "foobar"
+		point = {
+			path = 0
+		}
+	}
+}
+
+resource "wallarm_trigger" "brute_trigger" {
+	template_id = "bruteforce_started"
+
+	filters {
+		filter_id = "hint_tag"
+		operator = "eq"
+		value = [wallarm_rule_bruteforce_counter.brute_counter.counter]
+	}
+
+	actions {
+		action_id = "mark_as_brute"
+	}
+
+	actions {
+		action_id = "block_ips"
+		lock_time = 2592000
+	}
+
+	threshold = {
+		period = 30
+		operator = "gt"
+		count = 30
+	}
+}

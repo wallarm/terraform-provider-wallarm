@@ -1,6 +1,4 @@
-resource "wallarm_rule_dirbust_counter" "root_counter" {
-	counter = "d:login"
-	
+resource "wallarm_rule_dirbust_counter" "login_counter" {
 	action {
     	type = "iequal"
     	point = {

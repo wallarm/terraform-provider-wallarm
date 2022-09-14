@@ -1,29 +1,28 @@
 ---
 layout: "wallarm"
-page_title: "Wallarm: wallarm_rule_bruteforce_counter"
+page_title: "Wallarm: wallarm_rule_disable_attack_type"
 subcategory: "Rule"
 description: |-
-  Provides the "Define brute-force attacks counter" rule resource.
+  Provides the "Ignore certain attack types" rule resource.
 ---
 
-# wallarm_rule_bruteforce_counter
+# wallarm_rule_disable_attack_type
 
-Provides the resource to manage rules with the "Define brute-force attacks counter" action type. For detecting brute-force attacks, with every request, one of the statistical counters is incremented. By default, the counter name is automatically defined based on the domain name and the request path.
+Provides the resource to manage rules with the "Ignore certain attack types" action type. Disables detection of all specified attack type stamps for selected request points.
 
 ## Example Usage
 
 ```hcl
-# Sets a counter on the root `/` path
-
-resource "wallarm_rule_bruteforce_counter" "root_counter" {
-	action {
-		type = "iequal"
-		value = "/"
-		point = {
-			path = 0
-		}
-	}
-
+resource "wallarm_rule_disable_attack_type" "disable_sqli" {
+  action {
+    type = "iequal"
+    value = "example.com"
+    point = {
+      header = "HOST"
+    }
+  }
+  point = [["get_all"]]
+  attack_type = "sqli"
 }
 ```
 
@@ -31,6 +30,8 @@ resource "wallarm_rule_bruteforce_counter" "root_counter" {
 
 * `client_id` - (Optional) ID of the client to apply the rules to. The value is required for multi-tenant scenarios.
 * `action` - (Optional) Rule conditions. Possible attributes are described below.
+* `attack_type` - (Required) Attack type to ignore. Possible values: `sqli`, `xss`, `rce`, `ptrav`, `crlf`, `nosqli`, `xxe`, `ldapi`, `scanner`, `ssti`, `ssi`, `mail_injection`, `vpatch`. 
+* `point` - (Required) Request parts to apply the rules to. The full list of possible values is available in the [Wallarm official documentation](https://docs.wallarm.com/user-guides/rules/request-processing/#identifying-and-parsing-the-request-parts).
 
 **action**
 
@@ -45,8 +46,6 @@ conditions which can be applied. The conditions are:
   Example:
   `value = "example.com"`
 * `point` - (Optional) Request parameters that trigger the rule. Possible values are described below. For more details, see the official [Wallarm documentatioon](https://docs.wallarm.com/user-guides/rules/request-processing/#identifying-and-parsing-the-request-parts).
-
-### Nested Objects
 
 **point**
 
@@ -137,18 +136,7 @@ When `type` is `absent`
 ## Attributes Reference
 
 * `rule_id` - ID of the created rule.
-* `counter` - Name of the counter. Randomly generated, but always starts with `b:`.
 * `action_id` - The action ID (The conditions to apply on request).
-* `rule_type` - Type of the created rule. For example, `rule_type = "brute_counter"`.
+* `rule_type` - Type of the created rule. For example, `rule_type = "disable_attack_type"`.
 
-## Import
 
-The rule can be imported using a composite ID formed of client ID, action ID, rule ID and rule type.
-
-```
-$ terraform import wallarm_rule_bruteforce_counter.root_counter 6039/563854/11086884
-```
-
-* `6039` - Client ID.
-* `563854` - Action ID.
-* `11086884` - Rule ID.

@@ -2,8 +2,6 @@
 
 - Website: https://www.terraform.io
 
-<img src="https://cdn.jsdelivr.net/gh/hashicorp/terraform-website@master/content/source/assets/images/logo-terraform-main.svg" width="600px">
-
 ## Requirements
 
 -	[Terraform](https://www.terraform.io/downloads.html) 0.12.x+
