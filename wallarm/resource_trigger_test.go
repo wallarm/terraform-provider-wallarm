@@ -2,6 +2,7 @@ package wallarm
 
 import (
 	"fmt"
+	"regexp"
 	"strconv"
 	"testing"
 
@@ -116,8 +117,8 @@ func TestAccWallarmTriggerBruteforce(t *testing.T) {
 					resource.TestCheckResourceAttr(name, "template_id", "bruteforce_started"),
 					resource.TestCheckResourceAttr(name, "actions.#", "2"),
 					resource.TestCheckResourceAttr(name, "filters.#", "2"),
-					resource.TestCheckResourceAttr(name, "filters.0.filter_id", "url"),
-					resource.TestCheckResourceAttr(name, "filters.0.value.0", "example.com:443/brute"),
+					resource.TestCheckResourceAttr(name, "filters.0.filter_id", "hint_tag"),
+					resource.TestMatchResourceAttr(name, "filters.0.value.0", regexp.MustCompile("^b:.*")),
 					resource.TestCheckResourceAttr(name, "filters.1.filter_id", "ip_address"),
 					resource.TestCheckResourceAttr(name, "filters.1.value.0", "1.1.1.1"),
 					resource.TestCheckResourceAttr(name, "threshold.%", "3"),
@@ -306,13 +307,31 @@ resource "wallarm_trigger" "%[1]s" {
 
 func testWallarmTriggerBruteforce(resourceID, templateID, actionID, actionIDExtra string) string {
 	return fmt.Sprintf(`
+resource "wallarm_rule_bruteforce_counter" "test" {
+    action {
+		type = "iequal"
+		value = "example.com"
+		point = {
+			header = "HOST"
+		}
+	}
+
+	action {
+		type = "iequal"
+		value = "brute"
+		point = {
+			path = 0
+		}
+	}
+}
+
 resource "wallarm_trigger" "%[1]s" {
 	template_id = "%[2]s"
 
 	filters {
-		filter_id = "url"
+		filter_id = "hint_tag"
 		operator = "eq"
-		value = ["example.com:443/brute"]
+		value = [wallarm_rule_bruteforce_counter.test.counter]
 	}
 	
 	filters {

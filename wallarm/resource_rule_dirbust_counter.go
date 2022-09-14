@@ -3,7 +3,6 @@ package wallarm
 import (
 	"fmt"
 	"log"
-	"regexp"
 	"strconv"
 	"strings"
 
@@ -61,10 +60,8 @@ func resourceWallarmDirbustCounter() *schema.Resource {
 			},
 
 			"counter": {
-				Type:         schema.TypeString,
-				Required:     true,
-				ValidateFunc: validation.StringMatch(regexp.MustCompile(`^d:.+$`), `name of the counter always starts with "d:"`),
-				ForceNew:     true,
+				Type:     schema.TypeString,
+				Computed: true,
 			},
 
 			"action": {
@@ -188,7 +185,6 @@ func resourceWallarmDirbustCounterCreate(d *schema.ResourceData, m interface{}) 
 	clientID := retrieveClientID(d, client)
 	comment := d.Get("comment").(string)
 	actionsFromState := d.Get("action").(*schema.Set)
-	counter := d.Get("counter").(string)
 
 	action, err := expandSetToActionDetailsList(actionsFromState)
 	if err != nil {
@@ -198,7 +194,6 @@ func resourceWallarmDirbustCounterCreate(d *schema.ResourceData, m interface{}) 
 		Type:      "dirbust_counter",
 		Clientid:  clientID,
 		Action:    &action,
-		Counter:   counter,
 		Validated: false,
 		Comment:   comment,
 	}
@@ -269,27 +264,28 @@ func resourceWallarmDirbustCounterRead(d *schema.ResourceData, m interface{}) er
 
 	var notFoundRules []int
 	var updatedRuleID int
+	var updatedCounter string
 	for _, rule := range *actionHints.Body {
-		if ruleID == rule.ID {
-			updatedRuleID = rule.ID
-			continue
-		}
-
 		actualRule := &wallarm.ActionBody{
 			ActionID: rule.ActionID,
 			Type:     rule.Type,
 			Action:   rule.Action,
 		}
 
-		if cmp.Equal(expectedRule, *actualRule) && equalWithoutOrder(action, rule.Action) {
+		if ruleID == rule.ID || cmp.Equal(expectedRule, *actualRule) && equalWithoutOrder(action, rule.Action) {
 			updatedRuleID = rule.ID
-			continue
+			updatedCounter = rule.Counter
+			break
 		}
 
 		notFoundRules = append(notFoundRules, rule.ID)
 	}
 
 	if err := d.Set("rule_id", updatedRuleID); err != nil {
+		return err
+	}
+
+	if err := d.Set("counter", updatedCounter); err != nil {
 		return err
 	}
 
