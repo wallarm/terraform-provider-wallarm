@@ -15,11 +15,7 @@ This rule should be used when an independent detection of force browsing attacks
 ## Example Usage
 
 ```hcl
-# Sets the `d:root` counter on the root `login` action name
-
 resource "wallarm_rule_dirbust_counter" "login_counter" {
-	counter = "d:login"
-	
 	action {
     	type = "iequal"
     	point = {
@@ -31,7 +27,6 @@ resource "wallarm_rule_dirbust_counter" "login_counter" {
 
 ## Argument Reference
 
-* `counter` - (Required) Name of the counter always starts with `d:`.
 * `client_id` - (Optional) ID of the client to apply the rules to. The value is required for multi-tenant scenarios.
 * `action` - (Optional) Rule conditions. Possible attributes are described below.
 
@@ -140,6 +135,7 @@ When `type` is `absent`
 ## Attributes Reference
 
 * `rule_id` - ID of the created rule.
+* `counter` - Name of the counter. Randomly generated, but always starts with `d:`.
 * `action_id` - The action ID (The conditions to apply on request).
 * `rule_type` - Type of the created rule. For example, `rule_type = "dirbust_counter"`.
 

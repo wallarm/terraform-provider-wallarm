@@ -139,7 +139,6 @@ resource "wallarm_trigger" "attack_trigger" {
     * `Client`
     * `Database`
 * `response_status` - Integer response code returned to the request.
-* `url` - String of URL determines for bruteforce analysis.
 * `hint_tag` - Arbitrary tag of any request tuned in by a rule.
 * `operator` - (Optional) Operator to compare the specified filter value and a real value. Can be:
     * `eq` - Equal

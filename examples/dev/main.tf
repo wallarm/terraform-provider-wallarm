@@ -187,7 +187,33 @@ provider "wallarm" {
 
 # # 
 # # Trigger section
-# # 
+# #
+# resource "wallarm_rule_bruteforce_counter" "example_counter" {
+#   action {
+# 	  type = "iequal"
+#       value = "example.com"
+#       point = {
+#       header = "HOST"
+#     }
+#   }
+
+#   action {
+#     type = "iequal"
+#     value = "foo"
+#     point = {
+#       path = 0
+#     }
+#   }
+#
+#   action {
+#     type = "iequal"
+#     value = "bar"
+#     point = {
+#       path = 1
+#     }
+#   }
+# }
+
 # resource "wallarm_trigger" "user_trigger" {
 #   name = "New Terraform Trigger Telegram"
 #   comment = "This is a description set by Terraform"
@@ -195,9 +221,9 @@ provider "wallarm" {
 #   template_id = "bruteforce_started"
 
 #   filters {
-#     filter_id = "url"
+#     filter_id = "hint_tag"
 #     operator = "eq"
-#     value = ["example.com/brute"]
+#     value = [wallarm_rule_bruteforce_counter.example_counter.counter]
 #   }
 
 #   filters {
