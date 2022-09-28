@@ -114,6 +114,8 @@ func Provider() terraform.ResourceProvider {
 			"wallarm_trigger":                       resourceWallarmTrigger(),
 			"wallarm_rule_binary_data":              resourceWallarmBinaryData(),
 			"wallarm_rule_disable_attack_type":      resourceWallarmDisableAttackType(),
+			"wallarm_rule_variative_keys":           resourceWallarmVariativeKeys(),
+			"wallarm_rule_variative_values":         resourceWallarmVariativeValues(),
 			"wallarm_rule_vpatch":                   resourceWallarmVpatch(),
 			"wallarm_rule_mode":                     resourceWallarmMode(),
 			"wallarm_rule_masking":                  resourceWallarmSensitiveData(),
