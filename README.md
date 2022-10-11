@@ -4,8 +4,8 @@
 
 ## Requirements
 
--	[Terraform](https://www.terraform.io/downloads.html) 0.12.x+
--	[Go](https://golang.org/doc/install) 1.14+ (to build the provider plugin)
+-	[Terraform](https://www.terraform.io/downloads.html) 0.15.5 or higher
+-	[Go](https://golang.org/doc/install) 1.13 or higher (to build the provider)
 
 
 ## Building The Provider
@@ -39,22 +39,12 @@ $ cd $GOPATH/src/terraform-provider-wallarm
 $ make build
 ```
 
-#### terraform 0.12 and earlier
-
-*You have to either sideload a binary with the correct name. Terraform searches for plugins in the format of:*
-
-```
-terraform-<TYPE>-<NAME>
-````
-
-*In the case above, the plugin is of type `provider` and of name `wallarm` as per requirements by Terraform.*
-
-#### terraform 0.13+
-
 The following code is required to be defined in a module:
 
 ```hcl-terraform
 terraform {
+  required_version ">= 0.15.5"
+
   required_providers {
     wallarm = {
       source = "wallarm/wallarm"
