@@ -3,7 +3,7 @@ layout: "wallarm"
 page_title: "Wallarm: wallarm_node"
 subcategory: "Common"
 description: |-
-  Get Wallarm WAF node details.
+  Get Wallarm node details.
 ---
 
 # wallarm_node

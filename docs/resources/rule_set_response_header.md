@@ -10,12 +10,12 @@ description: |-
 
 !> The resource requires additional permissions. Ask the support team to obtain them.
 
-Provides the resource to manage rules with the "Specify a response header" action type. This rule type is used to configure supplementary headers appended or replaced by a Wallarm WAF node.
+Provides the resource to manage rules with the "Specify a response header" action type. This rule type is used to configure supplementary headers appended or replaced by a Wallarm node.
 
 ## Example Usage
 
 ```hcl
-# Append the "Server" header with the "Wallarm WAF" value
+# Append the "Server" header with the "Wallarm API Security" value
 # and the "Blocked" header with the "Blocked by Wallarm" value
 # to the requests sent to the application with ID 3
 
@@ -29,7 +29,7 @@ resource "wallarm_rule_set_response_header" "resp_headers" {
   }
 
   headers = {
-    Server = "Wallarm WAF"
+    Server = "Wallarm API Security"
     Blocked = "Blocked by Wallarm"
   }
 

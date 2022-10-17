@@ -2,12 +2,12 @@
 layout: "wallarm"
 page_title: "Provider: Wallarm"
 description: |-
-  The Wallarm provider is used to interact with the Wallarm WAF resources. The provider needs to be configured with the proper authentication credentials before it can be used.
+  The Wallarm provider is used to interact with the Wallarm API Security resources. The provider needs to be configured with the proper authentication credentials before it can be used.
 ---
 
 # Wallarm Provider
 
-The Wallarm provider is used to interact with the [Wallarm WAF](https://docs.wallarm.com/) resources. The provider needs to be configured with the proper authentication credentials before it can be used.
+The Wallarm provider is used to interact with the [Wallarm API Security](https://docs.wallarm.com/) resources. The provider needs to be configured with the proper authentication credentials before it can be used.
 
 Use the navigation to the left to read about the available resources.
 
