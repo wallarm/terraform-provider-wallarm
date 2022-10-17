@@ -6,14 +6,14 @@ description: |-
   Provides the resource to manage nodes of the account.
 ---
 
-# wallarm_user
+# wallarm_node
 
-Provides the resource to manage cloud nodes of the account.
+Provides the resource to manage Wallarm nodes of the account.
 
 ## Example Usage
 
 ```hcl
-# Creates a new cloud node
+# Creates a new Wallarm node
 
 resource "wallarm_node" "terraform" {
   client_id = 6039
@@ -31,4 +31,4 @@ resource "wallarm_node" "terraform" {
 
 * `node_id` - Unique ID (numerical) of the created node.
 * `node_uuid` - Unique UUID of the created node.
-* `token` - Token of the cloud node.
+* `token` - Token of the Wallarm node.
