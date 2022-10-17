@@ -3,24 +3,23 @@ layout: "wallarm"
 page_title: "Wallarm: wallarm_blacklist"
 subcategory: "Common"
 description: |-
-  Provides the resource to manage blacklist in the account.
+  Provides the resource to manage denylist in the account.
 ---
 
 # wallarm_blacklist
 
-Provides the resource to manage blacklist in the account providing functionality to block for a desired time either 
-via `Date` or `Minutes` formats.
+Provides the resource to manage denylist in the account providing functionality to block for a desired time either via `Date` or `Minutes` formats.
 
 ## Example Usage
 
 ```hcl
-# Creates two new blacklist entries
+# Creates two new denylist entries
 # with the determined block time (60 minutes) and until the 2nd of January 2026
 
 resource "wallarm_blacklist" "blacklist_minutes" {
   ip_range = ["1.1.1.1/32"]
   application = [1]
-  reason = "TEST BLACKLIST MINUTES"
+  reason = "TEST DENYLIST MINUTES"
   time_format = "Minutes"
   time = 60
 }
@@ -28,7 +27,7 @@ resource "wallarm_blacklist" "blacklist_minutes" {
 resource "wallarm_blacklist" "blacklist_date" {
   ip_range = ["2.2.2.2/32"]
   application = [1]
-  reason = "TEST BLACKLIST DATE"
+  reason = "TEST DENYLIST DATE"
   time_format = "RFC3339"
   time = "2026-01-02T15:04:05+07:00"
 }
