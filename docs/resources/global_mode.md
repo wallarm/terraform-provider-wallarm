@@ -6,7 +6,7 @@ description: |-
   Provides the resource to set global modes of scanner, attack rechecker and WAF.
 ---
 
-# wallarm_user
+# wallarm_global_mode
 
   Provides the resource to set global modes of scanner, attack rechecker and WAF.
 
