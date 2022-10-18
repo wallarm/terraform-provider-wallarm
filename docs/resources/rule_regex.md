@@ -18,7 +18,7 @@ The rule is generated based on the following parameters:
 
 * **Attack**: the type of attack that will be detected when the parameter value in the request matches the regular expression. Possible values are described below.
 
-* **Experimental**: the flag to safely check the triggering of a regular expression without blocking requests. The requests won't be blocked even when the WAF node is set to the blocking mode. These requests will be considered as attacks detected by the experimental method. They can be accessed using search query `experimental attacks`.
+* **Experimental**: the flag to safely check the triggering of a regular expression without blocking requests. The requests won't be blocked even when the Wallarm node is set to the blocking mode. These requests will be considered as attacks detected by the experimental method. They can be accessed using search query `experimental attacks`.
 
 * **in this part of request**: the point in the request where the specified attack should be detected.
 

@@ -3,12 +3,12 @@ layout: "wallarm"
 page_title: "Wallarm: wallarm_vuln"
 subcategory: "Common"
 description: |-
-  Get details on vulnerabilities detected by the WAF node.
+  Get details on vulnerabilities detected by the Wallarm node.
 ---
 
 # wallarm_vuln
 
-Use this data source to get details on [vulnerabilities][1] detected by the WAF node.
+Use this data source to get details on [vulnerabilities][1] detected by the Wallarm node.
 
 ## Example usage
 

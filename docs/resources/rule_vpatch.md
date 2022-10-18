@@ -8,11 +8,11 @@ description: |-
 
 # wallarm_rule_vpatch
 
-Provides the resource to manage rules with the "Create a virtual patch" action type. This rule type allows you to block malicious requests if the WAF node is working in the `monitoring` mode or if any known attack vector is not detected in the request but this request must be blocked.
+Provides the resource to manage rules with the "Create a virtual patch" action type. This rule type allows you to block malicious requests if the Wallarm node is working in the `monitoring` mode or if any known attack vector is not detected in the request but this request must be blocked.
 
 Virtual patches are especially useful in cases when it is impossible to fix a critical vulnerability in the code or install the necessary security updates quickly.
 
-If attack types are specified, the request will be blocked only if the WAF node detects an attack of one of the listed types in the corresponding parameter. If the setting **Any request** is specified, the WAF node blocks the requests with the defined parameter, even if it does not contain an attack vector.
+If attack types are specified, the request will be blocked only if the Wallarm node detects an attack of one of the listed types in the corresponding parameter. If the setting **Any request** is specified, the Wallarm node blocks the requests with the defined parameter, even if it does not contain an attack vector.
 
 ## Example Usage
 

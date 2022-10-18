@@ -37,7 +37,7 @@ resource "wallarm_rule_mode" "tiredful_api_mode" {
 
 ## Argument Reference
 
-* `mode` - (Required) WAF node mode. Can be: `off`, `block`, `monitoring`, `default`. Aids to enable block mode granularly or turn off the WAF node for certain request parts.
+* `mode` - (Required) Wallarm node mode. Can be: `off`, `block`, `monitoring`, `default`. Aids to enable block mode granularly or turn off the Wallarm node for certain request parts.
 * `client_id` - (Optional) ID of the client to apply the rules to. The value is required for multi-tenant scenarios.
 * `action` - (Optional) Rule conditions. Possible attributes are described below.
 

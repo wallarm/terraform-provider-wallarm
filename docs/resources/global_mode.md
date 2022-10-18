@@ -3,19 +3,19 @@ layout: "wallarm"
 page_title: "Wallarm: wallarm_global_mode"
 subcategory: "Common"
 description: |-
-  Provides the resource to set global modes of scanner, attack rechecker and WAF.
+  Provides the resource to set global modes for the filtering nodes, scanner, and attack rechecker.
 ---
 
 # wallarm_global_mode
 
-  Provides the resource to set global modes of scanner, attack rechecker and WAF.
+  Provides the resource to set global modes for the filtering nodes, scanner, and attack rechecker.
 
 ## Example Usage
 
 ```hcl
-# Sets WAF mode to use local defined configuration
+# Sets filtering mode to use local defined configuration
 # Scanner is disabled
-# Attack Rechecker is turned on
+# Attack rechecker is turned on
 
 resource "wallarm_global_mode" "global_block" {
   waf_mode = "default"
@@ -27,6 +27,6 @@ resource "wallarm_global_mode" "global_block" {
 
 ## Argument Reference
 
-* `waf_mode` - (Optional) WAF mode. Possible values: `default`, `monitoring`, `block`
+* `waf_mode` - (Optional) global filtering mode. Possible values: `default`, `monitoring`, `block`
 * `scanner_mode` - (Optional) Scanner mode. Possible values: `off`, `on`
 * `rechecker_mode` - (Optional) Attack rechecker mode. Possible values: `off`, `on`
