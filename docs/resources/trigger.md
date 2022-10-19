@@ -110,29 +110,29 @@ resource "wallarm_trigger" "attack_trigger" {
 
 ## Argument Reference
 
-* `client_id` - (Optional) ID of the client to apply the trigger to. The value is required for multi-tenant scenarios.
-* `template_id` - (Required) Trigger condition. A condition is a system event to be notified about. Can be:
+* `client_id` - (optional) ID of the client to apply the trigger to. The value is required for multi-tenant scenarios.
+* `template_id` - (**required**) Trigger condition. A condition is a system event to be notified about. Can be:
   - `user_created` for a user added to the company account in Wallarm Console
   - `attacks_exceeded` for detected attacks number exceeded the specified value
   - `hits_exceeded` for detected hits number exceeded the specified value
   - `incidents_exceeded` for detected incidents number exceeded the specified value
   - `vector_attack` for detected attack vectors number exceeded the specified value
   - `bruteforce_started` for detected attack to be identified as bruteforce
-* `enabled` - (Optional) Indicator of the trigger status. Can be: `true` for enabled trigger and `false` for disabled trigger (notifications are not sent).
-* `name` - (Optional) Trigger name.
-* `comment` - (Optional) Trigger description.
-* `filters` - (Optional) Filters for trigger conditions. Possible attributes are described below.
-* `threshold` - (Optional) Limitations for trigger conditions. Possible attributes are described below.
-* `actions` - (Optional) Trigger actions. Possible attributes are described below.
+* `enabled` - (optional) Indicator of the trigger status. Can be: `true` for enabled trigger and `false` for disabled trigger (notifications are not sent).
+* `name` - (optional) Trigger name.
+* `comment` - (optional) Trigger description.
+* `filters` - (optional) Filters for trigger conditions. Possible attributes are described below.
+* `threshold` - (optional) Limitations for trigger conditions. Possible attributes are described below.
+* `actions` - (optional) Trigger actions. Possible attributes are described below.
 
 ## Filters
 
 `filters` are filters for trigger conditions. Can be:
 
-* `filter_id` - (Optional) Filter name. Can be:
+* `filter_id` - (optional) Filter name. Can be:
   - `ip_address` - IP address from which the request is sent
   - `pool` - ID of the [application](https://docs.wallarm.com/user-guides/settings/applications/) that receives the request or in which an incident is detected.
-  - `attack_type` - Type of the attack detected in the request or a type of vulnerability the request is directed to.
+  - `attack_type` - type of the attack detected in the request or a type of vulnerability the request is directed to.
   - `domain` - Domain that receives the request or in which an incident is detected.
   - `target` - Application architecture part that the attack is directed at or in which the incident is detected. Can be:
     * `Server`
@@ -140,10 +140,10 @@ resource "wallarm_trigger" "attack_trigger" {
     * `Database`
 * `response_status` - Integer response code returned to the request.
 * `hint_tag` - Arbitrary tag of any request tuned in by a rule.
-* `operator` - (Optional) Operator to compare the specified filter value and a real value. Can be:
+* `operator` - (optional) Operator to compare the specified filter value and a real value. Can be:
     * `eq` - Equal
     * `ne` - Not equal
-* `value` - (Optional) Filter value.
+* `value` - (optional) Filter value.
 
 Example:
 
@@ -170,7 +170,7 @@ Example:
 `threshold` argument shares the available conditions which can be applied.  It must **NOT** be specified when the `user_created` template is used. The conditions are:
   - `period` - The period of time to count (in seconds).
   - `count` - The number of such events.
-  - `operator` - (Optional) The comparison operator. Valid values:
+  - `operator` - (optional) The comparison operator. Valid values:
     * `gt` - Greater than
 
 Example:
@@ -194,7 +194,7 @@ Example:
 ```
 
 `actions` argument shares the available conditions which can be applied. The conditions are:
-  - `action_id` - (Required) The type of action when triggered.
+  - `action_id` - (**required**) The type of action when triggered.
     * `send_notification` - Send notification to existing integration resource.
     * `block_ips` - Block indicated IP addresses.
   - `integration_id` - The identificator of the existing integration.

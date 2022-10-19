@@ -27,12 +27,12 @@ resource "wallarm_user" "user" {
 
 ## Argument Reference
 
-* `email` - (Required) User email. The value will be used as the username for authentication in Wallarm Console.
-* `realname` - (Required) The first and last name of the user.
-* `permissions` - (Required) User role. Can be one of: `admin`, `analyst`, `deploy`, `read_only`, `global_admin`, `global_analyst`, `global_read_only`. Roles description is available in the [Wallarm official documentation](https://docs.wallarm.com/user-guides/settings/users/#user-roles).
-* `password` - (Optional) User password. If the value is not specified, it will be generated automatically and returned in the attribute `generated_password`.
-* `phone` - (Optional) User phone number.
-* `client_id` - (Optional) ID of the client to apply the rules to. The value is required for multi-tenant scenarios.
+* `email` - (**required**) user email. The value will be used as the username for authentication in Wallarm Console.
+* `realname` - (**required**) The first and last name of the user.
+* `permissions` - (**required**) user role. Can be one of: `admin`, `analyst`, `deploy`, `read_only`, `global_admin`, `global_analyst`, `global_read_only`. Roles description is available in the [Wallarm official documentation](https://docs.wallarm.com/user-guides/settings/users/#user-roles).
+* `password` - (optional) user password. If the value is not specified, it will be generated automatically and returned in the attribute `generated_password`.
+* `phone` - (optional) user phone number.
+* `client_id` - (optional) ID of the client to apply the rules to. The value is required for multi-tenant scenarios.
 
 ## Attributes Reference
 

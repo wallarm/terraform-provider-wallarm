@@ -50,12 +50,12 @@ data "wallarm_node" "example" {
 
 ## Argument Reference
 
-`filter` - (Required) Filters set in the `key=value` format used to look up for Wallarm node details. Possible keys:
+`filter` - (**required**) filters set in the `key=value` format used to look up for Wallarm node details. Possible keys:
 
-- `uuid` - (Optional) Wallarm node UUID.
-- `hostname` - (Optional) Wallarm node name.
-- `type` - (Optional) Wallarm node type. Can be: `cloud_node` for cloud Wallarm nodes, `node` for regular Wallarm nodes.
-- `enabled` - (Optional) Indicator of the Wallarm node status. Can be: `true` for enabled Wallarm nodes and `false` for disabled Wallarm nodes.
+- `uuid` - (optional) Wallarm node UUID.
+- `hostname` - (optional) Wallarm node name.
+- `type` - (optional) Wallarm node type. Can be: `cloud_node` for cloud Wallarm nodes, `node` for regular Wallarm nodes.
+- `enabled` - (optional) indicator of the Wallarm node status. Can be: `true` for enabled Wallarm nodes and `false` for disabled Wallarm nodes.
 
 To get details on all created Wallarm nodes, specify an empty set of the filters (`filter {}`).
 
@@ -63,19 +63,19 @@ To get details on all created Wallarm nodes, specify an empty set of the filters
 
 `nodes` - Wallarm node attributes in the `key=value` format. Possible keys:
 
-- `id` - Internal Wallarm node ID.
+- `id` - internal Wallarm node ID.
 - `hostname` - Wallarm node name.
 - `type` - Wallarm node type. Can be: `cloud_node` for cloud Wallarm nodes, `node` for regular Wallarm nodes.
 - `uuid` - Wallarm node UUID.
-- `enabled` - Indicator of the Wallarm node status. Can be: `true` for enabled Wallarm nodes and `false` for disabled Wallarm nodes.
+- `enabled` - indicator of the Wallarm node status. Can be: `true` for enabled Wallarm nodes and `false` for disabled Wallarm nodes.
 - `client_id` - ID of the client installed the Wallarm node.
-- `active` - Node syncronisation status
-- `instance_count` - Number of instances with the installed Wallarm node. Only for the `cloud_node` type.
-- `active_instance_count` - Number of active instances with the installed Wallarm node. Only for the `cloud_node` type.
+- `active` - node synchronization status
+- `instance_count` - number of instances with the installed Wallarm node. Only for the `cloud_node` type.
+- `active_instance_count` - number of active instances with the installed Wallarm node. Only for the `cloud_node` type.
 - `token` - Wallarm node token. Only for the `cloud_node` type.
-- `requests_amount` - Number of requests processed by the Wallarm node.
+- `requests_amount` - number of requests processed by the Wallarm node.
 - `ip` - IP address of the Wallarm node at the time of the last synchronization.
-- `proton` - Installed `proton.db` version. Can be an integer value or `null`.
-- `lom` - Installed `lom` version. Can be an integer value or `null`.
+- `proton` - installed `proton.db` version. Can be an integer value or `null`.
+- `lom` - installed `lom` version. Can be an integer value or `null`.
 
 [1]: https://docs.wallarm.com/user-guides/nodes/nodes/

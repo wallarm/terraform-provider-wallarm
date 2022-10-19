@@ -11,15 +11,15 @@ description: |-
 Provides the resource to manage integrations to send notifications to PagerDuty.
 
 The types of events available to be sent to PagerDuty:
-- Hits detected
+- Detected hits
 - System related: newly added users, deleted or disabled integration
-- Vulnerabilities detected
-- Scope changed: updates in hosts, services, and domains
+- Detected vulnerabilities
+- Scope changes: updates in hosts, services, and domains
 
 ## Example Usage
 
 ```hcl
-# Creates the integration to send notifications to PagerDuty
+# Creates an integration to send notifications to PagerDuty
 
 resource "wallarm_integration_pagerduty" "pagerduty_integration" {
   name = "New Terraform PagerDuty Integration"
@@ -50,24 +50,25 @@ resource "wallarm_integration_pagerduty" "pagerduty_integration" {
 
 ## Argument Reference
 
-* `client_id` - (Optional) ID of the client to apply the trigger to. The value is required for multi-tenant scenarios.
-* `active` - (Optional) Indicator of the integration status. Can be: `true` for active integration and `false` for disabled integration (notifications are not sent). 
-Default: `false`
-* `name` - (Optional) Integration name.
-* `integration_key` - (Required) PagerDuty Integration key. Sensitive.
+* `client_id` - (optional) ID of the client to apply the trigger to. The value is required for multi-tenant scenarios.
+* `active` - (optional) indicator of the integration status. Can be: `true` for active integration and `false` for disabled integration (notifications are not sent).
+
+  Default: `false`
+* `name` - (optional) integration name.
+* `integration_key` - (**required**) PagerDuty Integration key. Sensitive.
 
 ## Event
 
 `event` are events for integration to monitor. Can be:
 
-* `event_type` - (Optional) Event type. Can be:
-  - `hit` - Hits detected
-  - `vuln` - Vulnerabilities detected
-  - `system` - System related
-  - `scope` - Scope changed
+* `event_type` - (optional) Event type. Can be:
+  - `hit` - detected hits
+  - `vuln` - detected vulnerabilities
+  - `system` - system related
+  - `scope` - scope changes
 
   Default: `vuln`
-* `active` - (Optional) Indicator of the event type status. Can be: `true` for active events and `false` for disabled events (notifications are not sent). 
+* `active` - (optional) Indicator of the event type status. Can be: `true` for active events and `false` for disabled events (notifications are not sent). 
 Default: `true`
 
 
@@ -101,6 +102,6 @@ Example:
 
 ## Attributes Reference
 
-* `integration_id` - Integer ID of the created integration.
-* `created_by` - Email of the user which created the integration.
-* `is_active` - Indicator of the integration status. Can be: `true` and `false`.
+* `integration_id` - integer ID of the created integration.
+* `created_by` - email of the user which created the integration.
+* `is_active` - indicator of the integration status. Can be: `true` and `false`.

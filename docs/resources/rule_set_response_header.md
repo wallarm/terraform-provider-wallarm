@@ -39,9 +39,9 @@ resource "wallarm_rule_set_response_header" "resp_headers" {
 
 ## Argument Reference
 
-* `mode` - (Required) Mode of header processing. Valid options: `append`, `replace`
-* `headers` - (Required) The associative array of key/value headers. Might be defined as much headers as need at once. 
-* `action` - (Optional) A series of conditions, see below for a
+* `mode` - (**required**) Mode of header processing. Valid options: `append`, `replace`
+* `headers` - (**required**) The associative array of key/value headers. Might be defined as much headers as need at once. 
+* `action` - (optional) a series of conditions, see below for a
   a full list .
 
 **action**
@@ -49,45 +49,45 @@ resource "wallarm_rule_set_response_header" "resp_headers" {
 `action` argument shares the available
 conditions which can be applied. The conditions are:
 
-* `type` - (Optional) The type of comparison. Possible values: `equal`, `iequal`, `regex`, `absent`.
+* `type` - (optional) the type of comparison. Possible values: `equal`, `iequal`, `regex`, `absent`.
   For more information, see the [docs](https://docs.wallarm.com/user-guides/rules/add-rule/#condition-types)
   Example:
   `type = "absent"`
-* `value` - (Optional) A value of the parameter to match with.
+* `value` - (optional) a value of the parameter to match with.
   Example:
   `value = "example.com"`
-* `point` - (Optional) A series of arguments, see below for a a full list . See the [docs](https://docs.wallarm.com/user-guides/rules/request-processing/#parameter-parsing).
+* `point` - (optional) a series of arguments, see below for a a full list . See the [docs](https://docs.wallarm.com/user-guides/rules/request-processing/#parameter-parsing).
 
 ### Nested Objects
 
 * `point`
 
 The **point** attribute supports the following fields:
-  * `header` - (Optional) A header name. It requres arbitrary value for the parameter.
+  * `header` - (optional) a header name. It requres arbitrary value for the parameter.
   Example:
   `header = "HOST"`
-  * `method` - (Optional) An HTTP method. It requires one of the values: `GET`, `HEAD`, `POST`, `PUT`, `DELETE`, `CONNECT`, `OPTIONS`, `TRACE`, `PATCH`
+  * `method` - (optional) an HTTP method. It requires one of the values: `GET`, `HEAD`, `POST`, `PUT`, `DELETE`, `CONNECT`, `OPTIONS`, `TRACE`, `PATCH`
   Example:
   `method = "POST"`
-  * `path` - (Optional) A part of the request URI.
+  * `path` - (optional) a part of the request URI.
   Example:
   `path = 0`
-  * `action_name` - (Optional) The last part of the URL after the `/` symbol and before the first period `.`. This part of the URL is always present in the request even if its value is an empty string.
+  * `action_name` - (optional) the last part of the URL after the `/` symbol and before the first period `.`. This part of the URL is always present in the request even if its value is an empty string.
   Example:
   `action_name = "login"`
-  * `action_ext` - (Optional) The part of the URL after the last period `.`. It may be missing in the request.
+  * `action_ext` - (optional) the part of the URL after the last period `.`. It may be missing in the request.
   Example:
   `action_ext = "php"`
-  * `proto` - (Optional) Version of the HTTP Protocol.
+  * `proto` - (optional) version of the HTTP Protocol.
   Example:
   `proto = "1.1"`
-  * `scheme` - (Optional) http/https.
+  * `scheme` - (optional) http/https.
   Example:
   `scheme = "https"` 
-  * `uri` - (Optional) String with the original URL value.
+  * `uri` - (optional) String with the original URL value.
   Example:
   `uri = "/api/login"` 
-  * `instance` - (Optional) ID of the application.
+  * `instance` - (optional) ID of the application.
   Example:
   `instance = 42`
 
@@ -157,5 +157,5 @@ When `type` is `absent`
 ## Attributes Reference
 
 * `rule_id` - ID of the created rule.
-* `action_id` - The action ID (The conditions to apply on request).
-* `rule_type` - Type of   created rule. For example, `rule_type = "ignore_regex"`.
+* `action_id` - the action ID (The conditions to apply on request).
+* `rule_type` - type of created rule. For example, `rule_type = "ignore_regex"`.

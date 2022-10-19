@@ -35,18 +35,18 @@ resource "wallarm_blacklist" "blacklist_date" {
 
 ## Argument Reference
 
-* `ip_range` - (Required) IP range to be blocked. Can be defined an array of ranges. Accept:
+* `ip_range` - (**required**) IP range to be blocked. Can be defined an array of ranges. Accept:
   - distinct IP addresses (e.g. `1.1.1.1`, `2.2.2.2`)
   - subnets (e.g. `1.1.1.1/24`, `2.2.2.2/30`)
-* `time_format` - (Required) Format of time how to set block time. 
+* `time_format` - (**required**) Format of time how to set block time. 
   Can be:
   - `Minutes` - Time in minutes (e.g. `60` is to block for 60 minutes)
   - `RFC3339` - RFC3339 time (e.g. `2021-06-01T15:04:05+07:00`)
-* `time` - (Required) Time for (or until) which the IP address should be blocked.
-* `application` - (Optional) List of application IDs. 
+* `time` - (**required**) Time for (or until) which the IP address should be blocked.
+* `application` - (optional) List of application IDs. 
   Default: all applications
-* `reason` - (Optional) Arbitrary reason of blocking these IP addresses.
-* `client_id` - (Optional) ID of the client to apply the rules to. The value is required for multi-tenant scenarios.
+* `reason` - (optional) Arbitrary reason of blocking these IP addresses.
+* `client_id` - (optional) ID of the client to apply the rules to. The value is required for multi-tenant scenarios.
 
 ## Attributes Reference
 

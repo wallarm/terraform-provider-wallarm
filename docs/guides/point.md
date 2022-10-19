@@ -7,7 +7,7 @@ description: |-
 
 # point
 
-`point` - (Required) Request parts to apply the rules to. The full list of possible values is available in the [Wallarm official documentation](https://docs.wallarm.com/user-guides/rules/request-processing/#identifying-and-parsing-the-request-parts).
+`point` - (**required**) request parts to apply the rules to. The full list of possible values is available in the [Wallarm official documentation](https://docs.wallarm.com/user-guides/rules/request-processing/#identifying-and-parsing-the-request-parts).
 |     POINT      |POSSIBLE VALUES|
 |----------------|---------------|
 |`action_ext`    |`base64`, `gzip`, `json_doc`, `xml`,`htmljs`|
@@ -25,7 +25,7 @@ description: |-
 |`post`          |`base64`, `form_urlencoded`, `form_urlencoded_all`, `form_urlencoded_default`, `form_urlencoded_name`, `grpc`, `grpc_all`, `grpc_default`, `gzip`, `htmljs`, `json_doc`, `multipart`, `multipart_all`, `multipart_default`, `multipart_name`, `xml`|
 |`uri`           |`base64`, `gzip`, `json_doc`, `xml`,`htmljs`, `percent`|
 |`json_doc`   |`array`, `array_all`, `array_default`, `hash`, `hash_all`, `hash_default`, `hash_name`, `json_array`, `json_array_all`, `json_array_default`, `json_obj`, `json_obj_all`, `json_obj_default`, `json_obj_name`|
-|`instance`      | Integer ID of the application the request was sent to. |
+|`instance`      | integer ID of the application the request was sent to. |
 
 Examples:
 
