@@ -3,12 +3,12 @@ layout: "wallarm"
 page_title: "Wallarm: wallarm_rule_parser_state"
 subcategory: "Rule"
 description: |-
-  Provides the "Disable/Enable Parsers" rule resource.
+  Provides the "Disable/Enable parsers" rule resource.
 ---
 
 # wallarm_rule_parser_state
 
-Provides the resource to manage rules with the "Disable/Enable Parsers" action type. Allows disabling and enabling of parsers applied to the specified request point when analyzing it. By default, all parsers are applied to request points if a different configuration is not set in other rules.
+Provides the resource to manage rules with the "Disable/Enable parsers" action type. Allows disabling and enabling of parsers applied to the specified request point when analyzing it. By default, all parsers are applied to request points if a different configuration is not set in other rules.
 
 ## Example Usage
 

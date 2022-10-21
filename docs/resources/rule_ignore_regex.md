@@ -3,12 +3,12 @@ layout: "wallarm"
 page_title: "Wallarm: wallarm_rule_ignore_regex"
 subcategory: "Rule"
 description: |-
-  Provides the "Ignore regular expression" rule resource.
+  Provides the "Disable regexp-based attack detection" rule resource.
 ---
 
 # wallarm_rule_ignore_regex
 
-Provides the resource to manage rules with the "Ignore regular expressions" action type. Ignoring the regular expression can be used when particular requests should NOT be defined as attacks based on the existing regular expression (the "Define a request as an attack based on a regular expression" action type).
+Provides the resource to manage rules with the "Disable regexp-based attack detection" action type. Ignoring the regular expression can be used when particular requests should NOT be defined as attacks based on the existing regular expression (the "Create regexp-based attack indicator" action type).
 
 ## Example Usage
 
@@ -22,7 +22,7 @@ resource "wallarm_rule_ignore_regex" "ignore_regex" {
 }
 ```
 
-With newly created rule "Define a request as an attack based on a regular expression":
+With newly created rule "Create regexp-based attack indicator":
 
 ```hcl
 # Creates the rule to define requests with the "X-AUTHENTICATION" header value matching an expression
@@ -55,7 +55,7 @@ resource "wallarm_rule_ignore_regex" "ignore_regex" {
 
 ## Argument Reference
 
-* `regex_id` - (**required**) ID of the regular expression specified in the "Define a request as an attack based on a regular expression" rule.
+* `regex_id` - (**required**) ID of the regular expression specified in the "Create regexp-based attack indicator" rule.
 * `client_id` - (optional) ID of the client to apply the rules to. The value is required for multi-tenant scenarios.
 * `action` - (optional) rule conditions. Possible attributes are described below.
 * `point` - (**required**) request parts to apply the rules to. The full list of possible values is available in the [Wallarm official documentation](https://docs.wallarm.com/user-guides/rules/request-processing/#identifying-and-parsing-the-request-parts).

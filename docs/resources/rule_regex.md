@@ -3,12 +3,12 @@ layout: "wallarm"
 page_title: "Wallarm: wallarm_rule_regex"
 subcategory: "Rule"
 description: |-
-  Provides the "Define a request as an attack based on a regular expression" rule resource.
+  Provides the "Create regexp-based attack indicator" rule resource.
 ---
 
 # wallarm_rule_regex
 
-Provides the resource to manage rules with the "Define a request as an attack based on a regular expression" action type. This rule type allows you to detect the specified attack based on the specified regular expression in the request.
+Provides the resource to manage rules with the "Create regexp-based attack indicator" action type. This rule type allows you to detect the specified attack based on the specified regular expression in the request.
 
 The rule is generated based on the following parameters:
 

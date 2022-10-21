@@ -3,14 +3,14 @@ layout: "wallarm"
 page_title: "Wallarm: wallarm_rule_attack_rechecker_rewrite"
 subcategory: "Rule"
 description: |-
-  Provides the "Rewrite request before attack replaying" rule resource.
+  Provides the "Rewrite attack before active verification" rule resource.
 ---
 
 # wallarm_rule_attack_rechecker_rewrite
 
 !> The resource requires additional permissions. Ask the support team to obtain them.
 
-Provides the resource to manage rules with the "Rewrite request before attack replaying" action type. This rule type is used to perform verification tests not for the production applications but for similar applications (for example, in test, staging, development environments that do not require authentication or there are test credentials to access these applications). The rule is commonly used for the Wallarm Attack rechecker.
+Provides the resource to manage rules with the "Rewrite attack before active verification" action type. This rule type is used to perform verification tests not for the production applications but for similar applications (for example, in test, staging, development environments that do not require authentication or there are test credentials to access these applications). The rule is commonly used for the Wallarm Attack rechecker.
 
 ## Example Usage
 

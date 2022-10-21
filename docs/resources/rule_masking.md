@@ -3,12 +3,12 @@ layout: "wallarm"
 page_title: "Wallarm: wallarm_rule_masking"
 subcategory: "Rule"
 description: |-
-  Provides the "Mark as sensitive data" rule resource.
+  Provides the "Mask sensitive data" rule resource.
 ---
 
 # wallarm_rule_masking
 
-Provides the resource to manage rules with the "Mark as sensitive data" action type. This rule type is used to cut out sensitive information such as passwords or cookies from the uploading to the Wallarm Cloud making such data hidden.
+Provides the resource to manage rules with the "Mask sensitive data" action type. This rule type is used to cut out sensitive information such as passwords or cookies from the uploading to the Wallarm Cloud making such data hidden.
 
 The real values of the specified parameters will be replaced by `*` and will not be accessible either in the Wallarm Cloud or in the local post-analysis module. This method ensures that the protected data cannot leak outside the trusted environment.
 

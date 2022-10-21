@@ -3,14 +3,14 @@ layout: "wallarm"
 page_title: "Wallarm: wallarm_rule_set_response_header"
 subcategory: "Rule"
 description: |-
-  Provides the "Specify a response header" rule resource.
+  Provides the "Change server response headers" rule resource.
 ---
 
 # wallarm_rule_set_response_header
 
 !> The resource requires additional permissions. Ask the support team to obtain them.
 
-Provides the resource to manage rules with the "Specify a response header" action type. This rule type is used to configure supplementary headers appended or replaced by a Wallarm node.
+Provides the resource to manage rules with the "Change server response headers" action type. This rule type is used to configure supplementary headers appended or replaced by a Wallarm node.
 
 ## Example Usage
 

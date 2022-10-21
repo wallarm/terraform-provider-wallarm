@@ -3,14 +3,14 @@ layout: "wallarm"
 page_title: "Wallarm: wallarm_rule_attack_rechecker"
 subcategory: "Rule"
 description: |-
-  Provides the "Disable/Enable attack verification" rule resource.
+  Provides the "Set mode of active threat verification" rule resource.
 ---
 
 # wallarm_rule_attack_rechecker
 
 !> The resource requires additional permissions. Ask the support team to obtain them.
 
-Provides the resource to manage rules with the "Disable/Enable attack verification" action type. This rule type is used to enable or disable checking attacks in specified request parts.
+Provides the resource to manage rules with the "Set mode of active threat verification" action type. This rule type is used to enable or disable checking attacks in specified request parts.
 
 ## Example Usage
 

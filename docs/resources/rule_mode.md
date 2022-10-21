@@ -3,12 +3,12 @@ layout: "wallarm"
 page_title: "Wallarm: wallarm_rule_mode"
 subcategory: "Rule"
 description: |-
-  Provides the "Set traffic filtration mode" rule resource.
+  Provides the "Set filtration mode" rule resource.
 ---
 
 # wallarm_rule_mode
 
-Provides the resource to manage rules with the "Set traffic filtration mode" action type. This rule type allows you to enable and disable the blocking of requests to various parts of a web application.
+Provides the resource to manage rules with the "Set filtration mode" action type. This rule type allows you to enable and disable the blocking of requests to various parts of a web application.
 
 ## Example Usage
 
