@@ -8,6 +8,8 @@ description: |-
 
 # wallarm_rule_bruteforce_counter
 
+!> The resource is deprecated. Will be removed in future versions.
+
 Provides the resource to manage rules with the "Define brute-force attacks counter" action type. For detecting brute-force attacks, with every request, one of the statistical counters is incremented. By default, the counter name is automatically defined based on the domain name and the request path.
 
 ## Example Usage

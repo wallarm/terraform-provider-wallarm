@@ -8,6 +8,8 @@ description: |-
 
 # wallarm_rule_variative_values
 
+!> The resource is deprecated. Will be removed in future versions.
+
 Provides the resource to manage rules with the "Make a certain conditions point variative" action type. Specifies the condition point to group rules by. Notice that you may not have permissions to use this resource.
 
 ## Example Usage
