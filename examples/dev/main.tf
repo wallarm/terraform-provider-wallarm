@@ -5,7 +5,7 @@ terraform {
   required_providers {
     wallarm = {
       source = "wallarm/wallarm"
-      version = ">= 0.0.8"
+      version = ">= 0.0.10"
     }
   }
 }
@@ -16,8 +16,8 @@ terraform {
 provider "wallarm" {
   api_uuid = var.api_uuid
   api_secret = var.api_secret
-  api_host = "https://api.wallarm.com"
-  client_id = 6039
+  api_host = var.api_host
+  client_id = 133
 }
 
 # # 
@@ -32,15 +32,15 @@ provider "wallarm" {
 
 
 # # 
-# # Blacklist section
+# # Denylist section
 # # 
-# resource "wallarm_blacklist" "blacklist" {
-#   ip_range = ["1.1.1.1/18"]
-#   application = [1]
-#   reason = "TEST BLACKLIST"
-#   time_format = "Minutes"
-#   time = 60 # Minutes
-# }
+resource "wallarm_denylist" "denylist" {
+  ip_range = ["1.1.1.1/24"]
+  application = [1]
+  reason = "TEST DENYLIST"
+  time_format = "Minutes"
+  time = 60
+}
 
 
 # # 

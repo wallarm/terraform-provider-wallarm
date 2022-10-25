@@ -13,12 +13,12 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 )
 
-func resourceWallarmBlacklist() *schema.Resource {
+func resourceWallarmDenylist() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceWallarmBlacklistCreate,
-		Read:   resourceWallarmBlacklistRead,
-		Update: resourceWallarmBlacklistUpdate,
-		Delete: resourceWallarmBlacklistDelete,
+		Create: resourceWallarmDenylistCreate,
+		Read:   resourceWallarmDenylistRead,
+		Update: resourceWallarmDenylistUpdate,
+		Delete: resourceWallarmDenylistDelete,
 
 		Schema: map[string]*schema.Schema{
 			"client_id": {
@@ -56,7 +56,7 @@ func resourceWallarmBlacklist() *schema.Resource {
 			"reason": {
 				Type:     schema.TypeString,
 				Optional: true,
-				Default:  "Terraform managed Blacklist",
+				Default:  "Terraform managed Denylist",
 			},
 			"address_id": {
 				Type:     schema.TypeList,
@@ -78,7 +78,7 @@ func resourceWallarmBlacklist() *schema.Resource {
 	}
 }
 
-func resourceWallarmBlacklistCreate(d *schema.ResourceData, m interface{}) error {
+func resourceWallarmDenylistCreate(d *schema.ResourceData, m interface{}) error {
 	client := m.(wallarm.API)
 	clientID := retrieveClientID(d, client)
 
@@ -156,17 +156,17 @@ func resourceWallarmBlacklistCreate(d *schema.ResourceData, m interface{}) error
 			Subnet:    ip,
 		}
 
-		if err := client.BlacklistCreate(clientID, params); err != nil {
+		if err := client.DenylistCreate(clientID, params); err != nil {
 			return err
 		}
 	}
 
 	d.SetId(reason)
 
-	return resourceWallarmBlacklistRead(d, m)
+	return resourceWallarmDenylistRead(d, m)
 }
 
-func resourceWallarmBlacklistRead(d *schema.ResourceData, m interface{}) error {
+func resourceWallarmDenylistRead(d *schema.ResourceData, m interface{}) error {
 	client := m.(wallarm.API)
 	clientID := retrieveClientID(d, client)
 	IPRange := d.Get("ip_range").([]interface{})
@@ -200,7 +200,7 @@ func resourceWallarmBlacklistRead(d *schema.ResourceData, m interface{}) error {
 		}
 	}
 
-	var blacklistFromTerraform []struct {
+	var denylistFromTerraform []struct {
 		IP          string
 		Application int
 	}
@@ -213,13 +213,13 @@ func resourceWallarmBlacklistRead(d *schema.ResourceData, m interface{}) error {
 					return err
 				}
 				for _, subnetIP := range subnet {
-					blacklistFromTerraform = append(blacklistFromTerraform, struct {
+					denylistFromTerraform = append(denylistFromTerraform, struct {
 						IP          string
 						Application int
 					}{subnetIP, app})
 				}
 			} else {
-				blacklistFromTerraform = append(blacklistFromTerraform, struct {
+				denylistFromTerraform = append(denylistFromTerraform, struct {
 					IP          string
 					Application int
 				}{ip, app})
@@ -227,22 +227,22 @@ func resourceWallarmBlacklistRead(d *schema.ResourceData, m interface{}) error {
 		}
 	}
 
-	derivedIPaddr := make([]string, len(blacklistFromTerraform))
-	for k, b := range blacklistFromTerraform {
+	derivedIPaddr := make([]string, len(denylistFromTerraform))
+	for k, b := range denylistFromTerraform {
 		derivedIPaddr[k] = b.IP
 	}
 
-	blacklistsFromAPI, err := client.BlacklistRead(clientID)
+	denylistsFromAPI, err := client.DenylistRead(clientID)
 	if err != nil {
 		return err
 	}
 
 	addrIDs := make([]interface{}, 0)
-	for _, blacklist := range blacklistsFromAPI {
-		if wallarm.Contains(derivedIPaddr, strings.Split(blacklist.Subnet, "/")[0]) {
+	for _, denylist := range denylistsFromAPI {
+		if wallarm.Contains(derivedIPaddr, strings.Split(denylist.Subnet, "/")[0]) {
 			addrIDs = append(addrIDs, map[string]interface{}{
-				"ip_addr": blacklist.Subnet,
-				"ip_id":   blacklist.ID,
+				"ip_addr": denylist.Subnet,
+				"ip_id":   denylist.ID,
 			})
 		}
 	}
@@ -256,11 +256,11 @@ func resourceWallarmBlacklistRead(d *schema.ResourceData, m interface{}) error {
 	return nil
 }
 
-func resourceWallarmBlacklistUpdate(d *schema.ResourceData, m interface{}) error {
-	return resourceWallarmBlacklistCreate(d, m)
+func resourceWallarmDenylistUpdate(d *schema.ResourceData, m interface{}) error {
+	return resourceWallarmDenylistCreate(d, m)
 }
 
-func resourceWallarmBlacklistDelete(d *schema.ResourceData, m interface{}) error {
+func resourceWallarmDenylistDelete(d *schema.ResourceData, m interface{}) error {
 	client := m.(wallarm.API)
 	clientID := retrieveClientID(d, client)
 	addrIDInterface := d.Get("address_id").([]interface{})
@@ -274,7 +274,7 @@ func resourceWallarmBlacklistDelete(d *schema.ResourceData, m interface{}) error
 		derivedIDs = append(derivedIDs, id["ip_id"].(int))
 	}
 
-	if err := client.BlacklistDelete(clientID, derivedIDs); err != nil {
+	if err := client.DenylistDelete(clientID, derivedIDs); err != nil {
 		return err
 	}
 
