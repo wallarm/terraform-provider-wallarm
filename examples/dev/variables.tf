@@ -5,3 +5,7 @@ variable "api_uuid" {
 variable "api_secret" {
   type    = string
 }
+
+variable "api_host" {
+  type    = string
+}

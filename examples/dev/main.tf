@@ -1,11 +1,11 @@
 #
-# Define the source of a provider. Required by Terraform 0.13+
+# Define the source of a provider.
 #
 terraform {
   required_providers {
     wallarm = {
       source = "wallarm/wallarm"
-      version = ">= 0.0.8"
+      version = ">= 1.0.0"
     }
   }
 }
@@ -16,8 +16,8 @@ terraform {
 provider "wallarm" {
   api_uuid = var.api_uuid
   api_secret = var.api_secret
-  api_host = "https://api.wallarm.com"
-  client_id = 6039
+  api_host = var.api_host
+  client_id = 133
 }
 
 # # 
@@ -32,14 +32,14 @@ provider "wallarm" {
 
 
 # # 
-# # Blacklist section
+# # Denylist section
 # # 
-# resource "wallarm_blacklist" "blacklist" {
-#   ip_range = ["1.1.1.1/18"]
+# resource "wallarm_denylist" "denylist" {
+#   ip_range = ["1.1.1.1/24"]
 #   application = [1]
-#   reason = "TEST BLACKLIST"
+#   reason = "TEST DENYLIST"
 #   time_format = "Minutes"
-#   time = 60 # Minutes
+#   time = 60
 # }
 
 
@@ -263,10 +263,10 @@ provider "wallarm" {
 
 
 # # 
-# # Global WAF mode section
+# # Global mode section
 # # 
 # resource "wallarm_global_mode" "global_block" {
-#   waf_mode = "default"
+#   filtration_mode = "block"
 #   scanner_mode = "off"
 #   rechecker_mode = "on"
 # }

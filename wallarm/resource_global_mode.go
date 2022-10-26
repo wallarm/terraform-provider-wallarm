@@ -33,21 +33,24 @@ func resourceWallarmGlobalMode() *schema.Resource {
 				},
 			},
 
-			"waf_mode": {
+			"filtration_mode": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validation.StringInSlice([]string{"default", "monitoring", "block"}, false),
+				Default:      "default",
+				ValidateFunc: validation.StringInSlice([]string{"default", "monitoring", "block", "safe_blocking", "off"}, false),
 			},
 
 			"scanner_mode": {
 				Type:         schema.TypeString,
 				Optional:     true,
+				Default:      "on",
 				ValidateFunc: validation.StringInSlice([]string{"on", "off"}, false),
 			},
 
 			"rechecker_mode": {
 				Type:         schema.TypeString,
 				Optional:     true,
+				Default:      "off",
 				ValidateFunc: validation.StringInSlice([]string{"on", "off"}, false),
 			},
 		},
@@ -58,9 +61,11 @@ func resourceWallarmGlobalModeCreate(d *schema.ResourceData, m interface{}) erro
 	client := m.(wallarm.API)
 	clientID := retrieveClientID(d, client)
 
-	wafMode := d.Get("waf_mode").(string)
-	if wafMode == "block" {
-		wafMode = "blocking"
+	filtrationMode := d.Get("filtration_mode").(string)
+
+	_, err := client.WallarmModeUpdate(&wallarm.WallarmModeParams{Mode: filtrationMode}, clientID)
+	if err != nil {
+		return err
 	}
 
 	scannerMode := d.Get("scanner_mode").(string)
@@ -70,22 +75,21 @@ func resourceWallarmGlobalModeCreate(d *schema.ResourceData, m interface{}) erro
 
 	recheckerMode := d.Get("rechecker_mode").(string)
 
-	wafmode := &wallarm.ClientUpdate{
+	mode := &wallarm.ClientUpdate{
 		Filter: &wallarm.ClientFilter{
 			ID: clientID,
 		},
 		Fields: &wallarm.ClientFields{
-			Mode:                wafMode,
 			ScannerMode:         scannerMode,
 			AttackRecheckerMode: recheckerMode,
 		},
 	}
-	_, err := client.ClientUpdate(wafmode)
+	_, err = client.ClientUpdate(mode)
 	if err != nil {
 		return err
 	}
 
-	resID := fmt.Sprintf("%d/%s/%s/%s", clientID, wafMode, scannerMode, recheckerMode)
+	resID := fmt.Sprintf("%d/%s/%s/%s", clientID, filtrationMode, scannerMode, recheckerMode)
 	d.SetId(resID)
 
 	d.Set("client_id", clientID)
@@ -96,6 +100,27 @@ func resourceWallarmGlobalModeCreate(d *schema.ResourceData, m interface{}) erro
 func resourceWallarmGlobalModeRead(d *schema.ResourceData, m interface{}) error {
 	client := m.(wallarm.API)
 	clientID := retrieveClientID(d, client)
+
+	wallarmModeResp, err := client.WallarmModeRead(clientID)
+	if err != nil {
+		return err
+	}
+	if wallarmModeResp.Status != 200 {
+		body, err := json.Marshal(wallarmModeResp)
+		if err != nil {
+			return err
+		}
+		log.Printf("[WARN] Couldn't fetch wallarm_mode. Body: %s", body)
+
+		d.SetId("")
+		return nil
+	}
+
+	filtrationMode := wallarmModeResp.Body.Mode
+	if err := d.Set("filtration_mode", filtrationMode); err != nil {
+		return err
+	}
+
 	clientInfo := &wallarm.ClientRead{
 		Filter: &wallarm.ClientReadFilter{
 			Enabled: true,
@@ -105,13 +130,13 @@ func resourceWallarmGlobalModeRead(d *schema.ResourceData, m interface{}) error 
 		Limit:  1000,
 		Offset: 0,
 	}
-	res, err := client.ClientRead(clientInfo)
+
+	otherModesResp, err := client.ClientRead(clientInfo)
 	if err != nil {
 		return err
 	}
-
-	if len(res.Body) == 0 {
-		body, err := json.Marshal(res)
+	if len(otherModesResp.Body) == 0 {
+		body, err := json.Marshal(otherModesResp)
 		if err != nil {
 			return err
 		}
@@ -121,16 +146,7 @@ func resourceWallarmGlobalModeRead(d *schema.ResourceData, m interface{}) error 
 		return nil
 	}
 
-	wafMode := res.Body[0].Mode
-	if wafMode == "blocking" {
-		wafMode = "block"
-	}
-
-	if err := d.Set("waf_mode", wafMode); err != nil {
-		return err
-	}
-
-	scannerMode := res.Body[0].ScannerMode
+	scannerMode := otherModesResp.Body[0].ScannerMode
 	if scannerMode == "classic" {
 		scannerMode = "on"
 	}
@@ -139,7 +155,7 @@ func resourceWallarmGlobalModeRead(d *schema.ResourceData, m interface{}) error 
 		return err
 	}
 
-	recheckerMode := res.Body[0].AttackRecheckerMode
+	recheckerMode := otherModesResp.Body[0].AttackRecheckerMode
 
 	if err := d.Set("rechecker_mode", recheckerMode); err != nil {
 		return err
