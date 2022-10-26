@@ -18,7 +18,7 @@ func TestAccWallarmGlobalMode_FiltrationSafeBlocking(t *testing.T) {
 			{
 				Config: testWallarmGlobalMode_FiltrationConfig(rnd, "safe_blocking"),
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr(name, "filtration_mode", "block"),
+					resource.TestCheckResourceAttr(name, "filtration_mode", "safe_blocking"),
 				),
 			},
 		},
