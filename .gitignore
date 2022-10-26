@@ -3,5 +3,6 @@
 .terraform/
 terraform-provider-wallarm*
 terraform.tfstate*
+*.lock.hcl
 *.auto.tfvars
 *.log
