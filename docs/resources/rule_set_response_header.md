@@ -15,7 +15,7 @@ Provides the resource to manage rules with the "Change server response headers" 
 ## Example Usage
 
 ```hcl
-# Append the "Server" header with the "Wallarm API Security" value
+# Append the "Server" header with the "Wallarm solution" value
 # and the "Blocked" header with the "Blocked by Wallarm" value
 # to the requests sent to the application with ID 3
 
@@ -29,7 +29,7 @@ resource "wallarm_rule_set_response_header" "resp_headers" {
   }
 
   headers = {
-    Server = "Wallarm API Security"
+    Server = "Wallarm solution"
     Blocked = "Blocked by Wallarm"
   }
 
@@ -39,8 +39,8 @@ resource "wallarm_rule_set_response_header" "resp_headers" {
 
 ## Argument Reference
 
-* `mode` - (**required**) Mode of header processing. Valid options: `append`, `replace`
-* `headers` - (**required**) The associative array of key/value headers. Might be defined as much headers as need at once. 
+* `mode` - (**required**) mode of header processing. Valid options: `append`, `replace`
+* `headers` - (**required**) the associative array of key/value headers. Might be defined as much headers as need at once. 
 * `action` - (optional) a series of conditions, see below for a
   a full list .
 

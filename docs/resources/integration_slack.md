@@ -55,13 +55,13 @@ resource "wallarm_integration_slack" "slack_integration" {
 
 `event` are events for integration to monitor. Can be:
 
-* `event_type` - (optional) Event type. Can be:
+* `event_type` - (optional) event type. Can be:
   - `vuln` - detected vulnerabilities
   - `system` - System related
   - `scope` - scope changes
 
   Default: `vuln`
-* `active` - (optional) Indicator of the event type status. Can be: `true` for active events and `false` for disabled events (notifications are not sent). 
+* `active` - (optional) indicator of the event type status. Can be: `true` for active events and `false` for disabled events (notifications are not sent). 
 Default: `true`
 
 

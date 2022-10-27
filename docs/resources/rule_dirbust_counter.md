@@ -8,7 +8,7 @@ description: |-
 
 # wallarm_rule_dirbust_counter
 
-!> The resource is deprecated. Will be removed in future versions.
+!> The resource will be deprecated in the future versions.
 
 Provides the resource to manage rules with the "Define force browsing attacks counter" action type. For detecting force browsing attacks, there is a counter that increments whenever a request hits 404 status code (resource not found). By default, every application has its own counter.
 
@@ -50,7 +50,7 @@ conditions which can be applied. The conditions are:
 
 **point**
 
-  * `header` - (optional) Arbitrary HEADER parameter name.
+  * `header` - (optional) arbitrary HEADER parameter name.
   Example:
   `header = "HOST"`
   * `method` - (optional) request method. Can be: `GET`, `HEAD`, `POST`, `PUT`, `DELETE`, `CONNECT`, `OPTIONS`, `TRACE`, `PATCH`.

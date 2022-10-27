@@ -30,7 +30,7 @@ resource "wallarm_rule_disable_attack_type" "disable_sqli" {
 
 * `client_id` - (optional) ID of the client to apply the rules to. The value is required for multi-tenant scenarios.
 * `action` - (optional) rule conditions. Possible attributes are described below.
-* `attack_type` - (**required**) Attack type to ignore. Possible values: `sqli`, `xss`, `rce`, `ptrav`, `crlf`, `nosqli`, `xxe`, `ldapi`, `scanner`, `ssti`, `ssi`, `mail_injection`, `vpatch`. 
+* `attack_type` - (**required**) attack type to ignore. Possible values: `sqli`, `xss`, `rce`, `ptrav`, `crlf`, `nosqli`, `xxe`, `ldapi`, `scanner`, `ssti`, `ssi`, `mail_injection`, `vpatch`. 
 * `point` - (**required**) request parts to apply the rules to. The full list of possible values is available in the [Wallarm official documentation](https://docs.wallarm.com/user-guides/rules/request-processing/#identifying-and-parsing-the-request-parts).
 
 **action**
@@ -49,7 +49,7 @@ conditions which can be applied. The conditions are:
 
 **point**
 
-  * `header` - (optional) Arbitrary HEADER parameter name.
+  * `header` - (optional) arbitrary HEADER parameter name.
   Example:
   `header = "HOST"`
   * `method` - (optional) request method. Can be: `GET`, `HEAD`, `POST`, `PUT`, `DELETE`, `CONNECT`, `OPTIONS`, `TRACE`, `PATCH`.
@@ -131,7 +131,7 @@ Example:
 See below what limitations apply
 
 When `type` is `absent`
-`point` must contain key with the default value. For `action_name`, `action_ext`, `method`, `proto`, `scheme`, `uri` default value is `""` (empty string)
+`point` must contain key with the default value. For `action_name`, `action_ext`, `method`, `proto`, `scheme`, `uri` default value is `""` (empty string).
 
 ## Attributes Reference
 

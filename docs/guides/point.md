@@ -33,7 +33,7 @@ Examples:
 ```
 p1=1&p2[a]=2&p2[b]=3&p3[]=4&p3[]=5&p4=6&p4=7
 ```
-may contain the points:
+contains the points:
 * `point = [["post"], ["form_urlencoded", "p1"]]` matches `1`
 * `point = [["post"], ["form_urlencoded", "p2"], ["hash", "a"]]` matches `2`
 * `point = [["post"], ["form_urlencoded", "p2"], ["hash", "b"]]` matches `3`

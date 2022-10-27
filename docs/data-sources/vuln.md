@@ -3,12 +3,12 @@ layout: "wallarm"
 page_title: "Wallarm: wallarm_vuln"
 subcategory: "Common"
 description: |-
-  Get details on detected vulnerabilities by the Wallarm node.
+  Get details on vulnerabilities detected by Wallarm.
 ---
 
 # wallarm_vuln
 
-Use this data source to get details on [vulnerabilities][1] detected by the Wallarm node.
+Use this data source to get details on [vulnerabilities][1] detected by  Wallarm.
 
 ## Example usage
 
@@ -40,9 +40,9 @@ data "wallarm_vuln" "vulns" {
 
 ## Argument Reference
 
-`filter` - (**required**) Filters set in the `key=value` format used to look up for vulnerability details. Possible keys:
+`filter` - (**required**) filters set in the `key=value` format used to look up for vulnerability details. Possible keys:
 
-- `status` - (optional) vulnerability status. Can be: `open` for active vulnerabilities, `closed` for closed vulnerabilities, `falsepositive` for vulnerabilities marked as false positive.
+- `status` - (optional) vulnerability status. Can be: `open` for active vulnerabilities, `closed` for closed vulnerabilities, `falsepositive` for vulnerabilities marked as false positives.
 - `limit` - (optional) integer value defining the number of vulnerabilities to return. Possible values: 0-1000.
 - `offset` - (optional) integer value defining the number from which vulnerabilities should be returned. Possible values: 0 - 9199999999999999999.
 
@@ -52,7 +52,7 @@ data "wallarm_vuln" "vulns" {
 
 - `vuln_id` - integer vulnerability ID.
 - `wid` - string vulnerability ID.
-- `status` - vulnerability status. Can be: `open` for active vulnerabilities, `closed` for closed vulnerabilities, `falsepositive` for vulnerabilities marked as false positive.
+- `status` - vulnerability status. Can be: `open` for active vulnerabilities, `closed` for closed vulnerabilities, `falsepositive` for vulnerabilities marked as false positives.
 - `type` - vulnerability type (`ptrav`, `sqli`, `infoleak`).
 - `client_id` - ID of the client with the scanned applications.
 - `method` - method of the HTTP request sent to exploit the vulnerability. 
@@ -63,6 +63,6 @@ data "wallarm_vuln" "vulns" {
 - `description` - vulnerability description.
 - `additional` - vulnerability additional information.
 - `exploit_example` - exploit example to check the vulnerability.
-- `detection_method` - method of the vulnerability detection. Can be: `active` for the vulnerability detected by the scanner or by the rechecker, `passive` for the vulnerability detected after analyzing the server responses.
+- `detection_method` - method of the vulnerability detection. Can be: `active` for the vulnerability detected by the scanner or by the Active threat verification component, `passive` for the vulnerability detected after analyzing the server responses.
 
 [1]: https://docs.wallarm.com/user-guides/vulnerabilities/check-vuln/

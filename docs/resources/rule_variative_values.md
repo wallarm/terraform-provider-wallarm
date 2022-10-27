@@ -8,7 +8,7 @@ description: |-
 
 # wallarm_rule_variative_values
 
-!> The resource is deprecated. Will be removed in future versions.
+!> The resource will be deprecated in the future versions.
 
 Provides the resource to manage rules with the "Make a certain conditions point variative" action type. Specifies the condition point to group rules by. Notice that you may not have permissions to use this resource.
 
@@ -31,7 +31,7 @@ resource "wallarm_rule_variative_values" "action_name" {
 
 * `client_id` - (optional) ID of the client to apply the rules to. The value is required for multi-tenant scenarios.
 * `action` - (optional) rule conditions. Possible attributes are described below.
-* `point` - (**required**) Condition point to apply the rules to.
+* `point` - (**required**) condition point to apply the rules to.
 
 **action**
 
@@ -49,7 +49,7 @@ conditions which can be applied. The conditions are:
 
 **point**
 
-  * `header` - (optional) Arbitrary HEADER parameter name.
+  * `header` - (optional) arbitrary HEADER parameter name.
   Example:
   `header = "HOST"`
   * `method` - (optional) request method. Can be: `GET`, `HEAD`, `POST`, `PUT`, `DELETE`, `CONNECT`, `OPTIONS`, `TRACE`, `PATCH`.

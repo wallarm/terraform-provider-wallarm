@@ -64,7 +64,7 @@ resource "wallarm_rule_regex" "scanner_rule" {
 ## Argument Reference
 
 * `client_id` - (optional) ID of the client to apply the rules to. The value is required for multi-tenant scenarios.
-* `attack_type` - (**required**) Attack type that will be detected when the parameter value in the request matches the regular expression. Can be: `any`, `sqli`, `rce`, `crlf`, `nosqli`, `ptrav`, `xxe`, `ptrav`, `xss`, `scanner`, `redir`, `ldapi`.
+* `attack_type` - (**required**) attack type that will be detected when the parameter value in the request matches the regular expression. Can be: `any`, `sqli`, `rce`, `crlf`, `nosqli`, `ptrav`, `xxe`, `ptrav`, `xss`, `scanner`, `redir`, `ldapi`.
 * `action` - (optional) rule conditions. Possible attributes are described below.
 * `point` - (**required**) request parts to apply the rules to. The full list of possible values is available in the [Wallarm official documentation](https://docs.wallarm.com/user-guides/rules/request-processing/#identifying-and-parsing-the-request-parts).
   |     POINT      |POSSIBLE VALUES|
@@ -102,7 +102,7 @@ conditions which can be applied. The conditions are:
 
 **point**
 
-  * `header` - (optional) Arbitrary HEADER parameter name.
+  * `header` - (optional) arbitrary HEADER parameter name.
   Example:
   `header = "HOST"`
   * `method` - (optional) request method. Can be: `GET`, `HEAD`, `POST`, `PUT`, `DELETE`, `CONNECT`, `OPTIONS`, `TRACE`, `PATCH`.

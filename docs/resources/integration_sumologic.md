@@ -61,14 +61,14 @@ resource "wallarm_integration_sumologic" "sumologic_integration" {
 
 `event` are events for integration to monitor. Can be:
 
-* `event_type` - (optional) Event type. Can be:
+* `event_type` - (optional) event type. Can be:
   - `hit` - detected hits
   - `vuln` - detected vulnerabilities
   - `system` - system related
   - `scope` - scope changes
 
   Default: `vuln`
-* `active` - (optional) Indicator of the event type status. Can be: `true` for active events and `false` for disabled events (notifications are not sent). 
+* `active` - (optional) indicator of the event type status. Can be: `true` for active events and `false` for disabled events (notifications are not sent). 
 Default: `true`
 
 

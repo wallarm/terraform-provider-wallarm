@@ -30,7 +30,7 @@ resource "wallarm_rule_uploads" "allow_markup_in_body" {
 
 * `client_id` - (optional) ID of the client to apply the rules to. The value is required for multi-tenant scenarios.
 * `action` - (optional) rule conditions. Possible attributes are described below.
-* file_type - (**required**) File type to allow. Possible values: `docs`, `html`, `images`, `music`, `video`.
+* file_type - (**required**) file type to allow. Possible values: `docs`, `html`, `images`, `music`, `video`.
 * `point` - (**required**) request parts to apply the rules to. The full list of possible values is available in the [Wallarm official documentation](https://docs.wallarm.com/user-guides/rules/request-processing/#identifying-and-parsing-the-request-parts).
 
 **action**
@@ -49,7 +49,7 @@ conditions which can be applied. The conditions are:
 
 **point**
 
-  * `header` - (optional) Arbitrary HEADER parameter name.
+  * `header` - (optional) arbitrary HEADER parameter name.
   Example:
   `header = "HOST"`
   * `method` - (optional) request method. Can be: `GET`, `HEAD`, `POST`, `PUT`, `DELETE`, `CONNECT`, `OPTIONS`, `TRACE`, `PATCH`.

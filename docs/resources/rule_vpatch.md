@@ -51,7 +51,7 @@ resource "wallarm_rule_vpatch" "splunk" {
 ## Argument Reference
 
 * `client_id` - (optional) ID of the client to apply the rules to. The value is required for multi-tenant scenarios.
-* `attack_type` - (**required**) Attack type. The request with this attack will be blocked. Can be:
+* `attack_type` - (**required**) attack type. The request with this attack will be blocked. Can be:
   * `any` to block the request with the specified `point` even if the attack is not detected.
   * One more names of attack types to block the requests with the specified `point` if these attack vectors are detected. Possible attack types: `sqli`, `rce`, `crlf`, `nosqli`, `ptrav`, `xxe`, `ptrav`, `xss`, `scanner`, `redir`, `ldapi`.
 * `action` - (optional) rule conditions. Possible attributes are described below.
@@ -93,7 +93,7 @@ conditions which can be applied. The conditions are:
 
 **point**
 
-  * `header` - (optional) Arbitrary HEADER parameter name.
+  * `header` - (optional) arbitrary HEADER parameter name.
   Example:
   `header = "HOST"`
   * `method` - (optional) request method. Can be: `GET`, `HEAD`, `POST`, `PUT`, `DELETE`, `CONNECT`, `OPTIONS`, `TRACE`, `PATCH`.

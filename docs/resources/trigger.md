@@ -111,14 +111,14 @@ resource "wallarm_trigger" "attack_trigger" {
 ## Argument Reference
 
 * `client_id` - (optional) ID of the client to apply the trigger to. The value is required for multi-tenant scenarios.
-* `template_id` - (**required**) Trigger condition. A condition is a system event to be notified about. Can be:
+* `template_id` - (**required**) trigger condition. A condition is a system event to be notified about. Can be:
   - `user_created` for a user added to the company account in Wallarm Console
   - `attacks_exceeded` for detected attacks number exceeded the specified value
   - `hits_exceeded` for detected hits number exceeded the specified value
   - `incidents_exceeded` for detected incidents number exceeded the specified value
   - `vector_attack` for detected attack vectors number exceeded the specified value
   - `bruteforce_started` for detected attack to be identified as bruteforce
-* `enabled` - (optional) Indicator of the trigger status. Can be: `true` for enabled trigger and `false` for disabled trigger (notifications are not sent).
+* `enabled` - (optional) indicator of the trigger status. Can be: `true` for enabled trigger and `false` for disabled trigger (notifications are not sent).
 * `name` - (optional) Trigger name.
 * `comment` - (optional) Trigger description.
 * `filters` - (optional) Filters for trigger conditions. Possible attributes are described below.
@@ -194,7 +194,7 @@ Example:
 ```
 
 `actions` argument shares the available conditions which can be applied. The conditions are:
-  - `action_id` - (**required**) The type of action when triggered.
+  - `action_id` - (**required**) the type of action when triggered.
     * `send_notification` - Send notification to existing integration resource.
     * `block_ips` - Block indicated IP addresses.
   - `integration_id` - The identificator of the existing integration.

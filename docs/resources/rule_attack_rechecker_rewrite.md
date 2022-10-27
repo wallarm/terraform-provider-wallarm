@@ -10,7 +10,7 @@ description: |-
 
 !> The resource requires additional permissions. Ask the support team to obtain them.
 
-Provides the resource to manage rules with the "Rewrite attack before active verification" action type. This rule type is used to perform verification tests not for the production applications but for similar applications (for example, in test, staging, development environments that do not require authentication or there are test credentials to access these applications). The rule is commonly used for the Wallarm Attack rechecker.
+Provides the resource to manage rules with the "Rewrite attack before active verification" action type. This rule type is used to perform verification tests not for the production applications but for similar applications (for example, in test, staging, development environments that do not require authentication or there are test credentials to access these applications). The rule is commonly used for the Wallarm Active threat verification component.
 
 ## Example Usage
 
@@ -67,7 +67,7 @@ conditions which can be applied. The conditions are:
 
 **point**
 
-  * `header` - (optional) Arbitrary HEADER parameter name.
+  * `header` - (optional) arbitrary HEADER parameter name.
   Example:
   `header = "HOST"`
   * `method` - (optional) request method. Can be: `GET`, `HEAD`, `POST`, `PUT`, `DELETE`, `CONNECT`, `OPTIONS`, `TRACE`, `PATCH`.

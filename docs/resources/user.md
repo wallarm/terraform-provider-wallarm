@@ -28,7 +28,7 @@ resource "wallarm_user" "user" {
 ## Argument Reference
 
 * `email` - (**required**) user email. The value will be used as the username for authentication in Wallarm Console.
-* `realname` - (**required**) The first and last name of the user.
+* `realname` - (**required**) the first and last name of the user.
 * `permissions` - (**required**) user role. Can be one of: `admin`, `analyst`, `deploy`, `read_only`, `global_admin`, `global_analyst`, `global_read_only`. Roles description is available in the [Wallarm official documentation](https://docs.wallarm.com/user-guides/settings/users/#user-roles).
 * `password` - (optional) user password. If the value is not specified, it will be generated automatically and returned in the attribute `generated_password`.
 * `phone` - (optional) user phone number.

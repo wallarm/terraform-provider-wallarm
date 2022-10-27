@@ -24,7 +24,7 @@ resource "wallarm_scanner" "scan" {
 
 ## Argument Reference
 
-* `element` - (**required**) Array of IP addresses, subnets, domains to add to the Scanner scope.
+* `element` - (**required**) array of IP addresses, subnets, domains to add to the Scanner scope.
 * `disabled` - (**required**) indicator of a need to scan specified elements. Can be: `true` to add the elements to the scope but not scan, `false` to ass the elements to the scope and scan them.
 * `client_id` - (optional) ID of the client to add the elements to the scope of. The value is required for multi-tenant scenarios.
 

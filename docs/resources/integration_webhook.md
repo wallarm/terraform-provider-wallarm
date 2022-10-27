@@ -67,11 +67,11 @@ resource "wallarm_integration_webhook" "wh_integration" {
 Default: `POST`
 * `webhook_url` - (optional) Webhook URL with the schema (https://).
 * `ca_file` - (optional) CA certificate if needed by webhook collector.
-* `ca_verify` - (optional) Indicator of the SSL/TLS certificate verification. Can be: `true` or `false`.
+* `ca_verify` - (optional) indicator of the SSL/TLS certificate verification. Can be: `true` or `false`.
 Default: `true`
-* `timeout` - (optional) Time in seconds to raise a timeout error whilst connecting to the specified Webhook URL. 
+* `timeout` - (optional) time in seconds to raise a timeout error whilst connecting to the specified Webhook URL. 
 Default: 15
-* `open_timeout` - (optional) Time in seconds to raise a timeout error while opening a TCP connection to the specified Webhook URL.
+* `open_timeout` - (optional) time in seconds to raise a timeout error while opening a TCP connection to the specified Webhook URL.
 Default: 20
 * `headers` - (optional) HTTP headers required by the Webhook endpoint. For instance, basic authentication can be set. 
 Type: `map`
@@ -80,14 +80,14 @@ Type: `map`
 
 `event` are events for integration to monitor. Can be:
 
-* `event_type` - (optional) Event type. Can be:
+* `event_type` - (optional) event type. Can be:
   - `hit` - detected hits
   - `vuln` - detected vulnerabilities
   - `system` - system related
   - `scope` - scope changes
 
   Default: `vuln`
-* `active` - (optional) Indicator of the event type status. Can be: `true` for active events and `false` for disabled events (notifications are not sent). 
+* `active` - (optional) indicator of the event type status. Can be: `true` for active events and `false` for disabled events (notifications are not sent). 
 Default: `true`
 
 

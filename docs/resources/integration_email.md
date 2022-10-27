@@ -65,13 +65,13 @@ resource "wallarm_integration_email" "email_integration" {
 
   Default: `false`
 * `name` - (optional) integration name.
-* `emails` - (**required**) List of emails where notifications should be sent to.
+* `emails` - (**required**) list of emails where notifications should be sent to.
 
 ## Event
 
 `event` are events for integration to monitor. Can be:
 
-* `event_type` - (optional) Event type. Can be:
+* `event_type` - (optional) event type. Can be:
   - `vuln` - detected vulnerabilities
   - `system` - system related
   - `scope` - scope changes
@@ -80,7 +80,7 @@ resource "wallarm_integration_email" "email_integration" {
   - `report_monthly` - monthly report
 
   Default: `vuln`
-* `active` - (optional) Indicator of the event type status. Can be: `true` for active events and `false` for disabled events (notifications are not sent). 
+* `active` - (optional) indicator of the event type status. Can be: `true` for active events and `false` for disabled events (notifications are not sent). 
 Default: `true`
 
 
