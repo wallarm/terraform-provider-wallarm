@@ -27,9 +27,15 @@ resource "wallarm_global_mode" "global_block" {
 
 ## Argument Reference
 
-* `waf_mode` - (optional) global [filtration mode][1]. Possible values: `default`, `monitoring`, `block`.
+* `waf_mode` - (optional) global [filtration mode][1]. Possible values: `default`, `monitoring`, `block`, `safe_blocking`, `off`.
+
+  Default: `default`
 * `scanner_mode` - (optional) scanner mode. Possible values: `off`, `on`.
+
+  Default: `on`
 * `rechecker_mode` - (optional) Active threat verification component mode. Possible values: `off`, `on`.
+
+  Default: `off`
 
 [1]: https://docs.wallarm.com/admin-en/configure-wallarm-mode/
 [2]: https://docs.wallarm.com/user-guides/scanner/intro/

@@ -8,7 +8,7 @@ description: |-
 
 # wallarm_blacklist
 
-Provides the resource to manage [denylist][1] in the account providing functionality to block for a desired time either via `Date` or `Minutes` formats.
+Provides the resource to manage [denylist][1] in the account providing functionality to block all requests originated from denylisted IP addresses for a desired time either via `Date` or `Minutes` formats.
 
 ## Example Usage
 
@@ -35,10 +35,10 @@ resource "wallarm_blacklist" "blacklist_date" {
 
 ## Argument Reference
 
-* `ip_range` - (**required**) IP range to be blocked. Can be defined an array of ranges. Accept:
+* `ip_range` - (**required**) IP range to be blocked. Can be defined as an array of ranges. Accept:
   - distinct IP addresses (e.g. `1.1.1.1`, `2.2.2.2`)
   - subnets (e.g. `1.1.1.1/24`, `2.2.2.2/30`)
-* `time_format` - (**required**) format of time how to set block time. 
+* `time_format` - (**required**) block time format.
   Can be:
   - `Minutes` - Time in minutes (e.g. `60` is to block for 60 minutes)
   - `RFC3339` - RFC3339 time (e.g. `2021-06-01T15:04:05+07:00`)
