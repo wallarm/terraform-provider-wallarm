@@ -29,7 +29,7 @@ resource "wallarm_rule_variative_keys" "post_form_urlencoded_test_hash_all" {
 
 ## Argument Reference
 
-* `client_id` - (optional) ID of the client to apply the rules to. The value is required for multi-tenant scenarios.
+* `client_id` - (optional) ID of the client to apply the rules to. The value is required for [multi-tenant scenarios][2].
 * `action` - (optional) rule conditions. Possible attributes are described below.
 * `point` - (**required**) condition point to apply the rules to.
 
@@ -159,4 +159,4 @@ When `type` is `absent`
 * `action_id` - the action ID (The conditions to apply on request).
 * `rule_type` - type of the created rule. For example, `rule_type = "variative_keys"`.
 
-
+[2]: https://docs.wallarm.com/installation/multi-tenant/overview/

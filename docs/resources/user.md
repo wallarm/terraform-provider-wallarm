@@ -32,7 +32,7 @@ resource "wallarm_user" "user" {
 * `permissions` - (**required**) user role. Can be one of: `admin`, `analyst`, `deploy`, `read_only`, `global_admin`, `global_analyst`, `global_read_only`. Roles description is available in the [Wallarm official documentation](https://docs.wallarm.com/user-guides/settings/users/#user-roles).
 * `password` - (optional) user password. If the value is not specified, it will be generated automatically and returned in the attribute `generated_password`.
 * `phone` - (optional) user phone number.
-* `client_id` - (optional) ID of the client to apply the rules to. The value is required for multi-tenant scenarios.
+* `client_id` - (optional) ID of the client (tenant). The value is required for [multi-tenant scenarios][2].
 
 ## Attributes Reference
 
@@ -41,3 +41,4 @@ resource "wallarm_user" "user" {
 * `username` - Username for authentication in Wallarm Console. User email is used as the username.
 
 [1]: https://docs.wallarm.com/user-guides/settings/users/
+[2]: https://docs.wallarm.com/installation/multi-tenant/overview/

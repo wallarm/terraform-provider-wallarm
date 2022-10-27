@@ -25,7 +25,7 @@ resource "wallarm_node" "terraform" {
 ## Argument Reference
 
 * `hostname` - (**required**) node name. The value must be unique across other nodes in the account.
-* `client_id` - (optional) ID of the client to apply the rules to. The value is required for multi-tenant scenarios.
+* `client_id` - (optional) ID of the client (tenant). The value is required for [multi-tenant scenarios][2].
 
 ## Attributes Reference
 
@@ -34,3 +34,4 @@ resource "wallarm_node" "terraform" {
 * `token` - Token of the Wallarm node.
 
 [1]: https://docs.wallarm.com/user-guides/nodes/nodes/
+[2]: https://docs.wallarm.com/installation/multi-tenant/overview/

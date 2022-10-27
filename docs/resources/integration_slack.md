@@ -44,7 +44,7 @@ resource "wallarm_integration_slack" "slack_integration" {
 
 ## Argument Reference
 
-* `client_id` - (optional) ID of the client to apply the trigger to. The value is required for multi-tenant scenarios.
+* `client_id` - (optional) ID of the client to apply the trigger to. The value is required for [multi-tenant scenarios][2].
 * `active` - (optional) indicator of the integration status. Can be: `true` for active integration and `false` for disabled integration (notifications are not sent).
 
   Default: `false`
@@ -95,3 +95,4 @@ Example:
 * `is_active` - indicator of the integration status. Can be: `true` and `false`.
 
 [1]: https://docs.wallarm.com/user-guides/settings/integrations/slack/
+[2]: https://docs.wallarm.com/installation/multi-tenant/overview/

@@ -56,7 +56,7 @@ resource "wallarm_rule_ignore_regex" "ignore_regex" {
 ## Argument Reference
 
 * `regex_id` - (**required**) ID of the regular expression specified in the "Create regexp-based attack indicator" rule.
-* `client_id` - (optional) ID of the client to apply the rules to. The value is required for multi-tenant scenarios.
+* `client_id` - (optional) ID of the client to apply the rules to. The value is required for [multi-tenant scenarios][2].
 * `action` - (optional) rule conditions. Possible attributes are described below.
 * `point` - (**required**) request parts to apply the rules to. The full list of possible values is available in the [Wallarm official documentation](https://docs.wallarm.com/user-guides/rules/request-processing/#identifying-and-parsing-the-request-parts).
   |     POINT      |POSSIBLE VALUES|
@@ -187,3 +187,4 @@ When `type` is `absent`
 * `rule_type` - type of the created rule. For example, `rule_type = "ignore_regex"`.
 
 [1]: https://docs.wallarm.com/user-guides/rules/regex-rule/#partial-disabling-of-a-new-detection-rule
+[2]: https://docs.wallarm.com/installation/multi-tenant/overview/

@@ -25,6 +25,7 @@ resource "wallarm_application" "tf_app" {
 
 * `app_id` - (**required**) application ID. Unique ID identifying a logical part of the website.
 * `name` - (**required**) application name.
-* `client_id` - (optional) ID of the client to apply the rules to. The value is required for multi-tenant scenarios.
+* `client_id` - (optional) ID of the client (tenant). The value is required for [multi-tenant scenarios][2].
 
 [1]: https://docs.wallarm.com/user-guides/settings/applications/
+[2]: https://docs.wallarm.com/installation/multi-tenant/overview/

@@ -29,7 +29,7 @@ resource "wallarm_rule_parser_state" "disable_xml_parsing" {
 
 ## Argument Reference
 
-* `client_id` - (optional) ID of the client to apply the rules to. The value is required for multi-tenant scenarios.
+* `client_id` - (optional) ID of the client to apply the rules to. The value is required for [multi-tenant scenarios][2].
 * `action` - (optional) rule conditions. Possible attributes are described below.
 * `parser` - (**required**) parser to enable/disable. Possible values: `base64`, `cookie`, `form_urlencoded`, `gzip`, `grpc`, `json_doc`, `multipart`, `percent`, `protobuf`, `htmljs`, `viewstate`, `xml`.
 * `state` - (**required**) desired state for the parser. Possible values: `enabled`, `disabled`.
@@ -142,3 +142,4 @@ When `type` is `absent`
 * `rule_type` - type of the created rule. For example, `rule_type = "parser_state"`.
 
 [1]: https://docs.wallarm.com/user-guides/rules/disable-request-parsers/
+[2]: https://docs.wallarm.com/installation/multi-tenant/overview/

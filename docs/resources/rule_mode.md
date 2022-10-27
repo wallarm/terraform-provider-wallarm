@@ -38,7 +38,7 @@ resource "wallarm_rule_mode" "tiredful_api_mode" {
 ## Argument Reference
 
 * `mode` - (**required**) Wallarm node mode. Can be: `off`, `block`, `monitoring`, `default`. Aids to enable block mode granularly or turn off the Wallarm node for certain request parts.
-* `client_id` - (optional) ID of the client to apply the rules to. The value is required for multi-tenant scenarios.
+* `client_id` - (optional) ID of the client to apply the rules to. The value is required for [multi-tenant scenarios][2].
 * `action` - (optional) rule conditions. Possible attributes are described below.
 
 **action**
@@ -163,3 +163,4 @@ $ terraform import wallarm_rule_mode.tiredful_api_mode 6039/563854/11086884/wall
 * `wallarm_rule_mode` - Rule type.
 
 [1]: https://docs.wallarm.com/user-guides/rules/wallarm-mode-rule/
+[2]: https://docs.wallarm.com/installation/multi-tenant/overview/

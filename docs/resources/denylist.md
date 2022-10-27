@@ -46,7 +46,7 @@ resource "wallarm_blacklist" "blacklist_date" {
 * `application` - (optional) list of application IDs. 
   Default: all applications
 * `reason` - (optional) arbitrary reason of blocking these IP addresses.
-* `client_id` - (optional) ID of the client to apply the rules to. The value is required for multi-tenant scenarios.
+* `client_id` - (optional) ID of the client (tenant). The value is required for [multi-tenant scenarios][2].
 
 ## Attributes Reference
 
@@ -56,3 +56,4 @@ resource "wallarm_blacklist" "blacklist_date" {
 - `ip_id` - ID of the entry with the concrete IP address.
 
 [1]: https://docs.wallarm.com/user-guides/ip-lists/denylist/
+[2]: https://docs.wallarm.com/installation/multi-tenant/overview/

@@ -26,10 +26,11 @@ resource "wallarm_scanner" "scan" {
 
 * `element` - (**required**) array of IP addresses, subnets, domains to add to the scanner scope.
 * `disabled` - (**required**) indicator of a need to scan specified elements. Can be: `true` to add the elements to the scope but not scan, `false` to ass the elements to the scope and scan them.
-* `client_id` - (optional) ID of the client to add the elements to the scope of. The value is required for multi-tenant scenarios.
+* `client_id` - (optional) ID of the client to add the elements to the scope of. The value is required for [multi-tenant scenarios][2].
 
 ## Attributes Reference
 
 * `resource_id` - ID of the added element. The value is used to control the state of an elements since all the API requests use the unique ID.
 
 [1]: https://docs.wallarm.com/user-guides/scanner/intro/
+[2]: https://docs.wallarm.com/installation/multi-tenant/overview/

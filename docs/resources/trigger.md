@@ -110,7 +110,7 @@ resource "wallarm_trigger" "attack_trigger" {
 
 ## Argument Reference
 
-* `client_id` - (optional) ID of the client to apply the trigger to. The value is required for multi-tenant scenarios.
+* `client_id` - (optional) ID of the client to apply the trigger to. The value is required for [multi-tenant scenarios][2].
 * `template_id` - (**required**) trigger condition. A condition is a system event to be notified about. Can be:
   - `user_created` for a user added to the company account in Wallarm Console
   - `attacks_exceeded` for detected attacks number exceeded the specified value
@@ -223,3 +223,4 @@ Example:
 * `trigger_id` - ID of the created trigger.
 
 [1]: https://docs.wallarm.com/user-guides/triggers/triggers/
+[2]: https://docs.wallarm.com/installation/multi-tenant/overview/

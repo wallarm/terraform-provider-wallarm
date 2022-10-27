@@ -48,7 +48,7 @@ resource "wallarm_rule_masking" "masking_json" {
 
 ## Argument Reference
 
-* `client_id` - (optional) ID of the client to apply the rules to. The value is required for multi-tenant scenarios.
+* `client_id` - (optional) ID of the client to apply the rules to. The value is required for [multi-tenant scenarios][2].
 * `action` - (optional) rule conditions. Possible attributes are described below.
 * `point` - (**required**) request parts to apply the rules to. The full list of possible values is available in the [Wallarm official documentation](https://docs.wallarm.com/user-guides/rules/request-processing/#identifying-and-parsing-the-request-parts).
   |     POINT      |POSSIBLE VALUES|
@@ -192,3 +192,4 @@ $ terraform import wallarm_rule_masking.masking_json 6039/563855/11086881/wallar
 * `wallarm_rule_masking` - Rule type.
 
 [1]: https://docs.wallarm.com/user-guides/rules/sensitive-data-rule/
+[2]: https://docs.wallarm.com/installation/multi-tenant/overview/

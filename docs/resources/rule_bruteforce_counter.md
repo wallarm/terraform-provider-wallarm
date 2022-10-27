@@ -31,7 +31,7 @@ resource "wallarm_rule_bruteforce_counter" "root_counter" {
 
 ## Argument Reference
 
-* `client_id` - (optional) ID of the client to apply the rules to. The value is required for multi-tenant scenarios.
+* `client_id` - (optional) ID of the client to apply the rules to. The value is required for [multi-tenant scenarios][2].
 * `action` - (optional) rule conditions. Possible attributes are described below.
 
 **action**
@@ -154,3 +154,5 @@ $ terraform import wallarm_rule_bruteforce_counter.root_counter 6039/563854/1108
 * `6039` - Client ID.
 * `563854` - Action ID.
 * `11086884` - Rule ID.
+
+[2]: https://docs.wallarm.com/installation/multi-tenant/overview/
