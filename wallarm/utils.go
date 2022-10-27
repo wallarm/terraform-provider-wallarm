@@ -201,12 +201,14 @@ func expandPointsToTwoDimensionalArray(ps []interface{}) (wallarm.TwoDimensional
 		case "path", "array", "grpc", "json_array", "xml_comment",
 			"xml_dtd_entity", "xml_pi", "xml_tag_array":
 			// Align to the []string{} schema, float is used since marshalling considers numbers as float64
-			number, err := strconv.ParseFloat(pointSlice[1].(string), 64)
-			if err != nil {
-				return nil, err
+			if len(pointSlice) > 1 {
+				number, err := strconv.ParseFloat(pointSlice[1].(string), 64)
+				if err != nil {
+					return nil, err
+				}
+				pointSlice[1] = number
+				points[i] = pointSlice
 			}
-			pointSlice[1] = number
-			points[i] = pointSlice
 		default:
 			points[i] = pointSlice
 		}

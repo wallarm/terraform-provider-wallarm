@@ -257,6 +257,9 @@ func resourceWallarmDenylistRead(d *schema.ResourceData, m interface{}) error {
 }
 
 func resourceWallarmDenylistUpdate(d *schema.ResourceData, m interface{}) error {
+	if err := resourceWallarmDenylistDelete(d, m); err != nil {
+		return err
+	}
 	return resourceWallarmDenylistCreate(d, m)
 }
 
@@ -272,6 +275,10 @@ func resourceWallarmDenylistDelete(d *schema.ResourceData, m interface{}) error 
 	var derivedIDs []int
 	for _, id := range addrIDs {
 		derivedIDs = append(derivedIDs, id["ip_id"].(int))
+	}
+
+	if len(derivedIDs) == 0 {
+		derivedIDs = append(derivedIDs, 0)
 	}
 
 	if err := client.DenylistDelete(clientID, derivedIDs); err != nil {
