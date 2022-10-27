@@ -8,7 +8,7 @@ description: |-
 
 # wallarm_rule_masking
 
-Provides the resource to manage rules with the "Mask sensitive data" action type. This rule type is used to cut out sensitive information such as passwords or cookies from the uploading to the Wallarm Cloud making such data hidden.
+Provides the resource to manage rules with the "[Mask sensitive data][1]" action type. This rule type is used to cut out sensitive information such as passwords or cookies from the uploading to the Wallarm Cloud making such data hidden.
 
 The real values of the specified parameters will be replaced by `*` and will not be accessible either in the Wallarm Cloud or in the local post-analysis module. This method ensures that the protected data cannot leak outside the trusted environment.
 
@@ -190,3 +190,5 @@ $ terraform import wallarm_rule_masking.masking_json 6039/563855/11086881/wallar
 * `563855` - Action ID.
 * `11086881` - Rule ID.
 * `wallarm_rule_masking` - Rule type.
+
+[1]: https://docs.wallarm.com/user-guides/rules/sensitive-data-rule/

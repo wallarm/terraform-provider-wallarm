@@ -3,17 +3,17 @@ layout: "wallarm"
 page_title: "Wallarm: wallarm_global_mode"
 subcategory: "Common"
 description: |-
-  Provides the resource to set global modes for the filtering nodes, scanner, and Active threat verification component.
+  Provides the resource to set global modes for the filtration, scanner, and Active threat verification component.
 ---
 
 # wallarm_global_mode
 
-  Provides the resource to set global modes for the filtering nodes, scanner, and Active threat verification component.
+  Provides the resource to set global modes for the [filtration][1], [scanner][2], and [Active threat verification][3] component.
 
 ## Example Usage
 
 ```hcl
-# Sets filtering mode to use configuration defined locally on each node
+# Sets filtration mode to use configuration defined locally on each node
 # Scanner is disabled
 # Active threat verification component (rechecker) is turned on
 
@@ -27,6 +27,10 @@ resource "wallarm_global_mode" "global_block" {
 
 ## Argument Reference
 
-* `waf_mode` - (optional) global filtering mode. Possible values: `default`, `monitoring`, `block`.
+* `waf_mode` - (optional) global [filtration mode][1]. Possible values: `default`, `monitoring`, `block`.
 * `scanner_mode` - (optional) scanner mode. Possible values: `off`, `on`.
 * `rechecker_mode` - (optional) Active threat verification component mode. Possible values: `off`, `on`.
+
+[1]: https://docs.wallarm.com/admin-en/configure-wallarm-mode/
+[2]: https://docs.wallarm.com/user-guides/scanner/intro/
+[3]: https://docs.wallarm.com/user-guides/scanner/intro/#active-threat-verification

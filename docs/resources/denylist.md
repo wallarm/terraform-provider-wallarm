@@ -8,7 +8,7 @@ description: |-
 
 # wallarm_blacklist
 
-Provides the resource to manage denylist in the account providing functionality to block for a desired time either via `Date` or `Minutes` formats.
+Provides the resource to manage [denylist][1] in the account providing functionality to block for a desired time either via `Date` or `Minutes` formats.
 
 ## Example Usage
 
@@ -54,3 +54,5 @@ resource "wallarm_blacklist" "blacklist_date" {
 
 - `ip_addr` - discrete IP address.
 - `ip_id` - ID of the entry with the concrete IP address.
+
+[1]: https://docs.wallarm.com/user-guides/ip-lists/denylist/

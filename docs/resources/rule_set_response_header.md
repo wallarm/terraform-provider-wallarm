@@ -10,7 +10,7 @@ description: |-
 
 !> The resource requires additional permissions. Ask the support team to obtain them.
 
-Provides the resource to manage rules with the "Change server response headers" action type. This rule type is used to configure supplementary headers appended or replaced by a Wallarm node.
+Provides the resource to manage rules with the "[Change server response headers][1]" action type. This rule type is used to configure supplementary headers appended or replaced by a Wallarm node.
 
 ## Example Usage
 
@@ -159,3 +159,5 @@ When `type` is `absent`
 * `rule_id` - ID of the created rule.
 * `action_id` - the action ID (The conditions to apply on request).
 * `rule_type` - type of created rule. For example, `rule_type = "ignore_regex"`.
+
+[1]: https://docs.wallarm.com/user-guides/rules/add-replace-response-header/

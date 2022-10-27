@@ -8,7 +8,7 @@ description: |-
 
 # wallarm_rule_disable_attack_type
 
-Provides the resource to manage rules with the "Ignore certain attack types" action type. Disables detection of all specified attack type stamps for selected request points.
+Provides the resource to manage rules with the "[Ignore certain attack types][1]" action type. Disables detection of all specified attack type stamps for selected request points.
 
 ## Example Usage
 
@@ -139,4 +139,4 @@ When `type` is `absent`
 * `action_id` - the action ID (The conditions to apply on request).
 * `rule_type` - type of the created rule. For example, `rule_type = "disable_attack_type"`.
 
-
+[1]: https://docs.wallarm.com/user-guides/rules/ignore-attack-types/

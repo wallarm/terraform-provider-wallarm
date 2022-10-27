@@ -8,7 +8,7 @@ description: |-
 
 # wallarm_integration_webhook
 
-Provides the resource to manage integrations via generic webhooks. Webhooks can be used as system log sources. The number of log sources depends on the system complexity: the more components in the system, the greater number of log sources and logs.
+Provides the resource to manage [integrations via generic webhooks][1]. Webhooks can be used as system log sources. The number of log sources depends on the system complexity: the more components in the system, the greater number of log sources and logs.
 
 The types of events available to be sent via WebHooks:
 - Detected hits
@@ -124,3 +124,5 @@ Example:
 * `integration_id` - integer ID of the created integration.
 * `created_by` - email of the user which created the integration.
 * `is_active` - indicator of the integration status. Can be: `true` and `false`.
+
+[1]: https://docs.wallarm.com/user-guides/settings/integrations/webhook/

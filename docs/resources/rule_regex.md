@@ -8,7 +8,7 @@ description: |-
 
 # wallarm_rule_regex
 
-Provides the resource to manage rules with the "Create regexp-based attack indicator" action type. This rule type allows you to detect the specified attack based on the specified regular expression in the request.
+Provides the resource to manage rules with the "[Create regexp-based attack indicator][1]" action type. This rule type allows you to detect the specified attack based on the specified regular expression in the request.
 
 The rule is generated based on the following parameters:
 
@@ -192,3 +192,5 @@ When `type` is `absent`
 * `action_id` - the action ID (The conditions to apply on request).
 * `rule_type` - type of the created rule. For example, `rule_type = "ignore_regex"`.
 * `regex_id` - ID of the specified regular expression.
+
+[1]: https://docs.wallarm.com/user-guides/rules/regex-rule/

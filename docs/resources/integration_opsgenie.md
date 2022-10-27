@@ -8,7 +8,7 @@ description: |-
 
 # wallarm_integration_opsgenie
 
-Provides the resource to manage integrations to send notifications to OpsGenie.
+Provides the resource to manage integrations to send [notifications to OpsGenie][1].
 
 The types of events available to be sent to OpsGenie:
 - Detected hits
@@ -84,3 +84,5 @@ Example:
 * `integration_id` - integer ID of the created integration.
 * `created_by` - email of the user which created the integration.
 * `is_active` - indicator of the integration status. Can be: `true` and `false`.
+
+[1]: https://docs.wallarm.com/user-guides/settings/integrations/opsgenie/

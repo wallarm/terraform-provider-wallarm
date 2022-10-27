@@ -8,7 +8,7 @@ description: |-
 
 # wallarm_integration_slack
 
-Provides the resource to manage integrations to send notifications to Slack.
+Provides the resource to manage integrations to send [notifications to Slack][1].
 
 The types of events available to be sent to Slack:
 - System related: newly added users, deleted or disabled integration
@@ -93,3 +93,5 @@ Example:
 * `integration_id` - integer ID of the created integration.
 * `created_by` - email of the user which created the integration.
 * `is_active` - indicator of the integration status. Can be: `true` and `false`.
+
+[1]: https://docs.wallarm.com/user-guides/settings/integrations/slack/

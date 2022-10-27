@@ -10,7 +10,7 @@ description: |-
 
 !> The resource requires additional permissions. Ask the support team to obtain them.
 
-Provides the resource to manage rules with the "Rewrite attack before active verification" action type. This rule type is used to perform verification tests not for the production applications but for similar applications (for example, in test, staging, development environments that do not require authentication or there are test credentials to access these applications). The rule is commonly used for the Wallarm Active threat verification component.
+Provides the resource to manage rules with the "[Rewrite attack before active verification][1]" action type. This rule type is used to perform verification tests not for the production applications but for similar applications (for example, in test, staging, development environments that do not require authentication or there are test credentials to access these applications). The rule is commonly used for the Wallarm [Active threat verification][2] component.
 
 ## Example Usage
 
@@ -156,3 +156,6 @@ When `type` is `absent`
 * `rule_id` - ID of the created rule.
 * `action_id` - the action ID (The conditions to apply on request).
 * `rule_type` - type of the created rule. For example, `rule_type = "ignore_regex"`.
+
+[1]: https://docs.wallarm.com/user-guides/rules/change-request-for-active-verification/#rewriting-the-request-before-attack-replaying
+[2]: https://docs.wallarm.com/user-guides/scanner/intro/#active-threat-verification

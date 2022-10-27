@@ -8,7 +8,7 @@ description: |-
 
 # wallarm_rule_mode
 
-Provides the resource to manage rules with the "Set filtration mode" action type. This rule type allows you to enable and disable the blocking of requests to various parts of a web application.
+Provides the resource to manage rules with the "[Set filtration mode][1]" action type. This rule type allows you to enable and disable the blocking of requests to various parts of a web application.
 
 ## Example Usage
 
@@ -161,3 +161,5 @@ $ terraform import wallarm_rule_mode.tiredful_api_mode 6039/563854/11086884/wall
 * `563854` - Action ID.
 * `11086884` - Rule ID.
 * `wallarm_rule_mode` - Rule type.
+
+[1]: https://docs.wallarm.com/user-guides/rules/wallarm-mode-rule/

@@ -10,7 +10,7 @@ description: |-
 
 !> The resource requires additional permissions. Ask the support team to obtain them.
 
-Provides the resource to manage rules with the "Set mode of active threat verification" action type. This rule type is used to enable or disable checking attacks in specified request parts.
+Provides the resource to manage rules with the "[Set mode of active threat verification][1]" action type. This rule type is used to enable or disable checking attacks in specified request parts.
 
 ## Example Usage
 
@@ -149,3 +149,5 @@ When `type` is `absent`
 * `rule_id` - ID of the created rule.
 * `action_id` - the action ID (The conditions to apply on request).
 * `rule_type` - type of created rule. For example, `rule_type = "ignore_regex"`.
+
+[1]: https://docs.wallarm.com/user-guides/rules/change-request-for-active-verification/#disabling-enabling-the-active-threat-verification-module

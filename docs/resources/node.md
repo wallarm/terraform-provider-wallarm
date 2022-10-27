@@ -8,7 +8,7 @@ description: |-
 
 # wallarm_node
 
-Provides the resource to manage Wallarm nodes of the account.
+Provides the resource to manage [Wallarm nodes][1] of the account.
 
 ## Example Usage
 
@@ -32,3 +32,5 @@ resource "wallarm_node" "terraform" {
 * `node_id` - Unique ID (numerical) of the created node.
 * `node_uuid` - Unique UUID of the created node.
 * `token` - Token of the Wallarm node.
+
+[1]: https://docs.wallarm.com/user-guides/nodes/nodes/

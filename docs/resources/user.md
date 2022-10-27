@@ -8,7 +8,7 @@ description: |-
 
 # wallarm_user
 
-Provides the resource to manage users of the company, their profile and permission levels.
+Provides the resource to manage [users][1] of the company, their profile and permission levels.
 
 ## Example Usage
 
@@ -39,3 +39,5 @@ resource "wallarm_user" "user" {
 * `generated_password` - Automatically generated password for a new user.
 * `user_id` - Unique ID of the created user.
 * `username` - Username for authentication in Wallarm Console. User email is used as the username.
+
+[1]: https://docs.wallarm.com/user-guides/settings/users/

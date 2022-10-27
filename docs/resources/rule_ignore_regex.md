@@ -8,7 +8,7 @@ description: |-
 
 # wallarm_rule_ignore_regex
 
-Provides the resource to manage rules with the "Disable regexp-based attack detection" action type. Ignoring the regular expression can be used when particular requests should NOT be defined as attacks based on the existing regular expression (the "Create regexp-based attack indicator" action type).
+Provides the resource to manage rules with the "[Disable regexp-based attack detection][1]" action type. Ignoring the regular expression can be used when particular requests should NOT be defined as attacks based on the existing regular expression (the "Create regexp-based attack indicator" action type).
 
 ## Example Usage
 
@@ -185,3 +185,5 @@ When `type` is `absent`
 * `rule_id` - ID of the created rule.
 * `action_id` - the action ID (The conditions to apply on request).
 * `rule_type` - type of the created rule. For example, `rule_type = "ignore_regex"`.
+
+[1]: https://docs.wallarm.com/user-guides/rules/regex-rule/#partial-disabling-of-a-new-detection-rule

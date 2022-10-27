@@ -8,7 +8,7 @@ description: |-
 
 # wallarm_trigger
 
-Provides the resource to manage triggers. Triggers are tools that are used to set up custom notifications and reactions to events. Using triggers, you can receive alerts on major events via the tools you use for your day-to-day workflow, for example via corporate messengers or incident management systems.
+Provides the resource to manage [triggers][1]. Triggers are tools that are used to set up custom notifications and reactions to events. Using triggers, you can receive alerts on major events via the tools you use for your day-to-day workflow, for example via corporate messengers or incident management systems.
 
 To reduce the amount of noise, you can also configure the parameters of events to be notified about. The following events are available for setup:
 
@@ -221,3 +221,5 @@ Example:
 ## Attributes Reference
 
 * `trigger_id` - ID of the created trigger.
+
+[1]: https://docs.wallarm.com/user-guides/triggers/triggers/

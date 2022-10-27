@@ -3,14 +3,14 @@ layout: "wallarm"
 page_title: "Wallarm: wallarm_integration_sumologic"
 subcategory: "Integration"
 description: |-
-  Provides the resource to manage SumoLogic integrations.
+  Provides the resource to manage Sumo Logic integrations.
 ---
 
 # wallarm_integration_sumologic
 
-Provides the resource to manage integrations to send notifications to SumoLogic.
+Provides the resource to manage integrations to send [notifications to Sumo Logic][1].
 
-The types of events available to be sent to SumoLogic:
+The types of events available to be sent to Sumo Logic:
 - Detected hits
 - System related: newly added users, deleted or disabled integration
 - Detected vulnerabilities
@@ -19,10 +19,10 @@ The types of events available to be sent to SumoLogic:
 ## Example Usage
 
 ```hcl
-# Creates an integration to send notifications to SumoLogic
+# Creates an integration to send notifications to Sumo Logic
 
 resource "wallarm_integration_sumologic" "sumologic_integration" {
-  name = "New Terraform SumoLogic Integration"
+  name = "New Terraform Sumo Logic Integration"
   sumologic_url = "https://endpoint6.collection.us2.sumologic.com/receiver/v1/http/ZaVnC4dhaV123gN3o--AIj3q8y9GrwxSrAgcOJMvltRVnEIAIyR001VBlDsTYGBpieGxBxyJZA1eFIZcuyJ_ivkjPZ6Ynl8x3kLBJi4arZ479cD8ePJsqA=="
 
   event {
@@ -55,7 +55,7 @@ resource "wallarm_integration_sumologic" "sumologic_integration" {
 
   Default: `false`
 * `name` - (optional) integration name.
-* `sumologic_url` - (**required**) SumoLogic collector URL with the schema (https://).
+* `sumologic_url` - (**required**) Sumo Logic collector URL with the schema (https://).
 
 ## Event
 
@@ -105,3 +105,5 @@ Example:
 * `integration_id` - integer ID of the created integration.
 * `created_by` - email of the user which created the integration.
 * `is_active` - indicator of the integration status. Can be: `true` and `false`.
+
+[1]: https://docs.wallarm.com/user-guides/settings/integrations/sumologic/

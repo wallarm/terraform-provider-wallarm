@@ -8,7 +8,7 @@ description: |-
 
 # wallarm_rule_vpatch
 
-Provides the resource to manage rules with the "Create a virtual patch" action type. This rule type allows you to block malicious requests if the Wallarm node is working in the `monitoring` mode or if any known attack vector is not detected in the request but this request must be blocked.
+Provides the resource to manage rules with the "[Create a virtual patch][1]" action type. This rule type allows you to block malicious requests if the Wallarm node is working in the `monitoring` mode or if any known attack vector is not detected in the request but this request must be blocked.
 
 Virtual patches are especially useful in cases when it is impossible to fix a critical vulnerability in the code or install the necessary security updates quickly.
 
@@ -182,3 +182,5 @@ When `type` is `absent`
 * `rule_id` - ID of the created rule.
 * `action_id` - the action ID (The conditions to apply on request).
 * `rule_type` - type of the created rule. For example, `rule_type = "ignore_regex"`.
+
+[1]: https://docs.wallarm.com/user-guides/rules/vpatch-rule/
