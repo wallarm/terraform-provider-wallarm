@@ -1,12 +1,12 @@
 ---
 layout: "wallarm"
-page_title: "Wallarm: wallarm_blacklist"
+page_title: "Wallarm: wallarm_denylist"
 subcategory: "Common"
 description: |-
   Provides the resource to manage denylist in the account.
 ---
 
-# wallarm_blacklist
+# wallarm_denylist
 
 Provides the resource to manage [denylist][1] in the account providing functionality to block all requests originated from denylisted IP addresses for a desired time either via `Date` or `Minutes` formats.
 
@@ -16,7 +16,7 @@ Provides the resource to manage [denylist][1] in the account providing functiona
 # Creates two new denylist entries
 # with the determined block time (60 minutes) and until the 2nd of January 2026
 
-resource "wallarm_blacklist" "blacklist_minutes" {
+resource "wallarm_denylist" "denylist_minutes" {
   ip_range = ["1.1.1.1/32"]
   application = [1]
   reason = "TEST DENYLIST MINUTES"
@@ -24,7 +24,7 @@ resource "wallarm_blacklist" "blacklist_minutes" {
   time = 60
 }
 
-resource "wallarm_blacklist" "blacklist_date" {
+resource "wallarm_denylist" "denylist_date" {
   ip_range = ["2.2.2.2/32"]
   application = [1]
   reason = "TEST DENYLIST DATE"

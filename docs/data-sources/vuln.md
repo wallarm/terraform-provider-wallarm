@@ -43,8 +43,8 @@ data "wallarm_vuln" "vulns" {
 `filter` - (**required**) filters set in the `key=value` format used to look up for vulnerability details. Possible keys:
 
 - `status` - (optional) vulnerability status. Can be: `open` for active vulnerabilities, `closed` for closed vulnerabilities, `falsepositive` for vulnerabilities marked as false positives.
-- `limit` - (optional) integer value defining the number of vulnerabilities to return. Possible values: 0-1000.
-- `offset` - (optional) integer value defining the number from which vulnerabilities should be returned. Possible values: 0 - 9199999999999999999.
+- `limit` - (optional) integer value defining the number of vulnerabilities to return. Possible values: 1-1000.
+- `offset` - (optional) integer value defining the number from which vulnerabilities should be returned. Possible values: 0 - 4611686018427387903.
 
 ## Attributes Reference
 
@@ -53,7 +53,7 @@ data "wallarm_vuln" "vulns" {
 - `vuln_id` - integer vulnerability ID.
 - `wid` - string vulnerability ID.
 - `status` - vulnerability status. Can be: `open` for active vulnerabilities, `closed` for closed vulnerabilities, `falsepositive` for vulnerabilities marked as false positives.
-- `type` - vulnerability type (`ptrav`, `sqli`, `infoleak`).
+- `type` - vulnerability type (`ptrav`, `sqli`, `infoleak` and [other types][2]).
 - `client_id` - ID of the client with the scanned applications.
 - `method` - method of the HTTP request sent to exploit the vulnerability. 
 - `domain` - domain where the vulnerability detected.
@@ -66,3 +66,4 @@ data "wallarm_vuln" "vulns" {
 - `detection_method` - method of the vulnerability detection. Can be: `active` for the vulnerability detected by the scanner or by the Active threat verification component, `passive` for the vulnerability detected after analyzing the server responses.
 
 [1]: https://docs.wallarm.com/user-guides/vulnerabilities/check-vuln/
+[2]: https://docs.wallarm.com/attacks-vulns-list/

@@ -18,7 +18,7 @@ description: |-
 # Active threat verification component (rechecker) is turned on
 
 resource "wallarm_global_mode" "global_block" {
-  waf_mode = "default"
+  filtration_mode = "default"
   scanner_mode = "off"
   rechecker_mode = "on"
 }
@@ -27,7 +27,7 @@ resource "wallarm_global_mode" "global_block" {
 
 ## Argument Reference
 
-* `waf_mode` - (optional) global [filtration mode][1]. Possible values: `default`, `monitoring`, `block`, `safe_blocking`, `off`.
+* `filtration_mode` - (optional) global [filtration mode][1]. Possible values: `default`, `monitoring`, `block`, `safe_blocking`, `off`.
 
   Default: `default`
 * `scanner_mode` - (optional) scanner mode. Possible values: `off`, `on`.
