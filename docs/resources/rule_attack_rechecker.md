@@ -8,8 +8,6 @@ description: |-
 
 # wallarm_rule_attack_rechecker
 
-!> The resource requires additional permissions. Ask the support team to obtain them.
-
 Provides the resource to manage rules with the "[Set mode of active threat verification][1]" action type. This rule type is used to enable or disable checking attacks in specified request parts.
 
 ## Example Usage
@@ -36,8 +34,7 @@ resource "wallarm_rule_attack_rechecker" "disable_rechecker" {
 
 **action**
 
-`action` argument shares the available
-conditions which can be applied. The conditions are:
+`action` argument shares the available conditions which can be applied. The conditions are:
 
 * `type` - (optional) condition type. Can be: `equal`, `iequal`, `regex`, `absent`. Must be omitted for the `instance` parameter in `point`.
   For more details, see the offical [Wallarm documentation](https://docs.wallarm.com/user-guides/rules/add-rule/#condition-types)
@@ -141,8 +138,7 @@ See below what limitations apply
 - `type` is `absent`
 - `point` is made up for `instance`
 
-When `type` is `absent`
-`point` must contain key with the default value. For `action_name`, `action_ext`, `method`, `proto`, `scheme`, `uri` default value is `""` (empty string)
+When `type` is `absent`, `point` must contain key with the default value. For `action_name`, `action_ext`, `method`, `proto`, `scheme`, `uri` default value is `""` (empty string).
 
 ## Attributes Reference
 

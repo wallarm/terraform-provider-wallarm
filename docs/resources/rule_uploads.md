@@ -30,13 +30,12 @@ resource "wallarm_rule_uploads" "allow_markup_in_body" {
 
 * `client_id` - (optional) ID of the client to apply the rules to. The value is required for [multi-tenant scenarios][2].
 * `action` - (optional) rule conditions. Possible attributes are described below.
-* file_type - (**required**) file type to allow. Possible values: `docs`, `html`, `images`, `music`, `video`.
+* `file_type` - (**required**) file type to allow. Possible values: `docs`, `html`, `images`, `music`, `video`.
 * `point` - (**required**) request parts to apply the rules to. The full list of possible values is available in the [Wallarm official documentation](https://docs.wallarm.com/user-guides/rules/request-processing/#identifying-and-parsing-the-request-parts).
 
 **action**
 
-`action` argument shares the available
-conditions which can be applied. The conditions are:
+`action` argument shares the available conditions which can be applied. The conditions are:
 
 * `type` - (optional) condition type. Can be: `equal`, `iequal`, `regex`, `absent`. Must be omitted for the `instance` parameter in `point`.
   For more details, see the offical [Wallarm documentation](https://docs.wallarm.com/user-guides/rules/add-rule/#condition-types)
@@ -130,8 +129,7 @@ Example:
 > **_NOTE:_**
 See below what limitations apply
 
-When `type` is `absent`
-`point` must contain key with the default value. For `action_name`, `action_ext`, `method`, `proto`, `scheme`, `uri` default value is `""` (empty string)
+When `type` is `absent`, `point` must contain key with the default value. For `action_name`, `action_ext`, `method`, `proto`, `scheme`, `uri` default value is `""` (empty string).
 
 ## Attributes Reference
 

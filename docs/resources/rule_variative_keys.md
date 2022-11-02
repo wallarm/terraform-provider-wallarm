@@ -55,8 +55,7 @@ Incorrect:
 
 **action**
 
-`action` argument shares the available
-conditions which can be applied. The conditions are:
+`action` argument shares the available conditions which can be applied. The conditions are:
 
 * `type` - (optional) condition type. Can be: `equal`, `iequal`, `regex`, `absent`. Must be omitted for the `instance` parameter in `point`.
   For more details, see the offical [Wallarm documentation](https://docs.wallarm.com/user-guides/rules/add-rule/#condition-types)
@@ -150,8 +149,7 @@ Example:
 > **_NOTE:_**
 See below what limitations apply
 
-When `type` is `absent`
-`point` must contain key with the default value. For `action_name`, `action_ext`, `method`, `proto`, `scheme`, `uri` default value is `""` (empty string)
+When `type` is `absent`, `point` must contain key with the default value. For `action_name`, `action_ext`, `method`, `proto`, `scheme`, `uri` default value is `""` (empty string).
 
 ## Attributes Reference
 

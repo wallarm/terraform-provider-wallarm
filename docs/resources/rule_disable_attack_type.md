@@ -35,8 +35,7 @@ resource "wallarm_rule_disable_attack_type" "disable_sqli" {
 
 **action**
 
-`action` argument shares the available
-conditions which can be applied. The conditions are:
+`action` argument shares the available conditions which can be applied. The conditions are:
 
 * `type` - (optional) condition type. Can be: `equal`, `iequal`, `regex`, `absent`. Must be omitted for the `instance` parameter in `point`.
   For more details, see the offical [Wallarm documentation](https://docs.wallarm.com/user-guides/rules/add-rule/#condition-types)

@@ -8,11 +8,11 @@ description: |-
 
 # wallarm_rule_vpatch
 
-Provides the resource to manage rules with the "[Create a virtual patch][1]" action type. This rule type allows you to block malicious requests if the Wallarm node is working in the `monitoring` mode or if any known attack vector is not detected in the request but this request must be blocked.
+Provides the resource to manage rules with the "[Create a virtual patch][1]" action type. This rule type allows you to block malicious requests if the Wallarm node is working in the `monitoring` mode or if any known malicious payload is not detected in the request but this request must be blocked.
 
 Virtual patches are especially useful in cases when it is impossible to fix a critical vulnerability in the code or install the necessary security updates quickly.
 
-If attack types are specified, the request will be blocked only if the Wallarm node detects an attack of one of the listed types in the corresponding parameter. If the setting **Any request** is specified, the Wallarm node blocks the requests with the defined parameter, even if it does not contain an attack vector.
+If attack types are specified, the request will be blocked only if the Wallarm node detects an attack of one of the listed types in the corresponding parameter. If the attack type is set to `any`, the Wallarm node blocks the requests with the defined parameter, even if it does not contain a malicious payload.
 
 ## Example Usage
 
@@ -53,7 +53,7 @@ resource "wallarm_rule_vpatch" "splunk" {
 * `client_id` - (optional) ID of the client to apply the rules to. The value is required for [multi-tenant scenarios][2].
 * `attack_type` - (**required**) attack type. The request with this attack will be blocked. Can be:
   * `any` to block the request with the specified `point` even if the attack is not detected.
-  * One more names of attack types to block the requests with the specified `point` if these attack vectors are detected. Possible attack types: `sqli`, `rce`, `crlf`, `nosqli`, `ptrav`, `xxe`, `ptrav`, `xss`, `scanner`, `redir`, `ldapi`.
+  * One more names of attack types to block the requests with the specified `point` if these malicious payloads are detected. Possible attack types: `sqli`, `rce`, `crlf`, `nosqli`, `ptrav`, `xxe`, `ptrav`, `xss`, `scanner`, `redir`, `ldapi`.
 * `action` - (optional) rule conditions. Possible attributes are described below.
 * `point` - (**required**) request parts to apply the rules to. The full list of possible values is available in the [Wallarm official documentation](https://docs.wallarm.com/user-guides/rules/request-processing/#identifying-and-parsing-the-request-parts).
   |     POINT      |POSSIBLE VALUES|
@@ -79,8 +79,7 @@ resource "wallarm_rule_vpatch" "splunk" {
 
 **action**
 
-`action` argument shares the available
-conditions which can be applied. The conditions are:
+`action` argument shares the available conditions which can be applied. The conditions are:
 
 * `type` - (optional) the type of comparison. Possible values: `equal`, `iequal`, `regex`, `absent`.
   For more information, see the [docs](https://docs.wallarm.com/user-guides/rules/add-rule/#condition-types)
@@ -174,8 +173,7 @@ Example:
 > **_NOTE:_**
 See below what limitations apply
 
-When `type` is `absent`
-`point` must contain key with the default value. For `action_name`, `action_ext`, `method`, `proto`, `scheme`, `uri` default value is `""` (empty string)
+When `type` is `absent`, `point` must contain key with the default value. For `action_name`, `action_ext`, `method`, `proto`, `scheme`, `uri` default value is `""` (empty string).
 
 ## Attributes Reference
 

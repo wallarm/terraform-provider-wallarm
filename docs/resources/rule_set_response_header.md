@@ -8,9 +8,7 @@ description: |-
 
 # wallarm_rule_set_response_header
 
-!> The resource requires additional permissions. Ask the support team to obtain them.
-
-Provides the resource to manage rules with the "[Change server response headers][1]" action type. This rule type is used to configure supplementary headers appended or replaced by a Wallarm node.
+Provides the resource to manage rules with the "[Change server response headers][1]" action type. This rule type is used for adding or deleting server response headers and changing their values.
 
 ## Example Usage
 
@@ -37,6 +35,19 @@ resource "wallarm_rule_set_response_header" "resp_headers" {
 
 ```
 
+```hcl
+# Deletes the "Wallarm component" header
+
+resource "wallarm_rule_set_response_header" "delete_header" {
+  mode = "replace"
+
+  headers = {
+    Wallarm component = " "
+  }
+}
+
+```
+
 ## Argument Reference
 
 * `mode` - (**required**) mode of header processing. Valid options: `append`, `replace`
@@ -46,8 +57,7 @@ resource "wallarm_rule_set_response_header" "resp_headers" {
 
 **action**
 
-`action` argument shares the available
-conditions which can be applied. The conditions are:
+`action` argument shares the available conditions which can be applied. The conditions are:
 
 * `type` - (optional) the type of comparison. Possible values: `equal`, `iequal`, `regex`, `absent`.
   For more information, see the [docs](https://docs.wallarm.com/user-guides/rules/add-rule/#condition-types)
@@ -151,8 +161,7 @@ See below what limitations apply
 - `type` is `absent`
 - `point` is made up for `instance`
 
-When `type` is `absent`
-`point` must contain key with the default value. For `action_name`, `action_ext`, `method`, `proto`, `scheme`, `uri` default value is `""` (empty string)
+When `type` is `absent`, `point` must contain key with the default value. For `action_name`, `action_ext`, `method`, `proto`, `scheme`, `uri` default value is `""` (empty string).
 
 ## Attributes Reference
 
