@@ -6,9 +6,9 @@ description: |-
   Provides the resource to manage applications of the account.
 ---
 
-# wallarm_user
+# wallarm_application
 
-Provides the resource to manage applications of the account.
+Provides the resource to manage [applications][1] of the account.
 
 ## Example Usage
 
@@ -23,6 +23,9 @@ resource "wallarm_application" "tf_app" {
 
 ## Argument Reference
 
-* `app_id` - (Required) Application ID. Unique ID identifying a logical part of the website.
-* `name` - (Required) Application name.
-* `client_id` - (Optional) ID of the client to apply the rules to. The value is required for multi-tenant scenarios.
+* `app_id` - (**required**) application ID.
+* `name` - (**required**) application name.
+* `client_id` - (optional) ID of the client (tenant). The value is required for [multi-tenant scenarios][2].
+
+[1]: https://docs.wallarm.com/user-guides/settings/applications/
+[2]: https://docs.wallarm.com/installation/multi-tenant/overview/

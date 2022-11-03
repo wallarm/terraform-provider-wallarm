@@ -6,17 +6,17 @@ description: |-
   Provides the resource to manage nodes of the account.
 ---
 
-# wallarm_user
+# wallarm_node
 
-Provides the resource to manage cloud nodes of the account.
+Provides the resource to manage [Wallarm nodes][1] of the account.
 
 ## Example Usage
 
 ```hcl
-# Creates a new cloud node
+# Creates a new Wallarm node
 
 resource "wallarm_node" "terraform" {
-  client_id = 6039
+  client_id = 1111
   hostname = "Terraform Tests"
 }
 
@@ -24,11 +24,14 @@ resource "wallarm_node" "terraform" {
 
 ## Argument Reference
 
-* `hostname` - (Required) Node name. The value must be unique across other nodes in the account.
-* `client_id` - (Optional) ID of the client to apply the rules to. The value is required for multi-tenant scenarios.
+* `hostname` - (**required**) node name. The value must be unique across other nodes in the account.
+* `client_id` - (optional) ID of the client (tenant). The value is required for [multi-tenant scenarios][2].
 
 ## Attributes Reference
 
 * `node_id` - Unique ID (numerical) of the created node.
 * `node_uuid` - Unique UUID of the created node.
-* `token` - Token of the cloud node.
+* `token` - Token of the Wallarm node.
+
+[1]: https://docs.wallarm.com/user-guides/nodes/nodes/
+[2]: https://docs.wallarm.com/installation/multi-tenant/overview/

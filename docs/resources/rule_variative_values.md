@@ -8,6 +8,8 @@ description: |-
 
 # wallarm_rule_variative_values
 
+!> The resource will be deprecated in the future versions.
+
 Provides the resource to manage rules with the "Make a certain conditions point variative" action type. Specifies the condition point to group rules by. Notice that you may not have permissions to use this resource.
 
 ## Example Usage
@@ -27,51 +29,50 @@ resource "wallarm_rule_variative_values" "action_name" {
 
 ## Argument Reference
 
-* `client_id` - (Optional) ID of the client to apply the rules to. The value is required for multi-tenant scenarios.
-* `action` - (Optional) Rule conditions. Possible attributes are described below.
-* `point` - (Required) Condition point to apply the rules to.
+* `client_id` - (optional) ID of the client to apply the rules to. The value is required for [multi-tenant scenarios][2].
+* `action` - (optional) rule conditions. Possible attributes are described below.
+* `point` - (**required**) condition point to apply the rules to.
 
 **action**
 
-`action` argument shares the available
-conditions which can be applied. The conditions are:
+`action` argument shares the available conditions which can be applied. The conditions are:
 
-* `type` - (Optional) Condition type. Can be: `equal`, `iequal`, `regex`, `absent`. Must be omitted for the `instance` parameter in `point`.
-  For more details, see the offical [Wallarm documentation](https://docs.wallarm.com/user-guides/rules/add-rule/#condition-types)
+* `type` - (optional) condition type. Can be: `equal`, `iequal`, `regex`, `absent`. Must be omitted for the `instance` parameter in `point`.
+  For more details, see the official [Wallarm documentation](https://docs.wallarm.com/user-guides/rules/add-rule/#condition-types)
   Example:
   `type = "absent"`
-* `value` - (Optional) Value of the parameter to match with. Must be omitted for the `instance` parameter in `point` or if `type` is `absent`.
+* `value` - (optional) value of the parameter to match with. Must be omitted for the `instance` parameter in `point` or if `type` is `absent`.
   Example:
   `value = "example.com"`
-* `point` - (Optional) Request parameters that trigger the rule. Possible values are described below. For more details, see the official [Wallarm documentatioon](https://docs.wallarm.com/user-guides/rules/request-processing/#identifying-and-parsing-the-request-parts).
+* `point` - (optional) request parameters that trigger the rule. Possible values are described below. For more details, see the official [Wallarm documentatioon](https://docs.wallarm.com/user-guides/rules/request-processing/#identifying-and-parsing-the-request-parts).
 
 **point**
 
-  * `header` - (Optional) Arbitrary HEADER parameter name.
+  * `header` - (optional) arbitrary HEADER parameter name.
   Example:
   `header = "HOST"`
-  * `method` - (Optional) Request method. Can be: `GET`, `HEAD`, `POST`, `PUT`, `DELETE`, `CONNECT`, `OPTIONS`, `TRACE`, `PATCH`.
+  * `method` - (optional) request method. Can be: `GET`, `HEAD`, `POST`, `PUT`, `DELETE`, `CONNECT`, `OPTIONS`, `TRACE`, `PATCH`.
   Example:
   `method = "POST"`
-  * `path` - (Optional) Array with URL parts separated by the `/` symbol (the last URL part is not included in the array). If there is only one part in the URL, the array will be empty.
+  * `path` - (optional) array with URL parts separated by the `/` symbol (the last URL part is not included in the array). If there is only one part in the URL, the array will be empty.
   Example:
   `path = 0`
-  * `action_name` - (Optional) The last part of the URL after the `/` symbol and before the first period (`.`). This part of the URL is always present in the request even if its value is an empty string.
+  * `action_name` - (optional) the last part of the URL after the `/` symbol and before the first period (`.`). This part of the URL is always present in the request even if its value is an empty string.
   Example:
   `action_name = "login"`
-  * `action_ext` - (Optional) The part of the URL after the last period (`.`). It may be missing in the request.
+  * `action_ext` - (optional) the part of the URL after the last period (`.`). It may be missing in the request.
   Example:
   `action_ext = "php"`
-  * `proto` - (Optional) Version of the HTTP Protocol.
+  * `proto` - (optional) version of the HTTP Protocol.
   Example:
   `proto = "1.1"`
-  * `scheme` - (Optional) `http`/`https`.
+  * `scheme` - (optional) `http`/`https`.
   Example:
   `scheme = "https"` 
-  * `uri` - (Optional) Part of the request URL without domain.
+  * `uri` - (optional) part of the request URL without domain.
   Example:
   `uri = "/api/login"` 
-  * `instance` - (Optional) ID of the application.
+  * `instance` - (optional) ID of the application.
   Example:
   `instance = 42`
 
@@ -128,13 +129,12 @@ Example:
 > **_NOTE:_**
 See below what limitations apply
 
-When `type` is `absent`
-`point` must contain key with the default value. For `action_name`, `action_ext`, `method`, `proto`, `scheme`, `uri` default value is `""` (empty string)
+When `type` is `absent`, `point` must contain key with the default value. For `action_name`, `action_ext`, `method`, `proto`, `scheme`, `uri` default value is `""` (empty string).
 
 ## Attributes Reference
 
 * `rule_id` - ID of the created rule.
-* `action_id` - The action ID (The conditions to apply on request).
-* `rule_type` - Type of the created rule. For example, `rule_type = "variative_values"`.
+* `action_id` - the action ID (The conditions to apply on request).
+* `rule_type` - type of the created rule. For example, `rule_type = "variative_values"`.
 
-
+[2]: https://docs.wallarm.com/installation/multi-tenant/overview/

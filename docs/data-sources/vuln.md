@@ -3,12 +3,12 @@ layout: "wallarm"
 page_title: "Wallarm: wallarm_vuln"
 subcategory: "Common"
 description: |-
-  Get details on vulnerabilities detected by the WAF node.
+  Get details on vulnerabilities detected by Wallarm.
 ---
 
 # wallarm_vuln
 
-Use this data source to get details on [vulnerabilities][1] detected by the WAF node.
+Use this data source to get details on [vulnerabilities][1] detected by  Wallarm.
 
 ## Example usage
 
@@ -40,29 +40,30 @@ data "wallarm_vuln" "vulns" {
 
 ## Argument Reference
 
-`filter` - (Required) Filters set in the `key=value` format used to look up for vulnerability details. Possible keys:
+`filter` - (**required**) filters set in the `key=value` format used to look up for vulnerability details. Possible keys:
 
-- `status` - (Optional) Vulnerability status. Can be: `open` for active vulnerabilities, `closed` for closed vulnerabilities, `falsepositive` for vulnerabilities marked as false positive.
-- `limit` - (Optional) Integer value defining the number of vulnerabilities to return. Possible values: 0-1000.
-- `offset` - (Optional) Integer value defining the number from which vulnerabilities should be returned. Possible values: 0 - 9199999999999999999.
+- `status` - (optional) vulnerability status. Can be: `open` for active vulnerabilities, `closed` for closed vulnerabilities, `falsepositive` for vulnerabilities marked as false positives.
+- `limit` - (optional) integer value defining the number of vulnerabilities to return. Possible values: 1-1000.
+- `offset` - (optional) integer value defining the number from which vulnerabilities should be returned. Possible values: 0 - 4611686018427387903.
 
 ## Attributes Reference
 
-`vulns` - Vulnerability attributes in the `key=value` format. Possible keys:
+`vulns` - vulnerability attributes in the `key=value` format. Possible keys:
 
-- `vuln_id` - Integer vulnerability ID.
-- `wid` - String vulnerability ID.
-- `status` - Vulnerability status. Can be: `open` for active vulnerabilities, `closed` for closed vulnerabilities, `falsepositive` for vulnerabilities marked as false positive.
-- `type` - Vulnerability type (`ptrav`, `sqli`, `infoleak`).
+- `vuln_id` - integer vulnerability ID.
+- `wid` - string vulnerability ID.
+- `status` - vulnerability status. Can be: `open` for active vulnerabilities, `closed` for closed vulnerabilities, `falsepositive` for vulnerabilities marked as false positives.
+- `type` - vulnerability type (`ptrav`, `sqli`, `infoleak` and [other types][2]).
 - `client_id` - ID of the client with the scanned applications.
-- `method` - Method of the HTTP request sent to exploit the vulnerability. 
-- `domain` - Domain where the vulnerability detected.
-- `path` - Path where the vulnerability detected.
-- `parameter` - Parameter where the vulnerability detected.
-- `title` - Vulnerability title.
-- `description` - Vulnerability description.
-- `additional` - Vulnerability additional information.
-- `exploit_example` - Exploit example to check the vulnerability.
-- `detection_method` - Method of the vulnerability detection. Can be: `active` for the vulnerability detected by the scanner or by the rechecker, `passive` for the vulnerability detected after analyzing the server responses.
+- `method` - method of the HTTP request sent to exploit the vulnerability. 
+- `domain` - domain where the vulnerability detected.
+- `path` - path where the vulnerability detected.
+- `parameter` - parameter where the vulnerability detected.
+- `title` - vulnerability title.
+- `description` - vulnerability description.
+- `additional` - vulnerability additional information.
+- `exploit_example` - exploit example to check the vulnerability.
+- `detection_method` - method of the vulnerability detection. Can be: `active` for the vulnerability detected by the Scanner or by the Active threat verification component, `passive` for the vulnerability detected after analyzing the server responses.
 
 [1]: https://docs.wallarm.com/user-guides/vulnerabilities/check-vuln/
+[2]: https://docs.wallarm.com/attacks-vulns-list/

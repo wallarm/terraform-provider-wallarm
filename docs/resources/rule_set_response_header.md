@@ -3,19 +3,17 @@ layout: "wallarm"
 page_title: "Wallarm: wallarm_rule_set_response_header"
 subcategory: "Rule"
 description: |-
-  Provides the "Specify a response header" rule resource.
+  Provides the "Change server response headers" rule resource.
 ---
 
 # wallarm_rule_set_response_header
 
-!> The resource requires additional permissions. Ask the support team to obtain them.
-
-Provides the resource to manage rules with the "Specify a response header" action type. This rule type is used to configure supplementary headers appended or replaced by a Wallarm WAF node.
+Provides the resource to manage rules with the "[Change server response headers][1]" action type. This rule type is used for adding or deleting server response headers and changing their values.
 
 ## Example Usage
 
 ```hcl
-# Append the "Server" header with the "Wallarm WAF" value
+# Append the "Server" header with the "Wallarm solution" value
 # and the "Blocked" header with the "Blocked by Wallarm" value
 # to the requests sent to the application with ID 3
 
@@ -29,7 +27,7 @@ resource "wallarm_rule_set_response_header" "resp_headers" {
   }
 
   headers = {
-    Server = "Wallarm WAF"
+    Server = "Wallarm solution"
     Blocked = "Blocked by Wallarm"
   }
 
@@ -37,57 +35,69 @@ resource "wallarm_rule_set_response_header" "resp_headers" {
 
 ```
 
+```hcl
+# Deletes the "Wallarm component" header
+
+resource "wallarm_rule_set_response_header" "delete_header" {
+  mode = "replace"
+
+  headers = {
+    Wallarm component = " "
+  }
+}
+
+```
+
 ## Argument Reference
 
-* `mode` - (Required) Mode of header processing. Valid options: `append`, `replace`
-* `headers` - (Required) The associative array of key/value headers. Might be defined as much headers as need at once. 
-* `action` - (Optional) A series of conditions, see below for a
+* `mode` - (**required**) mode of header processing. Valid options: `append`, `replace`
+* `headers` - (**required**) the associative array of key/value headers. Might be defined as much headers as need at once. 
+* `action` - (optional) a series of conditions, see below for a
   a full list .
 
 **action**
 
-`action` argument shares the available
-conditions which can be applied. The conditions are:
+`action` argument shares the available conditions which can be applied. The conditions are:
 
-* `type` - (Optional) The type of comparison. Possible values: `equal`, `iequal`, `regex`, `absent`.
+* `type` - (optional) the type of comparison. Possible values: `equal`, `iequal`, `regex`, `absent`.
   For more information, see the [docs](https://docs.wallarm.com/user-guides/rules/add-rule/#condition-types)
   Example:
   `type = "absent"`
-* `value` - (Optional) A value of the parameter to match with.
+* `value` - (optional) a value of the parameter to match with.
   Example:
   `value = "example.com"`
-* `point` - (Optional) A series of arguments, see below for a a full list . See the [docs](https://docs.wallarm.com/user-guides/rules/request-processing/#parameter-parsing).
+* `point` - (optional) a series of arguments, see below for a a full list . See the [docs](https://docs.wallarm.com/user-guides/rules/request-processing/#parameter-parsing).
 
 ### Nested Objects
 
 * `point`
 
 The **point** attribute supports the following fields:
-  * `header` - (Optional) A header name. It requres arbitrary value for the parameter.
+  * `header` - (optional) a header name. It requres arbitrary value for the parameter.
   Example:
   `header = "HOST"`
-  * `method` - (Optional) An HTTP method. It requires one of the values: `GET`, `HEAD`, `POST`, `PUT`, `DELETE`, `CONNECT`, `OPTIONS`, `TRACE`, `PATCH`
+  * `method` - (optional) an HTTP method. It requires one of the values: `GET`, `HEAD`, `POST`, `PUT`, `DELETE`, `CONNECT`, `OPTIONS`, `TRACE`, `PATCH`
   Example:
   `method = "POST"`
-  * `path` - (Optional) A part of the request URI.
+  * `path` - (optional) a part of the request URI.
   Example:
   `path = 0`
-  * `action_name` - (Optional) The last part of the URL after the `/` symbol and before the first period `.`. This part of the URL is always present in the request even if its value is an empty string.
+  * `action_name` - (optional) the last part of the URL after the `/` symbol and before the first period `.`. This part of the URL is always present in the request even if its value is an empty string.
   Example:
   `action_name = "login"`
-  * `action_ext` - (Optional) The part of the URL after the last period `.`. It may be missing in the request.
+  * `action_ext` - (optional) the part of the URL after the last period `.`. It may be missing in the request.
   Example:
   `action_ext = "php"`
-  * `proto` - (Optional) Version of the HTTP Protocol.
+  * `proto` - (optional) version of the HTTP Protocol.
   Example:
   `proto = "1.1"`
-  * `scheme` - (Optional) http/https.
+  * `scheme` - (optional) http/https.
   Example:
   `scheme = "https"` 
-  * `uri` - (Optional) String with the original URL value.
+  * `uri` - (optional) String with the original URL value.
   Example:
   `uri = "/api/login"` 
-  * `instance` - (Optional) ID of the application.
+  * `instance` - (optional) ID of the application.
   Example:
   `instance = 42`
 
@@ -151,11 +161,12 @@ See below what limitations apply
 - `type` is `absent`
 - `point` is made up for `instance`
 
-When `type` is `absent`
-`point` must contain key with the default value. For `action_name`, `action_ext`, `method`, `proto`, `scheme`, `uri` default value is `""` (empty string)
+When `type` is `absent`, `point` must contain key with the default value. For `action_name`, `action_ext`, `method`, `proto`, `scheme`, `uri` default value is `""` (empty string).
 
 ## Attributes Reference
 
 * `rule_id` - ID of the created rule.
-* `action_id` - The action ID (The conditions to apply on request).
-* `rule_type` - Type of   created rule. For example, `rule_type = "ignore_regex"`.
+* `action_id` - the action ID (The conditions to apply on request).
+* `rule_type` - type of created rule. For example, `rule_type = "ignore_regex"`.
+
+[1]: https://docs.wallarm.com/user-guides/rules/add-replace-response-header/

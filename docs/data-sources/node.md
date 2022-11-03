@@ -3,23 +3,23 @@ layout: "wallarm"
 page_title: "Wallarm: wallarm_node"
 subcategory: "Common"
 description: |-
-  Get Wallarm WAF node details.
+  Get Wallarm node details.
 ---
 
 # wallarm_node
 
-Use this data source to get the [WAF node][1] details.
+Use this data source to get the [Wallarm node][1] details.
 
 ## Example usage
 
-In the given example, it is assumed that there are three cloud WAF nodes with the following names:
+In the given example, it is assumed that there are three Wallarm nodes with the following names:
 
 - gcp-production
 - aws-staging
 - azure-development
 
 ```hcl
-# Looks up for the WAF node details by its exact name which is unique over an account
+# Looks up for the Wallarm node details by its exact name which is unique over an account
 
 data "wallarm_node" "aws_staging" {
   filter {
@@ -29,53 +29,42 @@ data "wallarm_node" "aws_staging" {
 ```
 
 ```hcl
-# Looks up for details on WAF nodes with the specific type (can be "cloud_node" or "node")
-
-data "wallarm_node" "cloud_nodes" {
-  filter {
-    type = "cloud_node"
-  }
-}
-```
-
-```hcl
-# Looks up for the WAF node details by its UUID which is unique over an account
+# Looks up for the Wallarm node details by its UUID which is unique over an account
 
 data "wallarm_node" "example" {
   filter {
-    uuid = "b161e6f9-33d2-491e-a584-513522d312db"
+    uuid = "11111111-1111-1111-1111-111111111111"
   }
 }
 ```
 
 ## Argument Reference
 
-`filter` - (Required) Filters set in the `key=value` format used to look up for WAF node details. Possible keys:
+`filter` - (**required**) filters set in the `key=value` format used to look up for Wallarm node details. Possible keys:
 
-- `uuid` - (Optional) WAF node UUID.
-- `hostname` - (Optional) WAF node name.
-- `type` - (Optional) WAF node type. Can be: `cloud_node` for cloud WAF nodes, `node` for regular WAF nodes.
-- `enabled` - (Optional) Indicator of the WAF node status. Can be: `true` for enabled WAF nodes and `false` for disabled WAF nodes.
+- `uuid` - (optional) Wallarm node UUID.
+- `hostname` - (optional) Wallarm node name.
+- `enabled` - (optional) indicator of the Wallarm node status. Can be: `true` for enabled Wallarm nodes and `false` for disabled Wallarm nodes.
 
-To get details on all created WAF nodes, specify an empty set of the filters (`filter {}`).
+To get details on all created Wallarm nodes, specify an empty set of the filters (`filter {}`).
 
 ## Attributes Reference
 
-`nodes` - WAF node attributes in the `key=value` format. Possible keys:
+`nodes` - Wallarm node attributes in the `key=value` format. Possible keys:
 
-- `id` - Internal WAF node ID.
-- `hostname` - WAF node name.
-- `type` - WAF node type. Can be: `cloud_node` for cloud WAF nodes, `node` for regular WAF nodes.
-- `uuid` - WAF node UUID.
-- `enabled` - Indicator of the WAF node status. Can be: `true` for enabled WAF nodes and `false` for disabled WAF nodes.
-- `client_id` - ID of the client installed the WAF node.
-- `active` - Node syncronisation status
-- `instance_count` - Number of instances with the installed WAF node. Only for the `cloud_node` type.
-- `active_instance_count` - Number of active instances with the installed WAF node. Only for the `cloud_node` type.
-- `token` - WAF node token. Only for the `cloud_node` type.
-- `requests_amount` - Number of requests processed by the WAF node.
-- `ip` - IP address of the WAF node at the time of the last synchronization.
-- `proton` - Installed `proton.db` version. Can be an integer value or `null`.
-- `lom` - Installed `lom` version. Can be an integer value or `null`.
+- `id` - internal Wallarm node ID.
+- `hostname` - Wallarm node name.
+- `type` - Wallarm node type. Can be: `cloud_node` for cloud Wallarm nodes, `node` for regular Wallarm nodes. See [node types description](https://docs.wallarm.com/3.6/user-guides/nodes/nodes/#filtering-the-nodes). Note that `CDN` node is not supported.
+- `uuid` - Wallarm node UUID.
+- `enabled` - indicator of the Wallarm node status. Can be: `true` for enabled Wallarm nodes and `false` for disabled Wallarm nodes.
+- `client_id` - ID of the client installed the Wallarm node.
+- `active` - node synchronization status. Can be: `true` and `false`.
+- `instance_count` - number of instances with the installed Wallarm node. Only for the `cloud_node` type.
+- `active_instance_count` - number of active instances with the installed Wallarm node. Only for the `cloud_node` type.
+- `token` - Wallarm node token. Only for the `cloud_node` type.
+- `requests_amount` - number of requests processed by the Wallarm node.
+- `ip` - IP address of the Wallarm node at the time of the last synchronization.
+- `proton` - installed `proton.db` version. Can be an integer value or `null`.
+- `lom` - installed [custom ruleset](https://docs.wallarm.com/user-guides/rules/compiling/) (formerly named `lom`) version. Can be an integer value or `null`.
 
 [1]: https://docs.wallarm.com/user-guides/nodes/nodes/

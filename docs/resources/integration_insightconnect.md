@@ -8,18 +8,18 @@ description: |-
 
 # wallarm_integration_insightconnect
 
-Provides the resource to manage integrations to send notifications to InsightConnect.
+Provides the resource to manage integrations to send [notifications to InsightConnect][1].
 
 The types of events available to be sent to InsightConnect:
-- Hits detected
+- Detected hits
 - System related: newly added users, deleted or disabled integration
-- Vulnerabilities detected
-- Scope changed: updates in hosts, services, and domains
+- Detected vulnerabilities
+- Changes in exposed assets: updates in hosts, services, and domains
 
 ## Example Usage
 
 ```hcl
-# Creates the integration to send notifications to InsightConnect
+# Creates an integration to send notifications to InsightConnect
 
 resource "wallarm_integration_insightconnect" "insight_integration" {
   name = "New Terraform InsightConnect Integration"
@@ -51,25 +51,26 @@ resource "wallarm_integration_insightconnect" "insight_integration" {
 
 ## Argument Reference
 
-* `client_id` - (Optional) ID of the client to apply the trigger to. The value is required for multi-tenant scenarios.
-* `active` - (Optional) Indicator of the integration status. Can be: `true` for active integration and `false` for disabled integration (notifications are not sent). 
-Default: `false`
-* `name` - (Optional) Integration name.
-* `api_token` - (Required) InsightConnect API token. Sensitive.
-* `api_url` - (Required) InsightConnect API URL with the schema (https://).
+* `client_id` - (optional) ID of the client to apply the integration to. The value is required for [multi-tenant scenarios][2].
+* `active` - (optional) indicator of the integration status. Can be: `true` for active integration and `false` for disabled integration (notifications are not sent).
+
+  Default: `false`
+* `name` - (optional) integration name.
+* `api_token` - (**required**) InsightConnect API token. Sensitive.
+* `api_url` - (**required**) InsightConnect API URL with the schema (https://).
 
 ## Event
 
 `event` are events for integration to monitor. Can be:
 
-* `event_type` - (Optional) Event type. Can be:
-  - `hit` - Hits detected
-  - `vuln` - Vulnerabilities detected
-  - `system` - System related
-  - `scope` - Scope changed
+* `event_type` - (optional) event type. Can be:
+  - `hit` - detected hits
+  - `vuln` - detected vulnerabilities
+  - `system` - system related
+  - `scope` - scope changes
 
   Default: `vuln`
-* `active` - (Optional) Indicator of the event type status. Can be: `true` for active events and `false` for disabled events (notifications are not sent). 
+* `active` - (optional) indicator of the event type status. Can be: `true` for active events and `false` for disabled events (notifications are not sent). 
 Default: `true`
 
 
@@ -103,6 +104,9 @@ Example:
 
 ## Attributes Reference
 
-* `integration_id` - Integer ID of the created integration.
-* `created_by` - Email of the user which created the integration.
-* `is_active` - Indicator of the integration status. Can be: `true` and `false`.
+* `integration_id` - integer ID of the created integration.
+* `created_by` - email of the user who created the integration.
+* `is_active` - indicator of the integration status. Can be: `true` and `false`.
+
+[1]: https://docs.wallarm.com/user-guides/settings/integrations/insightconnect/
+[2]: https://docs.wallarm.com/installation/multi-tenant/overview/

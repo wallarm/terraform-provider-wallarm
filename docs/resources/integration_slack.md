@@ -8,17 +8,17 @@ description: |-
 
 # wallarm_integration_slack
 
-Provides the resource to manage integrations to send notifications to Slack.
+Provides the resource to manage integrations to send [notifications to Slack][1].
 
 The types of events available to be sent to Slack:
 - System related: newly added users, deleted or disabled integration
-- Vulnerabilities detected
-- Scope changed: updates in hosts, services, and domains
+- Detected vulnerabilities
+- Changes in exposed assets: updates in hosts, services, and domains
 
 ## Example Usage
 
 ```hcl
-# Creates the integration to send notifications to Slack
+# Creates an integration to send notifications to Slack
 
 resource "wallarm_integration_slack" "slack_integration" {
   name = "New Terraform Slack Integration"
@@ -44,23 +44,24 @@ resource "wallarm_integration_slack" "slack_integration" {
 
 ## Argument Reference
 
-* `client_id` - (Optional) ID of the client to apply the trigger to. The value is required for multi-tenant scenarios.
-* `active` - (Optional) Indicator of the integration status. Can be: `true` for active integration and `false` for disabled integration (notifications are not sent). 
-Default: `false`
-* `name` - (Optional) Integration name.
-* `webhook_url` - (Required) Slack Webhook URL. Sensitive.
+* `client_id` - (optional) ID of the client to apply the integration to. The value is required for [multi-tenant scenarios][2].
+* `active` - (optional) indicator of the integration status. Can be: `true` for active integration and `false` for disabled integration (notifications are not sent).
+
+  Default: `false`
+* `name` - (optional) integration name.
+* `webhook_url` - (**required**) Slack Webhook URL. Sensitive.
 
 ## Event
 
 `event` are events for integration to monitor. Can be:
 
-* `event_type` - (Optional) Event type. Can be:
-  - `vuln` - Vulnerabilities detected
+* `event_type` - (optional) event type. Can be:
+  - `vuln` - detected vulnerabilities
   - `system` - System related
-  - `scope` - Scope changed
+  - `scope` - scope changes
 
   Default: `vuln`
-* `active` - (Optional) Indicator of the event type status. Can be: `true` for active events and `false` for disabled events (notifications are not sent). 
+* `active` - (optional) indicator of the event type status. Can be: `true` for active events and `false` for disabled events (notifications are not sent). 
 Default: `true`
 
 
@@ -89,6 +90,9 @@ Example:
 
 ## Attributes Reference
 
-* `integration_id` - Integer ID of the created integration.
-* `created_by` - Email of the user which created the integration.
-* `is_active` - Indicator of the integration status. Can be: `true` and `false`.
+* `integration_id` - integer ID of the created integration.
+* `created_by` - email of the user who created the integration.
+* `is_active` - indicator of the integration status. Can be: `true` and `false`.
+
+[1]: https://docs.wallarm.com/user-guides/settings/integrations/slack/
+[2]: https://docs.wallarm.com/installation/multi-tenant/overview/
