@@ -1,3 +1,16 @@
+# v1.0.0 (November 3, 2022)
+
+## BUG FIXES:
+
+* Fixed the following resources that were broken by changes in the API: `wallarm_blacklist`, `wallarm_rule_bruteforce_counter`, `wallarm_rule_dirbust_counter`, `wallarm_global_mode`
+* Fixed various other bugs
+
+## NOTES:
+
+* Added support for the following new resources: `wallarm_rule_binary_data`, `wallarm_rule_disable_attack_type`, `wallarm_rule_parser_state`, `wallarm_rule_uploads`, `wallarm_rule_variative_keys`, `wallarm_rule_variative_values`
+* Renamed the resource `wallarm_blacklist` to `wallarm_denylist`
+* Updated the docs
+
 # v0.0.10 (September 10, 2021)
 
 ## BUG FIXES:
