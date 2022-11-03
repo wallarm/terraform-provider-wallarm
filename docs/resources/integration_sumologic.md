@@ -14,7 +14,7 @@ The types of events available to be sent to Sumo Logic:
 - Detected hits
 - System related: newly added users, deleted or disabled integration
 - Detected vulnerabilities
-- Scope changes: updates in hosts, services, and domains
+- Changes in exposed assets: updates in hosts, services, and domains
 
 ## Example Usage
 

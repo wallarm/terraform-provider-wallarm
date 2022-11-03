@@ -46,7 +46,7 @@ resource "wallarm_rule_mode" "tiredful_api_mode" {
 `action` argument shares the available conditions which can be applied. The conditions are:
 
 * `type` - (optional) condition type. Can be: `equal`, `iequal`, `regex`, `absent`. Must be omitted for the `instance` parameter in `point`.
-  For more details, see the offical [Wallarm documentation](https://docs.wallarm.com/user-guides/rules/add-rule/#condition-types)
+  For more details, see the official [Wallarm documentation](https://docs.wallarm.com/user-guides/rules/add-rule/#condition-types)
   Example:
   `type = "absent"`
 * `value` - (optional) value of the parameter to match with. Must be omitted for the `instance` parameter in `point` or if `type` is `absent`.

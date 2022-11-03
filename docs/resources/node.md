@@ -16,7 +16,7 @@ Provides the resource to manage [Wallarm nodes][1] of the account.
 # Creates a new Wallarm node
 
 resource "wallarm_node" "terraform" {
-  client_id = 6039
+  client_id = 1111
   hostname = "Terraform Tests"
 }
 

@@ -8,13 +8,13 @@ description: |-
 
 # wallarm_integration_webhook
 
-Provides the resource to manage [integrations via generic webhooks][1]. Webhooks can be used as system log sources. The number of log sources depends on the system complexity: the more components in the system, the greater number of log sources and logs.
+Provides the resource to manage [integrations via generic webhooks][1]. Webhooks can be used as system log sources.
 
 The types of events available to be sent via WebHooks:
 - Detected hits
 - System related: newly added users, deleted or disabled integration
 - Detected vulnerabilities
-- Scope changes: updates in hosts, services, and domains
+- Changes in exposed assets: updates in hosts, services, and domains
 
 ## Example Usage
 

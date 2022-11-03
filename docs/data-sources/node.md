@@ -33,7 +33,7 @@ data "wallarm_node" "aws_staging" {
 
 data "wallarm_node" "example" {
   filter {
-    uuid = "b161e6f9-33d2-491e-a584-513522d312db"
+    uuid = "11111111-1111-1111-1111-111111111111"
   }
 }
 ```
@@ -58,13 +58,13 @@ To get details on all created Wallarm nodes, specify an empty set of the filters
 - `uuid` - Wallarm node UUID.
 - `enabled` - indicator of the Wallarm node status. Can be: `true` for enabled Wallarm nodes and `false` for disabled Wallarm nodes.
 - `client_id` - ID of the client installed the Wallarm node.
-- `active` - node synchronization status.
+- `active` - node synchronization status. Can be: `true` and `false`.
 - `instance_count` - number of instances with the installed Wallarm node. Only for the `cloud_node` type.
 - `active_instance_count` - number of active instances with the installed Wallarm node. Only for the `cloud_node` type.
 - `token` - Wallarm node token. Only for the `cloud_node` type.
 - `requests_amount` - number of requests processed by the Wallarm node.
 - `ip` - IP address of the Wallarm node at the time of the last synchronization.
 - `proton` - installed `proton.db` version. Can be an integer value or `null`.
-- `lom` - installed `lom` (currently named "[custom ruleset](https://docs.wallarm.com/user-guides/rules/compiling/)") version. Can be an integer value or `null`.
+- `lom` - installed [custom ruleset](https://docs.wallarm.com/user-guides/rules/compiling/) (formerly named `lom`) version. Can be an integer value or `null`.
 
 [1]: https://docs.wallarm.com/user-guides/nodes/nodes/

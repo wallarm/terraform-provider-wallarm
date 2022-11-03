@@ -63,7 +63,7 @@ data "wallarm_vuln" "vulns" {
 - `description` - vulnerability description.
 - `additional` - vulnerability additional information.
 - `exploit_example` - exploit example to check the vulnerability.
-- `detection_method` - method of the vulnerability detection. Can be: `active` for the vulnerability detected by the scanner or by the Active threat verification component, `passive` for the vulnerability detected after analyzing the server responses.
+- `detection_method` - method of the vulnerability detection. Can be: `active` for the vulnerability detected by the Scanner or by the Active threat verification component, `passive` for the vulnerability detected after analyzing the server responses.
 
 [1]: https://docs.wallarm.com/user-guides/vulnerabilities/check-vuln/
 [2]: https://docs.wallarm.com/attacks-vulns-list/

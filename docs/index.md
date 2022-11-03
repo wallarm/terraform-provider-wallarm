@@ -20,7 +20,7 @@ provider "wallarm" {
   api_uuid = "4f6b8ace-9502-48c5-b1ad-526a230c2203"
   api_secret = "e3f929a2eeb4f0fe6a453fee0f81e36d935b03a5f002d740ff8aa425f6cf4647"
   api_host = "https://api.wallarm.com"
-  client_id = 6039
+  client_id = 1111
 }
 
 }

@@ -14,7 +14,7 @@ The types of events available to be sent to Splunk:
 - Detected hits
 - System related: newly added users, deleted or disabled integration
 - Detected vulnerabilities
-- Scope changes: updates in hosts, services, and domains
+- Changes in exposed assets: updates in hosts, services, and domains
 
 ## Example Usage
 
@@ -57,7 +57,7 @@ resource "wallarm_integration_splunk" "splunk_integration" {
   Default: `false`
 * `name` - (optional) integration name.
 * `api_token` - (**required**) Splunk API token. Sensitive.
-* `api_url` - (**required**) Splunk API URL with the schema (https://).
+* `api_url` - (**required**) Splunk HEC URI with the schema (https://).
 
 ## Event
 

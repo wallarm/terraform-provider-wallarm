@@ -13,7 +13,7 @@ Provides the resource to manage integrations to send [email notifications][1].
 The types of events available to be sent via email:
 - System related: newly added users, deleted or disabled integrations
 - Detected vulnerabilities
-- Scope changes: updates in hosts, services, and domains
+- Changes in exposed assets: updates in hosts, services, and domains
 
 ## Example Usage
 

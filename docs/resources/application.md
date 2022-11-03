@@ -23,7 +23,7 @@ resource "wallarm_application" "tf_app" {
 
 ## Argument Reference
 
-* `app_id` - (**required**) application ID. Unique ID identifying a logical part of the website.
+* `app_id` - (**required**) application ID.
 * `name` - (**required**) application name.
 * `client_id` - (optional) ID of the client (tenant). The value is required for [multi-tenant scenarios][2].
 
