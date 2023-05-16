@@ -1,0 +1,33 @@
+on: [push, pull_request]
+name: Go
+jobs:
+  test:
+    strategy:
+      matrix:
+        go-version: [1.13.x, 1.14.x, 1.15.x]
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Install Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: ${{ matrix.go-version }}
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - name: Lint
+        if: matrix.os != 'windows-latest'
+        run: |
+          go get -v -u golang.org/x/lint/golint
+      - name: Vet
+        run: make vet
+      - name: Test
+        run: make test
+      - name: Generate coverage report
+        run: make cover
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v1
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          file: ./coverage.txt
+          flags: unittests
+          name: wallarm-go
