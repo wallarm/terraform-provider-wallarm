@@ -41,6 +41,27 @@ provider "wallarm" {
 #   time = 60
 # }
 
+# #
+# # Allowlist section
+# #
+# resource "wallarm_allowlist" "allowlist" {
+#   ip_range = ["1.1.1.1/24"]
+#   application = [1]
+#   reason = "TEST ALLOWLIST"
+#   time_format = "Minutes"
+#   time = 60
+# }
+
+# #
+# # Graylist section
+# #
+# resource "wallarm_graylist" "graylist" {
+#   ip_range = ["1.1.1.1/24"]
+#   application = [1]
+#   reason = "TEST GRAYLIST"
+#   time_format = "Minutes"
+#   time = 60
+# }
 
 # #
 # # Vpatch rule section
