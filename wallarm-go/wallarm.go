@@ -22,7 +22,7 @@ import (
 var ErrExistingResource = errors.New("This resource has already been created earlier")
 
 // ErrInvalidCredentials is raised when not all the credentials are presented.
-var ErrInvalidCredentials = errors.New("Credentials are not set. Specify UUID and Secret")
+var ErrInvalidCredentials = errors.New("Credentials are not set. Specify Token or Pair of Secret and UUID")
 
 // New creates a new Wallarm API client.
 func New(opts ...Option) (API, error) {

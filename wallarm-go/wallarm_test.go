@@ -27,8 +27,7 @@ func setup(opts ...Option) {
 
 	// Wallarm client configured to use test server
 	authHeaders := make(http.Header)
-	authHeaders.Add("X-WallarmAPI-UUID", "00000000-0000-0000-0000-000000000000")
-	authHeaders.Add("X-WallarmAPI-Secret", "a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0")
+	authHeaders.Add("X-WallarmAPI-Token", "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")
 	client, _ = New(UsingBaseURL(server.URL), Headers(authHeaders))
 }
 
@@ -41,8 +40,7 @@ func TestClient_Headers(t *testing.T) {
 	setup()
 	mux.HandleFunc("/user", func(w http.ResponseWriter, r *http.Request) {
 		assert.Equal(t, "GET", r.Method, "Expected method 'GET', got %s", r.Method)
-		assert.Equal(t, "00000000-0000-0000-0000-000000000000", r.Header.Get("X-WallarmAPI-UUID"))
-		assert.Equal(t, "a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0", r.Header.Get("X-WallarmAPI-Secret"))
+		assert.Equal(t, "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA", r.Header.Get("X-WallarmAPI-Token"))
 		assert.Equal(t, "application/json", r.Header.Get("Content-Type"))
 	})
 	teardown()
@@ -54,8 +52,7 @@ func TestClient_Headers(t *testing.T) {
 	setup(Headers(headers))
 	mux.HandleFunc("/user", func(w http.ResponseWriter, r *http.Request) {
 		assert.Equal(t, "GET", r.Method, "Expected method 'GET', got %s", r.Method)
-		assert.Equal(t, "00000000-0000-0000-0000-000000000000", r.Header.Get("X-WallarmAPI-UUID"))
-		assert.Equal(t, "a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0", r.Header.Get("X-WallarmAPI-Secret"))
+		assert.Equal(t, "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA", r.Header.Get("X-WallarmAPI-Token"))
 		assert.Equal(t, "application/xhtml+xml", r.Header.Get("Content-Type"))
 		assert.Equal(t, "a random header", r.Header.Get("X-Random"))
 	})
@@ -64,8 +61,7 @@ func TestClient_Headers(t *testing.T) {
 	setup()
 	mux.HandleFunc("/user", func(w http.ResponseWriter, r *http.Request) {
 		assert.Equal(t, "GET", r.Method, "Expected method 'GET', got %s", r.Method)
-		assert.Equal(t, "00000000-0000-0000-0000-000000000000", r.Header.Get("X-WallarmAPI-UUID"))
-		assert.Equal(t, "a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0", r.Header.Get("X-WallarmAPI-Secret"))
+		assert.Equal(t, "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA", r.Header.Get("X-WallarmAPI-Token"))
 		assert.Equal(t, "application/json", r.Header.Get("Content-Type"))
 	})
 	teardown()
