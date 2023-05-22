@@ -37,6 +37,9 @@ type (
 	API interface {
 		Action
 		Application
+		IPList
+		Allowlist
+		Graylist
 		Denylist
 		Client
 		Vulnerability
