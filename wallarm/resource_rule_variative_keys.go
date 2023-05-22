@@ -342,10 +342,9 @@ func resourceWallarmVariativeKeysDelete(d *schema.ResourceData, m interface{}) e
 
 	rule := &wallarm.ActionRead{
 		Filter: &wallarm.ActionFilter{
-			HintsCount: wallarm.TwoDimensionalSlice{{1, nil}},
-			HintType:   []string{"variative_keys"},
-			Clientid:   []int{clientID},
-			ID:         []int{actionID},
+			HintType: []string{"variative_keys"},
+			Clientid: []int{clientID},
+			ID:       []int{actionID},
 		},
 		Limit:  1000,
 		Offset: 0,

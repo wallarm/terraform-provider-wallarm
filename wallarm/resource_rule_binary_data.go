@@ -342,10 +342,9 @@ func resourceWallarmBinaryDataDelete(d *schema.ResourceData, m interface{}) erro
 
 	rule := &wallarm.ActionRead{
 		Filter: &wallarm.ActionFilter{
-			HintsCount: wallarm.TwoDimensionalSlice{{1, nil}},
-			HintType:   []string{"binary_data"},
-			Clientid:   []int{clientID},
-			ID:         []int{actionID},
+			HintType: []string{"binary_data"},
+			Clientid: []int{clientID},
+			ID:       []int{actionID},
 		},
 		Limit:  1000,
 		Offset: 0,

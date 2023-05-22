@@ -351,10 +351,9 @@ func resourceWallarmUploadsDelete(d *schema.ResourceData, m interface{}) error {
 
 	rule := &wallarm.ActionRead{
 		Filter: &wallarm.ActionFilter{
-			HintsCount: wallarm.TwoDimensionalSlice{{1, nil}},
-			HintType:   []string{"uploads"},
-			Clientid:   []int{clientID},
-			ID:         []int{actionID},
+			HintType: []string{"uploads"},
+			Clientid: []int{clientID},
+			ID:       []int{actionID},
 		},
 		Limit:  1000,
 		Offset: 0,

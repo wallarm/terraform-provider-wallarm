@@ -135,13 +135,13 @@ func testWallarmTriggerOnlyRequiredWithError(resourceID, templateID, actionID, i
 resource "wallarm_integration_email" "test" {
 	name = "New Terraform Integration"
 	emails = ["%[1]s@wallarm.com"]
-	
+
 	event {
-		event_type = "vuln"
+		event_type = "vuln_high"
 		active = true
 	}
 }
-	
+
 resource "wallarm_trigger" "%[1]s" {
 	template_id = "%[2]s"
 	actions {
@@ -156,13 +156,13 @@ func testWallarmTriggerAttacksWithThreshold(resourceID, templateID, actionID, in
 resource "wallarm_integration_email" "test" {
 	name = "New Terraform Integration"
 	emails = ["%[1]s@wallarm.com"]
-	
+
 	event {
-		event_type = "vuln"
+		event_type = "vuln_high"
 		active = true
 	}
 }
-	
+
 resource "wallarm_trigger" "%[1]s" {
 	template_id = "%[2]s"
 	actions {
@@ -183,13 +183,13 @@ func testWallarmTriggerAttacksWithFilters(resourceID, templateID, actionID, inte
 resource "wallarm_integration_email" "test" {
 	name = "New Terraform Integration"
 	emails = ["%[1]s@wallarm.com"]
-	
+
 	event {
-		event_type = "vuln"
+		event_type = "vuln_high"
 		active = true
 	}
 }
-	
+
 resource "wallarm_trigger" "%[1]s" {
 	template_id = "%[2]s"
 	actions {
@@ -202,7 +202,7 @@ resource "wallarm_trigger" "%[1]s" {
 		operator = "eq"
 		value = ["1.1.1.1"]
 	}
-	
+
 	filters {
 		filter_id = "pool"
 		operator = "eq"
@@ -247,13 +247,13 @@ func testWallarmTriggerAttacksWithResponse5xx(resourceID, templateID, actionID s
 resource "wallarm_integration_email" "%[1]s" {
 	name = "New Terraform Integration"
 	emails = ["%[1]s@wallarm.com"]
-	
+
 	event {
-		event_type = "vuln"
+		event_type = "vuln_high"
 		active = true
 	}
 }
-	
+
 resource "wallarm_trigger" "%[1]s" {
 	template_id = "%[2]s"
 	actions {
@@ -266,7 +266,7 @@ resource "wallarm_trigger" "%[1]s" {
 		operator = "eq"
 		value = ["1.1.1.1", "2.2.2.2"]
 	}
-	
+
 	filters {
 		filter_id = "pool"
 		operator = "eq"
@@ -333,17 +333,17 @@ resource "wallarm_trigger" "%[1]s" {
 		operator = "eq"
 		value = [wallarm_rule_bruteforce_counter.test.counter]
 	}
-	
+
 	filters {
 		filter_id = "ip_address"
 		operator = "eq"
 		value = ["1.1.1.1"]
 	}
-	
+
 	actions {
 		action_id = "%[3]s"
 	}
-	  
+
 	actions {
 		action_id = "%[4]s"
 		lock_time = 2592000
