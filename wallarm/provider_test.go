@@ -48,12 +48,8 @@ func testAccPreCheck(t *testing.T) {
 		`)
 	}
 
-	if v := os.Getenv("WALLARM_API_UUID"); v == "" {
-		t.Fatal("WALLARM_API_UUID must be set for acceptance tests. The UUID is used to authenticate in the Cloud")
-	}
-
-	if v := os.Getenv("WALLARM_API_SECRET"); v == "" {
-		t.Fatal("WALLARM_API_SECRET must be set for acceptance tests. The SECRET is used to authenticate in the Cloud")
+	if v := os.Getenv("WALLARM_API_TOKEN"); v == "" {
+		t.Fatal("WALLARM_API_TOKEN must be set for acceptance tests. The TOKEN is used to authenticate in the Cloud")
 	}
 }
 

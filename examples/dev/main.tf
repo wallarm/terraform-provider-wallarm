@@ -10,19 +10,18 @@ terraform {
   }
 }
 
-# 
+#
 # Define provider parameters
-# 
+#
 provider "wallarm" {
-  api_uuid = var.api_uuid
-  api_secret = var.api_secret
+  api_token = var.api_token
   api_host = var.api_host
   client_id = 133
 }
 
-# # 
+# #
 # # User section
-# # 
+# #
 # resource "wallarm_user" "user" {
 #   email = "testuser+6039@wallarm.com"
 #   permissions = "deploy"
@@ -31,9 +30,9 @@ provider "wallarm" {
 # }
 
 
-# # 
+# #
 # # Denylist section
-# # 
+# #
 # resource "wallarm_denylist" "denylist" {
 #   ip_range = ["1.1.1.1/24"]
 #   application = [1]
@@ -43,9 +42,9 @@ provider "wallarm" {
 # }
 
 
-# # 
+# #
 # # Vpatch rule section
-# # 
+# #
 # resource "wallarm_rule_vpatch" "default" {
 #   attack_type =  ["sqli"]
 #   point = [["get", "query"]]
@@ -65,9 +64,9 @@ provider "wallarm" {
 # }
 
 
-# # 
+# #
 # # Regular expression rule section
-# # 
+# #
 # resource "wallarm_rule_regex" "regex_curltool" {
 #   regex = ".*curltool.*"
 #   experimental = false
@@ -97,9 +96,9 @@ provider "wallarm" {
 # }
 
 
-# # 
+# #
 # # Ignore regex rule section
-# # 
+# #
 # resource "wallarm_rule_ignore_regex" "ignore_regex" {
 #   regex_id = wallarm_rule_regex.scanner_rule.regex_id
 #   action {
@@ -109,9 +108,9 @@ provider "wallarm" {
 # }
 
 
-# # 
+# #
 # # Mark information as sensitive rule section
-# # 
+# #
 # resource "wallarm_rule_masking" "masking_json" {
 
 #   action {
@@ -120,7 +119,7 @@ provider "wallarm" {
 #       action_name = "masking"
 #     }
 #   }
-  
+
 #   action {
 #     type = "absent"
 #     point = {
@@ -139,9 +138,9 @@ provider "wallarm" {
 # }
 
 
-# # 
+# #
 # # WAF mode rule section
-# # 
+# #
 # resource "wallarm_rule_mode" "tiredful_api_mode" {
 #   mode =  "monitoring"
 
@@ -161,15 +160,15 @@ provider "wallarm" {
 # }
 
 
-# # 
+# #
 # # Integration webhook section
-# # 
+# #
 # resource "wallarm_integration_webhook" "wh_integration" {
 #   name = "New Terraform WebHook Integration"
 #   webhook_url = "https://webhook.wallarm.com"
 #   http_method = "POST"
 #   active = true
-  
+
 #   event {
 #     event_type = "hit"
 #     active = true
@@ -185,7 +184,7 @@ provider "wallarm" {
 # }
 
 
-# # 
+# #
 # # Trigger section
 # #
 # resource "wallarm_rule_bruteforce_counter" "example_counter" {
@@ -241,7 +240,7 @@ provider "wallarm" {
 #   actions {
 #     action_id = "mark_as_brute"
 #   }
-  
+
 #   actions {
 #     action_id = "block_ips"
 #     lock_time = 60
@@ -249,9 +248,9 @@ provider "wallarm" {
 
 # }
 
-# # 
+# #
 # # Scanner scope section
-# # 
+# #
 # resource "wallarm_scanner" "scan" {
 #     element = ["1.1.1.1", "example.com", "2.2.2.2/31"]
 #     disabled = true
@@ -262,9 +261,9 @@ provider "wallarm" {
 # }
 
 
-# # 
+# #
 # # Global mode section
-# # 
+# #
 # resource "wallarm_global_mode" "global_block" {
 #   filtration_mode = "block"
 #   scanner_mode = "off"
@@ -272,9 +271,9 @@ provider "wallarm" {
 # }
 
 
-# # 
+# #
 # # Application section
-# # 
+# #
 # resource "wallarm_application" "tf_app" {
 #   name = "New Terraform Application"
 #   app_id = 42
@@ -300,9 +299,9 @@ provider "wallarm" {
 # # #######Extra Rules#######
 
 
-# # 
+# #
 # # Attack rechecker mode rule section
-# # 
+# #
 # resource "wallarm_rule_attack_rechecker" "disable_rechecker" {
 #   enabled =  false
 
@@ -314,9 +313,9 @@ provider "wallarm" {
 # }
 
 
-# # 
+# #
 # # Set response headers rule section
-# # 
+# #
 # resource "wallarm_rule_set_response_header" "resp_headers" {
 #   mode = "append"
 
@@ -333,9 +332,9 @@ provider "wallarm" {
 
 # }
 
-# # 
+# #
 # # Attack rechecker rewrite rule section
-# # 
+# #
 # resource "wallarm_rule_attack_rechecker_rewrite" "default_rewrite" {
 #   rules =  ["my.awesome-application.com", "my.example.com"]
 #   point = [["header", "HOST"]]
@@ -354,13 +353,13 @@ provider "wallarm" {
 # #   attack_type = ["any"]
 #   mode =  "monitoring"
 #   client_id = 6039
-	
+
 #   action {
 # 		point = {
 # 		  instance = 1
 # 		}
 # 	}
-  
+
 #   action {
 # 		point = {
 # 		  instance = 1
@@ -387,7 +386,7 @@ provider "wallarm" {
 # 		  action_ext = ""
 # 		}
 # 	}
-	  
+
 # 	action {
 # 		type = "absent"
 # 		point = {
@@ -582,7 +581,7 @@ provider "wallarm" {
 #     event_type = "system"
 #     active = false
 #   }
-  
+
 #   event {
 #     event_type = "vuln"
 #     active = true

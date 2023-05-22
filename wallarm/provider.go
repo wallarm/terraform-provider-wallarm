@@ -31,6 +31,7 @@ func Provider() terraform.ResourceProvider {
 			},
 
 			"api_uuid": {
+				Deprecated:   "This field is depricated. Please use the api_token field instend.",
 				Type:         schema.TypeString,
 				Optional:     true,
 				DefaultFunc:  schema.EnvDefaultFunc("WALLARM_API_UUID", nil),
@@ -40,12 +41,23 @@ func Provider() terraform.ResourceProvider {
 			},
 
 			"api_secret": {
+				Deprecated:   "This field is depricated. Please use the api_token field instend.",
 				Type:         schema.TypeString,
 				Optional:     true,
 				DefaultFunc:  schema.EnvDefaultFunc("WALLARM_API_SECRET", nil),
 				Description:  "The API Secret of the user for operations",
 				ValidateFunc: validation.StringMatch(regexp.MustCompile("[A-Za-z0-9-_]{40}"), "API tokens must only contain characters a-z, A-Z, 0-9 and underscores"),
 				Sensitive:    true,
+			},
+
+			"api_token": {
+				Type:          schema.TypeString,
+				Optional:      true,
+				DefaultFunc:   schema.EnvDefaultFunc("WALLARM_API_TOKEN", nil),
+				Description:   "The API Token of the user for operations",
+				ValidateFunc:  validation.StringMatch(regexp.MustCompile("^[A-Za-z0-9+/]{64}$"), "API tokens must be a 64-character Base64 string (containing characters a-z, A-Z, 0-9, + and /)."),
+				Sensitive:     true,
+				ConflictsWith: []string{"api_secret", "api_uuid"},
 			},
 
 			"client_id": {
@@ -160,16 +172,19 @@ func providerConfigure(d *schema.ResourceData, terraformVersion string) (interfa
 	authHeaders := make(http.Header)
 	config := Config{}
 
-	if v, ok := d.GetOk("api_uuid"); ok {
-		config.apiUUID = v.(string)
-		authHeaders.Add("X-WallarmAPI-UUID", v.(string))
+	if v, ok := d.GetOk("api_token"); ok {
+		authHeaders.Add("X-WallarmAPI-Token", v.(string))
 	} else {
-		return nil, wallarm.ErrInvalidCredentials
-	}
-	if v, ok := d.GetOk("api_secret"); ok {
-		authHeaders.Add("X-WallarmAPI-Secret", v.(string))
-	} else {
-		return nil, wallarm.ErrInvalidCredentials
+		if v, ok := d.GetOk("api_uuid"); ok {
+			authHeaders.Add("X-WallarmAPI-UUID", v.(string))
+		} else {
+			return nil, wallarm.ErrInvalidCredentials
+		}
+		if v, ok := d.GetOk("api_secret"); ok {
+			authHeaders.Add("X-WallarmAPI-Secret", v.(string))
+		} else {
+			return nil, wallarm.ErrInvalidCredentials
+		}
 	}
 
 	if v, ok := d.GetOk("api_host"); ok {
