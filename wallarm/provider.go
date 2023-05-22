@@ -112,6 +112,8 @@ func Provider() terraform.ResourceProvider {
 			"wallarm_user":                          resourceWallarmUser(),
 			"wallarm_blacklist":                     resourceWallarmDenylist(), // deprecated & undocumented
 			"wallarm_denylist":                      resourceWallarmDenylist(),
+			"wallarm_allowlist":                     resourceWallarmAllowlist(),
+			"wallarm_graylist":                      resourceWallarmGraylist(),
 			"wallarm_global_mode":                   resourceWallarmGlobalMode(),
 			"wallarm_node":                          resourceWallarmNode(),
 			"wallarm_scanner":                       resourceWallarmScanner(),

@@ -5,6 +5,6 @@ import (
 	wallarm "github.com/wallarm/wallarm-go"
 )
 
-func resourceWallarmDenylist() *schema.Resource {
-	return resourceWallarmIPList(wallarm.DenylistType)
+func resourceWallarmGraylist() *schema.Resource {
+	return resourceWallarmIPList(wallarm.GraylistType)
 }
