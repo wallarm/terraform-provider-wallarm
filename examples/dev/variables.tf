@@ -1,8 +1,4 @@
-variable "api_uuid" {
-  type    = string
-}
-
-variable "api_secret" {
+variable "api_token" {
   type    = string
 }
 
