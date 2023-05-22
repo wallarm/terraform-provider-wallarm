@@ -80,14 +80,13 @@ func resourceWallarmSplunk() *schema.Resource {
 			"event": {
 				Type:     schema.TypeSet,
 				Optional: true,
-				MaxItems: 4,
+				MaxItems: 6,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"event_type": {
 							Type:         schema.TypeString,
 							Optional:     true,
-							ValidateFunc: validation.StringInSlice([]string{"hit", "vuln", "system", "scope"}, false),
-							Default:      "vuln",
+							ValidateFunc: validation.StringInSlice([]string{"hit", "vuln_high", "vuln_medium", "vuln_low", "vuln_low", "system", "scope"}, false),
 						},
 						"active": {
 							Type:     schema.TypeBool,

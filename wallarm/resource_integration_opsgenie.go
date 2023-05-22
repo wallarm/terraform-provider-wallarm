@@ -79,14 +79,13 @@ func resourceWallarmOpsGenie() *schema.Resource {
 			"event": {
 				Type:     schema.TypeSet,
 				Optional: true,
-				MaxItems: 2,
+				MaxItems: 4,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"event_type": {
 							Type:         schema.TypeString,
 							Optional:     true,
-							ValidateFunc: validation.StringInSlice([]string{"hit", "vuln"}, false),
-							Default:      "vuln",
+							ValidateFunc: validation.StringInSlice([]string{"hit", "vuln_high", "vuln_medium", "vuln_low"}, false),
 						},
 						"active": {
 							Type:     schema.TypeBool,

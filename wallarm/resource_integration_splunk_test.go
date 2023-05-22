@@ -45,7 +45,7 @@ func TestAccIntegrationSplunkFullSettings(t *testing.T) {
 					resource.TestCheckResourceAttr(name, "api_url", splunkURL),
 					resource.TestCheckResourceAttr(name, "api_token", "b1e2d6dc-e4b5-400d-9dae-270c39c5daa2"),
 					resource.TestCheckResourceAttr(name, "active", "true"),
-					resource.TestCheckResourceAttr(name, "event.#", "4"),
+					resource.TestCheckResourceAttr(name, "event.#", "6"),
 				),
 			},
 		},
@@ -67,7 +67,7 @@ func TestAccIntegrationSplunkCreateThenUpdate(t *testing.T) {
 					resource.TestCheckResourceAttr(name, "api_url", splunkURL),
 					resource.TestCheckResourceAttr(name, "api_token", "b1e2d6dc-e4b5-400d-9dae-270c39c5daa2"),
 					resource.TestCheckResourceAttr(name, "active", "true"),
-					resource.TestCheckResourceAttr(name, "event.#", "4"),
+					resource.TestCheckResourceAttr(name, "event.#", "6"),
 				),
 			},
 			{
@@ -77,7 +77,7 @@ func TestAccIntegrationSplunkCreateThenUpdate(t *testing.T) {
 					resource.TestCheckResourceAttr(name, "api_url", apiURL),
 					resource.TestCheckResourceAttr(name, "api_token", "b1e2d6dc-e4b5-400d-9dae-270c39c5daa2"),
 					resource.TestCheckResourceAttr(name, "active", "false"),
-					resource.TestCheckResourceAttr(name, "event.#", "4"),
+					resource.TestCheckResourceAttr(name, "event.#", "6"),
 				),
 			},
 		},
@@ -99,7 +99,7 @@ resource "wallarm_integration_splunk" "%[1]s" {
 	api_url = "%[3]s"
     api_token = "%[4]s"
 	active = %[5]s
-	
+
 	event {
 		event_type = "system"
 		active = true
@@ -109,8 +109,16 @@ resource "wallarm_integration_splunk" "%[1]s" {
 		active = %[5]s
 	}
 	event {
-		event_type = "vuln"
-		active = true
+		event_type = "vuln_high"
+		active = "%[5]s"
+	}
+	event {
+		event_type = "vuln_medium"
+		active = "%[5]s"
+	}
+	event {
+		event_type = "vuln_low"
+		active = "%[5]s"
 	}
 	event {
 		event_type = "hit"

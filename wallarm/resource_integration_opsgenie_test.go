@@ -47,7 +47,7 @@ func TestAccIntegrationOpsGenieFullSettings(t *testing.T) {
 					resource.TestCheckResourceAttr(name, "api_url", opsgenieAlertsEndpoint),
 					resource.TestCheckResourceAttr(name, "api_token", rndToken),
 					resource.TestCheckResourceAttr(name, "active", "true"),
-					resource.TestCheckResourceAttr(name, "event.#", "2"),
+					resource.TestCheckResourceAttr(name, "event.#", "4"),
 				),
 			},
 		},
@@ -70,7 +70,7 @@ func TestAccIntegrationOpsGenieCreateThenUpdate(t *testing.T) {
 					resource.TestCheckResourceAttr(name, "api_url", opsgenieAlertsEndpoint),
 					resource.TestCheckResourceAttr(name, "api_token", rndToken),
 					resource.TestCheckResourceAttr(name, "active", "true"),
-					resource.TestCheckResourceAttr(name, "event.#", "2"),
+					resource.TestCheckResourceAttr(name, "event.#", "4"),
 				),
 			},
 			{
@@ -80,7 +80,7 @@ func TestAccIntegrationOpsGenieCreateThenUpdate(t *testing.T) {
 					resource.TestCheckResourceAttr(name, "api_url", opsgenieAlertsEndpoint),
 					resource.TestCheckResourceAttr(name, "api_token", rndToken),
 					resource.TestCheckResourceAttr(name, "active", "false"),
-					resource.TestCheckResourceAttr(name, "event.#", "2"),
+					resource.TestCheckResourceAttr(name, "event.#", "4"),
 				),
 			},
 		},
@@ -102,13 +102,21 @@ resource "wallarm_integration_opsgenie" "%[1]s" {
 	api_url = "%[3]s"
 	api_token = "%[4]s"
 	active = "%[5]s"
-	
+
 	event {
 		event_type = "hit"
 		active = true
 	}
 	event {
-		event_type = "vuln"
+		event_type = "vuln_high"
+		active = "%[5]s"
+	}
+	event {
+		event_type = "vuln_medium"
+		active = "%[5]s"
+	}
+	event {
+		event_type = "vuln_low"
 		active = "%[5]s"
 	}
 }`, resourceID, name, url, token, active)

@@ -347,7 +347,13 @@ func expandWallarmEventToIntEvents(d interface{}, resourceType string) (*[]walla
 		case "email":
 			defaultEvents = []map[string]interface{}{
 				{
-					"event_type": "vuln",
+					"event_type": "vuln_high",
+					"active":     false},
+				{
+					"event_type": "vuln_medium",
+					"active":     false},
+				{
+					"event_type": "vuln_low",
 					"active":     false},
 				{
 					"event_type": "system",
@@ -368,7 +374,13 @@ func expandWallarmEventToIntEvents(d interface{}, resourceType string) (*[]walla
 		case "opsgenie":
 			defaultEvents = []map[string]interface{}{
 				{
-					"event_type": "vuln",
+					"event_type": "vuln_high",
+					"active":     false},
+				{
+					"event_type": "vuln_medium",
+					"active":     false},
+				{
+					"event_type": "vuln_low",
 					"active":     false},
 				{
 					"event_type": "siem",
@@ -377,7 +389,13 @@ func expandWallarmEventToIntEvents(d interface{}, resourceType string) (*[]walla
 		default:
 			defaultEvents = []map[string]interface{}{
 				{
-					"event_type": "vuln",
+					"event_type": "vuln_high",
+					"active":     false},
+				{
+					"event_type": "vuln_medium",
+					"active":     false},
+				{
+					"event_type": "vuln_low",
 					"active":     false},
 				{
 					"event_type": "siem",
@@ -515,9 +533,8 @@ func existsAction(d *schema.ResourceData, m interface{}, hintType string) (strin
 
 	rule := &wallarm.ActionRead{
 		Filter: &wallarm.ActionFilter{
-			HintsCount: wallarm.TwoDimensionalSlice{{1, nil}},
-			HintType:   []string{hintType},
-			Clientid:   []int{clientID},
+			HintType: []string{hintType},
+			Clientid: []int{clientID},
 		},
 		Limit:  1000,
 		Offset: 0,

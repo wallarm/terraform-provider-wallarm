@@ -42,7 +42,7 @@ func TestAccIntegrationPagerDutyFullSettings(t *testing.T) {
 					resource.TestCheckResourceAttr(name, "name", "tf-test-"+rnd),
 					resource.TestCheckResourceAttr(name, "integration_key", rndKey),
 					resource.TestCheckResourceAttr(name, "active", "false"),
-					resource.TestCheckResourceAttr(name, "event.#", "4"),
+					resource.TestCheckResourceAttr(name, "event.#", "6"),
 				),
 			},
 		},
@@ -80,7 +80,7 @@ func TestAccIntegrationPagerDutyCreateThenUpdate(t *testing.T) {
 					resource.TestCheckResourceAttr(name, "name", "tf-test-"+rnd),
 					resource.TestCheckResourceAttr(name, "integration_key", rndKey),
 					resource.TestCheckResourceAttr(name, "active", "true"),
-					resource.TestCheckResourceAttr(name, "event.#", "4"),
+					resource.TestCheckResourceAttr(name, "event.#", "6"),
 				),
 			},
 			{
@@ -89,7 +89,7 @@ func TestAccIntegrationPagerDutyCreateThenUpdate(t *testing.T) {
 					resource.TestCheckResourceAttr(name, "name", "tf-updated-"+rnd),
 					resource.TestCheckResourceAttr(name, "integration_key", rndKey),
 					resource.TestCheckResourceAttr(name, "active", "false"),
-					resource.TestCheckResourceAttr(name, "event.#", "4"),
+					resource.TestCheckResourceAttr(name, "event.#", "6"),
 				),
 			},
 		},
@@ -109,7 +109,7 @@ resource "wallarm_integration_pagerduty" "%[1]s" {
 	name = "%[2]s"
 	integration_key = "%[3]s"
 	active = %[4]s
-	
+
 	event {
 		event_type = "system"
 		active = %[4]s
@@ -123,8 +123,16 @@ resource "wallarm_integration_pagerduty" "%[1]s" {
 		active = %[4]s
 	}
 	event {
-		event_type = "vuln"
-		active = %[4]s
+		event_type = "vuln_high"
+		active = "%[4]s"
+	}
+	event {
+		event_type = "vuln_medium"
+		active = "%[4]s"
+	}
+	event {
+		event_type = "vuln_low"
+		active = "%[4]s"
 	}
 }`, resourceID, name, token, active)
 }

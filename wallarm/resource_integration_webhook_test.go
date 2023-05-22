@@ -45,7 +45,7 @@ func TestAccIntegrationWebhookFullSettings(t *testing.T) {
 					resource.TestCheckResourceAttr(name, "active", "true"),
 					resource.TestCheckResourceAttr(name, "headers.Authorization", "Basic SGkgYXR0ZW50aXZlIFdhbGxhcm0gdXNlcg=="),
 					resource.TestCheckResourceAttr(name, "headers.Content-Type", "application/json"),
-					resource.TestCheckResourceAttr(name, "event.#", "4"),
+					resource.TestCheckResourceAttr(name, "event.#", "6"),
 				),
 			},
 		},
@@ -69,7 +69,7 @@ func TestAccIntegrationWebhookCreateThenUpdate(t *testing.T) {
 					resource.TestCheckResourceAttr(name, "active", "true"),
 					resource.TestCheckResourceAttr(name, "headers.Authorization", "Basic SGkgYXR0ZW50aXZlIFdhbGxhcm0gdXNlcg=="),
 					resource.TestCheckResourceAttr(name, "headers.Content-Type", "application/json"),
-					resource.TestCheckResourceAttr(name, "event.#", "4"),
+					resource.TestCheckResourceAttr(name, "event.#", "6"),
 				),
 			},
 			{
@@ -81,7 +81,7 @@ func TestAccIntegrationWebhookCreateThenUpdate(t *testing.T) {
 					resource.TestCheckResourceAttr(name, "active", "false"),
 					resource.TestCheckResourceAttr(name, "headers.Authorization", "Basic SGkgYXR0ZW50aXZlIFdhbGxhcm0gdXNlcg=="),
 					resource.TestCheckResourceAttr(name, "headers.Content-Type", "application/json"),
-					resource.TestCheckResourceAttr(name, "event.#", "4"),
+					resource.TestCheckResourceAttr(name, "event.#", "6"),
 				),
 			},
 		},
@@ -102,14 +102,22 @@ resource "wallarm_integration_webhook" "%[1]s" {
 	webhook_url = "%[3]s"
 	http_method = "%[4]s"
 	active = %[7]s
-	
+
 	event {
 		event_type = "hit"
 		active = true
 	}
 	event {
-		event_type = "vuln"
-		active = %[7]s
+		event_type = "vuln_high"
+		active = "%[7]s"
+	}
+	event {
+		event_type = "vuln_medium"
+		active = "%[7]s"
+	}
+	event {
+		event_type = "vuln_low"
+		active = "%[7]s"
 	}
 	event {
 		event_type = "system"

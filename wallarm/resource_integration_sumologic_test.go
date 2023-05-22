@@ -39,7 +39,7 @@ func TestAccIntegrationSumologicFullSettings(t *testing.T) {
 					resource.TestCheckResourceAttr(name, "name", "tf-test-"+rnd),
 					resource.TestCheckResourceAttr(name, "sumologic_url", "https://endpoint6.collection.us2.sumologic.com/receiver/v1/http/ZaVnC4dhaV123gN3o--AIj3q8y9GrwxSrAgcOJMvltRVnEIAIyR001VBlDsTYGBpieGxBxyJZA1eFIZcuyJ_ivkjPZ6Ynl8x3kLBJi4arZ479cD8ePJsqA=="),
 					resource.TestCheckResourceAttr(name, "active", "true"),
-					resource.TestCheckResourceAttr(name, "event.#", "4"),
+					resource.TestCheckResourceAttr(name, "event.#", "6"),
 				),
 			},
 		},
@@ -60,7 +60,7 @@ func TestAccIntegrationSumologicCreateThenUpdate(t *testing.T) {
 					resource.TestCheckResourceAttr(name, "name", "tf-test-"+rnd),
 					resource.TestCheckResourceAttr(name, "sumologic_url", "https://endpoint6.collection.us2.sumologic.com/receiver/v1/http/ZaVnC4dhaV123gN3o--AIj3q8y9GrwxSrAgcOJMvltRVnEIAIyR001VBlDsTYGBpieGxBxyJZA1eFIZcuyJ_ivkjPZ6Ynl8x3kLBJi4arZ479cD8ePJsqA=="),
 					resource.TestCheckResourceAttr(name, "active", "true"),
-					resource.TestCheckResourceAttr(name, "event.#", "4"),
+					resource.TestCheckResourceAttr(name, "event.#", "6"),
 				),
 			},
 			{
@@ -69,7 +69,7 @@ func TestAccIntegrationSumologicCreateThenUpdate(t *testing.T) {
 					resource.TestCheckResourceAttr(name, "name", "tf-updated-"+rnd),
 					resource.TestCheckResourceAttr(name, "sumologic_url", "https://endpoint6.collection.us2.sumologic.com/receiver/v1/http/ZaVnC4dhaV123gN3o--AIj3q8y9GrwxSrAgcOJMvltRVnEIAIyR001VBlDsTYGBpieGxBxyJZA1eFIZcuyJ_ivkjPZ6Ynl8x3kLBJi4arZ479cD8ePJsqA=="),
 					resource.TestCheckResourceAttr(name, "active", "false"),
-					resource.TestCheckResourceAttr(name, "event.#", "4"),
+					resource.TestCheckResourceAttr(name, "event.#", "6"),
 				),
 			},
 		},
@@ -89,7 +89,7 @@ resource "wallarm_integration_sumologic" "%[1]s" {
 	name = "%[2]s"
 	sumologic_url = "%[3]s"
 	active = %[4]s
-	
+
 	event {
 		event_type = "system"
 		active = true
@@ -99,8 +99,16 @@ resource "wallarm_integration_sumologic" "%[1]s" {
 		active = %[4]s
 	}
 	event {
-		event_type = "vuln"
-		active = true
+		event_type = "vuln_high"
+		active = "true"
+	}
+	event {
+		event_type = "vuln_medium"
+		active = "true"
+	}
+	event {
+		event_type = "vuln_low"
+		active = "true"
 	}
 	event {
 		event_type = "hit"

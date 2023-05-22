@@ -46,7 +46,7 @@ func TestAccIntegrationInsightConnectFullSettings(t *testing.T) {
 					resource.TestCheckResourceAttr(name, "api_url", insightConnectURL),
 					resource.TestCheckResourceAttr(name, "api_token", rndToken),
 					resource.TestCheckResourceAttr(name, "active", "true"),
-					resource.TestCheckResourceAttr(name, "event.#", "4"),
+					resource.TestCheckResourceAttr(name, "event.#", "6"),
 				),
 			},
 		},
@@ -69,7 +69,7 @@ func TestAccIntegrationInsightConnectCreateThenUpdate(t *testing.T) {
 					resource.TestCheckResourceAttr(name, "api_url", insightConnectURL),
 					resource.TestCheckResourceAttr(name, "api_token", rndToken),
 					resource.TestCheckResourceAttr(name, "active", "true"),
-					resource.TestCheckResourceAttr(name, "event.#", "4"),
+					resource.TestCheckResourceAttr(name, "event.#", "6"),
 				),
 			},
 			{
@@ -79,7 +79,7 @@ func TestAccIntegrationInsightConnectCreateThenUpdate(t *testing.T) {
 					resource.TestCheckResourceAttr(name, "api_url", insightConnectURL),
 					resource.TestCheckResourceAttr(name, "api_token", rndToken),
 					resource.TestCheckResourceAttr(name, "active", "false"),
-					resource.TestCheckResourceAttr(name, "event.#", "4"),
+					resource.TestCheckResourceAttr(name, "event.#", "6"),
 				),
 			},
 		},
@@ -101,13 +101,21 @@ resource "wallarm_integration_insightconnect" "test" {
 	api_url = "%[2]s"
 	api_token = "%[3]s"
 	active = %[4]s
-	
+
 	event {
 		event_type = "hit"
 		active = true
 	}
 	event {
-		event_type = "vuln"
+		event_type = "vuln_high"
+		active = %[4]s
+	}
+	event {
+		event_type = "vuln_medium"
+		active = %[4]s
+	}
+	event {
+		event_type = "vuln_low"
 		active = %[4]s
 	}
 	event {
