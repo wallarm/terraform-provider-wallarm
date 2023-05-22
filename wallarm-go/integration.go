@@ -23,7 +23,7 @@ type (
 	}
 
 	// IntegrationEvents represents `Events` object while creating a new integration.
-	// Event possible values: "hit", "vuln", "system", "scope".
+	// Event possible values: "hit", "vuln_high", "vuln_medium", "vuln_low", "system", "scope".
 	// If `IntegrationObject.Type` is "opsgenie" possible values: "hit", "vuln".
 	// `Active` identifies whether the current Event should be reported.
 	IntegrationEvents struct {
@@ -192,7 +192,9 @@ func (api *api) IntegrationDelete(integrationID int) error {
 }
 
 // IntegrationWithAPICreate returns created object if an integration
-//  has been created successfully, otherwise - error.
+//
+//	has been created successfully, otherwise - error.
+//
 // It accepts defined settings namely Event types, Name, Target.
 // API reference: https://apiconsole.eu1.wallarm.com
 func (api *api) IntegrationWithAPICreate(integrationBody *IntegrationWithAPICreate) (*IntegrationCreateResp, error) {

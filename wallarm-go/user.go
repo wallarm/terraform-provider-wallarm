@@ -2,13 +2,14 @@ package wallarm
 
 import (
 	"encoding/json"
+	"time"
 )
 
 type (
 	// User contains operations available on User resource
 	User interface {
 		UserRead(userBody *UserGet) (*UserRead, error)
-		UserCreate(userBody *UserCreate) (*UserDetails, error)
+		UserCreate(userBody *UserCreate) (*UserCreateResponse, error)
 		UserDelete(userBody *UserDelete) error
 		UserUpdate(userBody *UserUpdate) error
 		UserDetails() (*UserDetails, error)
@@ -100,11 +101,17 @@ type (
 		Filter    *UserFilter `json:"filter"`
 	}
 
+	UserDetailsBody struct {
+		*UserParams
+		Clientid int       `json:"client_id"`
+		CreateAt time.Time `json:"create_at"`
+	}
+
 	// UserDetails is used as a response for request about the specific User.
 	// For example, it may be used to find out a parameter (Client ID) for the current user which auth params are used
 	UserDetails struct {
-		Status int         `json:"status"`
-		Body   *UserParams `json:"body"`
+		Status int              `json:"status"`
+		Body   *UserDetailsBody `json:"body"`
 	}
 
 	// UserFilter is intended to filter Users for the Delete purpose
@@ -168,6 +175,11 @@ type (
 		OrderBy     string `json:"order_by,omitempty"`
 		OrderDesc   bool   `json:"order_desc,omitempty"`
 	}
+
+	UserCreateResponse struct {
+		Status int         `json:"status"`
+		Body   *UserParams `json:"body"`
+	}
 )
 
 // UserRead to read the particular user defined by a body
@@ -188,14 +200,15 @@ func (api *api) UserRead(userBody *UserGet) (*UserRead, error) {
 
 // UserCreate demonstrates the function to create a new user
 // API reference: https://apiconsole.eu1.wallarm.com
-func (api *api) UserCreate(userBody *UserCreate) (*UserDetails, error) {
+func (api *api) UserCreate(userBody *UserCreate) (*UserCreateResponse, error) {
 
 	uri := "/v1/objects/user/create"
 	respBody, err := api.makeRequest("POST", uri, "user", userBody)
 	if err != nil {
 		return nil, err
 	}
-	var u UserDetails
+	var u UserCreateResponse
+
 	if err = json.Unmarshal(respBody, &u); err != nil {
 		return nil, err
 	}

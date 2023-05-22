@@ -51,11 +51,10 @@ type (
 	// ActionFilter is the specific filter for getting the rules.
 	// This is an inner structure.
 	ActionFilter struct {
-		ID         []int               `json:"id,omitempty"`
-		NotID      []int               `json:"!id,omitempty"`
-		Clientid   []int               `json:"clientid,omitempty"`
-		HintsCount TwoDimensionalSlice `json:"hints_count,omitempty"`
-		HintType   []string            `json:"hint_type,omitempty"`
+		ID       []int    `json:"id,omitempty"`
+		NotID    []int    `json:"!id,omitempty"`
+		Clientid []int    `json:"clientid,omitempty"`
+		HintType []string `json:"hint_type,omitempty"`
 	}
 
 	// TwoDimensionalSlice is used for Point and HintsCount structures.
