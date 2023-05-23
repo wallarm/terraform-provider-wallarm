@@ -65,15 +65,18 @@ The **point** attribute supports the following fields:
   * `action_ext` - (optional) the part of the URL after the last period `.`. It may be missing in the request.
   Example:
   `action_ext = "php"`
+  * `query` - (optional) the query parameter name.
+  Example:
+  `query = "user"`
   * `proto` - (optional) version of the HTTP Protocol.
   Example:
   `proto = "1.1"`
   * `scheme` - (optional) http/https.
   Example:
-  `scheme = "https"` 
+  `scheme = "https"`
   * `uri` - (optional) String with the original URL value.
   Example:
-  `uri = "/api/login"` 
+  `uri = "/api/login"`
   * `instance` - (optional) ID of the application.
   Example:
   `instance = 42`
@@ -95,7 +98,7 @@ Example:
       instance = 9
     }
   }
-  
+
   action {
     type = "absent"
     point = {
@@ -125,6 +128,14 @@ Example:
     }
   }
 
+  action {
+    type = "equal"
+    value = "admin"
+    point = {
+      query = "user"
+    }
+  }
+
   # ... skipped
   ```
 
@@ -134,7 +145,7 @@ See below what limitations apply
 `type` must be omitted when:
 - `point` is made up for `instance`
 
-`value` must be omitted when: 
+`value` must be omitted when:
 - `type` is `absent`
 - `point` is made up for `instance`
 

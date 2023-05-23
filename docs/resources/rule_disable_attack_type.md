@@ -30,7 +30,7 @@ resource "wallarm_rule_disable_attack_type" "disable_sqli" {
 
 * `client_id` - (optional) ID of the client to apply the rules to. The value is required for [multi-tenant scenarios][2].
 * `action` - (optional) rule conditions. Possible attributes are described below.
-* `attack_type` - (**required**) attack type to ignore. Possible values: `sqli`, `xss`, `rce`, `ptrav`, `crlf`, `nosqli`, `xxe`, `ldapi`, `scanner`, `ssti`, `ssi`, `mail_injection`, `vpatch`. 
+* `attack_type` - (**required**) attack type to ignore. Possible values: `sqli`, `xss`, `rce`, `ptrav`, `crlf`, `nosqli`, `xxe`, `ldapi`, `scanner`, `ssti`, `ssi`, `mail_injection`, `vpatch`.
 * `point` - (**required**) request parts to apply the rules to. The full list of possible values is available in the [Wallarm official documentation](https://docs.wallarm.com/user-guides/rules/request-processing/#identifying-and-parsing-the-request-parts).
 
 **action**
@@ -63,15 +63,18 @@ resource "wallarm_rule_disable_attack_type" "disable_sqli" {
   * `action_ext` - (optional) the part of the URL after the last period (`.`). It may be missing in the request.
   Example:
   `action_ext = "php"`
+  * `query` - (optional) the query parameter name.
+  Example:
+  `query = "user"`
   * `proto` - (optional) version of the HTTP Protocol.
   Example:
   `proto = "1.1"`
   * `scheme` - (optional) `http`/`https`.
   Example:
-  `scheme = "https"` 
+  `scheme = "https"`
   * `uri` - (optional) part of the request URL without domain.
   Example:
-  `uri = "/api/login"` 
+  `uri = "/api/login"`
   * `instance` - (optional) ID of the application.
   Example:
   `instance = 42`
@@ -93,7 +96,7 @@ Example:
       instance = 9
     }
   }
-  
+
   action {
     type = "absent"
     point = {
@@ -120,6 +123,14 @@ Example:
     value = "example.com"
     point = {
       header = "HOST"
+    }
+  }
+
+  action {
+    type = "equal"
+    value = "admin"
+    point = {
+      query = "user"
     }
   }
 

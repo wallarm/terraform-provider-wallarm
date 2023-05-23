@@ -124,6 +124,12 @@ func resourceWallarmVariativeKeys() *schema.Resource {
 										ForceNew: true,
 									},
 
+									"query": {
+										Type:     schema.TypeString,
+										Optional: true,
+										ForceNew: true,
+									},
+
 									"proto": {
 										Type:         schema.TypeString,
 										Optional:     true,

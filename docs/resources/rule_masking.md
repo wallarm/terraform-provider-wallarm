@@ -26,7 +26,7 @@ resource "wallarm_rule_masking" "masking_json" {
       action_name = "masking"
     }
   }
-  
+
   action {
     type = "absent"
     point = {
@@ -38,6 +38,14 @@ resource "wallarm_rule_masking" "masking_json" {
     type = "absent"
     point = {
       action_ext = ""
+    }
+  }
+
+  action {
+    type = "equal"
+    value = "admin"
+    point = {
+      query = "user"
     }
   }
 
@@ -102,15 +110,18 @@ resource "wallarm_rule_masking" "masking_json" {
   * `action_ext` - (optional) the part of the URL after the last period (`.`). It may be missing in the request.
   Example:
   `action_ext = "php"`
+  * `query` - (optional) the query parameter name.
+  Example:
+  `query = "user"`
   * `proto` - (optional) version of the HTTP Protocol.
   Example:
   `proto = "1.1"`
   * `scheme` - (optional) `http`/`https`.
   Example:
-  `scheme = "https"` 
+  `scheme = "https"`
   * `uri` - (optional) part of the request URL without domain.
   Example:
-  `uri = "/api/login"` 
+  `uri = "/api/login"`
   * `instance` - (optional) ID of the application.
   Example:
   `instance = 42`
@@ -132,7 +143,7 @@ Example:
       instance = 9
     }
   }
-  
+
   action {
     type = "absent"
     point = {
