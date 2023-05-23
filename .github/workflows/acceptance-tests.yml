@@ -2,6 +2,12 @@ name: Acceptance Tests
 on:
   push:
     branches: [master, develop]
+  pull_request:
+    types:
+      - opened
+      - synchronize
+  schedule:
+    - cron: 0 12 * * 5
 jobs:
   build:
     name: Build
