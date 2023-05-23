@@ -1,3 +1,17 @@
+# v1.1.0 (May 24, 2023)
+
+## BUG FIXES:
+
+* Fixed intergation api methods
+* Fixed rule api methods
+* Fixed trigger api methods
+
+## NOTES:
+
+* Added support for the following new resources: `wallarm_allowlist`, `wallarm_graylist`
+* Added support of the query field in rules
+* Change api authentication method using X-WallarmAPI-Token
+
 # v1.0.0 (November 3, 2022)
 
 ## BUG FIXES:
