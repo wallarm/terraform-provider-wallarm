@@ -129,6 +129,12 @@ func resourceWallarmBruteForceCounter() *schema.Resource {
 										ForceNew: true,
 									},
 
+									"query": {
+										Type:     schema.TypeString,
+										Optional: true,
+										ForceNew: true,
+									},
+
 									"proto": {
 										Type:         schema.TypeString,
 										Optional:     true,
@@ -314,10 +320,9 @@ func resourceWallarmBruteForceCounterDelete(d *schema.ResourceData, m interface{
 
 	rule := &wallarm.ActionRead{
 		Filter: &wallarm.ActionFilter{
-			HintsCount: wallarm.TwoDimensionalSlice{{1, nil}},
-			HintType:   []string{"brute_counter"},
-			Clientid:   []int{clientID},
-			ID:         []int{actionID},
+			HintType: []string{"brute_counter"},
+			Clientid: []int{clientID},
+			ID:       []int{actionID},
 		},
 		Limit:  1000,
 		Offset: 0,

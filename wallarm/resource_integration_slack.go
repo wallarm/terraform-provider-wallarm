@@ -73,14 +73,13 @@ func resourceWallarmSlack() *schema.Resource {
 			"event": {
 				Type:     schema.TypeSet,
 				Optional: true,
-				MaxItems: 3,
+				MaxItems: 5,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"event_type": {
 							Type:         schema.TypeString,
 							Optional:     true,
-							ValidateFunc: validation.StringInSlice([]string{"system", "vuln", "scope"}, false),
-							Default:      "vuln",
+							ValidateFunc: validation.StringInSlice([]string{"system", "vuln_high", "vuln_medium", "vuln_low", "scope"}, false),
 						},
 						"active": {
 							Type:     schema.TypeBool,

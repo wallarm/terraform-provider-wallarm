@@ -15,6 +15,14 @@ resource "wallarm_rule_mode" "wp_mode" {
       path = 0
     }
   }
+
+  action {
+    type = "equal"
+    value = "admin"
+    point = {
+      query = "user"
+    }
+  }
 }
 
 resource "wallarm_rule_mode" "tiredful_api_mode" {

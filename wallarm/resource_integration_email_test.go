@@ -41,7 +41,7 @@ func TestAccIntegrationEmailFullSettings(t *testing.T) {
 					resource.TestCheckResourceAttr(name, "emails.0", fmt.Sprintf("%s@wallarm.com", rnd)),
 					resource.TestCheckResourceAttr(name, "emails.1", fmt.Sprintf("%s-rnd@wallarm.com", rnd)),
 					resource.TestCheckResourceAttr(name, "active", "false"),
-					resource.TestCheckResourceAttr(name, "event.#", "6"),
+					resource.TestCheckResourceAttr(name, "event.#", "8"),
 				),
 			},
 		},
@@ -63,7 +63,7 @@ func TestAccIntegrationEmailCreateThenUpdate(t *testing.T) {
 					resource.TestCheckResourceAttr(name, "emails.0", fmt.Sprintf("%s@wallarm.com", rnd)),
 					resource.TestCheckResourceAttr(name, "emails.1", fmt.Sprintf("%s-rnd@wallarm.com", rnd)),
 					resource.TestCheckResourceAttr(name, "active", "false"),
-					resource.TestCheckResourceAttr(name, "event.#", "6"),
+					resource.TestCheckResourceAttr(name, "event.#", "8"),
 				),
 			},
 			{
@@ -73,7 +73,7 @@ func TestAccIntegrationEmailCreateThenUpdate(t *testing.T) {
 					resource.TestCheckResourceAttr(name, "emails.0", fmt.Sprintf("%s@wallarm.com", rnd+"updated")),
 					resource.TestCheckResourceAttr(name, "emails.1", fmt.Sprintf("%s-rnd@wallarm.com", rnd+"updated")),
 					resource.TestCheckResourceAttr(name, "active", "false"),
-					resource.TestCheckResourceAttr(name, "event.#", "6"),
+					resource.TestCheckResourceAttr(name, "event.#", "8"),
 				),
 			},
 			{
@@ -83,7 +83,7 @@ func TestAccIntegrationEmailCreateThenUpdate(t *testing.T) {
 					resource.TestCheckResourceAttr(name, "emails.0", fmt.Sprintf("%s@wallarm.com", rnd+"updated")),
 					resource.TestCheckResourceAttr(name, "emails.1", fmt.Sprintf("%s-rnd@wallarm.com", rnd+"updated")),
 					resource.TestCheckResourceAttr(name, "active", "true"),
-					resource.TestCheckResourceAttr(name, "event.#", "6"),
+					resource.TestCheckResourceAttr(name, "event.#", "8"),
 				),
 			},
 			{
@@ -93,7 +93,7 @@ func TestAccIntegrationEmailCreateThenUpdate(t *testing.T) {
 					resource.TestCheckResourceAttr(name, "emails.0", fmt.Sprintf("%s@wallarm.com", rnd+"new")),
 					resource.TestCheckResourceAttr(name, "emails.1", fmt.Sprintf("%s-rnd@wallarm.com", rnd+"new")),
 					resource.TestCheckResourceAttr(name, "active", "false"),
-					resource.TestCheckResourceAttr(name, "event.#", "6"),
+					resource.TestCheckResourceAttr(name, "event.#", "8"),
 				),
 			},
 		},
@@ -113,7 +113,7 @@ resource "wallarm_integration_email" "test" {
 	name = "%[1]s"
 	active = %[3]s
 	emails = ["%[2]s@wallarm.com", "%[2]s-rnd@wallarm.com"]
-	
+
 	event {
 		event_type = "report_daily"
 		active = true
@@ -127,7 +127,15 @@ resource "wallarm_integration_email" "test" {
 		active = true
 	}
 	event {
-		event_type = "vuln"
+		event_type = "vuln_high"
+		active = %[3]s
+	}
+	event {
+		event_type = "vuln_medium"
+		active = %[3]s
+	}
+	event {
+		event_type = "vuln_low"
 		active = %[3]s
 	}
 	event {
@@ -148,7 +156,7 @@ resource "wallarm_integration_email" "test" {
 	name = "%[1]s"
 	active = %[3]s
 	emails = ["%[2]s@wallarm.com", "%[2]s-rnd@wallarm.com"]
-	
+
 	event {
 		event_type = "report_daily"
 		active = %[4]s
@@ -162,8 +170,16 @@ resource "wallarm_integration_email" "test" {
 		active = %[4]s
 	}
 	event {
-		event_type = "vuln"
-		active = %[4]s
+		event_type = "vuln_high"
+		active = "%[4]s"
+	}
+	event {
+		event_type = "vuln_medium"
+		active = "%[4]s"
+	}
+	event {
+		event_type = "vuln_low"
+		active = "%[4]s"
 	}
 	event {
 		event_type = "system"

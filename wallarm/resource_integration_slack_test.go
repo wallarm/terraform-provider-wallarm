@@ -40,7 +40,7 @@ func TestAccIntegrationSlackFullSettings(t *testing.T) {
 					resource.TestCheckResourceAttr(name, "name", "tf-test-"+rnd),
 					resource.TestCheckResourceAttr(name, "webhook_url", "https://hooks.slack.com/services/T00000000/B00000000/XXXXXXXXXXXXXXXXXXXXXXXX"),
 					resource.TestCheckResourceAttr(name, "active", "true"),
-					resource.TestCheckResourceAttr(name, "event.#", "3"),
+					resource.TestCheckResourceAttr(name, "event.#", "5"),
 				),
 			},
 		},
@@ -56,7 +56,7 @@ func TestAccIntegrationSlackIncorrectEvents(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config:      testWallarmIntegrationSlackIncorrectEvents(rnd, "https://hooks.slack.com/services/T00000000/B00000000/XXXXXXXXXXXXXXXXXXXXXXXX"),
-				ExpectError: regexp.MustCompile(`event: attribute supports 3 item maximum, config has [0-9]+ declared`),
+				ExpectError: regexp.MustCompile(`event: attribute supports 5 item maximum, config has [0-9]+ declared`),
 			},
 		},
 	})
@@ -75,7 +75,7 @@ func TestAccIntegrationSlackCreateThenUpdate(t *testing.T) {
 					resource.TestCheckResourceAttr(name, "name", "tf-test-"+rnd),
 					resource.TestCheckResourceAttr(name, "webhook_url", "https://hooks.slack.com/services/T00000000/B00000000/XXXXXXXXXXXXXXXXXXXXXXXX"),
 					resource.TestCheckResourceAttr(name, "active", "true"),
-					resource.TestCheckResourceAttr(name, "event.#", "3"),
+					resource.TestCheckResourceAttr(name, "event.#", "5"),
 				),
 			},
 			{
@@ -84,7 +84,7 @@ func TestAccIntegrationSlackCreateThenUpdate(t *testing.T) {
 					resource.TestCheckResourceAttr(name, "name", "tf-updated-"+rnd),
 					resource.TestCheckResourceAttr(name, "webhook_url", "https://hooks.slack.com/services/T00000000/B00000000/XXXXXXXXXXXXXXXXXXXXXXXX"),
 					resource.TestCheckResourceAttr(name, "active", "false"),
-					resource.TestCheckResourceAttr(name, "event.#", "3"),
+					resource.TestCheckResourceAttr(name, "event.#", "5"),
 				),
 			},
 		},
@@ -114,8 +114,16 @@ resource "wallarm_integration_slack" "%[1]s" {
 		active = %[4]s
 	}
 	event {
-		event_type = "vuln"
-		active = %[4]s
+		event_type = "vuln_high"
+		active = "%[4]s"
+	}
+	event {
+		event_type = "vuln_medium"
+		active = "%[4]s"
+	}
+	event {
+		event_type = "vuln_low"
+		active = "%[4]s"
 	}
 }`, resourceID, name, token, active)
 }
@@ -139,7 +147,15 @@ resource "wallarm_integration_slack" "%[1]s" {
 		active = true
 	}
 	event {
-		event_type = "vuln"
+		event_type = "vuln_high"
+		active = true
+	}
+	event {
+		event_type = "vuln_medium"
+		active = true
+	}
+	event {
+		event_type = "vuln_low"
 		active = true
 	}
 }`, resourceID, url)

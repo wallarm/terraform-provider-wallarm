@@ -166,7 +166,7 @@ resource "wallarm_rule_vpatch" "%[8]s" {
 		  action_ext = ""
 		}
 	}
-	  
+
 	action {
 		type = "%[5]s"
 		point = {

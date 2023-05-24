@@ -59,8 +59,7 @@ then run `terraform init`
 
 To start using this provider you have to set up you environment with the required variables:
 ```sh
-WALLARM_API_UUID
-WALLARM_API_SECRET
+WALLARM_API_TOKEN
 ```
 Optional:
 `WALLARM_API_HOST` with the default value `https://api.wallarm.com`
@@ -70,8 +69,7 @@ Another variant is to define the provider attributes within HCL files:
 ```hcl
 provider "wallarm" {
   api_host = var.api_host
-  api_uuid = var.api_uuid
-  api_secret = var.api_secret
+  api_token = var.api_token
 }
 ```
 Create the files `variables.tf` and `variables.auto.tfvars`
@@ -83,19 +81,14 @@ variable "api_host" {
   default = "https://us1.api.wallarm.com"
 }
 
-variable "api_uuid" {
-  type    = string
-}
-
-variable "api_secret" {
+variable "api_token" {
   type    = string
 }
 
 ```
 `variables.auto.tfvars`:
 ```
-api_uuid = "00000000-0000-0000-0000-000000000000"
-api_secret = "000000000000000000000000000000000000000000"
+api_token = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
 ```
 
 ## Using The Provider

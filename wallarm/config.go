@@ -20,7 +20,6 @@ var (
 
 // Config specifies client related parameters used within calls.
 type Config struct {
-	apiUUID string
 	Options []wallarm.Option
 }
 
@@ -31,6 +30,6 @@ func (c *Config) Client() (wallarm.API, error) {
 		return nil, errors.Wrap(err, "error creating a new Wallarm client")
 	}
 
-	log.Printf("[INFO] Wallarm Client configured for the user with UUID: %s", c.apiUUID)
+	log.Printf("[INFO] Wallarm Client configured")
 	return client, nil
 }

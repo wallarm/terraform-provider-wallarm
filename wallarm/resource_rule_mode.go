@@ -131,6 +131,12 @@ func resourceWallarmMode() *schema.Resource {
 										ForceNew: true,
 									},
 
+									"query": {
+										Type:     schema.TypeString,
+										Optional: true,
+										ForceNew: true,
+									},
+
 									"proto": {
 										Type:         schema.TypeString,
 										Optional:     true,
@@ -317,10 +323,9 @@ func resourceWallarmModeDelete(d *schema.ResourceData, m interface{}) error {
 
 	rule := &wallarm.ActionRead{
 		Filter: &wallarm.ActionFilter{
-			HintsCount: wallarm.TwoDimensionalSlice{{1, nil}},
-			HintType:   []string{"wallarm_mode"},
-			Clientid:   []int{clientID},
-			ID:         []int{actionID},
+			HintType: []string{"wallarm_mode"},
+			Clientid: []int{clientID},
+			ID:       []int{actionID},
 		},
 		Limit:  1000,
 		Offset: 0,

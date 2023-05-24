@@ -128,6 +128,13 @@ func resourceWallarmAttackRechecker() *schema.Resource {
 										Computed: true,
 									},
 
+									"query": {
+										Type:     schema.TypeString,
+										Optional: true,
+										ForceNew: true,
+										Computed: true,
+									},
+
 									"proto": {
 										Type:     schema.TypeString,
 										Optional: true,

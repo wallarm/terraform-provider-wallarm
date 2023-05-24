@@ -13,7 +13,7 @@ Provides the resource to manage rules with the "[Set filtration mode][1]" action
 ## Example Usage
 
 ```hcl
-# Sets the `monitoring` mode for all the requests 
+# Sets the `monitoring` mode for all the requests
 # sent to the application with ID 9 via HTTPS protocol.
 
 resource "wallarm_rule_mode" "tiredful_api_mode" {
@@ -29,6 +29,14 @@ resource "wallarm_rule_mode" "tiredful_api_mode" {
     type = "regex"
     point = {
       scheme = "https"
+    }
+  }
+
+  action {
+    type = "equal"
+    value = "admin"
+    point = {
+      query = "user"
     }
   }
 
@@ -73,15 +81,18 @@ resource "wallarm_rule_mode" "tiredful_api_mode" {
   * `action_ext` - (optional) the part of the URL after the last period (`.`). It may be missing in the request.
   Example:
   `action_ext = "php"`
+  * `query` - (optional) the query parameter name.
+  Example:
+  `query = "user"`
   * `proto` - (optional) version of the HTTP Protocol.
   Example:
   `proto = "1.1"`
   * `scheme` - (optional) `http`/`https`.
   Example:
-  `scheme = "https"` 
+  `scheme = "https"`
   * `uri` - (optional) part of the request URL without domain.
   Example:
-  `uri = "/api/login"` 
+  `uri = "/api/login"`
   * `instance` - (optional) ID of the application.
   Example:
   `instance = 42`
@@ -103,7 +114,7 @@ Example:
       instance = 9
     }
   }
-  
+
   action {
     type = "absent"
     point = {

@@ -79,15 +79,18 @@ resource "wallarm_rule_attack_rechecker_rewrite" "default_rewrite" {
   * `action_ext` - (optional) the part of the URL after the last period (`.`). It may be missing in the request.
   Example:
   `action_ext = "php"`
+  * `query` - (optional) the query parameter name.
+  Example:
+  `query = "user"`
   * `proto` - (optional) version of the HTTP Protocol.
   Example:
   `proto = "1.1"`
   * `scheme` - (optional) `http`/`https`.
   Example:
-  `scheme = "https"` 
+  `scheme = "https"`
   * `uri` - (optional) part of the request URL without domain.
   Example:
-  `uri = "/api/login"` 
+  `uri = "/api/login"`
   * `instance` - (optional) ID of the application.
   Example:
   `instance = 42`
@@ -109,7 +112,7 @@ Example:
       instance = 9
     }
   }
-  
+
   action {
     type = "absent"
     point = {
@@ -136,6 +139,14 @@ Example:
     value = "example.com"
     point = {
       header = "HOST"
+    }
+  }
+
+  action {
+    type = "equal"
+    value = "admin"
+    point = {
+      query = "user"
     }
   }
 

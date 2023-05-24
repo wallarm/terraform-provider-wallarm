@@ -82,6 +82,13 @@ func expandSetToActionDetailsList(action *schema.Set) ([]wallarm.ActionDetails, 
 					case "header":
 						// This is required by the API when a header field is specified
 						a.Point = []interface{}{pointKey, strings.ToUpper(pointValue.(string))}
+					case "query":
+						// This is required by the API when case is insensitive
+						if actionMap["type"] == "iequal" {
+							a.Point = []interface{}{"get", strings.ToLower(pointValue.(string))}
+						} else {
+							a.Point = []interface{}{"get", pointValue.(string)}
+						}
 					default:
 						// This is required by the API when case is insensitive
 						if actionMap["type"] == "iequal" {
@@ -187,7 +194,12 @@ func hashResponseActionDetails(v interface{}) int {
 			pointMap := make(map[string]string)
 			pointMap["header"] = p[1].(string)
 			m["point"] = pointMap
+		case "get":
+			pointMap := make(map[string]string)
+			pointMap["query"] = p[1].(string)
+			m["point"] = pointMap
 		}
+
 		buf.WriteString(fmt.Sprintf("%v-", m["point"]))
 	}
 	return hashcode.String(buf.String())
@@ -347,7 +359,13 @@ func expandWallarmEventToIntEvents(d interface{}, resourceType string) (*[]walla
 		case "email":
 			defaultEvents = []map[string]interface{}{
 				{
-					"event_type": "vuln",
+					"event_type": "vuln_high",
+					"active":     false},
+				{
+					"event_type": "vuln_medium",
+					"active":     false},
+				{
+					"event_type": "vuln_low",
 					"active":     false},
 				{
 					"event_type": "system",
@@ -368,7 +386,13 @@ func expandWallarmEventToIntEvents(d interface{}, resourceType string) (*[]walla
 		case "opsgenie":
 			defaultEvents = []map[string]interface{}{
 				{
-					"event_type": "vuln",
+					"event_type": "vuln_high",
+					"active":     false},
+				{
+					"event_type": "vuln_medium",
+					"active":     false},
+				{
+					"event_type": "vuln_low",
 					"active":     false},
 				{
 					"event_type": "siem",
@@ -377,7 +401,13 @@ func expandWallarmEventToIntEvents(d interface{}, resourceType string) (*[]walla
 		default:
 			defaultEvents = []map[string]interface{}{
 				{
-					"event_type": "vuln",
+					"event_type": "vuln_high",
+					"active":     false},
+				{
+					"event_type": "vuln_medium",
+					"active":     false},
+				{
+					"event_type": "vuln_low",
 					"active":     false},
 				{
 					"event_type": "siem",
@@ -515,9 +545,8 @@ func existsAction(d *schema.ResourceData, m interface{}, hintType string) (strin
 
 	rule := &wallarm.ActionRead{
 		Filter: &wallarm.ActionFilter{
-			HintsCount: wallarm.TwoDimensionalSlice{{1, nil}},
-			HintType:   []string{hintType},
-			Clientid:   []int{clientID},
+			HintType: []string{hintType},
+			Clientid: []int{clientID},
 		},
 		Limit:  1000,
 		Offset: 0,
