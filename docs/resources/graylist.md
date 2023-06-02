@@ -8,7 +8,7 @@ description: |-
 
 # wallarm_graylist
 
-Provides the resource to manage [graylist][1] in the account providing functionality to block all requests originated from graylisted IP addresses for a desired time either via `RFC3339` or `Minutes` formats.
+Provides the resource to manage [graylist][1] in the account providing functionality to block malicious requests originated from graylisted IP addresses for a desired time either via `RFC3339` or `Minutes` formats. Graylist is processed by the node only in the safe blocking [filtration mode](https://docs.wallarm.com/admin-en/configure-wallarm-mode/).
 
 ## Example Usage
 
