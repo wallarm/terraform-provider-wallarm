@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"math/rand"
+	"regexp"
 	"sort"
 	"strconv"
 	"strings"
@@ -615,4 +616,13 @@ func ImportAsExistsError(resourceName, id string) error {
 	return fmt.Errorf("the resource with the ID %q already exists "+
 		"- to be managed via Terraform this resource needs to be imported into the State. "+
 		"Please see the resource documentation for %q for more information.", id, resourceName)
+}
+
+func isNotFoundError(err error) (bool, error) {
+	matched, matchErr := regexp.MatchString("HTTP Status: 404", err.Error())
+	if matchErr != nil {
+		return false, matchErr
+	}
+
+	return matched, nil
 }
