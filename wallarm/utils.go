@@ -559,7 +559,9 @@ func existsAction(d *schema.ResourceData, m interface{}, hintType string) (strin
 	}
 
 	for _, body := range respRules.Body {
+
 		var apiActions []wallarm.ActionDetails = nil
+
 		for _, condition := range body.Conditions {
 			apiAct := condition.(map[string]interface{})
 			result, err := json.Marshal(apiAct)
@@ -585,6 +587,16 @@ func existsHint(d *schema.ResourceData, m interface{}, actionID int, hintType st
 	client := m.(wallarm.API)
 	clientID := retrieveClientID(d, client)
 
+	var points wallarm.TwoDimensionalSlice
+
+	if ps, ok := d.GetOk("point"); ok {
+		var err error
+		points, err = expandPointsToTwoDimensionalArray(ps.([]interface{}))
+		if err != nil {
+			return "", false, err
+		}
+	}
+
 	hint := &wallarm.HintRead{
 		Limit:     1000,
 		Offset:    0,
@@ -594,6 +606,7 @@ func existsHint(d *schema.ResourceData, m interface{}, actionID int, hintType st
 			Clientid: []int{clientID},
 			ActionID: []int{actionID},
 			Type:     []string{hintType},
+			Point:    points,
 		},
 	}
 	actionHints, err := client.HintRead(hint)
