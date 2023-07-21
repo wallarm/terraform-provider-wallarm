@@ -141,7 +141,16 @@ func resourceWallarmNodeDelete(d *schema.ResourceData, m interface{}) error {
 	client := m.(wallarm.API)
 	nodeID := d.Get("node_id").(int)
 	if err := client.NodeDelete(nodeID); err != nil {
-		return err
+		isNotFoundErr, err2 := isNotFoundError(err)
+		if err2 != nil {
+			return err2
+		}
+
+		if isNotFoundErr {
+			fmt.Print("Resource has already been deleted")
+		} else {
+			return err
+		}
 	}
 	return nil
 }
