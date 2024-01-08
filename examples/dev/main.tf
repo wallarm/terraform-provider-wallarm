@@ -29,6 +29,13 @@ provider "wallarm" {
 #   password = "vJdlSKJ_sdh2749sj!"
 # }
 
+# #
+# # Tenant section
+# #
+# resource "wallarm_tenant" "tenant" {
+#   name = "Tenant"
+# }
+
 
 # #
 # # Denylist section

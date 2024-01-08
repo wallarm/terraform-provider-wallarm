@@ -143,6 +143,7 @@ func Provider() terraform.ResourceProvider {
 			"wallarm_rule_bruteforce_counter":       resourceWallarmBruteForceCounter(),
 			"wallarm_rule_dirbust_counter":          resourceWallarmDirbustCounter(),
 			"wallarm_rule_uploads":                  resourceWallarmUploads(),
+			"wallarm_tenant":                        resourceWallarmTenant(),
 		},
 	}
 
