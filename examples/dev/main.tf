@@ -36,6 +36,11 @@ provider "wallarm" {
 #   name = "Tenant"
 # }
 
+# # Rules settings section
+# #
+# resource "wallarm_rules_settings" "rules_settings" {
+#   min_lom_format = 51
+# }
 
 # #
 # # Denylist section
