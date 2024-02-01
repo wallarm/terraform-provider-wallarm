@@ -29,6 +29,18 @@ provider "wallarm" {
 #   password = "vJdlSKJ_sdh2749sj!"
 # }
 
+# #
+# # Tenant section
+# #
+# resource "wallarm_tenant" "tenant" {
+#   name = "Tenant"
+# }
+
+# # Rules settings section
+# #
+# resource "wallarm_rules_settings" "rules_settings" {
+#   min_lom_format = 51
+# }
 
 # #
 # # Denylist section
