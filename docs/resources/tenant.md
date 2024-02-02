@@ -8,7 +8,7 @@ description: |-
 
 # wallarm_tenant
 
-Provides the resource to manage [tenants][1] of the company. To use this resource your token has to have 'Global Administrator' role.
+Provides the resource to manage [tenants][1] of the company. To use this resource, your token has to have the 'Global Administrator' role.
 
 ## Example Usage
 
@@ -29,6 +29,6 @@ resource "wallarm_tenant" "tenant1" {
 
 ## Attributes Reference
 
-* `tenant_id` - Client ID of the created tenant.
+* `tenant_id` - client ID of the created tenant.
 
 [1]: https://docs.wallarm.com/installation/multi-tenant/overview/
