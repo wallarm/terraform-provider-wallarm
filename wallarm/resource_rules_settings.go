@@ -136,8 +136,6 @@ func resourceWallarmRulesSettingsRead(d *schema.ResourceData, m interface{}) err
 		return err
 	}
 
-	fmt.Printf("[INFO] @@@@ READ")
-
 	if err := d.Set("min_lom_format", res.Body.MinLomFormat); err != nil {
 		return err
 	}
@@ -232,8 +230,6 @@ func updateRulesSettings(d *schema.ResourceData, m interface{}) error {
 	clientID := retrieveClientID(d, client)
 
 	params := &wallarm.RuleSettingsParams{}
-
-	fmt.Printf("[INFO] @@@@ UPDATE")
 
 	if v, ok := d.GetOk("min_lom_format"); ok {
 		value := v.(int)
