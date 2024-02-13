@@ -183,15 +183,6 @@ func resourceWallarmVariativeValues() *schema.Resource {
 }
 
 func resourceWallarmVariativeValuesCreate(d *schema.ResourceData, m interface{}) error {
-	if d.IsNewResource() {
-		existingID, exists, err := existsAction(d, m, "variative_values")
-		if err != nil {
-			return err
-		}
-		if exists {
-			return ImportAsExistsError("wallarm_rule_variative_values", existingID)
-		}
-	}
 	client := m.(wallarm.API)
 	clientID := retrieveClientID(d, client)
 	comment := d.Get("comment").(string)
@@ -213,12 +204,13 @@ func resourceWallarmVariativeValuesCreate(d *schema.ResourceData, m interface{})
 	}
 
 	wm := &wallarm.ActionCreate{
-		Type:      "variative_values",
-		Clientid:  clientID,
-		Action:    &action,
-		Point:     points,
-		Validated: false,
-		Comment:   comment,
+		Type:                "variative_values",
+		Clientid:            clientID,
+		Action:              &action,
+		Point:               points,
+		Validated:           false,
+		Comment:             comment,
+		VariativityDisabled: true,
 	}
 
 	actionResp, err := client.HintCreate(wm)

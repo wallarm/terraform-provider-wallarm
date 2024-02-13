@@ -183,15 +183,6 @@ func resourceWallarmSensitiveData() *schema.Resource {
 }
 
 func resourceWallarmSensitiveDataCreate(d *schema.ResourceData, m interface{}) error {
-	if d.IsNewResource() {
-		existingID, exists, err := existsAction(d, m, "sensitive_data")
-		if err != nil {
-			return err
-		}
-		if exists {
-			return ImportAsExistsError("wallarm_rule_masking", existingID)
-		}
-	}
 	client := m.(wallarm.API)
 	clientID := retrieveClientID(d, client)
 	comment := d.Get("comment").(string)
@@ -213,12 +204,13 @@ func resourceWallarmSensitiveDataCreate(d *schema.ResourceData, m interface{}) e
 	}
 
 	wm := &wallarm.ActionCreate{
-		Type:      "sensitive_data",
-		Clientid:  clientID,
-		Action:    &action,
-		Point:     points,
-		Validated: false,
-		Comment:   comment,
+		Type:                "sensitive_data",
+		Clientid:            clientID,
+		Action:              &action,
+		Point:               points,
+		Validated:           false,
+		Comment:             comment,
+		VariativityDisabled: true,
 	}
 
 	actionResp, err := client.HintCreate(wm)

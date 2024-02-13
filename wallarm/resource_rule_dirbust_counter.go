@@ -178,15 +178,6 @@ func resourceWallarmDirbustCounter() *schema.Resource {
 }
 
 func resourceWallarmDirbustCounterCreate(d *schema.ResourceData, m interface{}) error {
-	if d.IsNewResource() {
-		existingID, exists, err := existsAction(d, m, "dirbust_counter")
-		if err != nil {
-			return err
-		}
-		if exists {
-			return ImportAsExistsError("dirbust_counter", existingID)
-		}
-	}
 	client := m.(wallarm.API)
 	clientID := retrieveClientID(d, client)
 	comment := d.Get("comment").(string)
@@ -197,11 +188,12 @@ func resourceWallarmDirbustCounterCreate(d *schema.ResourceData, m interface{}) 
 		return err
 	}
 	wm := &wallarm.ActionCreate{
-		Type:      "dirbust_counter",
-		Clientid:  clientID,
-		Action:    &action,
-		Validated: false,
-		Comment:   comment,
+		Type:                "dirbust_counter",
+		Clientid:            clientID,
+		Action:              &action,
+		Validated:           false,
+		Comment:             comment,
+		VariativityDisabled: true,
 	}
 
 	actionResp, err := client.HintCreate(wm)

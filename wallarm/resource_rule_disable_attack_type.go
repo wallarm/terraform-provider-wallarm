@@ -190,15 +190,6 @@ func resourceWallarmDisableAttackType() *schema.Resource {
 }
 
 func resourceWallarmDisableAttackTypeCreate(d *schema.ResourceData, m interface{}) error {
-	if d.IsNewResource() {
-		existingID, exists, err := existsAction(d, m, "disable_attack_type")
-		if err != nil {
-			return err
-		}
-		if exists {
-			return ImportAsExistsError("wallarm_rule_disable_attack_type", existingID)
-		}
-	}
 	client := m.(wallarm.API)
 	clientID := retrieveClientID(d, client)
 	comment := d.Get("comment").(string)
@@ -221,13 +212,14 @@ func resourceWallarmDisableAttackTypeCreate(d *schema.ResourceData, m interface{
 	}
 
 	wm := &wallarm.ActionCreate{
-		Type:       "disable_attack_type",
-		Clientid:   clientID,
-		Action:     &action,
-		Point:      points,
-		Validated:  false,
-		Comment:    comment,
-		AttackType: attackType,
+		Type:                "disable_attack_type",
+		Clientid:            clientID,
+		Action:              &action,
+		Point:               points,
+		Validated:           false,
+		Comment:             comment,
+		AttackType:          attackType,
+		VariativityDisabled: true,
 	}
 
 	actionResp, err := client.HintCreate(wm)

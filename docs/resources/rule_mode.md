@@ -10,6 +10,9 @@ description: |-
 
 Provides the resource to manage rules with the "[Set filtration mode][1]" action type. This rule type allows you to enable and disable the blocking of requests to various parts of a web application.
 
+**Important:** Rules made with Terraform can't be altered by other rules that usually change how rules work (middleware, variative_values, variative_by_regex).
+This is because Terraform is designed to keep its configurations stable and not meant to be modified from outside its environment.
+
 ## Example Usage
 
 ```hcl

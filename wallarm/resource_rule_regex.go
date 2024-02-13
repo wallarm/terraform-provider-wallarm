@@ -217,16 +217,6 @@ func resourceWallarmRegexCreate(d *schema.ResourceData, m interface{}) error {
 		actionType = "regex"
 	}
 
-	if d.IsNewResource() {
-		existingID, exists, err := existsAction(d, m, actionType)
-		if err != nil {
-			return err
-		}
-		if exists {
-			return ImportAsExistsError("wallarm_rule_regex", existingID)
-		}
-	}
-
 	client := m.(wallarm.API)
 	clientID := retrieveClientID(d, client)
 	comment := d.Get("comment").(string)
@@ -250,14 +240,15 @@ func resourceWallarmRegexCreate(d *schema.ResourceData, m interface{}) error {
 	}
 
 	rx := &wallarm.ActionCreate{
-		Type:       actionType,
-		AttackType: attackType,
-		Clientid:   clientID,
-		Action:     &action,
-		Point:      points,
-		Regex:      regex,
-		Validated:  false,
-		Comment:    comment,
+		Type:                actionType,
+		AttackType:          attackType,
+		Clientid:            clientID,
+		Action:              &action,
+		Point:               points,
+		Regex:               regex,
+		Validated:           false,
+		Comment:             comment,
+		VariativityDisabled: true,
 	}
 	regexResp, err := client.HintCreate(rx)
 	if err != nil {

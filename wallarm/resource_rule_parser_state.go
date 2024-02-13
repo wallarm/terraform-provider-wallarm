@@ -197,15 +197,6 @@ func resourceWallarmParserState() *schema.Resource {
 }
 
 func resourceWallarmParserStateCreate(d *schema.ResourceData, m interface{}) error {
-	if d.IsNewResource() {
-		existingID, exists, err := existsAction(d, m, "parser_state")
-		if err != nil {
-			return err
-		}
-		if exists {
-			return ImportAsExistsError("wallarm_rule_parser_state", existingID)
-		}
-	}
 	client := m.(wallarm.API)
 	clientID := retrieveClientID(d, client)
 	comment := d.Get("comment").(string)
@@ -229,14 +220,15 @@ func resourceWallarmParserStateCreate(d *schema.ResourceData, m interface{}) err
 	}
 
 	wm := &wallarm.ActionCreate{
-		Type:      "parser_state",
-		Clientid:  clientID,
-		Action:    &action,
-		Point:     points,
-		Validated: false,
-		Comment:   comment,
-		Parser:    parser,
-		State:     state,
+		Type:                "parser_state",
+		Clientid:            clientID,
+		Action:              &action,
+		Point:               points,
+		Validated:           false,
+		Comment:             comment,
+		Parser:              parser,
+		State:               state,
+		VariativityDisabled: true,
 	}
 
 	actionResp, err := client.HintCreate(wm)

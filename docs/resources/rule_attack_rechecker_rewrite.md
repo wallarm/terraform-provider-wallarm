@@ -10,6 +10,9 @@ description: |-
 
 Provides the resource to manage rules with the "[Rewrite attack before active verification][1]" action type. This rule type is used to perform verification tests not for the production applications but for similar applications (for example, in test, staging, development environments that do not require authentication or there are test credentials to access these applications). The rule is commonly used for the Wallarm [Active threat verification][2] component.
 
+**Important:** Rules made with Terraform can't be altered by other rules that usually change how rules work (middleware, variative_values, variative_by_regex).
+This is because Terraform is designed to keep its configurations stable and not meant to be modified from outside its environment.
+
 ## Example Usage
 
 ```hcl

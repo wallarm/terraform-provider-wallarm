@@ -190,15 +190,6 @@ func resourceWallarmUploads() *schema.Resource {
 }
 
 func resourceWallarmUploadsCreate(d *schema.ResourceData, m interface{}) error {
-	if d.IsNewResource() {
-		existingID, exists, err := existsAction(d, m, "uploads")
-		if err != nil {
-			return err
-		}
-		if exists {
-			return ImportAsExistsError("wallarm_rule_uploads", existingID)
-		}
-	}
 	client := m.(wallarm.API)
 	clientID := retrieveClientID(d, client)
 	comment := d.Get("comment").(string)
@@ -221,13 +212,14 @@ func resourceWallarmUploadsCreate(d *schema.ResourceData, m interface{}) error {
 	}
 
 	wm := &wallarm.ActionCreate{
-		Type:      "uploads",
-		Clientid:  clientID,
-		Action:    &action,
-		Point:     points,
-		Validated: false,
-		Comment:   comment,
-		FileType:  fileType,
+		Type:                "uploads",
+		Clientid:            clientID,
+		Action:              &action,
+		Point:               points,
+		Validated:           false,
+		Comment:             comment,
+		FileType:            fileType,
+		VariativityDisabled: true,
 	}
 
 	actionResp, err := client.HintCreate(wm)
