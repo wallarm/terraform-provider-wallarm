@@ -183,15 +183,6 @@ func resourceWallarmBinaryData() *schema.Resource {
 }
 
 func resourceWallarmBinaryDataCreate(d *schema.ResourceData, m interface{}) error {
-	if d.IsNewResource() {
-		existingID, exists, err := existsAction(d, m, "binary_data")
-		if err != nil {
-			return err
-		}
-		if exists {
-			return ImportAsExistsError("wallarm_rule_binary_data", existingID)
-		}
-	}
 	client := m.(wallarm.API)
 	clientID := retrieveClientID(d, client)
 	comment := d.Get("comment").(string)
@@ -213,12 +204,13 @@ func resourceWallarmBinaryDataCreate(d *schema.ResourceData, m interface{}) erro
 	}
 
 	wm := &wallarm.ActionCreate{
-		Type:      "binary_data",
-		Clientid:  clientID,
-		Action:    &action,
-		Point:     points,
-		Validated: false,
-		Comment:   comment,
+		Type:                "binary_data",
+		Clientid:            clientID,
+		Action:              &action,
+		Point:               points,
+		Validated:           false,
+		Comment:             comment,
+		VariativityDisabled: true,
 	}
 
 	actionResp, err := client.HintCreate(wm)

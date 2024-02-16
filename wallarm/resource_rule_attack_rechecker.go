@@ -192,12 +192,13 @@ func resourceWallarmAttackRecheckerCreate(d *schema.ResourceData, m interface{})
 	}
 
 	ar := &wallarm.ActionCreate{
-		Type:      "attack_rechecker",
-		Clientid:  clientID,
-		Action:    &action,
-		Enabled:   &enabled,
-		Validated: false,
-		Comment:   comment,
+		Type:                "attack_rechecker",
+		Clientid:            clientID,
+		Action:              &action,
+		Enabled:             &enabled,
+		Validated:           false,
+		Comment:             comment,
+		VariativityDisabled: true,
 	}
 
 	actionResp, err := client.HintCreate(ar)

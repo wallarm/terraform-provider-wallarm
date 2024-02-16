@@ -14,6 +14,9 @@ Provides the resource to manage rules with the "Define force browsing attacks co
 
 This rule should be used when an independent detection of force browsing attacks is required for different parts of the application.
 
+**Important:** Rules made with Terraform can't be altered by other rules that usually change how rules work (middleware, variative_values, variative_by_regex).
+This is because Terraform is designed to keep its configurations stable and not meant to be modified from outside its environment.
+
 ## Example Usage
 
 ```hcl

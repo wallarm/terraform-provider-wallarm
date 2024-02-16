@@ -22,6 +22,9 @@ The rule is generated based on the following parameters:
 
 * **In this part of request**: the point in the request where the specified attack should be detected.
 
+**Important:** Rules made with Terraform can't be altered by other rules that usually change how rules work (middleware, variative_values, variative_by_regex).
+This is because Terraform is designed to keep its configurations stable and not meant to be modified from outside its environment.
+
 ## Example Usage
 
 ```hcl

@@ -12,6 +12,9 @@ Provides the resource to manage rules with the "[Mask sensitive data][1]" action
 
 The real values of the specified parameters will be replaced by `*` and will not be accessible either in the Wallarm Cloud or in the local post-analysis module. This method ensures that the protected data cannot leak outside the trusted environment.
 
+**Important:** Rules made with Terraform can't be altered by other rules that usually change how rules work (middleware, variative_values, variative_by_regex).
+This is because Terraform is designed to keep its configurations stable and not meant to be modified from outside its environment.
+
 ## Example Usage
 
 ```hcl

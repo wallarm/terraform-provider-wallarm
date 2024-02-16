@@ -12,6 +12,9 @@ description: |-
 
 Provides the resource to manage rules with the "Define brute-force attacks counter" action type. For detecting brute-force attacks, with every request, one of the statistical counters is incremented. By default, the counter name is automatically defined based on the domain name and the request path.
 
+**Important:** Rules made with Terraform can't be altered by other rules that usually change how rules work (middleware, variative_values, variative_by_regex).
+This is because Terraform is designed to keep its configurations stable and not meant to be modified from outside its environment.
+
 ## Example Usage
 
 ```hcl

@@ -14,6 +14,9 @@ Virtual patches are especially useful in cases when it is impossible to fix a cr
 
 If attack types are specified, the request will be blocked only if the Wallarm node detects an attack of one of the listed types in the corresponding parameter. If the attack type is set to `any`, the Wallarm node blocks the requests with the defined parameter, even if it does not contain a malicious payload.
 
+**Important:** Rules made with Terraform can't be altered by other rules that usually change how rules work (middleware, variative_values, variative_by_regex).
+This is because Terraform is designed to keep its configurations stable and not meant to be modified from outside its environment.
+
 ## Example Usage
 
 ```hcl

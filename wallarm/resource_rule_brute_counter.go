@@ -178,15 +178,6 @@ func resourceWallarmBruteForceCounter() *schema.Resource {
 }
 
 func resourceWallarmBruteForceCounterCreate(d *schema.ResourceData, m interface{}) error {
-	if d.IsNewResource() {
-		existingID, exists, err := existsAction(d, m, "brute_counter")
-		if err != nil {
-			return err
-		}
-		if exists {
-			return ImportAsExistsError("brute_counter", existingID)
-		}
-	}
 	client := m.(wallarm.API)
 	clientID := retrieveClientID(d, client)
 	comment := d.Get("comment").(string)
@@ -197,11 +188,12 @@ func resourceWallarmBruteForceCounterCreate(d *schema.ResourceData, m interface{
 		return err
 	}
 	wm := &wallarm.ActionCreate{
-		Type:      "brute_counter",
-		Clientid:  clientID,
-		Action:    &action,
-		Validated: false,
-		Comment:   comment,
+		Type:                "brute_counter",
+		Clientid:            clientID,
+		Action:              &action,
+		Validated:           false,
+		Comment:             comment,
+		VariativityDisabled: true,
 	}
 
 	actionResp, err := client.HintCreate(wm)

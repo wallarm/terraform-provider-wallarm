@@ -191,15 +191,6 @@ func resourceWallarmIgnoreRegex() *schema.Resource {
 }
 
 func resourceWallarmIgnoreRegexCreate(d *schema.ResourceData, m interface{}) error {
-	if d.IsNewResource() {
-		existingID, exists, err := existsAction(d, m, "disable_regex")
-		if err != nil {
-			return err
-		}
-		if exists {
-			return ImportAsExistsError("wallarm_rule_ignore_regex", existingID)
-		}
-	}
 	client := m.(wallarm.API)
 	clientID := retrieveClientID(d, client)
 	comment := d.Get("comment").(string)
@@ -222,12 +213,13 @@ func resourceWallarmIgnoreRegexCreate(d *schema.ResourceData, m interface{}) err
 	}
 
 	vp := &wallarm.ActionCreate{
-		Type:     "disable_regex",
-		Clientid: clientID,
-		Action:   &action,
-		Point:    points,
-		RegexID:  regexID,
-		Comment:  comment,
+		Type:                "disable_regex",
+		Clientid:            clientID,
+		Action:              &action,
+		Point:               points,
+		RegexID:             regexID,
+		Comment:             comment,
+		VariativityDisabled: true,
 	}
 
 	actionResp, err := client.HintCreate(vp)

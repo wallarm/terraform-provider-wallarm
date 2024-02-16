@@ -197,14 +197,15 @@ func resourceWallarmSetResponseHeaderCreate(d *schema.ResourceData, m interface{
 	var ruleIDs []int
 	for k, v := range headers {
 		vp := &wallarm.ActionCreate{
-			Type:      "set_response_header",
-			Clientid:  clientID,
-			Action:    &action,
-			Mode:      mode,
-			Name:      k,
-			Values:    []string{v.(string)},
-			Validated: false,
-			Comment:   comment,
+			Type:                "set_response_header",
+			Clientid:            clientID,
+			Action:              &action,
+			Mode:                mode,
+			Name:                k,
+			Values:              []string{v.(string)},
+			Validated:           false,
+			Comment:             comment,
+			VariativityDisabled: true,
 		}
 		actionResp, err := client.HintCreate(vp)
 		if err != nil {

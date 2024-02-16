@@ -200,12 +200,13 @@ func resourceWallarmModeCreate(d *schema.ResourceData, m interface{}) error {
 		return err
 	}
 	wm := &wallarm.ActionCreate{
-		Type:      "wallarm_mode",
-		Clientid:  clientID,
-		Action:    &action,
-		Mode:      mode,
-		Validated: false,
-		Comment:   comment,
+		Type:                "wallarm_mode",
+		Clientid:            clientID,
+		Action:              &action,
+		Mode:                mode,
+		Validated:           false,
+		Comment:             comment,
+		VariativityDisabled: true,
 	}
 
 	actionResp, err := client.HintCreate(wm)

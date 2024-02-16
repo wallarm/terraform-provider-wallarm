@@ -211,13 +211,14 @@ func resourceWallarmAttackRecheckerRewriteCreate(d *schema.ResourceData, m inter
 	}
 
 	vp := &wallarm.ActionCreate{
-		Type:      "attack_rechecker_rewrite",
-		Clientid:  clientID,
-		Action:    &action,
-		Point:     points,
-		Rules:     rules,
-		Validated: false,
-		Comment:   comment,
+		Type:                "attack_rechecker_rewrite",
+		Clientid:            clientID,
+		Action:              &action,
+		Point:               points,
+		Rules:               rules,
+		Validated:           false,
+		Comment:             comment,
+		VariativityDisabled: true,
 	}
 	actionResp, err := client.HintCreate(vp)
 	if err != nil {

@@ -224,13 +224,14 @@ func resourceWallarmVpatchCreate(d *schema.ResourceData, m interface{}) error {
 	attackTypes := make([]string, len(attacks))
 	for i, attack := range attacks {
 		vp := &wallarm.ActionCreate{
-			Type:       "vpatch",
-			AttackType: attack,
-			Clientid:   clientID,
-			Action:     &action,
-			Point:      points,
-			Validated:  false,
-			Comment:    comment,
+			Type:                "vpatch",
+			AttackType:          attack,
+			Clientid:            clientID,
+			Action:              &action,
+			Point:               points,
+			Validated:           false,
+			Comment:             comment,
+			VariativityDisabled: true,
 		}
 
 		actionResp, err := client.HintCreate(vp)
