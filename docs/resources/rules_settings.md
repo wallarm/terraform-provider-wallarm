@@ -106,7 +106,7 @@ resource "wallarm_rules_settings" "rules_settings" {
 * `min_lom_format` - (optional) minimal custom ruleset format that will be compiled.
 * `max_lom_format` - (optional) maximum custom ruleset format that will be compiled.
 * `max_lom_size` - (optional) maximum size of a custom ruleset size in bytes.
-* `lom_disabled` - (optional) defines whether a custom ruleset is compiled.
+* `lom_disabled` - (optional) forbids a custom ruleset compilation to prevent rule updates on nodes.
 * `lom_compilation_delay` - (optional) delay before a custom ruleset compilation.
 * `rules_snapshot_enabled` - (optional) defines whether the rule snapshots are created during custom ruleset compilation.
 * `rules_snapshot_max_count` - (optional) maximum count of rules snapshot stored in wallarm.
