@@ -3,20 +3,19 @@ layout: "wallarm"
 page_title: "Wallarm: wallarm_rules_settings"
 subcategory: "Common"
 description: |-
-  Provides the resource to manage rules settings of the company.
+  Provides the resource to manage Wallarm traffic processing rules.
 ---
 
 # wallarm_rules_settings
 
-Provides the resource to manage rules settings of the company.
+Provides the resource for managing [rules][2]. Wallarm rules are used to fine-tune the behavior of the system during the analysis of requests and their further processing in the post-analysis module as well as in the Wallarm Cloud.
 
 ## Duplicates
-Every client can have only one wallarm_rules_settings resource.
-Unfortunately, terraform doesn't support singleton resources.
-Therefore, you must ensure that there is no more than one resource per client in your configuration.
-Otherwise, the terraform provider will merge them and send them as one resource. Priority for identical fields will be random.
 
-Let's break down the merge rules using the following configuration:
+Every client can have only one `wallarm_rules_settings` resource. As Terraform does not support singleton resources, you must ensure that there is no more than one resource per client in your configuration. Otherwise, the Terraform provider will merge and send them as one resource, and the priority for the identical fields will be random.
+
+The following configuration shows how to avoid merging configurations of different clients:
+
 ```hcl
 # default client_id = 1
 
@@ -51,7 +50,8 @@ resource "wallarm_rules_settings" "rules_settings6" {
 }
 ```
 
-The provider will merge them inside and the final configuration will be equivalent to:
+The provider will merge them into the final configuration:
+
 ```hcl
 # based on rules_settings1, rules_settings2 and rules_settings3
 resource "wallarm_rules_settings" "new_rules_settings1" {
@@ -103,22 +103,23 @@ resource "wallarm_rules_settings" "rules_settings" {
 ## Argument Reference
 
 * `client_id` - (optional) ID of the client which is a partner for the created tenant. By default, this argument has the value of the current client ID.
-* `min_lom_format` - (optional) Minimal Custom Ruleset format that will be compiled.
-* `max_lom_format` - (optional) Maximum Custom Ruleset format that will be compiled.
-* `max_lom_size` - (optional) Maximum size of Custom Ruleset size in bytes.
-* `lom_disabled` - (optional) Field determining whether Custom Ruleset is compiled.
-* `lom_compilation_delay` - (optional) Delay before Custom Ruleset compilition.
-* `rules_snapshot_enabled` - (optional) Field determining whether rules snapshots are created during Custom Ruleset compilation.
-* `rules_snapshot_max_count` - (optional) Maximum count of rules snapshot stored in wallarm.
-* `rules_manipulation_locked` - (optional) Field determining whether rules might changed.
-* `heavy_lom` - (optional) Field determining whether Custom Ruleset is compiled in special queue for huge rulesets.
-* `parameters_count_weight` - (optional) [Risk Score][1] weight of query and body parameters. The more parameters, the more potential malicious payloads.
-* `path_variativity_weight` - (optional) [Risk Score][1] weight of potential vulnerabilites to BOLA. Variable path parts make the endpoint a potential target of BOLA (IDOR) attacks.
-* `pii_weight` - (optional) [Risk Score][1] weight of parameters with sensitive data. Parameters with sensitive data are always at risk of exposure.
-* `request_content_weight` - (optional) [Risk Score][1] weight of uploading files to server. Attackers may be able to attack servers by uploading files containing malicious code.
-* `open_vulns_weight` - (optional) [Risk Score][1] weight of active vulnerabilities. Active vulnerabilities may result in unauthorized data access or corruption.
-* `serialized_data_weight` - (optional) [Risk Score][1] weight of accepting XML / JSON objects. XML / JSON objects are often used to transfer malicious payloads to attack servers.
-* `risk_score_algo` - (optional) Method of [Risk Score][1] calulation. Specify how the risk score calculation should be performed. Available values: maximum, average.
-* `pii_fallback` - (optional) Field determining whether fallback mechanism for PII detection is active.
+* `min_lom_format` - (optional) minimal custom ruleset format that will be compiled.
+* `max_lom_format` - (optional) maximum custom ruleset format that will be compiled.
+* `max_lom_size` - (optional) maximum size of a custom ruleset size in bytes.
+* `lom_disabled` - (optional) forbids a custom ruleset compilation to prevent rule updates on nodes.
+* `lom_compilation_delay` - (optional) delay before a custom ruleset compilation.
+* `rules_snapshot_enabled` - (optional) defines whether the rule snapshots are created during custom ruleset compilation.
+* `rules_snapshot_max_count` - (optional) maximum count of rules snapshot stored in wallarm.
+* `rules_manipulation_locked` - (optional) defines whether rules might changed.
+* `heavy_lom` - (optional) defines whether a custom ruleset is compiled in special queue for huge rulesets.
+* `parameters_count_weight` - (optional) [risk score][1] weight of query and body parameters. The more parameters, the more potential malicious payloads.
+* `path_variativity_weight` - (optional) [risk score][1] weight of potential vulnerabilities to BOLA: variable path parts make the endpoint a potential target for BOLA (IDOR) attacks.
+* `pii_weight` - (optional) [risk score][1] weight of parameters with sensitive data. Parameters with sensitive data are always at risk of exposure.
+* `request_content_weight` - (optional) [risk score][1] weight of uploading files to server. Attackers may be able to attack servers by uploading files containing malicious code.
+* `open_vulns_weight` - (optional) [risk score][1] weight of active vulnerabilities. Active vulnerabilities may result in unauthorized data access or corruption.
+* `serialized_data_weight` - (optional) [risk score][1] weight of accepting XML / JSON objects. XML / JSON objects are often used to transfer malicious payloads to attack servers.
+* `risk_score_algo` - (optional) method of [risk score][1] calculation. Specify how the risk score calculation should be performed. Available values: maximum, average.
+* `pii_fallback` - (optional) defines whether fallback mechanism for PII detection is active.
 
 [1]: https://docs.wallarm.com/api-discovery/overview/#endpoint-risk-score
+[2]: https://docs.wallarm.com/user-guides/rules/rules/
