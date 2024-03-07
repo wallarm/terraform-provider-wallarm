@@ -18,6 +18,15 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
+type ruleNotFoundError struct {
+	clientID int
+	ruleID   int
+}
+
+func (e *ruleNotFoundError) Error() string {
+	return fmt.Sprintf("rule %d for client %d not found", e.ruleID, e.clientID)
+}
+
 func expandInterfaceToStringList(list interface{}) []string {
 	ifaceList := list.([]interface{})
 	vs := []string{}
@@ -638,4 +647,23 @@ func isNotFoundError(err error) (bool, error) {
 	}
 
 	return matched, nil
+}
+
+func findRule(client wallarm.API, clientID int, ruleID int) (*wallarm.ActionBody, error) {
+	resp, err := client.HintRead(&wallarm.HintRead{
+		Limit:   1,
+		OrderBy: "updated_at",
+		Filter: &wallarm.HintFilter{
+			Clientid: []int{clientID},
+			ID:       []int{ruleID},
+		},
+	})
+	if err != nil {
+		return nil, err
+	}
+	if resp == nil || resp.Body == nil || len(*resp.Body) == 0 {
+		return nil, &ruleNotFoundError{clientID: clientID, ruleID: ruleID}
+	}
+
+	return &(*resp.Body)[0], nil
 }
