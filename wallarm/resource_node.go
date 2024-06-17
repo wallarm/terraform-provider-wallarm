@@ -108,9 +108,10 @@ func resourceWallarmNodeRead(d *schema.ResourceData, m interface{}) error {
 		return err
 	}
 
+	found := false
 	for _, node := range nodes.Body {
 		if node.Hostname == hostname {
-
+			found = true
 			if err := d.Set("hostname", node.Hostname); err != nil {
 				return err
 			}
@@ -132,6 +133,10 @@ func resourceWallarmNodeRead(d *schema.ResourceData, m interface{}) error {
 			}
 		}
 
+	}
+
+	if !found {
+		d.SetId("")
 	}
 
 	return nil

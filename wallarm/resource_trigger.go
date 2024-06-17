@@ -265,6 +265,7 @@ func resourceWallarmTriggerRead(d *schema.ResourceData, m interface{}) error {
 		}
 	}
 
+	d.SetId("")
 	return fmt.Errorf("can't find a trigger with ID: %d", triggerID)
 }
 
