@@ -103,7 +103,7 @@ func resourceWallarmAppRead(d *schema.ResourceData, m interface{}) error {
 	}
 	found := false
 	for _, app := range appResp.Body {
-		if app.ID == appID || app.Name == name {
+		if app.ID == appID {
 			found = true
 			d.Set("name", name)
 			d.Set("app_id", app.ID)
