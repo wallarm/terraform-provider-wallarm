@@ -107,6 +107,7 @@ func resourceWallarmPagerDutyCreate(d *schema.ResourceData, m interface{}) error
 	active := d.Get("active").(bool)
 	events, err := expandWallarmEventToIntEvents(d.Get("event").(interface{}), "pager_duty")
 	if err != nil {
+		d.SetId("")
 		return err
 	}
 

@@ -108,6 +108,7 @@ func resourceWallarmOpsGenieCreate(d *schema.ResourceData, m interface{}) error 
 	active := d.Get("active").(bool)
 	events, err := expandWallarmEventToIntEvents(d.Get("event").(interface{}), "opsgenie")
 	if err != nil {
+		d.SetId("")
 		return err
 	}
 

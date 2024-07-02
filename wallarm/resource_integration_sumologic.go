@@ -101,6 +101,7 @@ func resourceWallarmSumologicCreate(d *schema.ResourceData, m interface{}) error
 	active := d.Get("active").(bool)
 	events, err := expandWallarmEventToIntEvents(d.Get("event").(interface{}), "sumo_logic")
 	if err != nil {
+		d.SetId("")
 		return err
 	}
 

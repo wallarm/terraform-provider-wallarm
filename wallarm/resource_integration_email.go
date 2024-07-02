@@ -131,6 +131,7 @@ func resourceWallarmEmailRead(d *schema.ResourceData, m interface{}) error {
 	clientID := retrieveClientID(d, client)
 	email, err := client.IntegrationRead(clientID, d.Get("integration_id").(int))
 	if err != nil {
+		d.SetId("")
 		return err
 	}
 

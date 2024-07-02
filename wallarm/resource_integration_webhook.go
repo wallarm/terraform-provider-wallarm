@@ -146,6 +146,7 @@ func resourceWallarmWebhookCreate(d *schema.ResourceData, m interface{}) error {
 
 	events, err := expandWallarmEventToIntEvents(d.Get("event").(interface{}), "web_hooks")
 	if err != nil {
+		d.SetId("")
 		return err
 	}
 

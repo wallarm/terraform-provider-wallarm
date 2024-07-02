@@ -19,7 +19,7 @@ resource "wallarm_integration_insightconnect" "insight_integration" {
   }
   
   event {
-    event_type = "vuln"
+    event_type = "vuln_low"
     active = true
   }
 }

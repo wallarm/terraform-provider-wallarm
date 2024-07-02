@@ -141,6 +141,7 @@ func resourceWallarmInsightConnectRead(d *schema.ResourceData, m interface{}) er
 	clientID := retrieveClientID(d, client)
 	insight, err := client.IntegrationRead(clientID, d.Get("integration_id").(int))
 	if err != nil {
+		d.SetId("")
 		return err
 	}
 
