@@ -132,7 +132,6 @@ func resourceWallarmRulesSettingsRead(d *schema.ResourceData, m interface{}) err
 
 	res, err := client.RulesSettingsRead(clientID)
 	if err != nil {
-		d.SetId("")
 		return err
 	}
 

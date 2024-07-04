@@ -214,12 +214,13 @@ func resourceWallarmUserUpdate(d *schema.ResourceData, m interface{}) error {
 		permissions := d.Get("permissions").(string)
 		enabled := d.Get("enabled").(bool)
 		var password string
-		if v, ok := d.GetOk("password"); ok {
-			password = v.(string)
-		} else {
-			password = passwordGenerate(10)
+		if d.HasChange("password") {
+			if v, ok := d.GetOk("password"); ok {
+				password = v.(string)
+			} else {
+				password = passwordGenerate(10)
+			}
 		}
-
 		userBody := &wallarm.UserUpdate{
 			UserFilter: &wallarm.UserFilter{
 				Email:    email,

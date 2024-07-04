@@ -215,6 +215,7 @@ func resourceWallarmBinaryDataCreate(d *schema.ResourceData, m interface{}) erro
 
 	actionResp, err := client.HintCreate(wm)
 	if err != nil {
+		d.SetId("")
 		return err
 	}
 

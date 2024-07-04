@@ -55,6 +55,13 @@ func resourceWallarmNode() *schema.Resource {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
+
+			"partner_mode": {
+				Type:        schema.TypeBool,
+				Optional:    true,
+				Computed:    true,
+				Description: "Partner mode",
+			},
 		},
 	}
 }
@@ -63,11 +70,13 @@ func resourceWallarmNodeCreate(d *schema.ResourceData, m interface{}) error {
 	client := m.(wallarm.API)
 	clientID := retrieveClientID(d, client)
 	hostname := d.Get("hostname").(string)
+	partnerMode := d.Get("partner_mode").(bool)
 
 	nodeBody := &wallarm.NodeCreate{
-		Hostname: hostname,
-		Type:     "cloud_node",
-		Clientid: clientID,
+		Hostname:    hostname,
+		Type:        "cloud_node",
+		Clientid:    clientID,
+		PartnerMode: partnerMode,
 	}
 
 	d.SetId(hostname)

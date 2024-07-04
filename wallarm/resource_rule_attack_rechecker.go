@@ -203,6 +203,7 @@ func resourceWallarmAttackRecheckerCreate(d *schema.ResourceData, m interface{})
 
 	actionResp, err := client.HintCreate(ar)
 	if err != nil {
+		d.SetId("")
 		return err
 	}
 	actionID := actionResp.Body.ActionID

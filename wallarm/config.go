@@ -29,7 +29,6 @@ func (c *Config) Client() (wallarm.API, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "error creating a new Wallarm client")
 	}
-	log.Printf("DELETE ME")
 	log.Printf("[INFO] Wallarm Client configured")
 	return client, nil
 }
