@@ -153,7 +153,7 @@ func hashResponseActionDetails(v interface{}) int {
 		switch p[0].(string) {
 		case "action_name":
 			pointMap := make(map[string]string)
-			pointMap["proto"] = m["value"].(string)
+			pointMap["action_name"] = m["value"].(string)
 			m["point"] = pointMap
 			m["value"] = ""
 		case "action_ext":
