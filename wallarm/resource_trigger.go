@@ -38,7 +38,8 @@ func resourceWallarmTrigger() *schema.Resource {
 				Type:     schema.TypeString,
 				Required: true,
 				ValidateFunc: validation.StringInSlice([]string{"user_created", "attacks_exceeded",
-					"hits_exceeded", "incidents_exceeded", "vector_attack", "bruteforce_started"}, false),
+					"hits_exceeded", "incidents_exceeded", "vector_attack", "bruteforce_started", "bola_search_started",
+					"blacklist_ip_added"}, false),
 			},
 
 			"enabled": {
