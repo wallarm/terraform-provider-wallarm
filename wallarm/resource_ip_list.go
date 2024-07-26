@@ -240,17 +240,19 @@ func resourceWallarmIPListRead(listType wallarm.IPListType) schema.ReadFunc {
 		}
 
 		addrIDs := make([]interface{}, 0)
+		found := false
 		for _, ipList := range ipListsFromAPI {
-			now := time.Now().Unix()
-			if ipList.DeletedBy != "" || (ipList.ExpiredAt > 0 && int64(ipList.ExpiredAt) < now) {
-				continue
-			}
 			if wallarm.Contains(derivedIPaddr, strings.Split(ipList.Subnet, "/")[0]) {
+				found = true
 				addrIDs = append(addrIDs, map[string]interface{}{
 					"ip_addr": ipList.Subnet,
 					"ip_id":   ipList.ID,
 				})
 			}
+		}
+		if !found {
+			d.SetId("")
+			return nil
 		}
 
 		if err := d.Set("address_id", addrIDs); err != nil {
