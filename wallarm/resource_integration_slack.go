@@ -2,6 +2,7 @@ package wallarm
 
 import (
 	"fmt"
+	"strings"
 
 	wallarm "github.com/wallarm/wallarm-go"
 
@@ -132,7 +133,12 @@ func resourceWallarmSlackRead(d *schema.ResourceData, m interface{}) error {
 	clientID := retrieveClientID(d, client)
 	slack, err := client.IntegrationRead(clientID, d.Get("integration_id").(int))
 	if err != nil {
-		return err
+		if strings.HasPrefix(err.Error(), "Not found.") {
+			d.SetId("")
+			return nil
+		} else {
+			return err
+		}
 	}
 	d.Set("integration_id", slack.ID)
 	d.Set("is_active", slack.Active)
@@ -157,7 +163,12 @@ func resourceWallarmSlackUpdate(d *schema.ResourceData, m interface{}) error {
 
 	slack, err := client.IntegrationRead(clientID, d.Get("integration_id").(int))
 	if err != nil {
-		return err
+		if strings.HasPrefix(err.Error(), "Not found.") {
+			d.SetId("")
+			return nil
+		} else {
+			return err
+		}
 	}
 
 	slackBody := wallarm.IntegrationCreate{
@@ -183,12 +194,8 @@ func resourceWallarmSlackUpdate(d *schema.ResourceData, m interface{}) error {
 
 func resourceWallarmSlackDelete(d *schema.ResourceData, m interface{}) error {
 	client := m.(wallarm.API)
-	clientID := retrieveClientID(d, client)
-	slack, err := client.IntegrationRead(clientID, d.Get("integration_id").(int))
-	if err != nil {
-		return err
-	}
-	if err := client.IntegrationDelete(slack.ID); err != nil {
+	integrationID := d.Get("integration_id").(int)
+	if err := client.IntegrationDelete(integrationID); err != nil {
 		return err
 	}
 

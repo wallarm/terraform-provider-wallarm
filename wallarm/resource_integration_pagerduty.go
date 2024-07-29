@@ -2,6 +2,7 @@ package wallarm
 
 import (
 	"fmt"
+	"strings"
 
 	wallarm "github.com/wallarm/wallarm-go"
 
@@ -138,7 +139,12 @@ func resourceWallarmPagerDutyRead(d *schema.ResourceData, m interface{}) error {
 	clientID := retrieveClientID(d, client)
 	pagerduty, err := client.IntegrationRead(clientID, d.Get("integration_id").(int))
 	if err != nil {
-		return err
+		if strings.HasPrefix(err.Error(), "Not found.") {
+			d.SetId("")
+			return nil
+		} else {
+			return err
+		}
 	}
 
 	d.Set("integration_id", pagerduty.ID)
@@ -164,7 +170,12 @@ func resourceWallarmPagerDutyUpdate(d *schema.ResourceData, m interface{}) error
 
 	pagerDuty, err := client.IntegrationRead(clientID, d.Get("integration_id").(int))
 	if err != nil {
-		return err
+		if strings.HasPrefix(err.Error(), "Not found.") {
+			d.SetId("")
+			return nil
+		} else {
+			return err
+		}
 	}
 
 	pagerBody := wallarm.IntegrationCreate{
@@ -190,12 +201,8 @@ func resourceWallarmPagerDutyUpdate(d *schema.ResourceData, m interface{}) error
 
 func resourceWallarmPagerDutyDelete(d *schema.ResourceData, m interface{}) error {
 	client := m.(wallarm.API)
-	clientID := retrieveClientID(d, client)
-	pagerduty, err := client.IntegrationRead(clientID, d.Get("integration_id").(int))
-	if err != nil {
-		return err
-	}
-	if err := client.IntegrationDelete(pagerduty.ID); err != nil {
+	integrationID := d.Get("integration_id").(int)
+	if err := client.IntegrationDelete(integrationID); err != nil {
 		return err
 	}
 

@@ -2,6 +2,7 @@ package wallarm
 
 import (
 	"fmt"
+	"strings"
 
 	wallarm "github.com/wallarm/wallarm-go"
 
@@ -142,7 +143,12 @@ func resourceWallarmOpsGenieRead(d *schema.ResourceData, m interface{}) error {
 	clientID := retrieveClientID(d, client)
 	opsGenie, err := client.IntegrationRead(clientID, d.Get("integration_id").(int))
 	if err != nil {
-		return err
+		if strings.HasPrefix(err.Error(), "Not found.") {
+			d.SetId("")
+			return nil
+		} else {
+			return err
+		}
 	}
 
 	d.Set("integration_id", opsGenie.ID)
@@ -169,7 +175,12 @@ func resourceWallarmOpsGenieUpdate(d *schema.ResourceData, m interface{}) error 
 
 	opsgenie, err := client.IntegrationRead(clientID, d.Get("integration_id").(int))
 	if err != nil {
-		return err
+		if strings.HasPrefix(err.Error(), "Not found.") {
+			d.SetId("")
+			return nil
+		} else {
+			return err
+		}
 	}
 
 	opsgenieBody := wallarm.IntegrationWithAPICreate{
@@ -198,12 +209,8 @@ func resourceWallarmOpsGenieUpdate(d *schema.ResourceData, m interface{}) error 
 
 func resourceWallarmOpsGenieDelete(d *schema.ResourceData, m interface{}) error {
 	client := m.(wallarm.API)
-	clientID := retrieveClientID(d, client)
-	opsGenie, err := client.IntegrationRead(clientID, d.Get("integration_id").(int))
-	if err != nil {
-		return err
-	}
-	if err := client.IntegrationDelete(opsGenie.ID); err != nil {
+	integrationID := d.Get("integration_id").(int)
+	if err := client.IntegrationDelete(integrationID); err != nil {
 		return err
 	}
 
