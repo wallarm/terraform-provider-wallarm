@@ -96,6 +96,7 @@ func resourceWallarmUserCreate(d *schema.ResourceData, m interface{}) error {
 	email := d.Get("email").(string)
 	realname := d.Get("realname").(string)
 	permissions := d.Get("permissions").(string)
+	enabled := d.Get("enabled").(bool)
 
 	switch permissions {
 	case "analyst":
@@ -127,6 +128,7 @@ func resourceWallarmUserCreate(d *schema.ResourceData, m interface{}) error {
 		Realname:    realname,
 		Permissions: []string{permissions},
 		Clientid:    clientID,
+		Enabled:     enabled,
 	}
 
 	res, err := client.UserCreate(userBody)

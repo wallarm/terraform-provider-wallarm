@@ -15,7 +15,6 @@ func resourceWallarmAttackRechecker() *schema.Resource {
 	return &schema.Resource{
 		Create: resourceWallarmAttackRecheckerCreate,
 		Read:   resourceWallarmAttackRecheckerRead,
-		Update: resourceWallarmAttackRecheckerUpdate,
 		Delete: resourceWallarmAttackRecheckerDelete,
 
 		Schema: map[string]*schema.Schema{
@@ -58,6 +57,7 @@ func resourceWallarmAttackRechecker() *schema.Resource {
 			"enabled": {
 				Type:     schema.TypeBool,
 				Required: true,
+				ForceNew: true,
 			},
 
 			"action": {
@@ -203,7 +203,6 @@ func resourceWallarmAttackRecheckerCreate(d *schema.ResourceData, m interface{})
 
 	actionResp, err := client.HintCreate(ar)
 	if err != nil {
-		d.SetId("")
 		return err
 	}
 	actionID := actionResp.Body.ActionID
@@ -310,13 +309,6 @@ func resourceWallarmAttackRecheckerDelete(d *schema.ResourceData, m interface{})
 	if err := client.HintDelete(h); err != nil {
 		return err
 	}
-
+	d.SetId("")
 	return nil
-}
-
-func resourceWallarmAttackRecheckerUpdate(d *schema.ResourceData, m interface{}) error {
-	if err := resourceWallarmAttackRecheckerDelete(d, m); err != nil {
-		return err
-	}
-	return resourceWallarmAttackRecheckerCreate(d, m)
 }
