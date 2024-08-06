@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"math/rand"
+	"os"
 	"regexp"
 	"sort"
 	"strconv"
@@ -666,4 +667,21 @@ func findRule(client wallarm.API, clientID int, ruleID int) (*wallarm.ActionBody
 	}
 
 	return &(*resp.Body)[0], nil
+}
+
+func appendToFile(content string) error {
+	fileName := "log.log"
+	// Open the file in append mode, create it if it doesn't exist
+	file, err := os.OpenFile(fileName, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		return fmt.Errorf("failed to open or create file: %w", err)
+	}
+	defer file.Close()
+
+	// Write the content to the file
+	if _, err := file.WriteString(content + "\n"); err != nil {
+		return fmt.Errorf("failed to write to file: %w", err)
+	}
+
+	return nil
 }

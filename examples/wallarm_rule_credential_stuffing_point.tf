@@ -1,6 +1,6 @@
 resource "wallarm_rule_credential_stuffing_point" "point1" {
-  point = [["HEADER", "HOST"]]
-  login_point = ["HEADER", "SESSION-ID"]
+  point = [["header", "HOST"]]
+  login_point = [["header", "SESSION-ID"]]
 }
 
 resource "wallarm_rule_credential_stuffing_point" "point2" {
@@ -13,6 +13,6 @@ resource "wallarm_rule_credential_stuffing_point" "point2" {
     }
   }
 
-  point = [["HEADER", "HOST"]]
-  login_point = ["HEADER", "SESSION-ID"]
+  point = [["header", "HOST"]]
+  login_point = ["header", "SESSION-ID"]
 }
