@@ -72,7 +72,7 @@ func resourceWallarmTenantCreate(d *schema.ResourceData, m interface{}) error {
 	params := wallarm.ClientCreate{
 		Name:        name,
 		VulnPrefix:  generateVulnPrefix(name),
-		PartnerUUID: &partnerUUID,
+		PartnerUUID: partnerUUID,
 	}
 
 	res, err := client.ClientCreate(&params)

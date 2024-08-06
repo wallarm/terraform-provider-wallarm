@@ -39,7 +39,8 @@ func resourceWallarmTrigger() *schema.Resource {
 				Required: true,
 				ValidateFunc: validation.StringInSlice([]string{"user_created", "attacks_exceeded",
 					"hits_exceeded", "incidents_exceeded", "vector_attack", "bruteforce_started", "bola_search_started",
-					"blacklist_ip_added", "api_structure_changed", "attack_ip_grouping", "compromised_logins"}, false),
+					"blacklist_ip_added", "api_structure_changed", "attack_ip_grouping", "compromised_logins",
+					"rogue_api_detected"}, false),
 			},
 
 			"enabled": {
@@ -70,7 +71,8 @@ func resourceWallarmTrigger() *schema.Resource {
 							Type:     schema.TypeString,
 							Optional: true,
 							ValidateFunc: validation.StringInSlice([]string{"ip_address", "pool", "attack_type",
-								"domain", "target", "response_status", "url", "hint_tag", "pii", "change_type"}, false),
+								"domain", "target", "response_status", "url", "hint_tag", "pii", "change_type", "deviation_type",
+								"api_spec_ids"}, false),
 						},
 
 						"operator": {
@@ -383,7 +385,7 @@ func expandWallarmTriggerFilter(d interface{}) (*[]wallarm.TriggerFilters, error
 			responseFallthrough := false
 
 			switch filterID {
-			case "pool":
+			case "pool", "api_spec_ids":
 				var values []interface{}
 				for _, v := range value {
 					vString := v.(string)

@@ -526,3 +526,57 @@ resource "wallarm_trigger" "attack_ip_grouping_trigger" {
     "wallarm_application.tf_app",
   ]
 }
+
+resource "wallarm_api_spec" "api_spec" {
+  client_id          = 106662
+  title              = "Example API Spec"
+  description        = "This is an example API specification created by Terraform."
+  file_remote_url    = "https://raw.githubusercontent.com/OAI/OpenAPI-Specification/main/examples/v3.0/api-with-examples.yaml"
+  regular_file_update = true
+  api_detection      = true
+  domains = ["ex.com"]
+  instances = [1]
+}
+
+# Rogue API detected
+resource "wallarm_trigger" "rogue_api_detected_trigger" {
+  name = "New Terraform Rogue API detected Trigger"
+  enabled = false
+  template_id = "rogue_api_detected"
+
+  filters {
+    filter_id = "domain"
+    operator = "eq"
+    value = ["ex.com"]
+  }
+
+  filters {
+    filter_id = "pool"
+    operator = "eq"
+    value = [wallarm_application.tf_app.app_id]
+  }
+
+  filters {
+    filter_id = "deviation_type"
+    operator = "eq"
+    value = ["shadow", "orphan", "zombie"]
+  }
+
+  filters {
+    filter_id = "api_spec_ids"
+    operator = "eq"
+    value = [wallarm_api_spec.api_spec.api_spec_id]
+  }
+
+  actions {
+    action_id = "send_notification"
+    integration_id = [wallarm_integration_email.email_integration.integration_id]
+  }
+
+  depends_on = [
+    "wallarm_integration_email.email_integration",
+    "wallarm_application.tf_app",
+    "wallarm_api_spec.api_spec"
+  ]
+}
+
