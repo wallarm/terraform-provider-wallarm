@@ -39,7 +39,7 @@ func resourceWallarmTrigger() *schema.Resource {
 				Required: true,
 				ValidateFunc: validation.StringInSlice([]string{"user_created", "attacks_exceeded",
 					"hits_exceeded", "incidents_exceeded", "vector_attack", "bruteforce_started", "bola_search_started",
-					"blacklist_ip_added"}, false),
+					"blacklist_ip_added", "api_structure_changed", "attack_ip_grouping", "compromised_logins"}, false),
 			},
 
 			"enabled": {
@@ -70,7 +70,7 @@ func resourceWallarmTrigger() *schema.Resource {
 							Type:     schema.TypeString,
 							Optional: true,
 							ValidateFunc: validation.StringInSlice([]string{"ip_address", "pool", "attack_type",
-								"domain", "target", "response_status", "url", "hint_tag"}, false),
+								"domain", "target", "response_status", "url", "hint_tag", "pii", "change_type"}, false),
 						},
 
 						"operator": {
@@ -97,7 +97,7 @@ func resourceWallarmTrigger() *schema.Resource {
 						"action_id": {
 							Type:         schema.TypeString,
 							Required:     true,
-							ValidateFunc: validation.StringInSlice([]string{"send_notification", "block_ips", "mark_as_brute"}, false),
+							ValidateFunc: validation.StringInSlice([]string{"send_notification", "block_ips", "mark_as_brute", "group_attack_by_ip"}, false),
 						},
 
 						"integration_id": {

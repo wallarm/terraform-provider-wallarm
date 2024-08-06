@@ -146,6 +146,7 @@ func Provider() terraform.ResourceProvider {
 			"wallarm_rule_uploads":                  resourceWallarmUploads(),
 			"wallarm_rules_settings":                resourceWallarmRulesSettings(),
 			"wallarm_tenant":                        resourceWallarmTenant(),
+			"wallarm_api_spec":                      resourceWallarmApiSpec(),
 		},
 	}
 
