@@ -126,6 +126,7 @@ func Provider() terraform.ResourceProvider {
 			"wallarm_integration_insightconnect":    resourceWallarmInsightConnect(),
 			"wallarm_integration_splunk":            resourceWallarmSplunk(),
 			"wallarm_integration_webhook":           resourceWallarmWebhook(),
+			"wallarm_integration_telegram":          resourceWallarmTelegram(),
 			"wallarm_trigger":                       resourceWallarmTrigger(),
 			"wallarm_rule_binary_data":              resourceWallarmBinaryData(),
 			"wallarm_rule_disable_attack_type":      resourceWallarmDisableAttackType(),

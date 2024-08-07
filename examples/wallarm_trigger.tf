@@ -579,4 +579,3 @@ resource "wallarm_trigger" "rogue_api_detected_trigger" {
     "wallarm_api_spec.api_spec"
   ]
 }
-
