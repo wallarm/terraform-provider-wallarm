@@ -23,3 +23,4 @@ resource "wallarm_integration_splunk" "splunk_integration" {
     active = true
   }
 }
+
