@@ -1,7 +1,7 @@
 resource "wallarm_integration_data_dog" "data_dog_integration" {
   name = "New Terraform DataDog Integration"
   region = "US1"
-  token = "eb7ddfc33a12af565eabd737ca55a398"
+  token = "eb7ddfc33acaaacaacaca55a398"
 
   event {
     event_type = "hit"
