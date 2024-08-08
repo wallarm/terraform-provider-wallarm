@@ -2,6 +2,7 @@ package wallarm
 
 import (
 	"fmt"
+	"strings"
 
 	wallarm "github.com/wallarm/wallarm-go"
 
@@ -146,6 +147,7 @@ func resourceWallarmWebhookCreate(d *schema.ResourceData, m interface{}) error {
 
 	events, err := expandWallarmEventToIntEvents(d.Get("event").(interface{}), "web_hooks")
 	if err != nil {
+		d.SetId("")
 		return err
 	}
 
@@ -184,7 +186,12 @@ func resourceWallarmWebhookRead(d *schema.ResourceData, m interface{}) error {
 	clientID := retrieveClientID(d, client)
 	webhook, err := client.IntegrationRead(clientID, d.Get("integration_id").(int))
 	if err != nil {
-		return err
+		if strings.HasPrefix(err.Error(), "Not found.") {
+			d.SetId("")
+			return nil
+		} else {
+			return err
+		}
 	}
 
 	d.Set("integration_id", webhook.ID)
@@ -217,7 +224,12 @@ func resourceWallarmWebhookUpdate(d *schema.ResourceData, m interface{}) error {
 
 	webhook, err := client.IntegrationRead(clientID, d.Get("integration_id").(int))
 	if err != nil {
-		return err
+		if strings.HasPrefix(err.Error(), "Not found.") {
+			d.SetId("")
+			return nil
+		} else {
+			return err
+		}
 	}
 
 	webhookBody := wallarm.IntegrationWithAPICreate{
@@ -251,12 +263,8 @@ func resourceWallarmWebhookUpdate(d *schema.ResourceData, m interface{}) error {
 
 func resourceWallarmWebhookDelete(d *schema.ResourceData, m interface{}) error {
 	client := m.(wallarm.API)
-	clientID := retrieveClientID(d, client)
-	webhook, err := client.IntegrationRead(clientID, d.Get("integration_id").(int))
-	if err != nil {
-		return err
-	}
-	if err := client.IntegrationDelete(webhook.ID); err != nil {
+	integrationID := d.Get("integration_id").(int)
+	if err := client.IntegrationDelete(integrationID); err != nil {
 		return err
 	}
 

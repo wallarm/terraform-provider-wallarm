@@ -2,6 +2,7 @@ package wallarm
 
 import (
 	"fmt"
+	"strings"
 
 	wallarm "github.com/wallarm/wallarm-go"
 
@@ -101,6 +102,7 @@ func resourceWallarmSumologicCreate(d *schema.ResourceData, m interface{}) error
 	active := d.Get("active").(bool)
 	events, err := expandWallarmEventToIntEvents(d.Get("event").(interface{}), "sumo_logic")
 	if err != nil {
+		d.SetId("")
 		return err
 	}
 
@@ -131,7 +133,12 @@ func resourceWallarmSumologicRead(d *schema.ResourceData, m interface{}) error {
 	clientID := retrieveClientID(d, client)
 	sumo, err := client.IntegrationRead(clientID, d.Get("integration_id").(int))
 	if err != nil {
-		return err
+		if strings.HasPrefix(err.Error(), "Not found.") {
+			d.SetId("")
+			return nil
+		} else {
+			return err
+		}
 	}
 
 	d.Set("integration_id", sumo.ID)
@@ -157,7 +164,12 @@ func resourceWallarmSumologicUpdate(d *schema.ResourceData, m interface{}) error
 
 	sumo, err := client.IntegrationRead(clientID, d.Get("integration_id").(int))
 	if err != nil {
-		return err
+		if strings.HasPrefix(err.Error(), "Not found.") {
+			d.SetId("")
+			return nil
+		} else {
+			return err
+		}
 	}
 
 	sumoBody := wallarm.IntegrationCreate{
@@ -183,12 +195,8 @@ func resourceWallarmSumologicUpdate(d *schema.ResourceData, m interface{}) error
 
 func resourceWallarmSumologicDelete(d *schema.ResourceData, m interface{}) error {
 	client := m.(wallarm.API)
-	clientID := retrieveClientID(d, client)
-	sumo, err := client.IntegrationRead(clientID, d.Get("integration_id").(int))
-	if err != nil {
-		return err
-	}
-	if err := client.IntegrationDelete(sumo.ID); err != nil {
+	integrationID := d.Get("integration_id").(int)
+	if err := client.IntegrationDelete(integrationID); err != nil {
 		return err
 	}
 

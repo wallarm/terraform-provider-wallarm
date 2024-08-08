@@ -2,6 +2,7 @@ package wallarm
 
 import (
 	"fmt"
+	"strings"
 
 	wallarm "github.com/wallarm/wallarm-go"
 
@@ -131,7 +132,12 @@ func resourceWallarmEmailRead(d *schema.ResourceData, m interface{}) error {
 	clientID := retrieveClientID(d, client)
 	email, err := client.IntegrationRead(clientID, d.Get("integration_id").(int))
 	if err != nil {
-		return err
+		if strings.HasPrefix(err.Error(), "Not found.") {
+			d.SetId("")
+			return nil
+		} else {
+			return err
+		}
 	}
 
 	d.Set("integration_id", email.ID)
@@ -157,7 +163,12 @@ func resourceWallarmEmailUpdate(d *schema.ResourceData, m interface{}) error {
 
 	email, err := client.IntegrationRead(clientID, d.Get("integration_id").(int))
 	if err != nil {
-		return err
+		if strings.HasPrefix(err.Error(), "Not found.") {
+			d.SetId("")
+			return nil
+		} else {
+			return err
+		}
 	}
 
 	var updateRes *wallarm.IntegrationCreateResp
@@ -198,12 +209,8 @@ func resourceWallarmEmailUpdate(d *schema.ResourceData, m interface{}) error {
 
 func resourceWallarmEmailDelete(d *schema.ResourceData, m interface{}) error {
 	client := m.(wallarm.API)
-	clientID := retrieveClientID(d, client)
-	email, err := client.IntegrationRead(clientID, d.Get("integration_id").(int))
-	if err != nil {
-		return err
-	}
-	if err := client.IntegrationDelete(email.ID); err != nil {
+	integrationID := d.Get("integration_id").(int)
+	if err := client.IntegrationDelete(integrationID); err != nil {
 		return err
 	}
 	return nil
