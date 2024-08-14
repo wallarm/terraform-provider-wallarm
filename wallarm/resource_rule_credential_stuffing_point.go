@@ -162,7 +162,6 @@ func resourceWallarmCredentialStuffingPoint() *schema.Resource {
 }
 
 func resourceWallarmCredentialStuffingPointCreate(d *schema.ResourceData, m interface{}) error {
-	appendToFile("1")
 	client := m.(wallarm.API)
 	clientID := retrieveClientID(d, client)
 	comment := d.Get("comment").(string)
@@ -186,7 +185,6 @@ func resourceWallarmCredentialStuffingPointCreate(d *schema.ResourceData, m inte
 		return err
 	}
 
-	appendToFile("2")
 	resp, err := client.HintCreate(&wallarm.ActionCreate{
 		Type:                "credentials_point",
 		Clientid:            clientID,
@@ -201,34 +199,29 @@ func resourceWallarmCredentialStuffingPointCreate(d *schema.ResourceData, m inte
 	if err != nil {
 		return err
 	}
-	appendToFile("3")
+
 	resID := fmt.Sprintf("%d/%d/%d", resp.Body.Clientid, resp.Body.ActionID, resp.Body.ID)
 	d.SetId(resID)
 	d.Set("client_id", resp.Body.Clientid)
 	d.Set("rule_id", resp.Body.ID)
-	appendToFile("4")
 
 	return resourceWallarmCredentialStuffingPointRead(d, m)
 }
 
 func resourceWallarmCredentialStuffingPointRead(d *schema.ResourceData, m interface{}) error {
-	appendToFile("6")
 	client := m.(wallarm.API)
 	clientID := retrieveClientID(d, client)
 	ruleID := d.Get("rule_id").(int)
-	appendToFile("7")
+
 	rule, err := findRule(client, clientID, ruleID)
 	if !d.IsNewResource() {
-		appendToFile("8")
 		if _, ok := err.(*ruleNotFoundError); ok {
-			appendToFile("9")
 			log.Printf("[WARN] Rule %s not found, removing from state", d.Id())
 			d.SetId("")
 			return nil
 		}
 	}
 	if err != nil {
-		appendToFile("11")
 		return err
 	}
 
