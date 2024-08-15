@@ -93,13 +93,13 @@ func resourceWallarmTrigger() *schema.Resource {
 			"actions": {
 				Type:     schema.TypeList,
 				Required: true,
-				MaxItems: 2,
+				MaxItems: 4,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"action_id": {
 							Type:         schema.TypeString,
 							Required:     true,
-							ValidateFunc: validation.StringInSlice([]string{"send_notification", "block_ips", "mark_as_brute", "group_attack_by_ip"}, false),
+							ValidateFunc: validation.StringInSlice([]string{"send_notification", "block_ips", "mark_as_brute", "group_attack_by_ip", "add_to_graylist"}, false),
 						},
 
 						"integration_id": {
@@ -267,14 +267,14 @@ func resourceWallarmTriggerRead(d *schema.ResourceData, m interface{}) error {
 			return nil
 		}
 	}
-
-	return fmt.Errorf("can't find a trigger with ID: %d", triggerID)
+	d.SetId("")
+	return nil
 }
 
 func resourceWallarmTriggerUpdate(d *schema.ResourceData, m interface{}) error {
 	var (
 		err         error
-		triggerResp *wallarm.TriggerResp
+		triggerResp *wallarm.TriggerCreateResp
 	)
 
 	client := m.(wallarm.API)
@@ -407,6 +407,8 @@ func expandWallarmTriggerFilter(d interface{}) (*[]wallarm.TriggerFilters, error
 						}
 						values = append(values, vInt)
 						responseFallthrough = true
+					} else {
+						values = append(values, v)
 					}
 				}
 				t.Values = values
