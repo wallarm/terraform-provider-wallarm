@@ -38,7 +38,7 @@ resource "wallarm_rule_credential_stuffing_point" "mode2" {
 
 * `client_id` - (optional) ID of the client to apply the rules to. The value is required for [multi-tenant scenarios][2].
 * `action` - (optional) rule conditions. Possible attributes are described below.
-* `mode` - (optional) credential stafing mode. Can be: `default`, `custom`, `disabled`. Default value: `default`.
+* `mode` - (optional) credential stuffing mode. Can be: `default`, `custom`, `disabled`. Default value: `default`.
 
 **action**
 
@@ -51,7 +51,7 @@ resource "wallarm_rule_credential_stuffing_point" "mode2" {
 * `value` - (optional) value of the parameter to match with. Must be omitted for the `instance` parameter in `point` or if `type` is `absent`.
   Example:
   `value = "example.com"`
-* `point` - (optional) request parameters that trigger the rule. Possible values are described below. For more details, see the official [Wallarm documentatioon](https://docs.wallarm.com/user-guides/rules/request-processing/#identifying-and-parsing-the-request-parts).
+* `point` - (optional) request parameters that trigger the rule. Possible values are described below. For more details, see the official [Wallarm documentation](https://docs.wallarm.com/user-guides/rules/request-processing/#identifying-and-parsing-the-request-parts).
 
 **action.point**
 
