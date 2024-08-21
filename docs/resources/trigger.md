@@ -119,6 +119,12 @@ resource "wallarm_trigger" "attack_trigger" {
   - `incidents_exceeded` for detected incidents number exceeded the specified value
   - `vector_attack` for detected malicious payloads number exceeded the specified value
   - `bruteforce_started` for detected attack to be identified as brute-force
+  - `bola_search_started` for detected attack identified as BOLA
+  - `blacklist_ip_added` for IP list added to denylist
+  - `api_structure_changed` for detected new, changed or unused endpoints
+  - `attack_ip_grouping` for threshold to group hits from the same IP into one address
+  - `compromised_logins` for attempts to use compromised user credentials
+  - `rogue_api_detected` for Shadow, Orphan or Zombie API detected
 * `enabled` - (optional) indicator of the trigger status. Can be: `true` for enabled trigger and `false` for disabled trigger (notifications are not sent).
 * `name` - (optional) Trigger name.
 * `comment` - (optional) Trigger description.
@@ -141,6 +147,15 @@ resource "wallarm_trigger" "attack_trigger" {
     * `Database`
 * `response_status` - Integer response code returned to the request.
 * `hint_tag` - Arbitrary tag of any request tuned in by a rule.
+* `pii` - Array of fields that are considered sensitive (PII).
+* `change_type` - Array of change types for API structure changed trigger. Can be:
+    * `added`
+    * `changed`
+    * `excluded`
+* `deviation_type` - Array of Rogue API types for Rogue api detected trigger. Values in the array can be:
+  * `shadow`
+  * `orphan`
+  * `zombie`
 * `operator` - (optional) Operator to compare the specified filter value and a real value. Can be:
     * `eq` - Equal
     * `ne` - Not equal

@@ -1,3 +1,14 @@
+# v1.5.0 (September 1, 2024)
+
+## NOTES:
+
+* Added integration with DataDog
+* Added integration with Telegram
+* Added integration with MS Teams
+* Added API Spec resource for managing API specifications
+* Added Rate Limit rule
+* Added support for all triggers that we have in the UI
+
 # v1.1.0 (May 24, 2023)
 
 ## BUG FIXES:
