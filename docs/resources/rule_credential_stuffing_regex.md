@@ -3,7 +3,7 @@ layout: "wallarm"
 page_title: "Wallarm: wallarm_rule_credential_stuffing_regex"
 subcategory: "Rule"
 description: |-
-  Provides the "Authentication endpoints by regular expession in Credential Stuffing" rule resource.
+  Provides the "Authentication endpoints by regular expression in Credential Stuffing" rule resource.
 ---
 
 # wallarm_rule_credential_stuffing_regex
@@ -59,7 +59,7 @@ resource "wallarm_rule_credential_stuffing_regex" "regex2" {
 * `value` - (optional) value of the parameter to match with. Must be omitted for the `instance` parameter in `point` or if `type` is `absent`.
   Example:
   `value = "example.com"`
-* `point` - (optional) request parameters that trigger the rule. Possible values are described below. For more details, see the official [Wallarm documentatioon](https://docs.wallarm.com/user-guides/rules/request-processing/#identifying-and-parsing-the-request-parts).
+* `point` - (optional) request parameters that trigger the rule. Possible values are described below. For more details, see the official [Wallarm documentation](https://docs.wallarm.com/user-guides/rules/request-processing/#identifying-and-parsing-the-request-parts).
 
 **action.point**
 
