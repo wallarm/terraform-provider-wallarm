@@ -7,7 +7,7 @@
 * Added integration with MS Teams
 * Added API Spec resource for managing API specifications
 * Added Rate Limit rule
-* Added support for all triggers that we have in the UI
+* Added support for all Wallarm triggers
 
 # v1.1.0 (May 24, 2023)
 
