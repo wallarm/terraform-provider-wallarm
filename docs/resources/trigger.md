@@ -184,7 +184,10 @@ Example:
 ## Threshold
 
 `threshold` argument shares the available conditions which can be applied.  It must **NOT** be specified when the `user_created` template is used. The conditions are:
-  - `period` - The period of time to count (in seconds).
+  - `period` - The period of time to count (in seconds by default).
+  - `time_format` - Time units for period. Can be:
+    * `Seconds` - By default, to measure in seconds.
+    * `Minutes` - To measure period in minutes.
   - `count` - The number of such events.
   - `operator` - (optional) The comparison operator. Valid values:
     * `gt` - Greater than
@@ -213,8 +216,17 @@ Example:
   - `action_id` - (**required**) the type of action when triggered.
     * `send_notification` - send notification to existing integration resource.
     * `block_ips` - block the IP addresses from which the requests originated.
+    * `mark_as_brute` - to mark as bruteforce.
+    * `add_to_graylist` - to add to graylist.
+    * `group_attack_by_ip` - to group an attack by the same IP.
   - `integration_id` - the identificator of the existing integration.
   - `lock_time` - The time for which to block IP addresses in case of usage `block_ips`.
+  - `lock_time_format` - Time units to setup lock time. In seconds by default. Can be: 
+    * `Minutes` - Time in minutes (e.g. `60` is to block for 60 minutes).
+    * `Hours` - Time in hours (e.g. `5` is to block for 5 hours).
+    * `Days` - Time in days (e.g. `7` is to block for 7 days).
+    * `Weeks` - Time in weeks (e.g. `4` is to block for 4 weeks).
+    * `Months` - Time in weeks (e.g. `12` is to block for 12 months).
 
 Example:
 

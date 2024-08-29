@@ -111,11 +111,12 @@ func resourceWallarmTrigger() *schema.Resource {
 						"lock_time": {
 							Type:     schema.TypeInt,
 							Optional: true,
-							// 5/15/30 minutes, 1/2/6/12 hours, 1/2/7/30 days, forever
-							ValidateFunc: validation.IntInSlice([]int{300, 900, 1800,
-								3600, 7200, 21600, 43200,
-								86400, 172800, 604800, 2592000,
-								7776000}),
+						},
+						"lock_time_format": {
+							Type:         schema.TypeString,
+							Optional:     true,
+							Default:      "Seconds",
+							ValidateFunc: validation.StringInSlice([]string{"Seconds", "Minutes", "Hours", "Days", "Weeks", "Months"}, false),
 						},
 					},
 				},
@@ -140,6 +141,12 @@ func resourceWallarmTrigger() *schema.Resource {
 						"count": {
 							Type:     schema.TypeInt,
 							Required: true,
+						},
+						"time_format": {
+							Type:         schema.TypeString,
+							Optional:     true,
+							Default:      "Seconds",
+							ValidateFunc: validation.StringInSlice([]string{"Seconds", "Minutes"}, false),
 						},
 					},
 				},
@@ -453,7 +460,25 @@ func expandWallarmTriggerAction(d interface{}) (*[]wallarm.TriggerActions, error
 
 		lockTime, ok := m["lock_time"]
 		if ok {
-			a.Params.LockTime = lockTime.(int)
+			lockTimeInt := lockTime.(int)
+			switch m["lock_time_format"] {
+			case "Minutes":
+				lockTimeInt = lockTimeInt * 60
+			case "Hours":
+				lockTimeInt = lockTimeInt * 60 * 60
+			case "Days":
+				lockTimeInt = lockTimeInt * 60 * 60 * 24
+			case "Weeks":
+				lockTimeInt = lockTimeInt * 60 * 60 * 24 * 7
+			case "Months":
+				currTime := time.Now()
+				shiftTime := currTime.AddDate(0, lockTimeInt, 0)
+				lockTimeInt = int(shiftTime.Sub(currTime).Seconds())
+			}
+			if lockTimeInt == 0 {
+				lockTimeInt = 7776000 // forever, our max time
+			}
+			a.Params.LockTime = lockTimeInt
 		}
 
 		actions = append(actions, a)
@@ -474,6 +499,13 @@ func expandWallarmTriggerThreshold(d interface{}) (*wallarm.TriggerThreshold, er
 			return nil, err
 		}
 		threshold.Period = periodInt
+	}
+
+	timeFormat, ok := m["time_format"]
+	if ok {
+		if timeFormat == "Minutes" {
+			threshold.Period = 60 * threshold.Period
+		}
 	}
 
 	operator, ok := m["operator"]

@@ -81,7 +81,8 @@ resource "wallarm_trigger" "vector_trigger" {
 
   actions {
     action_id = "block_ips"
-    lock_time = 10000
+    lock_time = 7
+    lock_time_format = "Days"
   }
 }
 

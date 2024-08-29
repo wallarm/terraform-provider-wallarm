@@ -41,6 +41,10 @@ resource "wallarm_allowlist" "allowlist_date" {
 * `time_format` - (**required**) block time format.
   Can be:
   - `Minutes` - Time in minutes (e.g. `60` is to block for 60 minutes)
+  - `Hours` - Time in hours (e.g. `5` is to block for 5 hours)
+  - `Days` - Time in days (e.g. `7` is to block for 7 days)
+  - `Weeks` - Time in weeks (e.g. `4` is to block for 4 weeks)
+  - `Months` - Time in weeks (e.g. `12` is to block for 12 months)
   - `RFC3339` - RFC3339 time (e.g. `2021-06-01T15:04:05+07:00`)
 * `time` - (**required**) time for (or until) which the IP address should be blocked.
 * `application` - (optional) list of application IDs.
