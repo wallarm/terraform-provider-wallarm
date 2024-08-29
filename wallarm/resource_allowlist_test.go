@@ -27,6 +27,82 @@ func TestAccWallarmAllowlistMinutes(t *testing.T) {
 	})
 }
 
+func TestAccWallarmAllowlistHours(t *testing.T) {
+	rnd := generateRandomResourceName(10)
+	name := "wallarm_allowlist." + rnd
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:  func() { testAccPreCheck(t) },
+		Providers: testAccProviders,
+		Steps: []resource.TestStep{
+			{
+				Config: testWallarmAllowlistHours(rnd, "tf-test-"+rnd, "Hours", "5"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(name, "reason", "tf-test-"+rnd),
+					resource.TestCheckResourceAttr(name, "time", "5"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccWallarmAllowlistDays(t *testing.T) {
+	rnd := generateRandomResourceName(10)
+	name := "wallarm_allowlist." + rnd
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:  func() { testAccPreCheck(t) },
+		Providers: testAccProviders,
+		Steps: []resource.TestStep{
+			{
+				Config: testWallarmAllowlistDays(rnd, "tf-test-"+rnd, "Days", "7"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(name, "reason", "tf-test-"+rnd),
+					resource.TestCheckResourceAttr(name, "time", "7"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccWallarmAllowlistWeeks(t *testing.T) {
+	rnd := generateRandomResourceName(10)
+	name := "wallarm_allowlist." + rnd
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:  func() { testAccPreCheck(t) },
+		Providers: testAccProviders,
+		Steps: []resource.TestStep{
+			{
+				Config: testWallarmAllowlistWeeks(rnd, "tf-test-"+rnd, "Weeks", "4"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(name, "reason", "tf-test-"+rnd),
+					resource.TestCheckResourceAttr(name, "time", "4"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccWallarmAllowlistMonths(t *testing.T) {
+	rnd := generateRandomResourceName(10)
+	name := "wallarm_allowlist." + rnd
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:  func() { testAccPreCheck(t) },
+		Providers: testAccProviders,
+		Steps: []resource.TestStep{
+			{
+				Config: testWallarmAllowlistMonths(rnd, "tf-test-"+rnd, "Months", "12"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(name, "reason", "tf-test-"+rnd),
+					resource.TestCheckResourceAttr(name, "time", "12"),
+				),
+			},
+		},
+	})
+}
+
 func TestAccWallarmAllowlistRFC3339(t *testing.T) {
 	rnd := generateRandomResourceName(10)
 	name := "wallarm_allowlist." + rnd
@@ -73,6 +149,50 @@ resource "wallarm_allowlist" "%[1]s" {
 	reason = "%[2]s"
 	time_format = "%[3]s"
 	time = %[4]s # Minutes
+}`, resourceID, reason, timeFormat, time)
+}
+
+func testWallarmAllowlistHours(resourceID, reason, timeFormat, time string) string {
+	return fmt.Sprintf(`
+resource "wallarm_allowlist" "%[1]s" {
+	ip_range = ["1.1.1.1/30", "2.2.2.2", "3.3.3.3/32"]
+	application = [1, 2]
+	reason = "%[2]s"
+	time_format = "%[3]s"
+	time = %[4]s # Hours
+}`, resourceID, reason, timeFormat, time)
+}
+
+func testWallarmAllowlistDays(resourceID, reason, timeFormat, time string) string {
+	return fmt.Sprintf(`
+resource "wallarm_allowlist" "%[1]s" {
+	ip_range = ["1.1.1.1/30", "2.2.2.2", "3.3.3.3/32"]
+	application = [1, 2]
+	reason = "%[2]s"
+	time_format = "%[3]s"
+	time = %[4]s # Days
+}`, resourceID, reason, timeFormat, time)
+}
+
+func testWallarmAllowlistWeeks(resourceID, reason, timeFormat, time string) string {
+	return fmt.Sprintf(`
+resource "wallarm_allowlist" "%[1]s" {
+	ip_range = ["1.1.1.1/30", "2.2.2.2", "3.3.3.3/32"]
+	application = [1, 2]
+	reason = "%[2]s"
+	time_format = "%[3]s"
+	time = %[4]s # Weeks
+}`, resourceID, reason, timeFormat, time)
+}
+
+func testWallarmAllowlistMonths(resourceID, reason, timeFormat, time string) string {
+	return fmt.Sprintf(`
+resource "wallarm_allowlist" "%[1]s" {
+	ip_range = ["1.1.1.1/30", "2.2.2.2", "3.3.3.3/32"]
+	application = [1, 2]
+	reason = "%[2]s"
+	time_format = "%[3]s"
+	time = %[4]s # Months
 }`, resourceID, reason, timeFormat, time)
 }
 
