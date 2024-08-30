@@ -476,7 +476,7 @@ func expandWallarmTriggerAction(d interface{}) (*[]wallarm.TriggerActions, error
 				lockTimeInt = int(shiftTime.Sub(currTime).Seconds())
 			}
 			if lockTimeInt == 0 {
-				lockTimeInt = 3153600000 // forever, our max time
+				lockTimeInt = 315360000 // forever, our max time
 			}
 			a.Params.LockTime = lockTimeInt
 		}
