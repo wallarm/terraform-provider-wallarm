@@ -19,7 +19,8 @@ resource "wallarm_integration_splunk" "splunk_integration" {
   }
   
   event {
-    event_type = "vuln"
+    event_type = "vuln_low"
     active = true
   }
 }
+

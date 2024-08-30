@@ -47,6 +47,11 @@ func resourceWallarmTenant() *schema.Resource {
 				Required: true,
 				ForceNew: true,
 			},
+			"partner_uuid": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
 		},
 	}
 }
@@ -67,7 +72,10 @@ func resourceWallarmTenantCreate(d *schema.ResourceData, m interface{}) error {
 		return err
 	}
 
-	partnerUUID := clientRes.Body[0].PartnerUUID
+	partnerUUID := d.Get("partner_uuid").(string)
+	if partnerUUID == "" {
+		partnerUUID = clientRes.Body[0].PartnerUUID
+	}
 
 	params := wallarm.ClientCreate{
 		Name:        name,

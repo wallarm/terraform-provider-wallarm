@@ -2,6 +2,7 @@ package wallarm
 
 import (
 	"fmt"
+	"strings"
 
 	wallarm "github.com/wallarm/wallarm-go"
 
@@ -109,6 +110,7 @@ func resourceWallarmSplunkCreate(d *schema.ResourceData, m interface{}) error {
 	active := d.Get("active").(bool)
 	events, err := expandWallarmEventToIntEvents(d.Get("event").(interface{}), "splunk")
 	if err != nil {
+		d.SetId("")
 		return err
 	}
 
@@ -142,7 +144,12 @@ func resourceWallarmSplunkRead(d *schema.ResourceData, m interface{}) error {
 	clientID := retrieveClientID(d, client)
 	splunk, err := client.IntegrationRead(clientID, d.Get("integration_id").(int))
 	if err != nil {
-		return err
+		if strings.HasPrefix(err.Error(), "Not found.") {
+			d.SetId("")
+			return nil
+		} else {
+			return err
+		}
 	}
 	d.Set("integration_id", splunk.ID)
 	d.Set("is_active", splunk.Active)
@@ -197,12 +204,8 @@ func resourceWallarmSplunkUpdate(d *schema.ResourceData, m interface{}) error {
 
 func resourceWallarmSplunkDelete(d *schema.ResourceData, m interface{}) error {
 	client := m.(wallarm.API)
-	clientID := retrieveClientID(d, client)
-	splunk, err := client.IntegrationRead(clientID, d.Get("integration_id").(int))
-	if err != nil {
-		return err
-	}
-	if err := client.IntegrationDelete(splunk.ID); err != nil {
+	integrationID := d.Get("integration_id").(int)
+	if err := client.IntegrationDelete(integrationID); err != nil {
 		return err
 	}
 

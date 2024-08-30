@@ -19,7 +19,7 @@ resource "wallarm_integration_webhook" "wh_integration" {
   }
   
   event {
-    event_type = "vuln"
+    event_type = "vuln_low"
     active = true
   }
 
@@ -29,3 +29,4 @@ resource "wallarm_integration_webhook" "wh_integration" {
   }
 
 }
+

@@ -1,16 +1,14 @@
 ---
 layout: "wallarm"
-page_title: "Wallarm: wallarm_rule_variative_values"
+page_title: "Wallarm: wallarm_rule_credential_stuffing_regex"
 subcategory: "Rule"
 description: |-
-  Provides the "Make a certain conditions point variative" rule resource.
+  Provides the "Authentication endpoints by regular expression in Credential Stuffing" rule resource.
 ---
 
-# wallarm_rule_variative_values
+# wallarm_rule_credential_stuffing_regex
 
-!> The resource will be deprecated in the future versions.
-
-Provides the resource to manage rules with the "Make a certain conditions point variative" action type. Specifies the condition point to group rules by. Notice that you may not have permissions to use this resource.
+Provides the resource to configure authentication endpoints for [Credential Stuffing](https://docs.wallarm.com/about-wallarm/credential-stuffing/) by using regular expression approach.
 
 **Important:** Rules made with Terraform can't be altered by other rules that usually change how rules work (middleware, variative_values, variative_by_regex).
 This is because Terraform is designed to keep its configurations stable and not meant to be modified from outside its environment.
@@ -18,15 +16,26 @@ This is because Terraform is designed to keep its configurations stable and not 
 ## Example Usage
 
 ```hcl
-resource "wallarm_rule_variative_values" "action_name" {
+resource "wallarm_rule_credential_stuffing_regex" "regex1" {
+  regex = "*abc*"
+  login_regex = "user*"
+  case_sensitive = false
+}
+
+resource "wallarm_rule_credential_stuffing_regex" "regex2" {
+  client_id = 123
+
   action {
     type = "iequal"
-    value = "example.com"
     point = {
-      header = "HOST"
+        action_name = "login"
     }
   }
-  point = [["action_name"]]
+
+  regex = "*abc*"
+  login_regex = "user*"
+  case_sensitive = true
+  cred_stuff_type = "custom"
 }
 ```
 
@@ -34,7 +43,10 @@ resource "wallarm_rule_variative_values" "action_name" {
 
 * `client_id` - (optional) ID of the client to apply the rules to. The value is required for [multi-tenant scenarios][2].
 * `action` - (optional) rule conditions. Possible attributes are described below.
-* `point` - (**required**) condition point to apply the rules to.
+* `cred_stuff_type` - (optional) defines which database of compromised credentials to use. Can be: `default`, `custom`. Default value: `default`.
+* `regex` - (**required**) regular expression used for specifying password parameters. Fore more details about regexps, see wallarm [documentation][1].
+* `login_regex` - (**required**) regular expression used for specifying login parameters. Fore more details about regexps, see wallarm [documentation][1].
+* `case_sensitive` - (**required**) defines whether regex and login_regex are case sensitive.
 
 **action**
 
@@ -49,7 +61,7 @@ resource "wallarm_rule_variative_values" "action_name" {
   `value = "example.com"`
 * `point` - (optional) request parameters that trigger the rule. Possible values are described below. For more details, see the official [Wallarm documentation](https://docs.wallarm.com/user-guides/rules/request-processing/#identifying-and-parsing-the-request-parts).
 
-**point**
+**action.point**
 
   * `header` - (optional) arbitrary HEADER parameter name.
   Example:
@@ -149,6 +161,7 @@ When `type` is `absent`, `point` must contain key with the default value. For `a
 
 * `rule_id` - ID of the created rule.
 * `action_id` - the action ID (The conditions to apply on request).
-* `rule_type` - type of the created rule. For example, `rule_type = "variative_values"`.
+* `rule_type` - type of the created rule. For example, `rule_type = "credentials_regex"`.
 
+[1]: https://docs.wallarm.com/user-guides/rules/rules/#condition-type-regex
 [2]: https://docs.wallarm.com/installation/multi-tenant/overview/
