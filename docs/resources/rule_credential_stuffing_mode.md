@@ -1,16 +1,14 @@
 ---
 layout: "wallarm"
-page_title: "Wallarm: wallarm_rule_variative_values"
+page_title: "Wallarm: wallarm_rule_credential_stuffing_mode"
 subcategory: "Rule"
 description: |-
-  Provides the "Make a certain conditions point variative" rule resource.
+  Provides "Credential Stuffing" rule resource.
 ---
 
-# wallarm_rule_variative_values
+# wallarm_rule_credential_stuffing_mode
 
-!> The resource will be deprecated in the future versions.
-
-Provides the resource to manage rules with the "Make a certain conditions point variative" action type. Specifies the condition point to group rules by. Notice that you may not have permissions to use this resource.
+Provides the resource to enable and disable credentials stuffing feature for specific endpoints.
 
 **Important:** Rules made with Terraform can't be altered by other rules that usually change how rules work (middleware, variative_values, variative_by_regex).
 This is because Terraform is designed to keep its configurations stable and not meant to be modified from outside its environment.
@@ -18,15 +16,21 @@ This is because Terraform is designed to keep its configurations stable and not 
 ## Example Usage
 
 ```hcl
-resource "wallarm_rule_variative_values" "action_name" {
+resource "wallarm_rule_credential_stuffing_point" "mode1" {
+
+}
+
+resource "wallarm_rule_credential_stuffing_point" "mode2" {
+  client_id = 123
+
   action {
     type = "iequal"
-    value = "example.com"
     point = {
-      header = "HOST"
+        action_name = "login"
     }
   }
-  point = [["action_name"]]
+
+  mode = "custom"
 }
 ```
 
@@ -34,7 +38,7 @@ resource "wallarm_rule_variative_values" "action_name" {
 
 * `client_id` - (optional) ID of the client to apply the rules to. The value is required for [multi-tenant scenarios][2].
 * `action` - (optional) rule conditions. Possible attributes are described below.
-* `point` - (**required**) condition point to apply the rules to.
+* `mode` - (optional) credential stuffing mode. Can be: `default`, `custom`, `disabled`. Default value: `default`.
 
 **action**
 
@@ -49,7 +53,7 @@ resource "wallarm_rule_variative_values" "action_name" {
   `value = "example.com"`
 * `point` - (optional) request parameters that trigger the rule. Possible values are described below. For more details, see the official [Wallarm documentation](https://docs.wallarm.com/user-guides/rules/request-processing/#identifying-and-parsing-the-request-parts).
 
-**point**
+**action.point**
 
   * `header` - (optional) arbitrary HEADER parameter name.
   Example:
@@ -149,6 +153,6 @@ When `type` is `absent`, `point` must contain key with the default value. For `a
 
 * `rule_id` - ID of the created rule.
 * `action_id` - the action ID (The conditions to apply on request).
-* `rule_type` - type of the created rule. For example, `rule_type = "variative_values"`.
+* `rule_type` - type of the created rule. For example, `rule_type = "cred_stuff_mode"`.
 
 [2]: https://docs.wallarm.com/installation/multi-tenant/overview/

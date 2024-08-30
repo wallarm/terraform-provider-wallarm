@@ -132,7 +132,6 @@ func resourceWallarmRulesSettingsRead(d *schema.ResourceData, m interface{}) err
 
 	res, err := client.RulesSettingsRead(clientID)
 	if err != nil {
-		d.SetId("")
 		return err
 	}
 
@@ -211,10 +210,14 @@ func resourceWallarmRulesSettingsCreate(d *schema.ResourceData, m interface{}) e
 	client := m.(wallarm.API)
 	clientID := retrieveClientID(d, client)
 
+	err := updateRulesSettings(d, m)
+	if err != nil {
+		return err
+	}
+
 	id := fmt.Sprintf("%d/rules_settings", clientID)
 	d.SetId(id)
-
-	return updateRulesSettings(d, m)
+	return resourceWallarmRulesSettingsRead(d, m)
 }
 
 func resourceWallarmRulesSettingsUpdate(d *schema.ResourceData, m interface{}) error {

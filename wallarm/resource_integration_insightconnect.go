@@ -2,6 +2,7 @@ package wallarm
 
 import (
 	"fmt"
+	"strings"
 
 	wallarm "github.com/wallarm/wallarm-go"
 
@@ -141,7 +142,12 @@ func resourceWallarmInsightConnectRead(d *schema.ResourceData, m interface{}) er
 	clientID := retrieveClientID(d, client)
 	insight, err := client.IntegrationRead(clientID, d.Get("integration_id").(int))
 	if err != nil {
-		return err
+		if strings.HasPrefix(err.Error(), "Not found.") {
+			d.SetId("")
+			return nil
+		} else {
+			return err
+		}
 	}
 
 	d.Set("integration_id", insight.ID)
@@ -168,7 +174,12 @@ func resourceWallarmInsightConnectUpdate(d *schema.ResourceData, m interface{}) 
 
 	insight, err := client.IntegrationRead(clientID, d.Get("integration_id").(int))
 	if err != nil {
-		return err
+		if strings.HasPrefix(err.Error(), "Not found.") {
+			d.SetId("")
+			return nil
+		} else {
+			return err
+		}
 	}
 
 	insightBody := wallarm.IntegrationWithAPICreate{
@@ -198,12 +209,8 @@ func resourceWallarmInsightConnectUpdate(d *schema.ResourceData, m interface{}) 
 
 func resourceWallarmInsightConnectDelete(d *schema.ResourceData, m interface{}) error {
 	client := m.(wallarm.API)
-	clientID := retrieveClientID(d, client)
-	insight, err := client.IntegrationRead(clientID, d.Get("integration_id").(int))
-	if err != nil {
-		return err
-	}
-	if err := client.IntegrationDelete(insight.ID); err != nil {
+	integrationID := d.Get("integration_id").(int)
+	if err := client.IntegrationDelete(integrationID); err != nil {
 		return err
 	}
 
