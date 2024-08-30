@@ -71,6 +71,13 @@ func resourceWallarmWebhook() *schema.Resource {
 				Default:      "POST",
 			},
 
+			"format": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: validation.StringInSlice([]string{"json", "jsonl"}, false),
+				Default:      "json",
+			},
+
 			"webhook_url": {
 				Type:         schema.TypeString,
 				Required:     true,
@@ -144,6 +151,7 @@ func resourceWallarmWebhookCreate(d *schema.ResourceData, m interface{}) error {
 	timeout := d.Get("timeout").(int)
 	openTimeout := d.Get("open_timeout").(int)
 	headers := d.Get("headers").(map[string]interface{})
+	format := d.Get("format").(string)
 
 	events, err := expandWallarmEventToIntEvents(d.Get("event").(interface{}), "web_hooks")
 	if err != nil {
@@ -162,6 +170,7 @@ func resourceWallarmWebhookCreate(d *schema.ResourceData, m interface{}) error {
 			CaFile:      caFile,
 			CaVerify:    caVerify,
 			Headers:     headers,
+			Format:      format,
 		},
 		Clientid: clientID,
 		Type:     "web_hooks",
@@ -216,6 +225,7 @@ func resourceWallarmWebhookUpdate(d *schema.ResourceData, m interface{}) error {
 	timeout := d.Get("timeout").(int)
 	openTimeout := d.Get("open_timeout").(int)
 	headers := d.Get("headers").(map[string]interface{})
+	format := d.Get("format").(string)
 
 	events, err := expandWallarmEventToIntEvents(d.Get("event").(interface{}), "web_hooks")
 	if err != nil {
@@ -243,6 +253,7 @@ func resourceWallarmWebhookUpdate(d *schema.ResourceData, m interface{}) error {
 			CaFile:      caFile,
 			CaVerify:    caVerify,
 			Headers:     headers,
+			Format:      format,
 		},
 		Type:   "web_hooks",
 		Events: events,

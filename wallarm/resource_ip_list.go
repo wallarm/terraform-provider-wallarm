@@ -46,7 +46,7 @@ func resourceWallarmIPList(listType wallarm.IPListType) *schema.Resource {
 			"time_format": {
 				Type:         schema.TypeString,
 				Required:     true,
-				ValidateFunc: validation.StringInSlice([]string{"Minutes", "RFC3339"}, false),
+				ValidateFunc: validation.StringInSlice([]string{"Minutes", "RFC3339", "Hours", "Days", "Weeks", "Months"}, false),
 			},
 			"time": {
 				Type:     schema.TypeString,
@@ -135,6 +135,50 @@ func resourceWallarmIPListCreate(listType wallarm.IPListType) schema.CreateFunc 
 			}
 			currTime := time.Now()
 			shiftTime := currTime.Add(time.Minute * time.Duration(expireTime))
+			unixTime = int(shiftTime.Unix())
+		case "Hours":
+			expireTime, err := strconv.Atoi(d.Get("time").(string))
+			if err != nil {
+				return fmt.Errorf("cannot parse time to integer. must be the number when `time_format` equals `Hours`, got %v", err)
+			}
+			if expireTime == 0 {
+				expireTime = 60045120
+			}
+			currTime := time.Now()
+			shiftTime := currTime.Add(time.Hour * time.Duration(expireTime))
+			unixTime = int(shiftTime.Unix())
+		case "Days":
+			expireTime, err := strconv.Atoi(d.Get("time").(string))
+			if err != nil {
+				return fmt.Errorf("cannot parse time to integer. must be the number when `time_format` equals `Days`, got %v", err)
+			}
+			if expireTime == 0 {
+				expireTime = 60045120
+			}
+			currTime := time.Now()
+			shiftTime := currTime.Add(24 * time.Hour * time.Duration(expireTime))
+			unixTime = int(shiftTime.Unix())
+		case "Weeks":
+			expireTime, err := strconv.Atoi(d.Get("time").(string))
+			if err != nil {
+				return fmt.Errorf("cannot parse time to integer. must be the number when `time_format` equals `Weeks`, got %v", err)
+			}
+			if expireTime == 0 {
+				expireTime = 60045120
+			}
+			currTime := time.Now()
+			shiftTime := currTime.Add(7 * 24 * time.Hour * time.Duration(expireTime))
+			unixTime = int(shiftTime.Unix())
+		case "Months":
+			expireTime, err := strconv.Atoi(d.Get("time").(string))
+			if err != nil {
+				return fmt.Errorf("cannot parse time to integer. must be the number when `time_format` equals `Months`, got %v", err)
+			}
+			if expireTime == 0 {
+				expireTime = 60045120
+			}
+			currTime := time.Now()
+			shiftTime := currTime.AddDate(0, expireTime, 0)
 			unixTime = int(shiftTime.Unix())
 		case "RFC3339":
 			expireTime, err := time.Parse(time.RFC3339, d.Get("time").(string))

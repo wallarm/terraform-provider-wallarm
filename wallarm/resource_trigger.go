@@ -38,7 +38,9 @@ func resourceWallarmTrigger() *schema.Resource {
 				Type:     schema.TypeString,
 				Required: true,
 				ValidateFunc: validation.StringInSlice([]string{"user_created", "attacks_exceeded",
-					"hits_exceeded", "incidents_exceeded", "vector_attack", "bruteforce_started"}, false),
+					"hits_exceeded", "incidents_exceeded", "vector_attack", "bruteforce_started", "bola_search_started",
+					"blacklist_ip_added", "api_structure_changed", "attack_ip_grouping", "compromised_logins",
+					"rogue_api_detected"}, false),
 			},
 
 			"enabled": {
@@ -69,7 +71,8 @@ func resourceWallarmTrigger() *schema.Resource {
 							Type:     schema.TypeString,
 							Optional: true,
 							ValidateFunc: validation.StringInSlice([]string{"ip_address", "pool", "attack_type",
-								"domain", "target", "response_status", "url", "hint_tag"}, false),
+								"domain", "target", "response_status", "url", "hint_tag", "pii", "change_type", "deviation_type",
+								"api_spec_ids"}, false),
 						},
 
 						"operator": {
@@ -90,13 +93,13 @@ func resourceWallarmTrigger() *schema.Resource {
 			"actions": {
 				Type:     schema.TypeList,
 				Required: true,
-				MaxItems: 2,
+				MaxItems: 4,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"action_id": {
 							Type:         schema.TypeString,
 							Required:     true,
-							ValidateFunc: validation.StringInSlice([]string{"send_notification", "block_ips", "mark_as_brute"}, false),
+							ValidateFunc: validation.StringInSlice([]string{"send_notification", "block_ips", "mark_as_brute", "group_attack_by_ip", "add_to_graylist"}, false),
 						},
 
 						"integration_id": {
@@ -108,11 +111,12 @@ func resourceWallarmTrigger() *schema.Resource {
 						"lock_time": {
 							Type:     schema.TypeInt,
 							Optional: true,
-							// 5/15/30 minutes, 1/2/6/12 hours, 1/2/7/30 days, forever
-							ValidateFunc: validation.IntInSlice([]int{300, 900, 1800,
-								3600, 7200, 21600, 43200,
-								86400, 172800, 604800, 2592000,
-								7776000}),
+						},
+						"lock_time_format": {
+							Type:         schema.TypeString,
+							Optional:     true,
+							Default:      "Seconds",
+							ValidateFunc: validation.StringInSlice([]string{"Seconds", "Minutes", "Hours", "Days", "Weeks", "Months"}, false),
 						},
 					},
 				},
@@ -137,6 +141,12 @@ func resourceWallarmTrigger() *schema.Resource {
 						"count": {
 							Type:     schema.TypeInt,
 							Required: true,
+						},
+						"time_format": {
+							Type:         schema.TypeString,
+							Optional:     true,
+							Default:      "Seconds",
+							ValidateFunc: validation.StringInSlice([]string{"Seconds", "Minutes"}, false),
 						},
 					},
 				},
@@ -264,15 +274,14 @@ func resourceWallarmTriggerRead(d *schema.ResourceData, m interface{}) error {
 			return nil
 		}
 	}
-
 	d.SetId("")
-	return fmt.Errorf("can't find a trigger with ID: %d", triggerID)
+	return nil
 }
 
 func resourceWallarmTriggerUpdate(d *schema.ResourceData, m interface{}) error {
 	var (
 		err         error
-		triggerResp *wallarm.TriggerResp
+		triggerResp *wallarm.TriggerCreateResp
 	)
 
 	client := m.(wallarm.API)
@@ -383,7 +392,7 @@ func expandWallarmTriggerFilter(d interface{}) (*[]wallarm.TriggerFilters, error
 			responseFallthrough := false
 
 			switch filterID {
-			case "pool":
+			case "pool", "api_spec_ids":
 				var values []interface{}
 				for _, v := range value {
 					vString := v.(string)
@@ -405,6 +414,8 @@ func expandWallarmTriggerFilter(d interface{}) (*[]wallarm.TriggerFilters, error
 						}
 						values = append(values, vInt)
 						responseFallthrough = true
+					} else {
+						values = append(values, v)
 					}
 				}
 				t.Values = values
@@ -449,7 +460,25 @@ func expandWallarmTriggerAction(d interface{}) (*[]wallarm.TriggerActions, error
 
 		lockTime, ok := m["lock_time"]
 		if ok {
-			a.Params.LockTime = lockTime.(int)
+			lockTimeInt := lockTime.(int)
+			switch m["lock_time_format"] {
+			case "Minutes":
+				lockTimeInt = lockTimeInt * 60
+			case "Hours":
+				lockTimeInt = lockTimeInt * 60 * 60
+			case "Days":
+				lockTimeInt = lockTimeInt * 60 * 60 * 24
+			case "Weeks":
+				lockTimeInt = lockTimeInt * 60 * 60 * 24 * 7
+			case "Months":
+				currTime := time.Now()
+				shiftTime := currTime.AddDate(0, lockTimeInt, 0)
+				lockTimeInt = int(shiftTime.Sub(currTime).Seconds())
+			}
+			if lockTimeInt == 0 {
+				lockTimeInt = 3153600000 // forever, our max time
+			}
+			a.Params.LockTime = lockTimeInt
 		}
 
 		actions = append(actions, a)
@@ -470,6 +499,13 @@ func expandWallarmTriggerThreshold(d interface{}) (*wallarm.TriggerThreshold, er
 			return nil, err
 		}
 		threshold.Period = periodInt
+	}
+
+	timeFormat, ok := m["time_format"]
+	if ok {
+		if timeFormat == "Minutes" {
+			threshold.Period = 60 * threshold.Period
+		}
 	}
 
 	operator, ok := m["operator"]
