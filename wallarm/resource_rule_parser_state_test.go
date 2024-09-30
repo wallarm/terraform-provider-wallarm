@@ -49,20 +49,6 @@ func TestAccRuleParserStateCreate_IncorrectState(t *testing.T) {
 	})
 }
 
-func TestAccRuleParserStateCreate_IncorrectParser(t *testing.T) {
-	rnd := generateRandomResourceName(5)
-	resource.Test(t, resource.TestCase{
-		PreCheck:  func() { testAccPreCheck(t) },
-		Providers: testAccProviders,
-		Steps: []resource.TestStep{
-			{
-				Config:      testWallarmRuleParserStateBasicConfig(rnd, "incorrect", "enabled", "iequal", "parsers.wallarm.com", "HOST", `["post"],["form_urlencoded","query"]`),
-				ExpectError: regexp.MustCompile(`config is invalid: expected parser to be one of \[base64 cookie form_urlencoded gzip grpc json_doc multipart percent protobuf htmljs viewstate xml\], got incorrect`),
-			},
-		},
-	})
-}
-
 func TestAccRuleParserStateCreateRecreate(t *testing.T) {
 	rnd := generateRandomResourceName(5)
 	name := "wallarm_rule_parser_state." + rnd

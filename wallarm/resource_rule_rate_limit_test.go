@@ -35,7 +35,6 @@ func testAccRuleRateLimit(resourceName string) string {
 resource "wallarm_rule_rate_limit" %[1]q {
 	point = [["header", "HOST"]]
 
-	cred_stuff_type = "custom"
 	action {
 		type = "iequal"
 		value = "example.com"
@@ -45,7 +44,7 @@ resource "wallarm_rule_rate_limit" %[1]q {
 	}
 
   comment = "My TF Rate Limit 5"
-  delay = 50
+  delay = 100
   burst = 20
   rate = 300
   rsp_status = 500

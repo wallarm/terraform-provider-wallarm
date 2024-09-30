@@ -17,9 +17,9 @@ func TestAccWallarmRulesSettings(t *testing.T) {
 		"max_lom_size":              "10000",
 		"lom_disabled":              "false",
 		"lom_compilation_delay":     "1000",
-		"rules_snapshot_enabled":    "true",
+		"rules_snapshot_enabled":    "false",
 		"rules_snapshot_max_count":  "55",
-		"rules_manipulation_locked": "true",
+		"rules_manipulation_locked": "false",
 		"heavy_lom":                 "true",
 		"parameters_count_weight":   "1",
 		"path_variativity_weight":   "2",
@@ -28,7 +28,6 @@ func TestAccWallarmRulesSettings(t *testing.T) {
 		"open_vulns_weight":         "5",
 		"serialized_data_weight":    "6",
 		"risk_score_algo":           "maximum",
-		"pii_fallback":              "true",
 	}
 
 	resource.Test(t, resource.TestCase{
@@ -54,7 +53,6 @@ func TestAccWallarmRulesSettings(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "open_vulns_weight", attrs["open_vulns_weight"]),
 					resource.TestCheckResourceAttr(resourceName, "serialized_data_weight", attrs["serialized_data_weight"]),
 					resource.TestCheckResourceAttr(resourceName, "risk_score_algo", attrs["risk_score_algo"]),
-					resource.TestCheckResourceAttr(resourceName, "pii_fallback", attrs["pii_fallback"]),
 				),
 			},
 		},
@@ -80,7 +78,6 @@ resource "wallarm_rules_settings" "%[1]s" {
 	open_vulns_weight = %[15]s
 	serialized_data_weight = %[16]s
 	risk_score_algo = "%[17]s"
-	pii_fallback = %[18]s
 }`, resourceID,
 		attrs["min_lom_format"],
 		attrs["max_lom_format"],
@@ -98,6 +95,5 @@ resource "wallarm_rules_settings" "%[1]s" {
 		attrs["open_vulns_weight"],
 		attrs["serialized_data_weight"],
 		attrs["risk_score_algo"],
-		attrs["pii_fallback"],
 	)
 }

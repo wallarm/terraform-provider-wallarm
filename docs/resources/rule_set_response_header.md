@@ -17,21 +17,22 @@ This is because Terraform is designed to keep its configurations stable and not 
 
 ```hcl
 # Append the "Server" header with the "Wallarm solution" value
-# and the "Blocked" header with the "Blocked by Wallarm" value
+# and the "Server" header with the "Blocked by Wallarm" value
 # to the requests sent to the application with ID 3
 
 resource "wallarm_rule_set_response_header" "resp_headers" {
   mode = "append"
+  name = "Server"
 
   action {
     point = {
       instance = 3
     }
   }
-
-  headers = {
-    Server = "Wallarm solution"
-    Blocked = "Blocked by Wallarm"
+  
+  values = {
+    "Wallarm solution"
+    "Blocked by Wallarm"
   }
 
 }
@@ -43,9 +44,10 @@ resource "wallarm_rule_set_response_header" "resp_headers" {
 
 resource "wallarm_rule_set_response_header" "delete_header" {
   mode = "replace"
+  name =  "Wallarm component"
 
-  headers = {
-    Wallarm component = " "
+  values = {
+    " "
   }
 }
 
@@ -54,7 +56,8 @@ resource "wallarm_rule_set_response_header" "delete_header" {
 ## Argument Reference
 
 * `mode` - (**required**) mode of header processing. Valid options: `append`, `replace`
-* `headers` - (**required**) the associative array of key/value headers. Might be defined as much headers as need at once.
+* `name` - (**required**) description.
+* `values` - (**required**) array of headers. Might be defined as much headers as need at once.
 * `action` - (optional) a series of conditions, see below for a
   a full list .
 

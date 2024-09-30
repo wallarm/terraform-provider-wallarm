@@ -274,7 +274,7 @@ func resourceWallarmUploadsRead(d *schema.ResourceData, m interface{}) error {
 		OrderDesc: true,
 		Filter: &wallarm.HintFilter{
 			Clientid: []int{clientID},
-			ActionID: []int{actionID},
+			ID:       []int{ruleID},
 			Type:     []string{"uploads"},
 		},
 	}
@@ -432,6 +432,11 @@ func resourceWallarmUploadsImport(d *schema.ResourceData, m interface{}) ([]*sch
 			if err := d.Set("action", &actionsSet); err != nil {
 				return nil, err
 			}
+
+			d.Set("file_type", (*actionHints.Body)[0].FileType)
+			pointInterface := (*actionHints.Body)[0].Point
+			point := wrapPointElements(pointInterface)
+			d.Set("point", point)
 		}
 
 		existingID := fmt.Sprintf("%d/%d/%d", clientID, actionID, ruleID)

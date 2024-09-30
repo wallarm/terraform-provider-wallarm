@@ -241,7 +241,7 @@ func resourceWallarmBolaCounterRead(d *schema.ResourceData, m interface{}) error
 		OrderDesc: true,
 		Filter: &wallarm.HintFilter{
 			Clientid: []int{clientID},
-			ActionID: []int{actionID},
+			ID:       []int{ruleID},
 			Type:     []string{"bola_counter"},
 		},
 	}

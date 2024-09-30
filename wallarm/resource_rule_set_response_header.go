@@ -3,6 +3,8 @@ package wallarm
 import (
 	"fmt"
 	"log"
+	"strconv"
+	"strings"
 
 	wallarm "github.com/wallarm/wallarm-go"
 
@@ -17,13 +19,15 @@ func resourceWallarmSetResponseHeader() *schema.Resource {
 		Read:   resourceWallarmSetResponseHeaderRead,
 		Update: resourceWallarmSetResponseHeaderUpdate,
 		Delete: resourceWallarmSetResponseHeaderDelete,
+		Importer: &schema.ResourceImporter{
+			State: resourceWallarmSetResponseHeaderImport,
+		},
 
 		Schema: map[string]*schema.Schema{
 
 			"rule_id": {
-				Type:     schema.TypeList,
+				Type:     schema.TypeInt,
 				Computed: true,
-				Elem:     &schema.Schema{Type: schema.TypeInt},
 			},
 
 			"action_id": {
@@ -59,12 +63,20 @@ func resourceWallarmSetResponseHeader() *schema.Resource {
 			"mode": {
 				Type:         schema.TypeString,
 				Required:     true,
+				ForceNew:     true,
 				ValidateFunc: validation.StringInSlice([]string{"append", "replace"}, false),
 			},
 
-			"headers": {
-				Type:     schema.TypeMap,
+			"name": {
+				Type:     schema.TypeString,
 				Required: true,
+				ForceNew: true,
+			},
+
+			"values": {
+				Type:     schema.TypeList,
+				Required: true,
+				ForceNew: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 			},
 
@@ -186,7 +198,14 @@ func resourceWallarmSetResponseHeaderCreate(d *schema.ResourceData, m interface{
 	clientID := retrieveClientID(d, client)
 	comment := d.Get("comment").(string)
 	mode := d.Get("mode").(string)
-	headers := d.Get("headers").(map[string]interface{})
+	name := d.Get("name").(string)
+	valuesInterface := d.Get("values").([]interface{})
+	var values []string
+
+	for _, item := range valuesInterface {
+		str, _ := item.(string)
+		values = append(values, str)
+	}
 
 	actionsFromState := d.Get("action").(*schema.Set)
 	action, err := expandSetToActionDetailsList(actionsFromState)
@@ -194,60 +213,46 @@ func resourceWallarmSetResponseHeaderCreate(d *schema.ResourceData, m interface{
 		return err
 	}
 
-	var ruleIDs []int
-	for k, v := range headers {
-		vp := &wallarm.ActionCreate{
-			Type:                "set_response_header",
-			Clientid:            clientID,
-			Action:              &action,
-			Mode:                mode,
-			Name:                k,
-			Values:              []string{v.(string)},
-			Validated:           false,
-			Comment:             comment,
-			VariativityDisabled: true,
-		}
-		actionResp, err := client.HintCreate(vp)
-		if err != nil {
-			return err
-		}
+	vp := &wallarm.ActionCreate{
+		Type:                "set_response_header",
+		Clientid:            clientID,
+		Action:              &action,
+		Mode:                mode,
+		Name:                name,
+		Values:              values,
+		Validated:           false,
+		Comment:             comment,
+		VariativityDisabled: true,
+	}
+	actionResp, err := client.HintCreate(vp)
 
-		actionID := actionResp.Body.ActionID
-		d.Set("action_id", actionID)
-
-		ruleIDs = append(ruleIDs, actionResp.Body.ID)
-
-		resID := fmt.Sprintf("%d/%d/%d", clientID, actionID, actionResp.Body.ID)
-		d.SetId(resID)
-
+	if err != nil {
+		return err
 	}
 
-	d.Set("rule_id", ruleIDs)
+	d.Set("action_id", actionResp.Body.ActionID)
+	d.Set("rule_id", actionResp.Body.ID)
 	d.Set("client_id", clientID)
+	resID := fmt.Sprintf("%d/%d/%d", clientID, actionResp.Body.ActionID, actionResp.Body.ID)
+	d.SetId(resID)
 
-	return nil
+	return resourceWallarmSetResponseHeaderRead(d, m)
 }
 
 func resourceWallarmSetResponseHeaderRead(d *schema.ResourceData, m interface{}) error {
 	client := m.(wallarm.API)
 	clientID := retrieveClientID(d, client)
+	ruleID := d.Get("rule_id").(int)
 	actionID := d.Get("action_id").(int)
 	mode := d.Get("mode").(string)
-	headers := d.Get("headers").(map[string]interface{})
+	name := d.Get("name").(string)
+	values := d.Get("values").([]interface{})
 
 	actionsFromState := d.Get("action").(*schema.Set)
 	action, err := expandSetToActionDetailsList(actionsFromState)
 	if err != nil {
 		return err
 	}
-
-	var ruleIDInterface []interface{}
-	if v, ok := d.GetOk("rule_id"); ok {
-		ruleIDInterface = v.([]interface{})
-	} else {
-		return nil
-	}
-	ruleIDs := expandInterfaceToIntList(ruleIDInterface)
 
 	hint := &wallarm.HintRead{
 		Limit:     1000,
@@ -256,7 +261,8 @@ func resourceWallarmSetResponseHeaderRead(d *schema.ResourceData, m interface{})
 		OrderDesc: true,
 		Filter: &wallarm.HintFilter{
 			Clientid: []int{clientID},
-			ActionID: []int{actionID},
+			ID:       []int{ruleID},
+			Type:     []string{"set_response_header"},
 		},
 	}
 	actionHints, err := client.HintRead(hint)
@@ -268,52 +274,42 @@ func resourceWallarmSetResponseHeaderRead(d *schema.ResourceData, m interface{})
 	// Assign new values to the old struct slice.
 	fillInDefaultValues(&action)
 
-	var notFoundRules []int
-	var updatedRuleIDs []int
-	for _, rule := range *actionHints.Body {
+	expectedRule := wallarm.ActionBody{
+		ActionID: actionID,
+		Type:     "set_response_header",
+		Mode:     mode,
+		Name:     name,
+		Values:   values,
+	}
 
-		// Check out by ID. The specific rule should be found.
-		if wallarm.Contains(ruleIDs, rule.ID) {
-			updatedRuleIDs = append(updatedRuleIDs, rule.ID)
+	var notFoundRules []int
+	var updatedRuleID int
+	for _, rule := range *actionHints.Body {
+		if ruleID == rule.ID {
+			updatedRuleID = rule.ID
 			continue
 		}
 
-		for name, value := range headers {
+		actualRule := &wallarm.ActionBody{
+			ActionID: rule.ActionID,
+			Type:     rule.Type,
+		}
 
-			expectedRule := wallarm.ActionBody{
-				ActionID: actionID,
-				Type:     "set_response_header",
-				Action:   action,
-				Mode:     mode,
-				Name:     name,
-				Values:   []interface{}{value},
-			}
-
-			actualRule := &wallarm.ActionBody{
-				ActionID: rule.ActionID,
-				Type:     rule.Type,
-				Action:   rule.Action,
-				Mode:     rule.Mode,
-				Name:     rule.Name,
-				Values:   rule.Values,
-			}
-
-			if cmp.Equal(expectedRule, *actualRule) && equalWithoutOrder(action, rule.Action) {
-				updatedRuleIDs = append(updatedRuleIDs, rule.ID)
-				continue
-			}
+		if cmp.Equal(expectedRule, *actualRule) && equalWithoutOrder(action, rule.Action) {
+			updatedRuleID = rule.ID
+			continue
 		}
 
 		notFoundRules = append(notFoundRules, rule.ID)
 	}
 
-	if err := d.Set("rule_id", updatedRuleIDs); err != nil {
+	if err := d.Set("rule_id", updatedRuleID); err != nil {
 		return err
 	}
 
 	d.Set("client_id", clientID)
 
-	if len(updatedRuleIDs) == 0 {
+	if updatedRuleID == 0 {
 		log.Printf("[WARN] these rule IDs: %v have been found under the action ID: %d. But it isn't in the Terraform Plan.", notFoundRules, actionID)
 		d.SetId("")
 	}
@@ -324,26 +320,17 @@ func resourceWallarmSetResponseHeaderRead(d *schema.ResourceData, m interface{})
 func resourceWallarmSetResponseHeaderDelete(d *schema.ResourceData, m interface{}) error {
 	client := m.(wallarm.API)
 	clientID := retrieveClientID(d, client)
+	ruleID := d.Get("rule_id").(int)
 
-	var ruleIDInterface []interface{}
-	if v, ok := d.GetOk("rule_id"); ok {
-		ruleIDInterface = v.([]interface{})
-	} else {
-		return nil
+	h := &wallarm.HintDelete{
+		Filter: &wallarm.HintDeleteFilter{
+			Clientid: []int{clientID},
+			ID:       ruleID,
+		},
 	}
-	ruleIDs := expandInterfaceToIntList(ruleIDInterface)
 
-	for _, ruleID := range ruleIDs {
-		h := &wallarm.HintDelete{
-			Filter: &wallarm.HintDeleteFilter{
-				Clientid: []int{clientID},
-				ID:       ruleID,
-			},
-		}
-
-		if err := client.HintDelete(h); err != nil {
-			return err
-		}
+	if err := client.HintDelete(h); err != nil {
+		return err
 	}
 
 	return nil
@@ -354,4 +341,73 @@ func resourceWallarmSetResponseHeaderUpdate(d *schema.ResourceData, m interface{
 		return err
 	}
 	return resourceWallarmSetResponseHeaderCreate(d, m)
+}
+
+func resourceWallarmSetResponseHeaderImport(d *schema.ResourceData, m interface{}) ([]*schema.ResourceData, error) {
+	client := m.(wallarm.API)
+	idAttr := strings.SplitN(d.Id(), "/", 3)
+	if len(idAttr) == 3 {
+		clientID, err := strconv.Atoi(idAttr[0])
+		if err != nil {
+			return nil, err
+		}
+		actionID, err := strconv.Atoi(idAttr[1])
+		if err != nil {
+			return nil, err
+		}
+		ruleID, err := strconv.Atoi(idAttr[2])
+		if err != nil {
+			return nil, err
+		}
+		d.Set("action_id", actionID)
+		d.Set("rule_id", ruleID)
+		d.Set("rule_type", "set_response_header")
+
+		hint := &wallarm.HintRead{
+			Limit:     1000,
+			Offset:    0,
+			OrderBy:   "updated_at",
+			OrderDesc: true,
+			Filter: &wallarm.HintFilter{
+				Clientid: []int{clientID},
+				ID:       []int{ruleID},
+				Type:     []string{"set_response_header"},
+			},
+		}
+		actionHints, err := client.HintRead(hint)
+		if err != nil {
+			return nil, err
+		}
+		actionsSet := schema.Set{
+			F: hashResponseActionDetails,
+		}
+		var actsSlice []map[string]interface{}
+		if len((*actionHints.Body)) != 0 && len((*actionHints.Body)[0].Action) != 0 {
+			for _, a := range (*actionHints.Body)[0].Action {
+				acts, err := actionDetailsToMap(a)
+				if err != nil {
+					return nil, err
+				}
+				actsSlice = append(actsSlice, acts)
+				actionsSet.Add(acts)
+			}
+			if err := d.Set("action", &actionsSet); err != nil {
+				return nil, err
+			}
+		}
+
+		d.Set("mode", (*actionHints.Body)[0].Mode)
+		d.Set("name", (*actionHints.Body)[0].Name)
+		d.Set("values", (*actionHints.Body)[0].Values)
+
+		existingID := fmt.Sprintf("%d/%d/%d", clientID, actionID, ruleID)
+		d.SetId(existingID)
+
+	} else {
+		return nil, fmt.Errorf("invalid id (%q) specified, should be in format \"{clientID}/{actionID}/{ruleID}\"", d.Id())
+	}
+
+	resourceWallarmSetResponseHeaderRead(d, m)
+
+	return []*schema.ResourceData{d}, nil
 }

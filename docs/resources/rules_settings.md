@@ -96,7 +96,6 @@ resource "wallarm_rules_settings" "rules_settings" {
 	open_vulns_weight = 9
 	serialized_data_weight = 6
 	risk_score_algo = "maximum"
-	pii_fallback = false
 }
 ```
 
@@ -119,7 +118,6 @@ resource "wallarm_rules_settings" "rules_settings" {
 * `open_vulns_weight` - (optional) [risk score][1] weight of active vulnerabilities. Active vulnerabilities may result in unauthorized data access or corruption.
 * `serialized_data_weight` - (optional) [risk score][1] weight of accepting XML / JSON objects. XML / JSON objects are often used to transfer malicious payloads to attack servers.
 * `risk_score_algo` - (optional) method of [risk score][1] calculation. Specify how the risk score calculation should be performed. Available values: maximum, average.
-* `pii_fallback` - (optional) defines whether fallback mechanism for PII detection is active.
 
 [1]: https://docs.wallarm.com/api-discovery/overview/#endpoint-risk-score
 [2]: https://docs.wallarm.com/user-guides/rules/rules/

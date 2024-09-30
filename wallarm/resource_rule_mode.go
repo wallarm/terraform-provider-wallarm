@@ -62,7 +62,7 @@ func resourceWallarmMode() *schema.Resource {
 			"mode": {
 				Type:         schema.TypeString,
 				Required:     true,
-				ValidateFunc: validation.StringInSlice([]string{"default", "off", "monitoring", "block"}, false),
+				ValidateFunc: validation.StringInSlice([]string{"default", "off", "monitoring", "block", "safe_blocking"}, false),
 				ForceNew:     true,
 			},
 

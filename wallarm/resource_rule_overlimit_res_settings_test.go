@@ -21,7 +21,7 @@ func TestAccOverlimitResSettings(t *testing.T) {
 			{
 				Config: testAccRuleOverlimitResSettings(resourceName),
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr(resourceAddress, "overlimit_time", "2000"),
+					resource.TestCheckResourceAttr(resourceAddress, "overlimit_time", "1000"),
 					resource.TestCheckResourceAttr(resourceAddress, "mode", "monitoring"),
 				),
 			},
@@ -33,7 +33,7 @@ func testAccRuleOverlimitResSettings(resourceName string) string {
 	return fmt.Sprintf(`
 resource "wallarm_rule_overlimit_res_settings" %[1]q {
 
-	mode = "blocking"
+	mode = "monitoring"
 	overlimit_time = 1000
 	action {
 		type = "iequal"

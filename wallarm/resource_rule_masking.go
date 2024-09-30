@@ -265,7 +265,7 @@ func resourceWallarmSensitiveDataRead(d *schema.ResourceData, m interface{}) err
 		OrderDesc: true,
 		Filter: &wallarm.HintFilter{
 			Clientid: []int{clientID},
-			ActionID: []int{actionID},
+			ID:       []int{ruleID},
 			Type:     []string{"sensitive_data"},
 		},
 	}
@@ -337,12 +337,13 @@ func resourceWallarmSensitiveDataDelete(d *schema.ResourceData, m interface{}) e
 	client := m.(wallarm.API)
 	clientID := retrieveClientID(d, client)
 	actionID := d.Get("action_id").(int)
+	ruleID := d.Get("rule_id").(int)
 
 	rule := &wallarm.ActionRead{
 		Filter: &wallarm.ActionFilter{
 			HintType: []string{"sensitive_data"},
 			Clientid: []int{clientID},
-			ID:       []int{actionID},
+			ID:       []int{ruleID},
 		},
 		Limit:  1000,
 		Offset: 0,
@@ -423,7 +424,12 @@ func resourceWallarmSensitiveDataImport(d *schema.ResourceData, m interface{}) (
 			if err := d.Set("action", &actionsSet); err != nil {
 				return nil, err
 			}
+
 		}
+
+		pointInterface := (*actionHints.Body)[0].Point
+		point := wrapPointElements(pointInterface)
+		d.Set("point", point)
 
 		existingID := fmt.Sprintf("%d/%d/%d", clientID, actionID, ruleID)
 		d.SetId(existingID)

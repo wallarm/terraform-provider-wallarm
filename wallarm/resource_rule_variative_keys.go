@@ -265,7 +265,7 @@ func resourceWallarmVariativeKeysRead(d *schema.ResourceData, m interface{}) err
 		OrderDesc: true,
 		Filter: &wallarm.HintFilter{
 			Clientid: []int{clientID},
-			ActionID: []int{actionID},
+			ID:       []int{ruleID},
 			Type:     []string{"variative_keys"},
 		},
 	}
@@ -423,6 +423,10 @@ func resourceWallarmVariativeKeysImport(d *schema.ResourceData, m interface{}) (
 			if err := d.Set("action", &actionsSet); err != nil {
 				return nil, err
 			}
+
+			pointInterface := (*actionHints.Body)[0].Point
+			point := wrapPointElements(pointInterface)
+			d.Set("point", point)
 		}
 
 		existingID := fmt.Sprintf("%d/%d/%d", clientID, actionID, ruleID)
