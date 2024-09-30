@@ -3,6 +3,8 @@ package wallarm
 import (
 	"fmt"
 	"log"
+	"strconv"
+	"strings"
 
 	wallarm "github.com/wallarm/wallarm-go"
 
@@ -16,6 +18,9 @@ func resourceWallarmRateLimit() *schema.Resource {
 		Create: resourceWallarmRateLimitCreate,
 		Read:   resourceWallarmRateLimitRead,
 		Delete: resourceWallarmRateLimitDelete,
+		Importer: &schema.ResourceImporter{
+			State: resourceWallarmRateLimitImport,
+		},
 
 		Schema: map[string]*schema.Schema{
 
@@ -363,4 +368,79 @@ func resourceWallarmRateLimitDelete(d *schema.ResourceData, m interface{}) error
 	}
 
 	return nil
+}
+
+func resourceWallarmRateLimitImport(d *schema.ResourceData, m interface{}) ([]*schema.ResourceData, error) {
+	client := m.(wallarm.API)
+	idAttr := strings.SplitN(d.Id(), "/", 3)
+	if len(idAttr) == 3 {
+		clientID, err := strconv.Atoi(idAttr[0])
+		if err != nil {
+			return nil, err
+		}
+		actionID, err := strconv.Atoi(idAttr[1])
+		if err != nil {
+			return nil, err
+		}
+		ruleID, err := strconv.Atoi(idAttr[2])
+		if err != nil {
+			return nil, err
+		}
+		d.Set("action_id", actionID)
+		d.Set("rule_id", ruleID)
+		d.Set("rule_type", "rate_limit")
+
+		hint := &wallarm.HintRead{
+			Limit:     1000,
+			Offset:    0,
+			OrderBy:   "updated_at",
+			OrderDesc: true,
+			Filter: &wallarm.HintFilter{
+				Clientid: []int{clientID},
+				ID:       []int{ruleID},
+				Type:     []string{"rate_limit"},
+			},
+		}
+		actionHints, err := client.HintRead(hint)
+		if err != nil {
+			return nil, err
+		}
+		actionsSet := schema.Set{
+			F: hashResponseActionDetails,
+		}
+		var actsSlice []map[string]interface{}
+		if len((*actionHints.Body)) != 0 && len((*actionHints.Body)[0].Action) != 0 {
+			for _, a := range (*actionHints.Body)[0].Action {
+				acts, err := actionDetailsToMap(a)
+				if err != nil {
+					return nil, err
+				}
+				actsSlice = append(actsSlice, acts)
+				actionsSet.Add(acts)
+			}
+			if err := d.Set("action", &actionsSet); err != nil {
+				return nil, err
+			}
+
+		}
+		pointInterface := (*actionHints.Body)[0].Point
+		point := wrapPointElements(pointInterface)
+		d.Set("point", point)
+		d.Set("delay", (*actionHints.Body)[0].Delay)
+		d.Set("rate", (*actionHints.Body)[0].Rate)
+		d.Set("burst", (*actionHints.Body)[0].Burst)
+		d.Set("rsp_status", (*actionHints.Body)[0].RspStatus)
+		d.Set("time_unit", (*actionHints.Body)[0].TimeUnit)
+		d.Set("suffix", (*actionHints.Body)[0].Suffix)
+
+		existingID := fmt.Sprintf("%d/%d/%d", clientID, actionID, ruleID)
+		d.SetId(existingID)
+
+	} else {
+		return nil, fmt.Errorf("invalid id (%q) specified, should be in format \"{clientID}/{actionID}/{ruleID}\"", d.Id())
+	}
+
+	resourceWallarmRateLimitRead(d, m)
+
+	return []*schema.ResourceData{d}, nil
 }

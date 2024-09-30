@@ -434,6 +434,11 @@ func resourceWallarmDisableAttackTypeImport(d *schema.ResourceData, m interface{
 			}
 		}
 
+		d.Set("attack_type", (*actionHints.Body)[0].AttackType)
+		pointInterface := (*actionHints.Body)[0].Point
+		point := wrapPointElements(pointInterface)
+		d.Set("point", point)
+
 		existingID := fmt.Sprintf("%d/%d/%d", clientID, actionID, ruleID)
 		d.SetId(existingID)
 

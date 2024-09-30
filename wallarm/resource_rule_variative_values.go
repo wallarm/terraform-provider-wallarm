@@ -425,6 +425,10 @@ func resourceWallarmVariativeValuesImport(d *schema.ResourceData, m interface{})
 			}
 		}
 
+		pointInterface := (*actionHints.Body)[0].Point
+		point := wrapPointElements(pointInterface)
+		d.Set("point", point)
+
 		existingID := fmt.Sprintf("%d/%d/%d", clientID, actionID, ruleID)
 		d.SetId(existingID)
 

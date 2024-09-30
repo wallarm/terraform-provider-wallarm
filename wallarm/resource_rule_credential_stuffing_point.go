@@ -276,6 +276,10 @@ func resourceWallarmCredentialStuffingPointImport(d *schema.ResourceData, m inte
 	if err != nil {
 		return nil, err
 	}
+	actionID, err := strconv.Atoi(idParts[1])
+	if err != nil {
+		return nil, err
+	}
 	ruleID, err := strconv.Atoi(idParts[2])
 	if err != nil {
 		return nil, err
@@ -286,8 +290,55 @@ func resourceWallarmCredentialStuffingPointImport(d *schema.ResourceData, m inte
 		return nil, err
 	}
 
+	ruleType := "credentials_point"
+
 	d.Set("client_id", clientID)
 	d.Set("rule_id", ruleID)
+	d.Set("action_id", actionID)
+	d.Set("type", ruleType)
+
+	hint := &wallarm.HintRead{
+		Limit:     1000,
+		Offset:    0,
+		OrderBy:   "updated_at",
+		OrderDesc: true,
+		Filter: &wallarm.HintFilter{
+			Clientid: []int{clientID},
+			ID:       []int{ruleID},
+			Type:     []string{ruleType},
+		},
+	}
+	actionHints, err := client.HintRead(hint)
+	if err != nil {
+		return nil, err
+	}
+	actionsSet := schema.Set{
+		F: hashResponseActionDetails,
+	}
+	var actsSlice []map[string]interface{}
+	if len((*actionHints.Body)) != 0 && len((*actionHints.Body)[0].Action) != 0 {
+		for _, a := range (*actionHints.Body)[0].Action {
+			acts, err := actionDetailsToMap(a)
+			if err != nil {
+				return nil, err
+			}
+			actsSlice = append(actsSlice, acts)
+			actionsSet.Add(acts)
+		}
+		if err := d.Set("action", &actionsSet); err != nil {
+			return nil, err
+		}
+	}
+
+	pointInterface := (*actionHints.Body)[0].Point
+	point := wrapPointElements(pointInterface)
+	d.Set("point", point)
+	pointInterface = (*actionHints.Body)[0].LoginPoint
+	point = wrapPointElements(pointInterface)
+	d.Set("login_point", point)
+
+	existingID := fmt.Sprintf("%d/%d/%d", clientID, actionID, ruleID)
+	d.SetId(existingID)
 
 	return []*schema.ResourceData{d}, nil
 }

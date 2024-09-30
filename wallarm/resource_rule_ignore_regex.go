@@ -436,11 +436,11 @@ func resourceWallarmIgnoreRegexImport(d *schema.ResourceData, m interface{}) ([]
 			}
 			d.Set("regex_id", (*actionHints.Body)[0].RegexID)
 
-			// TODO: Import point as the struct changes when API responds.
-			// Currently it doesn't import it correctly so it leads to
-			// a necessity to apply changes again via destroy/create function.
-			d.Set("point", (*actionHints.Body)[0].Point)
 		}
+
+		pointInterface := (*actionHints.Body)[0].Point
+		point := wrapPointElements(pointInterface)
+		d.Set("point", point)
 
 		existingID := fmt.Sprintf("%d/%d/%d", clientID, actionID, ruleID)
 		d.SetId(existingID)
