@@ -3,6 +3,8 @@ package wallarm
 import (
 	"fmt"
 	"log"
+	"strconv"
+	"strings"
 
 	wallarm "github.com/wallarm/wallarm-go"
 
@@ -17,6 +19,9 @@ func resourceWallarmSetResponseHeader() *schema.Resource {
 		Read:   resourceWallarmSetResponseHeaderRead,
 		Update: resourceWallarmSetResponseHeaderUpdate,
 		Delete: resourceWallarmSetResponseHeaderDelete,
+		Importer: &schema.ResourceImporter{
+			State: resourceWallarmSetResponseHeaderImport,
+		},
 
 		Schema: map[string]*schema.Schema{
 
@@ -354,4 +359,79 @@ func resourceWallarmSetResponseHeaderUpdate(d *schema.ResourceData, m interface{
 		return err
 	}
 	return resourceWallarmSetResponseHeaderCreate(d, m)
+}
+
+func resourceWallarmSetResponseHeaderImport(d *schema.ResourceData, m interface{}) ([]*schema.ResourceData, error) {
+	client := m.(wallarm.API)
+	idAttr := strings.SplitN(d.Id(), "/", 3)
+	if len(idAttr) == 3 {
+		clientID, err := strconv.Atoi(idAttr[0])
+		if err != nil {
+			return nil, err
+		}
+		actionID, err := strconv.Atoi(idAttr[1])
+		if err != nil {
+			return nil, err
+		}
+		ruleID, err := strconv.Atoi(idAttr[2])
+		if err != nil {
+			return nil, err
+		}
+		d.Set("action_id", actionID)
+		d.Set("rule_id", ruleID)
+		d.Set("rule_type", "set_response_header")
+
+		hint := &wallarm.HintRead{
+			Limit:     1000,
+			Offset:    0,
+			OrderBy:   "updated_at",
+			OrderDesc: true,
+			Filter: &wallarm.HintFilter{
+				Clientid: []int{clientID},
+				ID:       []int{ruleID},
+				Type:     []string{"set_response_header"},
+			},
+		}
+		actionHints, err := client.HintRead(hint)
+		if err != nil {
+			return nil, err
+		}
+		actionsSet := schema.Set{
+			F: hashResponseActionDetails,
+		}
+		var actsSlice []map[string]interface{}
+		if len((*actionHints.Body)) != 0 && len((*actionHints.Body)[0].Action) != 0 {
+			for _, a := range (*actionHints.Body)[0].Action {
+				acts, err := actionDetailsToMap(a)
+				if err != nil {
+					return nil, err
+				}
+				actsSlice = append(actsSlice, acts)
+				actionsSet.Add(acts)
+			}
+			if err := d.Set("action", &actionsSet); err != nil {
+				return nil, err
+			}
+		}
+
+		d.Set("mode", (*actionHints.Body)[0].Mode)
+		d.Set("name", (*actionHints.Body)[0].Name)
+		valuesInterface := (*actionHints.Body)[0].Values
+		var valuesStr []string
+		for _, item := range valuesInterface {
+			str, _ := item.(string)
+			valuesStr = append(valuesStr, str)
+		}
+		d.Set("values", valuesStr)
+
+		existingID := fmt.Sprintf("%d/%d/%d", clientID, actionID, ruleID)
+		d.SetId(existingID)
+
+	} else {
+		return nil, fmt.Errorf("invalid id (%q) specified, should be in format \"{clientID}/{actionID}/{ruleID}\"", d.Id())
+	}
+
+	resourceWallarmSetResponseHeaderRead(d, m)
+
+	return []*schema.ResourceData{d}, nil
 }

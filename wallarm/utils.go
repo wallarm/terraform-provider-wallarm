@@ -238,6 +238,39 @@ func expandPointsToTwoDimensionalArray(ps []interface{}) (wallarm.TwoDimensional
 	return points, nil
 }
 
+func wrapPointElements(input []interface{}) [][]string {
+	var result [][]string // This will store the final result as a 2D slice of strings
+	i := 0
+
+	for i < len(input) {
+		switch input[i] {
+		case "json_array", "xml_pi", "hash", "array", "viewstate_array", "viewstate_pair",
+			"viewstate_triplet", "viewstate_dict", "header", "xml_dtd_entity",
+			"xml_tag_array", "xml_tag", "xml_attr", "xml_comment", "grpc", "protobuf",
+			"json_obj", "json", "jwt", "multipart", "get", "content_disp", "form_urlencoded",
+			"path", "cookie", "response_header", "viewstate_sparse_array":
+			// Check if there is a next element to include
+			if i+1 < len(input) {
+				// Convert both elements to strings and wrap them in a slice of strings
+				result = append(result, []string{
+					fmt.Sprintf("%v", input[i]),
+					fmt.Sprintf("%v", input[i+1]),
+				})
+				i++ // Skip the next element as it's already included
+			} else {
+				// If no next element, still wrap the special case string alone
+				result = append(result, []string{fmt.Sprintf("%v", input[i])})
+			}
+		default:
+			// For regular elements, convert to string and wrap it in a slice of strings
+			result = append(result, []string{fmt.Sprintf("%v", input[i])})
+		}
+		i++ // Move to the next element
+	}
+
+	return result
+}
+
 func alignPointScheme(rulePoint []interface{}) []interface{} {
 	// Check by comparing the defined struct.
 	// This is needed when a new rule was overwritten by the old one, but API responds with rule ID

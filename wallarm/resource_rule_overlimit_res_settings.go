@@ -3,6 +3,8 @@ package wallarm
 import (
 	"fmt"
 	"log"
+	"strconv"
+	"strings"
 
 	wallarm "github.com/wallarm/wallarm-go"
 
@@ -16,6 +18,9 @@ func resourceWallarmOverlimitResSettings() *schema.Resource {
 		Create: resourceWallarmOverlimitResSettingsCreate,
 		Read:   resourceWallarmOverlimitResSettingsRead,
 		Delete: resourceWallarmOverlimitResSettingsDelete,
+		Importer: &schema.ResourceImporter{
+			State: resourceWallarmOverlimitResSettingsImport,
+		},
 
 		Schema: map[string]*schema.Schema{
 
@@ -170,16 +175,6 @@ func resourceWallarmOverlimitResSettings() *schema.Resource {
 				},
 			},
 
-			"point": {
-				Type:     schema.TypeList,
-				Optional: true,
-				ForceNew: true,
-				Elem: &schema.Schema{
-					Type: schema.TypeList,
-					Elem: &schema.Schema{Type: schema.TypeString},
-				},
-			},
-
 			"overlimit_time": {
 				Type:         schema.TypeInt,
 				ForceNew:     true,
@@ -208,11 +203,6 @@ func resourceWallarmOverlimitResSettingsCreate(d *schema.ResourceData, m interfa
 		return err
 	}
 
-	iPoint := d.Get("point").([]interface{})
-	point, err := expandPointsToTwoDimensionalArray(iPoint)
-	if err != nil {
-		return err
-	}
 	overlimitTime := d.Get("overlimit_time").(int)
 	mode := d.Get("mode").(string)
 
@@ -222,7 +212,6 @@ func resourceWallarmOverlimitResSettingsCreate(d *schema.ResourceData, m interfa
 		Action:        &action,
 		Validated:     false,
 		Comment:       comment,
-		Point:         point,
 		Mode:          mode,
 		OverlimitTime: overlimitTime,
 	}
@@ -237,7 +226,6 @@ func resourceWallarmOverlimitResSettingsCreate(d *schema.ResourceData, m interfa
 	d.Set("action_id", actionID)
 	d.Set("rule_type", actionResp.Body.Type)
 	d.Set("client_id", clientID)
-	d.Set("point", actionResp.Body.Point)
 
 	resID := fmt.Sprintf("%d/%d/%d", clientID, actionID, actionResp.Body.ID)
 	d.SetId(resID)
@@ -335,4 +323,73 @@ func resourceWallarmOverlimitResSettingsDelete(d *schema.ResourceData, m interfa
 	}
 
 	return nil
+}
+
+func resourceWallarmOverlimitResSettingsImport(d *schema.ResourceData, m interface{}) ([]*schema.ResourceData, error) {
+	client := m.(wallarm.API)
+	idAttr := strings.SplitN(d.Id(), "/", 3)
+	if len(idAttr) == 3 {
+		clientID, err := strconv.Atoi(idAttr[0])
+		if err != nil {
+			return nil, err
+		}
+		actionID, err := strconv.Atoi(idAttr[1])
+		if err != nil {
+			return nil, err
+		}
+		ruleID, err := strconv.Atoi(idAttr[2])
+		if err != nil {
+			return nil, err
+		}
+		d.Set("action_id", actionID)
+		d.Set("rule_id", ruleID)
+		d.Set("rule_type", "overlimit_res_settings")
+
+		hint := &wallarm.HintRead{
+			Limit:     1000,
+			Offset:    0,
+			OrderBy:   "updated_at",
+			OrderDesc: true,
+			Filter: &wallarm.HintFilter{
+				Clientid: []int{clientID},
+				ID:       []int{ruleID},
+				Type:     []string{"overlimit_res_settings"},
+			},
+		}
+		actionHints, err := client.HintRead(hint)
+		if err != nil {
+			return nil, err
+		}
+		actionsSet := schema.Set{
+			F: hashResponseActionDetails,
+		}
+		var actsSlice []map[string]interface{}
+		if len((*actionHints.Body)) != 0 && len((*actionHints.Body)[0].Action) != 0 {
+			for _, a := range (*actionHints.Body)[0].Action {
+				acts, err := actionDetailsToMap(a)
+				if err != nil {
+					return nil, err
+				}
+				actsSlice = append(actsSlice, acts)
+				actionsSet.Add(acts)
+			}
+			if err := d.Set("action", &actionsSet); err != nil {
+				return nil, err
+			}
+
+		}
+
+		d.Set("mode", (*actionHints.Body)[0].Mode)
+		d.Set("overlimit_time", (*actionHints.Body)[0].OverlimitTime)
+
+		existingID := fmt.Sprintf("%d/%d/%d", clientID, actionID, ruleID)
+		d.SetId(existingID)
+
+	} else {
+		return nil, fmt.Errorf("invalid id (%q) specified, should be in format \"{clientID}/{actionID}/{ruleID}\"", d.Id())
+	}
+
+	resourceWallarmOverlimitResSettingsRead(d, m)
+
+	return []*schema.ResourceData{d}, nil
 }

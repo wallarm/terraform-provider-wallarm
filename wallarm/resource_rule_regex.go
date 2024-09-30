@@ -466,10 +466,9 @@ func resourceWallarmRegexImport(d *schema.ResourceData, m interface{}) ([]*schem
 			d.Set("regex", (*actionHints.Body)[0].Regex)
 			d.Set("attack_type", (*actionHints.Body)[0].AttackType)
 
-			// TODO: Import point as the struct changes when API responds.
-			// Currently it doesn't import it correctly so it leads to
-			// a necessity to apply changes again via destroy/create function.
-			d.Set("point", (*actionHints.Body)[0].Point)
+			pointInterface := (*actionHints.Body)[0].Point
+			point := wrapPointElements(pointInterface)
+			d.Set("point", point)
 		}
 
 		if hintType == "experimental_regex" {
