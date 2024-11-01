@@ -62,7 +62,7 @@ func resourceWallarmDisableAttackType() *schema.Resource {
 			"attack_type": {
 				Type:         schema.TypeString,
 				Required:     true,
-				ValidateFunc: validation.StringInSlice([]string{"sqli", "xss", "rce", "ptrav", "crlf", "nosqli", "xxe", "ldapi", "scanner", "ssti", "ssi", "mail_injection", "vpatch"}, false),
+				ValidateFunc: validation.StringInSlice([]string{"xss", "sqli", "rce", "xxe", "ptrav", "crlf", "redir", "nosqli", "ldapi", "scanner", "mass_assignment", "ssrf", "ssi", "mail_injection", "ssti", "any"}, false),
 				ForceNew:     true,
 			},
 

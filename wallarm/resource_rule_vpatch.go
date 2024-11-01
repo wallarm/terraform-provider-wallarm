@@ -13,16 +13,10 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 )
 
-// TODO: Add an importer:
-// Importer: &schema.ResourceImporter{
-// 	State: resourceWallarmVpatchImport,
-// },
-
 func resourceWallarmVpatch() *schema.Resource {
 	return &schema.Resource{
 		Create: resourceWallarmVpatchCreate,
 		Read:   resourceWallarmVpatchRead,
-		Update: resourceWallarmVpatchUpdate,
 		Delete: resourceWallarmVpatchDelete,
 		Importer: &schema.ResourceImporter{
 			State: resourceWallarmVpatchImport,
@@ -31,9 +25,8 @@ func resourceWallarmVpatch() *schema.Resource {
 		Schema: map[string]*schema.Schema{
 
 			"rule_id": {
-				Type:     schema.TypeList,
+				Type:     schema.TypeInt,
 				Computed: true,
-				Elem:     &schema.Schema{Type: schema.TypeInt},
 			},
 
 			"action_id": {
@@ -67,12 +60,10 @@ func resourceWallarmVpatch() *schema.Resource {
 			},
 
 			"attack_type": {
-				Type:     schema.TypeList,
-				Required: true,
-				ForceNew: true,
-				Description: `Possible values: "any", "sqli", "rce", "crlf", "nosqli", "ptrav",
-				"xxe", "ptrav", "xss", "scanner", "redir", "ldapi"`,
-				Elem: &schema.Schema{Type: schema.TypeString},
+				Type:         schema.TypeString,
+				Required:     true,
+				ValidateFunc: validation.StringInSlice([]string{"xss", "sqli", "rce", "xxe", "ptrav", "crlf", "redir", "nosqli", "ldapi", "scanner", "mass_assignment", "ssrf", "ssi", "mail_injection", "ssti", "any"}, false),
+				ForceNew:     true,
 			},
 
 			"action": {
@@ -140,6 +131,12 @@ func resourceWallarmVpatch() *schema.Resource {
 										ForceNew: true,
 									},
 
+									"query": {
+										Type:     schema.TypeString,
+										Optional: true,
+										ForceNew: true,
+									},
+
 									"proto": {
 										Type:         schema.TypeString,
 										Optional:     true,
@@ -185,9 +182,7 @@ func resourceWallarmVpatch() *schema.Resource {
 				ForceNew: true,
 				Elem: &schema.Schema{
 					Type: schema.TypeList,
-					Elem: &schema.Schema{
-						Type: schema.TypeString,
-					},
+					Elem: &schema.Schema{Type: schema.TypeString},
 				},
 			},
 		},
@@ -198,11 +193,7 @@ func resourceWallarmVpatchCreate(d *schema.ResourceData, m interface{}) error {
 	client := m.(wallarm.API)
 	clientID := retrieveClientID(d, client)
 	comment := d.Get("comment").(string)
-	attackType := d.Get("attack_type").([]interface{})
-	var attacks []string
-	for _, attack := range attackType {
-		attacks = append(attacks, attack.(string))
-	}
+	attackType := d.Get("attack_type").(string)
 
 	ps := d.Get("point").([]interface{})
 	if err := d.Set("point", ps); err != nil {
@@ -220,82 +211,39 @@ func resourceWallarmVpatchCreate(d *schema.ResourceData, m interface{}) error {
 		return err
 	}
 
-	ruleIDs := make([]int, len(attacks))
-	attackTypes := make([]string, len(attacks))
-	for i, attack := range attacks {
-		vp := &wallarm.ActionCreate{
-			Type:                "vpatch",
-			AttackType:          attack,
-			Clientid:            clientID,
-			Action:              &action,
-			Point:               points,
-			Validated:           false,
-			Comment:             comment,
-			VariativityDisabled: true,
-		}
-
-		actionResp, err := client.HintCreate(vp)
-		if err != nil {
-			return err
-		}
-
-		if err := d.Set("action_id", actionResp.Body.ActionID); err != nil {
-			return err
-		}
-
-		if err := d.Set("rule_type", actionResp.Body.Type); err != nil {
-			return err
-		}
-
-		ruleIDs[i] = actionResp.Body.ID
-		attackTypes[i] = actionResp.Body.AttackType
-
-		d.SetId(actionResp.Body.Type)
+	wm := &wallarm.ActionCreate{
+		Type:                "vpatch",
+		Clientid:            clientID,
+		Action:              &action,
+		Point:               points,
+		Validated:           false,
+		Comment:             comment,
+		AttackType:          attackType,
+		VariativityDisabled: true,
 	}
 
-	if err := d.Set("rule_id", ruleIDs); err != nil {
+	actionResp, err := client.HintCreate(wm)
+	if err != nil {
 		return err
 	}
 
-	if err := d.Set("attack_type", attackTypes); err != nil {
-		return err
-	}
+	d.Set("rule_id", actionResp.Body.ID)
+	d.Set("action_id", actionResp.Body.ActionID)
+	d.Set("rule_type", actionResp.Body.Type)
 
-	d.Set("client_id", clientID)
+	resID := fmt.Sprintf("%d/%d/%d", clientID, actionResp.Body.ActionID, actionResp.Body.ID)
+	d.SetId(resID)
 
-	return nil
+	return resourceWallarmVpatchRead(d, m)
 }
 
 func resourceWallarmVpatchRead(d *schema.ResourceData, m interface{}) error {
 	client := m.(wallarm.API)
 	clientID := retrieveClientID(d, client)
 	actionID := d.Get("action_id").(int)
+	ruleID := d.Get("rule_id").(int)
 
-	var attackType []interface{}
-	if v, ok := d.GetOk("attack_type"); ok {
-		attackType = v.([]interface{})
-	} else {
-		return nil
-	}
-	var attacks []string
-	for _, attack := range attackType {
-		attacks = append(attacks, attack.(string))
-	}
-
-	var ruleIDInterface []interface{}
-	if v, ok := d.GetOk("rule_id"); ok {
-		ruleIDInterface = v.([]interface{})
-	} else {
-		return nil
-	}
-	ruleIDs := expandInterfaceToIntList(ruleIDInterface)
-
-	var ps []interface{}
-	if v, ok := d.GetOk("point"); ok {
-		ps = v.([]interface{})
-	} else {
-		return nil
-	}
+	ps := d.Get("point").([]interface{})
 	var points []interface{}
 	for _, point := range ps {
 		p := point.([]interface{})
@@ -308,6 +256,17 @@ func resourceWallarmVpatchRead(d *schema.ResourceData, m interface{}) error {
 		return err
 	}
 
+	var actsSlice []interface{}
+	for _, a := range action {
+		acts, err := actionDetailsToMap(a)
+		if err != nil {
+			return err
+		}
+		actsSlice = append(actsSlice, acts)
+	}
+
+	actionsSet := schema.NewSet(hashResponseActionDetails, actsSlice)
+
 	hint := &wallarm.HintRead{
 		Limit:     1000,
 		Offset:    0,
@@ -316,6 +275,7 @@ func resourceWallarmVpatchRead(d *schema.ResourceData, m interface{}) error {
 		Filter: &wallarm.HintFilter{
 			Clientid: []int{clientID},
 			ActionID: []int{actionID},
+			Type:     []string{"vpatch"},
 		},
 	}
 	actionHints, err := client.HintRead(hint)
@@ -323,29 +283,22 @@ func resourceWallarmVpatchRead(d *schema.ResourceData, m interface{}) error {
 		return err
 	}
 
-	// This is mandatory to fill in the default values in order to compare structs deeply.
+	// This is mandatory to fill in the default values in order to compare them deeply.
 	// Assign new values to the old struct slice.
 	fillInDefaultValues(&action)
 
-	var expectedRules []wallarm.ActionBody
-	for _, attack := range attacks {
-		r := wallarm.ActionBody{
-			ActionID:   actionID,
-			Type:       "vpatch",
-			Point:      points,
-			AttackType: attack,
-		}
-		expectedRules = append(expectedRules, r)
+	expectedRule := wallarm.ActionBody{
+		ActionID: actionID,
+		Type:     "vpatch",
+		Point:    points,
 	}
 
 	var notFoundRules []int
-	var updatedRuleIDs []int
-out:
+	var updatedRuleID int
 	for _, rule := range *actionHints.Body {
 
-		// Check straight right by ID. The specific rule should be found.
-		if wallarm.Contains(ruleIDs, rule.ID) {
-			updatedRuleIDs = append(updatedRuleIDs, rule.ID)
+		if ruleID == rule.ID {
+			updatedRuleID = rule.ID
 			continue
 		}
 
@@ -354,30 +307,35 @@ out:
 		alignedPoints := alignPointScheme(rule.Point)
 
 		actualRule := &wallarm.ActionBody{
-			ActionID:   rule.ActionID,
-			Type:       rule.Type,
-			Point:      alignedPoints,
-			AttackType: rule.AttackType,
+			ActionID: rule.ActionID,
+			Type:     rule.Type,
+			Point:    alignedPoints,
 		}
 
-		for _, expectedRule := range expectedRules {
-			if cmp.Equal(expectedRule, *actualRule) && equalWithoutOrder(action, rule.Action) {
-				updatedRuleIDs = append(updatedRuleIDs, rule.ID)
-				continue out
-			}
+		if cmp.Equal(expectedRule, *actualRule) && equalWithoutOrder(action, rule.Action) {
+			updatedRuleID = rule.ID
+			continue
 		}
 
 		notFoundRules = append(notFoundRules, rule.ID)
 	}
 
-	if err := d.Set("rule_id", updatedRuleIDs); err != nil {
+	if err := d.Set("rule_id", updatedRuleID); err != nil {
 		return err
 	}
 
 	d.Set("client_id", clientID)
 
-	if len(updatedRuleIDs) == 0 {
-		log.Printf("[WARN] these rule IDs: %v have been found under the action ID: %d. But they aren't in the Terraform Plan.", notFoundRules, actionID)
+	if actionsSet.Len() != 0 {
+		if err := d.Set("action", &actionsSet); err != nil {
+			return err
+		}
+	} else {
+		log.Printf("[WARN] action was empty so it either doesn't exist or it is a default branch which has no conditions. Actions: %v", &actionsSet)
+	}
+
+	if updatedRuleID == 0 {
+		log.Printf("[WARN] these rule IDs: %v have been found under the action ID: %d. But it isn't in the Terraform Plan.", notFoundRules, actionID)
 		d.SetId("")
 	}
 
@@ -387,16 +345,28 @@ out:
 func resourceWallarmVpatchDelete(d *schema.ResourceData, m interface{}) error {
 	client := m.(wallarm.API)
 	clientID := retrieveClientID(d, client)
+	actionID := d.Get("action_id").(int)
 
-	var ruleIDInterface []interface{}
-	if v, ok := d.GetOk("rule_id"); ok {
-		ruleIDInterface = v.([]interface{})
-	} else {
-		return nil
+	rule := &wallarm.ActionRead{
+		Filter: &wallarm.ActionFilter{
+			HintType: []string{"vpatch"},
+			Clientid: []int{clientID},
+			ID:       []int{actionID},
+		},
+		Limit:  1000,
+		Offset: 0,
+	}
+	respRules, err := client.RuleRead(rule)
+	if err != nil {
+		return err
 	}
 
-	ruleIDs := expandInterfaceToIntList(ruleIDInterface)
-	for _, ruleID := range ruleIDs {
+	if len(respRules.Body) == 1 && respRules.Body[0].Hints == 1 && respRules.Body[0].GroupedHintsCount == 1 {
+		if err := client.RuleDelete(actionID); err != nil {
+			return err
+		}
+	} else {
+		ruleID := d.Get("rule_id").(int)
 		h := &wallarm.HintDelete{
 			Filter: &wallarm.HintDeleteFilter{
 				Clientid: []int{clientID},
@@ -409,13 +379,6 @@ func resourceWallarmVpatchDelete(d *schema.ResourceData, m interface{}) error {
 		}
 	}
 	return nil
-}
-
-func resourceWallarmVpatchUpdate(d *schema.ResourceData, m interface{}) error {
-	if err := resourceWallarmVpatchDelete(d, m); err != nil {
-		return err
-	}
-	return resourceWallarmVpatchCreate(d, m)
 }
 
 func resourceWallarmVpatchImport(d *schema.ResourceData, m interface{}) ([]*schema.ResourceData, error) {

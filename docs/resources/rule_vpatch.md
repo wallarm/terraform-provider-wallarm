@@ -12,7 +12,7 @@ Provides the resource to manage rules with the "[Create a virtual patch][1]" act
 
 Virtual patches are especially useful in cases when it is impossible to fix a critical vulnerability in the code or install the necessary security updates quickly.
 
-If attack types are specified, the request will be blocked only if the Wallarm node detects an attack of one of the listed types in the corresponding parameter. If the attack type is set to `any`, the Wallarm node blocks the requests with the defined parameter, even if it does not contain a malicious payload.
+If attack type is specified, the request will be blocked only if the Wallarm node detects an attack in the corresponding parameter. If the attack type is set to `any`, the Wallarm node blocks the requests with the defined parameter, even if it does not contain a malicious payload.
 
 **Important:** Rules made with Terraform can't be altered by other rules that usually change how rules work (middleware, variative_values, variative_by_regex).
 This is because Terraform is designed to keep its configurations stable and not meant to be modified from outside its environment.
@@ -25,30 +25,9 @@ This is because Terraform is designed to keep its configurations stable and not 
 # in the "query" GET parameter
 
 resource "wallarm_rule_vpatch" "default" {
-  attack_type =  ["sqli"]
+  attack_type =  "sqli"
   point = [["get", "query"]]
 }
-
-# Creates the rule to block incoming requests with the "HOST" header
-# containing the SQL Injection or NoSQL Injection
-# in any GET parameter
-
-resource "wallarm_rule_vpatch" "splunk" {
-  attack_type =  ["sqli", "nosqli"]
-
-  action {
-    type = "iequal"
-    value = "app.example.com"
-
-    point = {
-      header = "HOST"
-    }
-
-  }
-
-  point = [["get_all"]]
-}
-
 ```
 
 ## Argument Reference
@@ -56,7 +35,7 @@ resource "wallarm_rule_vpatch" "splunk" {
 * `client_id` - (optional) ID of the client to apply the rules to. The value is required for [multi-tenant scenarios][2].
 * `attack_type` - (**required**) attack type. The request with this attack will be blocked. Can be:
   * `any` to block the request with the specified `point` even if the attack is not detected.
-  * One more names of attack types to block the requests with the specified `point` if these malicious payloads are detected. Possible attack types: `sqli`, `rce`, `crlf`, `nosqli`, `ptrav`, `xxe`, `ptrav`, `xss`, `scanner`, `redir`, `ldapi`.
+  * One of attack types to block the requests with the specified `point` if these malicious payloads are detected. Possible attack types: `sqli`, `rce`, `crlf`, `nosqli`, `ptrav`, `xxe`, `ptrav`, `xss`, `scanner`, `redir`, `ldapi`.
 * `action` - (optional) rule conditions. Possible attributes are described below.
 * `point` - (**required**) request parts to apply the rules to. The full list of possible values is available in the [Wallarm official documentation](https://docs.wallarm.com/user-guides/rules/request-processing/#identifying-and-parsing-the-request-parts).
   |     POINT      |POSSIBLE VALUES|
