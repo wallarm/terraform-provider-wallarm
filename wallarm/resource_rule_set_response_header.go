@@ -415,14 +415,10 @@ func resourceWallarmSetResponseHeaderImport(d *schema.ResourceData, m interface{
 		}
 
 		d.Set("mode", (*actionHints.Body)[0].Mode)
-		d.Set("name", (*actionHints.Body)[0].Name)
-		valuesInterface := (*actionHints.Body)[0].Values
-		var valuesStr []string
-		for _, item := range valuesInterface {
-			str, _ := item.(string)
-			valuesStr = append(valuesStr, str)
-		}
-		d.Set("values", valuesStr)
+		name := (*actionHints.Body)[0].Name
+		headers := make(map[string]interface{})
+		headers[name] = (*actionHints.Body)[0].Values
+		d.Set("headers", headers)
 
 		existingID := fmt.Sprintf("%d/%d/%d", clientID, actionID, ruleID)
 		d.SetId(existingID)
