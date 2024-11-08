@@ -269,7 +269,7 @@ func resourceWallarmAttackRecheckerRewriteRead(d *schema.ResourceData, m interfa
 		OrderDesc: true,
 		Filter: &wallarm.HintFilter{
 			Clientid: []int{clientID},
-			ActionID: []int{actionID},
+			ID:       []int{ruleID},
 		},
 	}
 	actionHints, err := client.HintRead(hint)

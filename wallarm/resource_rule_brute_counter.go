@@ -241,7 +241,7 @@ func resourceWallarmBruteForceCounterRead(d *schema.ResourceData, m interface{})
 		OrderDesc: true,
 		Filter: &wallarm.HintFilter{
 			Clientid: []int{clientID},
-			ActionID: []int{actionID},
+			ID:       []int{ruleID},
 			Type:     []string{"brute_counter"},
 		},
 	}

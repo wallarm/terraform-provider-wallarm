@@ -265,7 +265,7 @@ func resourceWallarmVariativeKeysRead(d *schema.ResourceData, m interface{}) err
 		OrderDesc: true,
 		Filter: &wallarm.HintFilter{
 			Clientid: []int{clientID},
-			ActionID: []int{actionID},
+			ID:       []int{ruleID},
 			Type:     []string{"variative_keys"},
 		},
 	}
