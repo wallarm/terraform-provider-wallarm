@@ -2,7 +2,7 @@ resource "wallarm_rule_masking" "dvwa_sensitive" {
 
   action {
     point = {
-      instance = 5
+      "instance" = 5
     }
   }
 
@@ -14,21 +14,21 @@ resource "wallarm_rule_masking" "masking_header" {
   action {
     type = "absent"
     point = {
-      path = 0
+      "path" = 0
     }
   }
 
   action {
     type = "equal"
     point = {
-      action_name = "masking"
+      "action_name" = "masking"
     }
   }
 
   action {
     type = "absent"
     point = {
-      action_ext = ""
+      "action_ext" = ""
     }
   }
   point = [["header", "X-KEY"]]
@@ -39,22 +39,22 @@ resource "wallarm_rule_masking" "masking_json" {
   action {
     type = "absent"
     point = {
-      path = 0
+      "path" = 0
     }
   }
 
   action {
     type = "equal"
     point = {
-      action_name = "masking"
+      "action_name" = "masking"
     }
   }
 
   action {
     type = "absent"
     point = {
-      action_ext = ""
+      "action_ext" = ""
     }
   }
-  point = [["post"],["json_doc"],["hash", "field"]]
+  point = [["post"], ["json_doc"], ["hash", "field"]]
 }

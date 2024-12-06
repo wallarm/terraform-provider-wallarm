@@ -3,8 +3,8 @@ resource "wallarm_rule_binary_data" "binary" {
     type = "iequal"
     value = "binary.wallarm.com"
     point = {
-      header = "HOST"
+      "header" = "HOST"
     }
   }
-  point = [["post"],["form_urlencoded","query"]]
+  point = [["post"], ["form_urlencoded", "query"]]
 }

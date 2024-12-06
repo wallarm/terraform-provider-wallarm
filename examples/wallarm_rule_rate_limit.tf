@@ -1,24 +1,46 @@
-resource "wallarm_rate_limit" "example" {
-  comment    = "Example rate limit rule"
+resource "wallarm_rule_rate_limit" "rate_limit" {
+  comment = "Example rate limit rule"
 
-  action = {
-    type  = "equal"
-    value = "example_value"
+  action {
+    type = "iequal"
+    value = "example.com"
     point = {
-      header       = ["X-Example-Header"]
-      method       = "GET"
-      path         = 10
-      action_name  = "example_action"
-      action_ext   = "example_extension"
-      query        = "example_query"
-      proto        = "HTTP/1.1"
-      scheme       = "https"
-      uri          = "/example_uri"
-      instance     = 1
+      "header" = "HOST"
+    }
+  }
+  action {
+    type = "equal"
+    value = "api"
+    point = {
+      "path" = 0
+    }
+  }
+  action {
+    type = "equal"
+    value = "logon"
+    point = {
+      "path" = 1
+    }
+  }
+  action {
+    type = "equal"
+    point = {
+      "method" = "POST"
+    }
+  }
+  action {
+    point = {
+      "instance" = 1
+    }
+  }
+  action {
+    type = "equal"
+    point = {
+      "scheme" = "https"
     }
   }
 
-  point = ["example_point_1", "example_point_2"]
+  point = [["post"], ["json_doc"], ["hash", "enter"]]
 
   delay      = 100
   burst      = 200
