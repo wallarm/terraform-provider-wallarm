@@ -410,6 +410,10 @@ func resourceWallarmAttackRecheckerRewriteImport(d *schema.ResourceData, m inter
 			}
 		}
 
+		pointInterface := (*actionHints.Body)[0].Point
+		point := wrapPointElements(pointInterface)
+		d.Set("point", point)
+
 		d.Set("rules", (*actionHints.Body)[0].Rules)
 
 		existingID := fmt.Sprintf("%d/%d/%d", clientID, actionID, ruleID)

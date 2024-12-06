@@ -230,6 +230,7 @@ func resourceWallarmIgnoreRegexCreate(d *schema.ResourceData, m interface{}) err
 	d.Set("rule_id", actionResp.Body.ID)
 	d.Set("action_id", actionResp.Body.ActionID)
 	d.Set("rule_type", actionResp.Body.Type)
+	d.Set("regex_id", actionResp.Body.RegexID)
 
 	resID := fmt.Sprintf("%d/%d/%d/%s", clientID, actionResp.Body.ActionID, actionResp.Body.ID, actionResp.Body.Type)
 	d.SetId(resID)
@@ -434,13 +435,13 @@ func resourceWallarmIgnoreRegexImport(d *schema.ResourceData, m interface{}) ([]
 			if err := d.Set("action", &actionsSet); err != nil {
 				return nil, err
 			}
-			d.Set("regex_id", (*actionHints.Body)[0].RegexID)
-
 		}
 
 		pointInterface := (*actionHints.Body)[0].Point
 		point := wrapPointElements(pointInterface)
 		d.Set("point", point)
+
+		d.Set("regex_id", (*actionHints.Body)[0].RegexID)
 
 		existingID := fmt.Sprintf("%d/%d/%d", clientID, actionID, ruleID)
 		d.SetId(existingID)

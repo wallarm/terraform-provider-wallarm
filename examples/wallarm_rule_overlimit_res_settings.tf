@@ -1,23 +1,22 @@
-resource "wallarm_overlimit_res_settings_rule" "example_overlimit_res_settings" {
-  comment    = "Example overlimit res settings rule"
-
-  action = {
-    type  = "equal"
-    value = "example_value"
+resource "wallarm_rule_overlimit_res_settings" "example_overlimit_res_settings" {
+  action {
     point = {
-      header       = ["X-Example-Header"]
-      method       = "GET"
-      path         = 10
-      action_name  = "example_action"
-      action_ext   = "example_extension"
-      query        = "example_query"
-      proto        = "HTTP/1.1"
-      scheme       = "https"
-      uri          = "/example_uri"
-      instance     = 1
+      "path" = 0
     }
+    type = "absent"
   }
-
+  action {
+    point = {
+      "action_name" = "upload"
+    }
+    type = "equal"
+  }
+  action {
+    point = {
+      "action_ext" = ""
+    }
+    type = "absent"
+  }
+  mode = "blocking"
   overlimit_time = 2000
-  mode  = "monitoring"
 }

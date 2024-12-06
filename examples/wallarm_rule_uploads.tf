@@ -3,9 +3,9 @@ resource "wallarm_rule_uploads" "allow_docs" {
     type = "iequal"
     value = "uploads.wallarm.com"
     point = {
-      header = "HOST"
+      "header" = "HOST"
     }
   }
-  point = [["post"],["form_urlencoded","query"]]
+  point = [["post"], ["form_urlencoded", "query"]]
   file_type = "docs"
 }
