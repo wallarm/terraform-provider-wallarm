@@ -16,5 +16,4 @@ resource "wallarm_rules_settings" "rules_settings" {
 	open_vulns_weight = 9
 	serialized_data_weight = 6
 	risk_score_algo = "maximum"
-	pii_fallback = false
 }

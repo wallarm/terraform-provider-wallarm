@@ -62,7 +62,7 @@ func resourceWallarmParserState() *schema.Resource {
 			"parser": {
 				Type:         schema.TypeString,
 				Required:     true,
-				ValidateFunc: validation.StringInSlice([]string{"base64", "cookie", "form_urlencoded", "gzip", "grpc", "json_doc", "multipart", "percent", "protobuf", "htmljs", "viewstate", "xml"}, false),
+				ValidateFunc: validation.StringInSlice([]string{"base64", "cookie", "form_urlencoded", "gzip", "grpc", "json_doc", "multipart", "percent", "protobuf", "htmljs", "viewstate", "xml", "jwt", "gql"}, false),
 				ForceNew:     true,
 			},
 
@@ -283,7 +283,7 @@ func resourceWallarmParserStateRead(d *schema.ResourceData, m interface{}) error
 		OrderDesc: true,
 		Filter: &wallarm.HintFilter{
 			Clientid: []int{clientID},
-			ActionID: []int{actionID},
+			ID:       []int{ruleID},
 			Type:     []string{"parser_state"},
 		},
 	}
@@ -441,7 +441,14 @@ func resourceWallarmParserStateImport(d *schema.ResourceData, m interface{}) ([]
 			if err := d.Set("action", &actionsSet); err != nil {
 				return nil, err
 			}
+
 		}
+
+		pointInterface := (*actionHints.Body)[0].Point
+		point := wrapPointElements(pointInterface)
+		d.Set("point", point)
+		d.Set("parser", (*actionHints.Body)[0].Parser)
+		d.Set("state", (*actionHints.Body)[0].State)
 
 		existingID := fmt.Sprintf("%d/%d/%d", clientID, actionID, ruleID)
 		d.SetId(existingID)

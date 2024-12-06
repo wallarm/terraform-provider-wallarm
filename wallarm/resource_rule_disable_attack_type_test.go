@@ -2,7 +2,6 @@ package wallarm
 
 import (
 	"fmt"
-	"regexp"
 	"strconv"
 	"testing"
 
@@ -29,20 +28,6 @@ func TestAccRuleDisableAttackTypeCreate_Basic(t *testing.T) {
 					resource.TestCheckResourceAttr(name, "point.1.0", "form_urlencoded"),
 					resource.TestCheckResourceAttr(name, "point.1.1", "query"),
 				),
-			},
-		},
-	})
-}
-
-func TestAccRuleDisableAttackTypeCreate_IncorrectAttackType(t *testing.T) {
-	rnd := generateRandomResourceName(5)
-	resource.Test(t, resource.TestCase{
-		PreCheck:  func() { testAccPreCheck(t) },
-		Providers: testAccProviders,
-		Steps: []resource.TestStep{
-			{
-				Config:      testWallarmRuleDisableAttackTypeBasicConfig(rnd, "incorrect", "iequal", "attack-types.wallarm.com", "HOST", `["post"],["form_urlencoded","query"]`),
-				ExpectError: regexp.MustCompile(`config is invalid: expected attack_type to be one of \[sqli xss rce ptrav crlf nosqli xxe ldapi scanner ssti ssi mail_injection vpatch\], got incorrect`),
 			},
 		},
 	})

@@ -241,7 +241,7 @@ func resourceWallarmDirbustCounterRead(d *schema.ResourceData, m interface{}) er
 		OrderDesc: true,
 		Filter: &wallarm.HintFilter{
 			Clientid: []int{clientID},
-			ActionID: []int{actionID},
+			ID:       []int{ruleID},
 			Type:     []string{"dirbust_counter"},
 		},
 	}

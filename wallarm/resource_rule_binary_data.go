@@ -266,7 +266,7 @@ func resourceWallarmBinaryDataRead(d *schema.ResourceData, m interface{}) error 
 		OrderDesc: true,
 		Filter: &wallarm.HintFilter{
 			Clientid: []int{clientID},
-			ActionID: []int{actionID},
+			ID:       []int{ruleID},
 			Type:     []string{"binary_data"},
 		},
 	}
@@ -425,6 +425,10 @@ func resourceWallarmBinaryDataImport(d *schema.ResourceData, m interface{}) ([]*
 				return nil, err
 			}
 		}
+
+		pointInterface := (*actionHints.Body)[0].Point
+		point := wrapPointElements(pointInterface)
+		d.Set("point", point)
 
 		existingID := fmt.Sprintf("%d/%d/%d", clientID, actionID, ruleID)
 		d.SetId(existingID)

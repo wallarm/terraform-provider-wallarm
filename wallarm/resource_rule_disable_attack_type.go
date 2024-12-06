@@ -60,10 +60,11 @@ func resourceWallarmDisableAttackType() *schema.Resource {
 			},
 
 			"attack_type": {
-				Type:         schema.TypeString,
-				Required:     true,
-				ValidateFunc: validation.StringInSlice([]string{"sqli", "xss", "rce", "ptrav", "crlf", "nosqli", "xxe", "ldapi", "scanner", "ssti", "ssi", "mail_injection", "vpatch"}, false),
-				ForceNew:     true,
+				Type:     schema.TypeString,
+				Required: true,
+				ForceNew: true,
+				Description: `Possible values: "any", "sqli", "rce", "crlf", "nosqli", "ptrav",
+				"xxe", "ptrav", "xss", "scanner", "redir", "ldapi", "any", "redir", "mass_assignment", "ssrf"`,
 			},
 
 			"action": {
@@ -274,7 +275,7 @@ func resourceWallarmDisableAttackTypeRead(d *schema.ResourceData, m interface{})
 		OrderDesc: true,
 		Filter: &wallarm.HintFilter{
 			Clientid: []int{clientID},
-			ActionID: []int{actionID},
+			ID:       []int{ruleID},
 			Type:     []string{"disable_attack_type"},
 		},
 	}
@@ -433,6 +434,11 @@ func resourceWallarmDisableAttackTypeImport(d *schema.ResourceData, m interface{
 				return nil, err
 			}
 		}
+
+		d.Set("attack_type", (*actionHints.Body)[0].AttackType)
+		pointInterface := (*actionHints.Body)[0].Point
+		point := wrapPointElements(pointInterface)
+		d.Set("point", point)
 
 		existingID := fmt.Sprintf("%d/%d/%d", clientID, actionID, ruleID)
 		d.SetId(existingID)

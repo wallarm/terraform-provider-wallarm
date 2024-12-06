@@ -20,21 +20,12 @@ This is because Terraform is designed to keep its configurations stable and not 
 ## Example Usage
 
 ```hcl
-# Creates the rule to block incoming requests
-# containing the SQL Injection
-# in the "query" GET parameter
-
-resource "wallarm_rule_vpatch" "default" {
-  attack_type =  ["sqli"]
-  point = [["get", "query"]]
-}
-
 # Creates the rule to block incoming requests with the "HOST" header
-# containing the SQL Injection or NoSQL Injection
+# containing the SQL Injection
 # in any GET parameter
 
 resource "wallarm_rule_vpatch" "splunk" {
-  attack_type =  ["sqli", "nosqli"]
+  attack_type =  "sqli"
 
   action {
     type = "iequal"

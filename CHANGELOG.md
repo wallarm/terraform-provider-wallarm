@@ -1,3 +1,14 @@
+
+# v1.6.0 (December 6, 2024)
+
+## NOTES:
+
+* Added import support
+* Added OverlimitResSettingsRule resource
+* Changed rule vpatch resource according to api
+* Changed rule set response header resource according to api
+* Fixed some api methods
+
 # v1.5.0 (September 1, 2024)
 
 ## NOTES:

@@ -57,7 +57,7 @@ func resourceWallarmRulesSettings() *schema.Resource {
 			"rules_snapshot_enabled": {
 				Type:     schema.TypeBool,
 				Optional: true,
-				Computed: true,
+				Computed: false,
 			},
 			"rules_snapshot_max_count": {
 				Type:         schema.TypeInt,
@@ -116,11 +116,6 @@ func resourceWallarmRulesSettings() *schema.Resource {
 				Optional:     true,
 				Computed:     true,
 				ValidateFunc: validation.StringInSlice([]string{"maximum", "average"}, false),
-			},
-			"pii_fallback": {
-				Type:     schema.TypeBool,
-				Optional: true,
-				Computed: true,
 			},
 		},
 	}
@@ -196,10 +191,6 @@ func resourceWallarmRulesSettingsRead(d *schema.ResourceData, m interface{}) err
 	}
 
 	if err := d.Set("risk_score_algo", res.Body.RiskScoreAlgo); err != nil {
-		return err
-	}
-
-	if err := d.Set("pii_fallback", res.Body.PiiFallback); err != nil {
 		return err
 	}
 
@@ -326,12 +317,6 @@ func updateRulesSettings(d *schema.ResourceData, m interface{}) error {
 	if v, ok := d.GetOk("risk_score_algo"); ok {
 		if val, ok := v.(string); ok {
 			params.RiskScoreAlgo = &val
-		}
-	}
-
-	if v, ok := d.GetOk("pii_fallback"); ok {
-		if val, ok := v.(bool); ok {
-			params.PiiFallback = &val
 		}
 	}
 

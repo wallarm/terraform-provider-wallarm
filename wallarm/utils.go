@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"math/rand"
+	"reflect"
 	"regexp"
 	"sort"
 	"strconv"
@@ -236,6 +237,39 @@ func expandPointsToTwoDimensionalArray(ps []interface{}) (wallarm.TwoDimensional
 		}
 	}
 	return points, nil
+}
+
+func wrapPointElements(input []interface{}) [][]string {
+	var result [][]string // This will store the final result as a 2D slice of strings
+	i := 0
+
+	for i < len(input) {
+		switch input[i] {
+		case "json_array", "xml_pi", "hash", "array", "viewstate_array", "viewstate_pair",
+			"viewstate_triplet", "viewstate_dict", "header", "xml_dtd_entity",
+			"xml_tag_array", "xml_tag", "xml_attr", "xml_comment", "grpc", "protobuf",
+			"json_obj", "json", "jwt", "multipart", "get", "content_disp", "form_urlencoded",
+			"path", "cookie", "response_header", "viewstate_sparse_array":
+			// Check if there is a next element to include
+			if i+1 < len(input) {
+				// Convert both elements to strings and wrap them in a slice of strings
+				result = append(result, []string{
+					fmt.Sprintf("%v", input[i]),
+					fmt.Sprintf("%v", input[i+1]),
+				})
+				i++ // Skip the next element as it's already included
+			} else {
+				// If no next element, still wrap the special case string alone
+				result = append(result, []string{fmt.Sprintf("%v", input[i])})
+			}
+		default:
+			// For regular elements, convert to string and wrap it in a slice of strings
+			result = append(result, []string{fmt.Sprintf("%v", input[i])})
+		}
+		i++ // Move to the next element
+	}
+
+	return result
 }
 
 func alignPointScheme(rulePoint []interface{}) []interface{} {
@@ -476,41 +510,51 @@ func fillInDefaultValues(action *[]wallarm.ActionDetails) {
 // equalWithoutOrder tells whether a and b contain
 // the same elements regardless the order.
 // Applicable only for []wallarm.ActionDetails
-func equalWithoutOrder(a, b []wallarm.ActionDetails) bool {
-	if len(a) != len(b) {
+func equalWithoutOrder(conditions_a, conditions_b []wallarm.ActionDetails) bool {
+	if len(conditions_a) != len(conditions_b) {
 		return false
 	}
 
 	// To embrace the default branch without conditions
-	if len(a) == 0 && len(b) == 0 {
+	if len(conditions_a) == 0 && len(conditions_b) == 0 {
 		return true
 	}
 
-	for _, outer := range a {
-		flag := false
-		for _, inner := range b {
-			if outer.Type == inner.Type {
-				flag = true
-			}
-		}
-		if flag {
-			flag = false
-			for _, inner := range b {
-				if outer.Value == inner.Value {
-					flag = true
-				}
-			}
-		}
-		if flag {
-			for _, inner := range b {
-				if actionPointsEqual(outer.Point, inner.Point) {
-					return true
-				}
+	sort.Slice(conditions_a, func(i, j int) bool {
+		// Преобразуем Point в строку для сравнения
+		pointStrI := strings.Join(convertToStringSlice(conditions_a[i].Point), "/")
+		pointStrJ := strings.Join(convertToStringSlice(conditions_a[j].Point), "/")
+		return pointStrI < pointStrJ
+	})
 
-			}
+	sort.Slice(conditions_b, func(i, j int) bool {
+		// Преобразуем Point в строку для сравнения
+		pointStrI := strings.Join(convertToStringSlice(conditions_b[i].Point), "/")
+		pointStrJ := strings.Join(convertToStringSlice(conditions_b[j].Point), "/")
+		return pointStrI < pointStrJ
+	})
+
+	for i := range conditions_a {
+		if !compareActionDetails(conditions_a[i], conditions_b[i]) {
+			return false
 		}
 	}
-	return false
+
+	return true
+}
+func convertToStringSlice(input []interface{}) []string {
+	var result []string
+	for _, v := range input {
+		result = append(result, fmt.Sprintf("%v", v))
+	}
+	return result
+}
+
+// compare for action condition
+func compareActionDetails(condition1, condition2 wallarm.ActionDetails) bool {
+	return condition1.Type == condition2.Type &&
+		actionPointsEqual(condition1.Point, condition2.Point) &&
+		reflect.DeepEqual(condition1.Value, condition2.Value)
 }
 
 func actionPointsEqual(listA, listB []interface{}) bool {

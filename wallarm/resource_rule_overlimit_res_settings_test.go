@@ -10,31 +10,31 @@ import (
 	wallarm "github.com/wallarm/wallarm-go"
 )
 
-func TestAccRuleRateLimit(t *testing.T) {
+func TestAccOverlimitResSettings(t *testing.T) {
 	resourceName := generateRandomResourceName(5)
-	resourceAddress := "wallarm_rule_rate_limit." + resourceName
+	resourceAddress := "wallarm_rule_overlimit_res_settings." + resourceName
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
-		CheckDestroy: testAccRuleRateLimitDestroy(),
+		CheckDestroy: testAccRuleOverlimitResSettingsDestroy(),
 		Providers:    testAccProviders,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccRuleRateLimit(resourceName),
+				Config: testAccRuleOverlimitResSettings(resourceName),
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr(resourceAddress, "point.0.0", "header"),
-					resource.TestCheckResourceAttr(resourceAddress, "point.0.1", "HOST"),
-					resource.TestCheckResourceAttr(resourceAddress, "delay", "100"),
+					resource.TestCheckResourceAttr(resourceAddress, "overlimit_time", "1000"),
+					resource.TestCheckResourceAttr(resourceAddress, "mode", "monitoring"),
 				),
 			},
 		},
 	})
 }
 
-func testAccRuleRateLimit(resourceName string) string {
+func testAccRuleOverlimitResSettings(resourceName string) string {
 	return fmt.Sprintf(`
-resource "wallarm_rule_rate_limit" %[1]q {
-	point = [["header", "HOST"]]
+resource "wallarm_rule_overlimit_res_settings" %[1]q {
 
+	mode = "monitoring"
+	overlimit_time = 1000
 	action {
 		type = "iequal"
 		value = "example.com"
@@ -43,22 +43,17 @@ resource "wallarm_rule_rate_limit" %[1]q {
 		}
 	}
 
-  comment = "My TF Rate Limit 5"
-  delay = 100
-  burst = 20
-  rate = 300
-  rsp_status = 500
-  time_unit = "rps"
+  comment = "My TF Overlimit Res Setting"
 }
 `, resourceName)
 }
 
-func testAccRuleRateLimitDestroy() resource.TestCheckFunc {
+func testAccRuleOverlimitResSettingsDestroy() resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		client := testAccProvider.Meta().(wallarm.API)
 
 		for _, resource := range s.RootModule().Resources {
-			if resource.Type != "wallarm_rule_rate_limit" {
+			if resource.Type != "wallarm_rule_overlimit_res_settings" {
 				continue
 			}
 
