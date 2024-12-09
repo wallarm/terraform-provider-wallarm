@@ -7,7 +7,7 @@ resource "wallarm_rule_regex" "regex" {
     type = "iequal"
     value = "tiredful-api.wallarm-demo.com"
     point = {
-      "header" = "HOST"
+      header = "HOST"
     }
   }
   point = [["header", "X-AUTHENTICATION"]]

@@ -9,38 +9,38 @@ resource "wallarm_rule_vpatch" "vpatch" {
     type = "iequal"
     value = "example.com"
     point = {
-      "header" = "HOST"
+      header = "HOST"
     }
   }
   action {
     type = "equal"
     value = "api"
     point = {
-      "path" = 0
+      path = 0
     }
   }
   action {
     type = "regex"
     value = "logon"
     point = {
-      "path" = 1
+      path = 1
     }
   }
   action {
     type = "equal"
     point = {
-      "method" = "POST"
+      method = "POST"
     }
   }
   action {
     point = {
-      "instance" = 1
+      instance = 1
     }
   }
   action {
     type = "equal"
     point = {
-      "scheme" = "https"
+      scheme = "https"
     }
   }
   point = [["post"], ["json_doc"], ["hash", "user"]]
@@ -52,7 +52,7 @@ resource "wallarm_rule_vpatch" "splunk" {
     type = "iequal"
     value = "splunk.wallarm-demo.com:88"
     point = {
-      "header" = "HOST"
+      header = "HOST"
     }
   }
   point = [["get_all"]]
@@ -62,27 +62,27 @@ resource "wallarm_rule_vpatch" "tiredful_api" {
   attack_type = "any"
   action {
     point = {
-      "instance" = 9
+      instance = 9
     }
   }
   action {
     type = "absent"
     point = {
-      "path" = 0
+      path = 0
     }
   }
 
   action {
     type = "equal"
     point = {
-      "action_name" = "formmail"
+      action_name = "formmail"
     }
   }
 
   action {
     type = "equal"
     point = {
-      "action_ext" = "cgi"
+      action_ext = "cgi"
     }
   }
 
@@ -95,14 +95,14 @@ resource "wallarm_rule_vpatch" "env_sample" {
   action {
     type = "equal"
     point = {
-      "action_name" = ".env.sample"
+      action_name = ".env.sample"
     }
   }
 
   action {
     type = "equal"
     point = {
-      "action_ext" = "php"
+      action_ext = "php"
     }
   }
 

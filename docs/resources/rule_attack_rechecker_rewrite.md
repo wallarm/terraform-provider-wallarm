@@ -20,10 +20,14 @@ This is because Terraform is designed to keep its configurations stable and not 
 # for all the verification tests
 
 resource "wallarm_rule_attack_rechecker_rewrite" "default_rewrite" {
-  rules =  ["my.staging-application.com"]
+  rules = ["my.staging-application.com"]
   point = [["header", "HOST"]]
 }
 
+resource "wallarm_rule_attack_rechecker_rewrite" "default_rewrite" {
+  rules = ["my.awesome-application.com"]
+  point = [["header", "HOST"]]
+}
 ```
 
 ## Argument Reference
@@ -165,7 +169,54 @@ When `type` is `absent`, `point` must contain key with the default value. For `a
 
 * `rule_id` - ID of the created rule.
 * `action_id` - the action ID (The conditions to apply on request).
-* `rule_type` - type of the created rule. For example, `rule_type = "ignore_regex"`.
+* `rule_type` - type of the created rule. For example, `rule_type = "attack_rechecker_rewrite"`.
+
+## Import
+
+The rule can be imported using a composite ID formed of client ID, action ID, rule ID and rule type.
+
+```
+$ terraform import wallarm_rule_attack_rechecker_rewrite.default_rewrite 6039/563855/11086881
+```
+
+* `6039` - Client ID.
+* `563855` - Action ID.
+* `11086881` - Rule ID.
+* `wallarm_rule_attack_rechecker_rewrite` - Terraform resource rule type.
+
+### Import blocks
+
+The rule can be imported using Terraform import blocks.
+
+Resource block example:
+
+```hcl
+resource "wallarm_rule_attack_rechecker_rewrite" "default_rewrite" {
+  point = [["header", "HOST"]]
+  rules = ["my.staging-application.com"]
+}
+```
+
+Import block example:
+
+```hcl
+import {
+  to = wallarm_rule_attack_rechecker_rewrite.default_rewrite
+  id = "6039/563855/11086881"
+}
+```
+
+Before importing resources run:
+
+```
+$ terraform plan
+```
+
+If import looks good apply the configuration:
+
+```
+$ terraform apply
+```
 
 [1]: https://docs.wallarm.com/user-guides/rules/change-request-for-active-verification/#rewriting-the-request-before-attack-replaying
 [2]: https://docs.wallarm.com/user-guides/scanner/intro/#active-threat-verification

@@ -3,7 +3,7 @@ resource "wallarm_rule_parser_state" "enable_base64_parser" {
     type = "iequal"
     value = "parsers.wallarm.com"
     point = {
-      "header" = "HOST"
+      header = "HOST"
     }
   }
   point = [["post"]]

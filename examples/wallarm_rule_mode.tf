@@ -3,7 +3,7 @@ resource "wallarm_rule_mode" "wp_mode" {
 
   action {
     point = {
-      "instance" = 6
+      instance = 6
     }
   }
 
@@ -11,7 +11,7 @@ resource "wallarm_rule_mode" "wp_mode" {
     type = "iequal"
     value = "monitor"
     point = {
-      "path" = 0
+      path = 0
     }
   }
 
@@ -19,7 +19,7 @@ resource "wallarm_rule_mode" "wp_mode" {
     type = "equal"
     value = "admin"
     point = {
-      "query" = "user"
+      query = "user"
     }
   }
 }
@@ -29,14 +29,14 @@ resource "wallarm_rule_mode" "tiredful_api_mode" {
 
   action {
     point = {
-      "instance" = 9
+      instance = 9
     }
   }
 
   action {
     type = "equal"
     point = {
-      "action_name" = "formmail"
+      action_name = "formmail"
     }
   }
 }
@@ -49,7 +49,7 @@ resource "wallarm_rule_mode" "ad_mode" {
     type = "equal"
     value = "api"
     point = {
-      "path" = 0
+      path = 0
     }
   }
 
@@ -57,7 +57,7 @@ resource "wallarm_rule_mode" "ad_mode" {
     type = "equal"
     value = "active-directory"
     point = {
-      "path" = 1
+      path = 1
     }
   }
 }
@@ -69,14 +69,14 @@ resource "wallarm_rule_mode" "dvwa_mode" {
     type = "iequal"
     value = "dvwa.wallarm-demo.com"
     point = {
-      "header" = "HOST"
+      header = "HOST"
     }
   }
 
   action {
     type = "equal"
     point = {
-      "method" = "GET"
+      method = "GET"
     }
   }
 }

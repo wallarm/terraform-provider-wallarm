@@ -5,38 +5,38 @@ resource "wallarm_rule_rate_limit" "rate_limit" {
     type = "iequal"
     value = "example.com"
     point = {
-      "header" = "HOST"
+      header = "HOST"
     }
   }
   action {
     type = "equal"
     value = "api"
     point = {
-      "path" = 0
+      path = 0
     }
   }
   action {
     type = "equal"
     value = "logon"
     point = {
-      "path" = 1
+      path = 1
     }
   }
   action {
     type = "equal"
     point = {
-      "method" = "POST"
+      method = "POST"
     }
   }
   action {
     point = {
-      "instance" = 1
+      instance = 1
     }
   }
   action {
     type = "equal"
     point = {
-      "scheme" = "https"
+      scheme = "https"
     }
   }
 

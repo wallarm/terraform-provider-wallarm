@@ -16,7 +16,7 @@ This is because Terraform is designed to keep its configurations stable and not 
 ## Example Usage
 
 ```hcl
-resource "wallarm_rule_parser_state" "disable_xml_parsing" {
+resource "wallarm_rule_parser_state" "disable_htmljs_parsing" {
   action {
     type = "iequal"
     value = "example.com"
@@ -25,7 +25,7 @@ resource "wallarm_rule_parser_state" "disable_xml_parsing" {
     }
   }
   point = [["get_all"]]
-  parser = "xml"
+  parser = "htmljs"
   state = "disabled"
 }
 ```
@@ -152,6 +152,61 @@ When `type` is `absent`, `point` must contain key with the default value. For `a
 * `rule_id` - ID of the created rule.
 * `action_id` - the action ID (The conditions to apply on request).
 * `rule_type` - type of the created rule. For example, `rule_type = "parser_state"`.
+
+## Import
+
+The rule can be imported using a composite ID formed of client ID, action ID, rule ID and rule type.
+
+```
+$ terraform import wallarm_rule_parser_state.disable_htmljs_parsing 6039/563855/11086881
+```
+
+* `6039` - Client ID.
+* `563855` - Action ID.
+* `11086881` - Rule ID.
+* `wallarm_rule_parser_state` - Terraform resource rule type.
+
+### Import blocks
+
+The rule can be imported using Terraform import blocks.
+
+Resource block example:
+
+```hcl
+resource "wallarm_rule_parser_state" "disable_htmljs_parsing" {
+  action {
+    point = {
+      header = "HOST"
+    }
+    type = "iequal"
+    value = "example.com"
+  }
+  point = [["get_all"]]
+  parser = "htmljs"
+  state = "disabled"
+}
+```
+
+Import block example:
+
+```hcl
+import {
+  to = wallarm_rule_parser_state.disable_htmljs_parsing
+  id = "6039/563855/11086881"
+}
+```
+
+Before importing resources run:
+
+```
+$ terraform plan
+```
+
+If import looks good apply the configuration:
+
+```
+$ terraform apply
+```
 
 [1]: https://docs.wallarm.com/user-guides/rules/disable-request-parsers/
 [2]: https://docs.wallarm.com/installation/multi-tenant/overview/

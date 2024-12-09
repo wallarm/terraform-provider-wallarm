@@ -3,7 +3,7 @@ resource "wallarm_rule_set_response_header" "resp_headers" {
 
   action {
     point = {
-      "instance" = 6
+      instance = 6
     }
   }
 
@@ -16,7 +16,7 @@ resource "wallarm_rule_set_response_header" "resp_headers_waf" {
 
   action {
     point = {
-      "instance" = 6
+      instance = 6
     }
   }
 

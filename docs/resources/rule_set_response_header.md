@@ -20,35 +20,28 @@ This is because Terraform is designed to keep its configurations stable and not 
 # and the "Server" header with the "Blocked by Wallarm" value
 # to the requests sent to the application with ID 3
 
-resource "wallarm_rule_set_response_header" "resp_headers" {
+resource "wallarm_rule_set_response_header" "resp_header" {
   mode = "append"
-  name = "Server"
 
   action {
     point = {
       instance = 3
     }
   }
-  
-  values = {
-    "Wallarm solution"
-    "Blocked by Wallarm"
-  }
 
+  name = "Server"
+  values = ["Wallarm solution", "Blocked by Wallarm"]
 }
 
 ```
 
 ```hcl
-# Deletes the "Wallarm component" header
+# Deletes the "Wallarm" header
 
 resource "wallarm_rule_set_response_header" "delete_header" {
   mode = "replace"
-  name =  "Wallarm component"
-
-  values = {
-    " "
-  }
+  name =  "Wallarm"
+  values = [""]
 }
 
 ```
@@ -56,8 +49,8 @@ resource "wallarm_rule_set_response_header" "delete_header" {
 ## Argument Reference
 
 * `mode` - (**required**) mode of header processing. Valid options: `append`, `replace`
-* `name` - (**required**) description.
-* `values` - (**required**) array of headers. Might be defined as much headers as need at once.
+* `name` - (**required**) header name.
+* `values` - (**required**) array of header values. Might be defined as much values as need at once.
 * `action` - (optional) a series of conditions, see below for a
   a full list .
 
@@ -184,6 +177,59 @@ When `type` is `absent`, `point` must contain key with the default value. For `a
 
 * `rule_id` - ID of the created rule.
 * `action_id` - the action ID (The conditions to apply on request).
-* `rule_type` - type of created rule. For example, `rule_type = "ignore_regex"`.
+* `rule_type` - type of created rule. For example, `rule_type = "set_response_header"`.
+
+## Import
+
+The rule can be imported using a composite ID formed of client ID, action ID, rule ID and rule type.
+
+```
+$ terraform import wallarm_rule_set_response_header.resp_header 6039/563855/11086881
+```
+
+* `6039` - Client ID.
+* `563855` - Action ID.
+* `11086881` - Rule ID.
+* `wallarm_rule_set_response_header` - Terraform resource rule type.
+
+### Import blocks
+
+The rule can be imported using Terraform import blocks.
+
+Resource block example:
+
+```hcl
+resource "wallarm_rule_set_response_header" "resp_header" {
+  action {
+    point = {
+      instance = 3
+    }
+  }
+  mode = "append"
+  name = "Server"
+  values = ["Blocked by Wallarm","Wallarm solution"]
+}
+```
+
+Import block example:
+
+```hcl
+import {
+  to = wallarm_rule_set_response_header.resp_header
+  id = "6039/563855/11086881"
+}
+```
+
+Before importing resources run:
+
+```
+$ terraform plan
+```
+
+If import looks good apply the configuration:
+
+```
+$ terraform apply
+```
 
 [1]: https://docs.wallarm.com/user-guides/rules/add-replace-response-header/

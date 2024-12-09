@@ -3,7 +3,7 @@ resource "wallarm_rule_attack_rechecker" "disable_rechecker" {
 
   action {
     point = {
-      "instance" = 6
+      instance = 6
     }
   }
 
