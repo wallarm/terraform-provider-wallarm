@@ -56,5 +56,5 @@ resource "wallarm_rule_masking" "masking_json" {
       action_ext = ""
     }
   }
-  point = [["post"],["json_doc"],["hash", "field"]]
+  point = [["post"], ["json_doc"], ["hash", "field"]]
 }

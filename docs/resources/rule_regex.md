@@ -28,7 +28,6 @@ This is because Terraform is designed to keep its configurations stable and not 
 ## Example Usage
 
 ```hcl
-
 # Creates the rule to mark the requests sent to front.example.com
 # with the URI value matching the regex ".*curltool.*" as
 # non-experimental "vpatch" attacks
@@ -202,8 +201,67 @@ When `type` is `absent`, `point` must contain key with the default value. For `a
 
 * `rule_id` - ID of the created rule.
 * `action_id` - the action ID (The conditions to apply on request).
-* `rule_type` - type of the created rule. For example, `rule_type = "ignore_regex"`.
+* `rule_type` - type of the created rule. For example, `rule_type = "regex"`.
 * `regex_id` - ID of the specified regular expression.
+
+## Import
+
+The rule can be imported using a composite ID formed of client ID, action ID, rule ID and rule type.
+
+ID should end with a rule type, which depends on experimental mode. The values are: `experimental_regex` or `regex` respectively.
+
+```
+$ terraform import wallarm_rule_regex.regex_curltool 6039/563855/11086881/regex
+```
+
+* `6039` - Client ID.
+* `563855` - Action ID.
+* `11086881` - Rule ID.
+* `wallarm_rule_regex` - Terraform resource rule type.
+* `regex` - Rule type.
+
+### Import blocks
+
+The rule can be imported using Terraform import blocks.
+
+Resource block example:
+
+```hcl
+resource "wallarm_rule_regex" "regex_curltool" {
+  action {
+    point = {
+      header = "HOST"
+    }
+    type = "iequal"
+    value = "front.example.com"
+  }
+  point = [["uri"]]
+  attack_type = "vpatch"
+  regex = ".*curltool.*"
+  experimental = false
+}
+```
+
+Import block example:
+
+```hcl
+import {
+  to = wallarm_rule_regex.regex_curltool
+  id = "6039/563855/11086881/regex"
+}
+```
+
+Before importing resources run:
+
+```
+$ terraform plan
+```
+
+If import looks good apply the configuration:
+
+```
+$ terraform apply
+```
 
 [1]: https://docs.wallarm.com/user-guides/rules/regex-rule/
 [2]: https://docs.wallarm.com/installation/multi-tenant/overview/

@@ -6,6 +6,6 @@ resource "wallarm_rule_uploads" "allow_docs" {
       header = "HOST"
     }
   }
-  point = [["post"],["form_urlencoded","query"]]
+  point = [["post"], ["form_urlencoded", "query"]]
   file_type = "docs"
 }

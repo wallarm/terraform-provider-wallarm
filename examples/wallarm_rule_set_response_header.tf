@@ -7,25 +7,19 @@ resource "wallarm_rule_set_response_header" "resp_headers" {
     }
   }
 
-  headers = {
-    Server = "Wallarm"
-    Blocked = "Yes, you are"
-  }
-
+  name = "Server"
+  values = ["Wallarm", "Yes, you are blocked"]
 }
 
-resource "wallarm_rule_set_response_header" "resp_headers" {
+resource "wallarm_rule_set_response_header" "resp_headers_waf" {
   mode = "append"
 
   action {
     point = {
-      instance = "6"
+      instance = 6
     }
   }
 
-  headers = {
-    Server = "Wallarm WAF"
-    Blocked = "Wallarm Blocked"
-  }
-
+  name = "WAF"
+  values = ["Wallarm Blocked"]
 }

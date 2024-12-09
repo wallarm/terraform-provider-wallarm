@@ -1,5 +1,5 @@
 resource "wallarm_rule_attack_rechecker" "disable_rechecker" {
-  enabled =  false
+  enabled = false
 
   action {
     point = {

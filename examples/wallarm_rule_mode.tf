@@ -1,6 +1,5 @@
-
 resource "wallarm_rule_mode" "wp_mode" {
-  mode =  "block"
+  mode = "block"
 
   action {
     point = {
@@ -26,11 +25,11 @@ resource "wallarm_rule_mode" "wp_mode" {
 }
 
 resource "wallarm_rule_mode" "tiredful_api_mode" {
-  mode =  "monitoring"
+  mode = "monitoring"
 
   action {
     point = {
-      instance = "9"
+      instance = 9
     }
   }
 
@@ -44,7 +43,7 @@ resource "wallarm_rule_mode" "tiredful_api_mode" {
 
 
 resource "wallarm_rule_mode" "ad_mode" {
-  mode =  "default"
+  mode = "default"
 
   action {
     type = "equal"
@@ -64,10 +63,10 @@ resource "wallarm_rule_mode" "ad_mode" {
 }
 
 resource "wallarm_rule_mode" "dvwa_mode" {
-  mode =  "block"
+  mode = "block"
 
   action {
-    type = "equal"
+    type = "iequal"
     value = "dvwa.wallarm-demo.com"
     point = {
       header = "HOST"

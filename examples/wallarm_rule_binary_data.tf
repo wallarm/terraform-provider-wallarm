@@ -6,5 +6,5 @@ resource "wallarm_rule_binary_data" "binary" {
       header = "HOST"
     }
   }
-  point = [["post"],["form_urlencoded","query"]]
+  point = [["post"], ["form_urlencoded", "query"]]
 }
