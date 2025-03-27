@@ -459,7 +459,9 @@ func expandWallarmTriggerAction(d interface{}) (*[]wallarm.TriggerActions, error
 		}
 
 		lockTime, ok := m["lock_time"]
-		if ok {
+
+		if ok && (a.ID == "block_ips" || a.ID == "add_to_graylist") {
+
 			lockTimeInt := lockTime.(int)
 			switch m["lock_time_format"] {
 			case "Minutes":
