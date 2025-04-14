@@ -1,5 +1,6 @@
 .DS_Store
 .vscode/
+.idea/
 .terraform/
 terraform-provider-wallarm*
 terraform.tfstate*
