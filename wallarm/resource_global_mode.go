@@ -92,7 +92,9 @@ func resourceWallarmGlobalModeCreate(d *schema.ResourceData, m interface{}) erro
 	resID := fmt.Sprintf("%d/%s/%s/%s", clientID, filtrationMode, scannerMode, recheckerMode)
 	d.SetId(resID)
 
-	d.Set("client_id", clientID)
+	if err = d.Set("client_id", clientID); err != nil {
+		return err
+	}
 
 	return resourceWallarmGlobalModeRead(d, m)
 }
@@ -157,11 +159,13 @@ func resourceWallarmGlobalModeRead(d *schema.ResourceData, m interface{}) error 
 
 	recheckerMode := otherModesResp.Body[0].AttackRecheckerMode
 
-	if err := d.Set("rechecker_mode", recheckerMode); err != nil {
+	if err = d.Set("rechecker_mode", recheckerMode); err != nil {
 		return err
 	}
 
-	d.Set("client_id", clientID)
+	if err = d.Set("client_id", clientID); err != nil {
+		return err
+	}
 
 	return nil
 }

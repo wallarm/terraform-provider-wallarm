@@ -100,7 +100,7 @@ func resourceWallarmSumologicCreate(d *schema.ResourceData, m interface{}) error
 	name := d.Get("name").(string)
 	apiToken := d.Get("sumologic_url").(string)
 	active := d.Get("active").(bool)
-	events, err := expandWallarmEventToIntEvents(d.Get("event").(interface{}), "sumo_logic")
+	events, err := expandWallarmEventToIntEvents(d.Get("event"), "sumo_logic")
 	if err != nil {
 		d.SetId("")
 		return err
@@ -157,7 +157,7 @@ func resourceWallarmSumologicUpdate(d *schema.ResourceData, m interface{}) error
 	name := d.Get("name").(string)
 	sumologicURL := d.Get("sumologic_url").(string)
 	active := d.Get("active").(bool)
-	events, err := expandWallarmEventToIntEvents(d.Get("event").(interface{}), "sumo_logic")
+	events, err := expandWallarmEventToIntEvents(d.Get("event"), "sumo_logic")
 	if err != nil {
 		return err
 	}

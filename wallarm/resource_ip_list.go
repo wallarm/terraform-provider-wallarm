@@ -98,7 +98,7 @@ func resourceWallarmIPListCreate(listType wallarm.IPListType) schema.CreateFunc 
 			ips = append(ips, v.(string))
 		}
 
-		apps := []int{}
+		var apps []int
 		if v, ok := d.GetOk("application"); ok {
 			applications := v.([]interface{})
 			apps = make([]int, len(applications))
@@ -221,7 +221,7 @@ func resourceWallarmIPListRead(listType wallarm.IPListType) schema.ReadFunc {
 			ips[i] = IPRange[i].(string)
 		}
 
-		apps := []int{}
+		var apps []int
 		if v, ok := d.GetOk("application"); ok {
 			applications := v.([]interface{})
 			apps = make([]int, len(applications))

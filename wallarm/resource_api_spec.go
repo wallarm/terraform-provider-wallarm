@@ -1,7 +1,7 @@
 package wallarm
 
 import (
-	"fmt"
+	"strconv"
 
 	wallarm "github.com/wallarm/wallarm-go"
 
@@ -96,8 +96,10 @@ func resourceWallarmApiSpecCreate(d *schema.ResourceData, m interface{}) error {
 		return err
 	}
 
-	d.Set("api_spec_id", createRes.Body.ID)
-	d.SetId(fmt.Sprintf("%d", createRes.Body.ID))
+	if err = d.Set("api_spec_id", createRes.Body.ID); err != nil {
+		return err
+	}
+	d.SetId(strconv.Itoa(createRes.Body.ID))
 
 	return resourceWallarmApiSpecRead(d, m)
 }
@@ -116,14 +118,31 @@ func resourceWallarmApiSpecRead(d *schema.ResourceData, m interface{}) error {
 		return err
 	}
 
-	d.Set("title", apiSpec.Title)
-	d.Set("description", apiSpec.Description)
-	d.Set("file_remote_url", apiSpec.FileRemoteURL)
-	d.Set("regular_file_update", apiSpec.RegularFileUpdate)
-	d.Set("api_detection", apiSpec.ApiDetection)
-	d.Set("client_id", apiSpec.ClientID)
-	d.Set("instances", apiSpec.Instances)
-	d.Set("domains", apiSpec.Domains)
+	if err = d.Set("title", apiSpec.Title); err != nil {
+		return err
+	}
+	if err = d.Set("description", apiSpec.Description); err != nil {
+		return err
+	}
+	if err = d.Set("file_remote_url", apiSpec.FileRemoteURL); err != nil {
+		return err
+	}
+	if err = d.Set("regular_file_update", apiSpec.RegularFileUpdate); err != nil {
+		return err
+	}
+	if err = d.Set("api_detection", apiSpec.ApiDetection); err != nil {
+		return err
+	}
+	if err = d.Set("client_id", apiSpec.ClientID); err != nil {
+		return err
+	}
+	if err = d.Set("instances", apiSpec.Instances); err != nil {
+		return err
+	}
+	if err = d.Set("domains", apiSpec.Domains); err != nil {
+		return err
+	}
+
 	return nil
 }
 

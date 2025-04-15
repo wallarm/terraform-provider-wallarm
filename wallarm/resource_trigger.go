@@ -185,16 +185,16 @@ func resourceWallarmTriggerCreate(d *schema.ResourceData, m interface{}) error {
 		}
 	}
 
-	filters, err := expandWallarmTriggerFilter(d.Get("filters").(interface{}))
+	filters, err := expandWallarmTriggerFilter(d.Get("filters"))
 	if err != nil {
 		return err
 	}
-	actions, err := expandWallarmTriggerAction(d.Get("actions").(interface{}))
+	actions, err := expandWallarmTriggerAction(d.Get("actions"))
 	if err != nil {
 		return err
 	}
 	if _, ok := d.GetOk("threshold"); ok {
-		threshold, err := expandWallarmTriggerThreshold(d.Get("threshold").(interface{}))
+		threshold, err := expandWallarmTriggerThreshold(d.Get("threshold"))
 		if err != nil {
 			return err
 		}
@@ -292,18 +292,18 @@ func resourceWallarmTriggerUpdate(d *schema.ResourceData, m interface{}) error {
 	enabled := d.Get("enabled").(bool)
 	triggerID := d.Get("trigger_id").(int)
 
-	filters, err := expandWallarmTriggerFilter(d.Get("filters").(interface{}))
+	filters, err := expandWallarmTriggerFilter(d.Get("filters"))
 	if err != nil {
 		return err
 	}
 
-	actions, err := expandWallarmTriggerAction(d.Get("actions").(interface{}))
+	actions, err := expandWallarmTriggerAction(d.Get("actions"))
 	if err != nil {
 		return err
 	}
 
 	if _, ok := d.GetOk("threshold"); ok {
-		threshold, err := expandWallarmTriggerThreshold(d.Get("threshold").(interface{}))
+		threshold, err := expandWallarmTriggerThreshold(d.Get("threshold"))
 		if err != nil {
 			return err
 		}
@@ -489,8 +489,7 @@ func expandWallarmTriggerAction(d interface{}) (*[]wallarm.TriggerActions, error
 	return &actions, nil
 }
 
-func expandWallarmTriggerThreshold(d interface{}) (*wallarm.TriggerThreshold, error) {
-	cfg := d.(interface{})
+func expandWallarmTriggerThreshold(cfg interface{}) (*wallarm.TriggerThreshold, error) {
 	threshold := wallarm.TriggerThreshold{}
 	m := cfg.(map[string]interface{})
 

@@ -139,21 +139,3 @@ data "wallarm_node" "waf" {
 	}
 }
 `
-
-// This cannot be applied to nodes of type cloud_node
-const testAccWallarmDataNodeFilterUUID = `
-data "wallarm_node" "waf" {
-	filter {
-		uuid = "13ef5f5e-01ca-4db1-85ac-8d969d688f25"
-	}
-}
-`
-
-// This cannot be applied to nodes of type cloud_node
-const testAccWallarmDataNodeFilterHostname = `
-data "wallarm_node" "waf" {
-	filter {
-		hostname = "ed9763c775f5"
-	}
-}
-`

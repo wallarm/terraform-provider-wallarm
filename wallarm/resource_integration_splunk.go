@@ -108,7 +108,7 @@ func resourceWallarmSplunkCreate(d *schema.ResourceData, m interface{}) error {
 	apiURL := d.Get("api_url").(string)
 	apiToken := d.Get("api_token").(string)
 	active := d.Get("active").(bool)
-	events, err := expandWallarmEventToIntEvents(d.Get("event").(interface{}), "splunk")
+	events, err := expandWallarmEventToIntEvents(d.Get("event"), "splunk")
 	if err != nil {
 		d.SetId("")
 		return err
@@ -168,7 +168,7 @@ func resourceWallarmSplunkUpdate(d *schema.ResourceData, m interface{}) error {
 	apiURL := d.Get("api_url").(string)
 	apiToken := d.Get("api_token").(string)
 	active := d.Get("active").(bool)
-	events, err := expandWallarmEventToIntEvents(d.Get("event").(interface{}), "splunk")
+	events, err := expandWallarmEventToIntEvents(d.Get("event"), "splunk")
 	if err != nil {
 		return err
 	}

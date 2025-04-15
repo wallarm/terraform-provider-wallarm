@@ -99,7 +99,7 @@ func resourceWallarmTeamsCreate(d *schema.ResourceData, m interface{}) error {
 	name := d.Get("name").(string)
 	webhookURL := d.Get("webhook_url").(string)
 	active := d.Get("active").(bool)
-	events, err := expandWallarmEventToIntEvents(d.Get("event").(interface{}), "ms_teams")
+	events, err := expandWallarmEventToIntEvents(d.Get("event"), "ms_teams")
 	if err != nil {
 		return err
 	}
@@ -149,7 +149,7 @@ func resourceWallarmTeamsUpdate(d *schema.ResourceData, m interface{}) error {
 	name := d.Get("name").(string)
 	webhookURL := d.Get("webhook_url").(string)
 	active := d.Get("active").(bool)
-	events, err := expandWallarmEventToIntEvents(d.Get("event").(interface{}), "ms_teams")
+	events, err := expandWallarmEventToIntEvents(d.Get("event"), "ms_teams")
 	if err != nil {
 		return err
 	}

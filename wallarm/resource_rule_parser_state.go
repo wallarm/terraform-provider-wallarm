@@ -428,14 +428,12 @@ func resourceWallarmParserStateImport(d *schema.ResourceData, m interface{}) ([]
 		actionsSet := schema.Set{
 			F: hashResponseActionDetails,
 		}
-		var actsSlice []map[string]interface{}
 		if len((*actionHints.Body)) != 0 && len((*actionHints.Body)[0].Action) != 0 {
 			for _, a := range (*actionHints.Body)[0].Action {
 				acts, err := actionDetailsToMap(a)
 				if err != nil {
 					return nil, err
 				}
-				actsSlice = append(actsSlice, acts)
 				actionsSet.Add(acts)
 			}
 			if err := d.Set("action", &actionsSet); err != nil {
@@ -457,7 +455,9 @@ func resourceWallarmParserStateImport(d *schema.ResourceData, m interface{}) ([]
 		return nil, fmt.Errorf("invalid id (%q) specified, should be in format \"{clientID}/{actionID}/{ruleID}\"", d.Id())
 	}
 
-	resourceWallarmParserStateRead(d, m)
+	if err := resourceWallarmParserStateRead(d, m); err != nil {
+		return nil, err
+	}
 
 	return []*schema.ResourceData{d}, nil
 }

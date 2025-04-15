@@ -153,7 +153,7 @@ func resourceWallarmWebhookCreate(d *schema.ResourceData, m interface{}) error {
 	headers := d.Get("headers").(map[string]interface{})
 	format := d.Get("format").(string)
 
-	events, err := expandWallarmEventToIntEvents(d.Get("event").(interface{}), "web_hooks")
+	events, err := expandWallarmEventToIntEvents(d.Get("event"), "web_hooks")
 	if err != nil {
 		d.SetId("")
 		return err
@@ -227,7 +227,7 @@ func resourceWallarmWebhookUpdate(d *schema.ResourceData, m interface{}) error {
 	headers := d.Get("headers").(map[string]interface{})
 	format := d.Get("format").(string)
 
-	events, err := expandWallarmEventToIntEvents(d.Get("event").(interface{}), "web_hooks")
+	events, err := expandWallarmEventToIntEvents(d.Get("event"), "web_hooks")
 	if err != nil {
 		return err
 	}

@@ -76,7 +76,9 @@ func resourceWallarmAppCreate(d *schema.ResourceData, m interface{}) error {
 		return err
 	}
 
-	d.Set("app_id", appID)
+	if err := d.Set("app_id", appID); err != nil {
+		return err
+	}
 
 	resID := fmt.Sprintf("%d/%s/%d", clientID, name, appID)
 	d.SetId(resID)
@@ -105,9 +107,15 @@ func resourceWallarmAppRead(d *schema.ResourceData, m interface{}) error {
 	for _, app := range appResp.Body {
 		if app.ID == appID {
 			found = true
-			d.Set("name", name)
-			d.Set("app_id", app.ID)
-			d.Set("client_id", clientID)
+			if err = d.Set("name", name); err != nil {
+				return err
+			}
+			if err = d.Set("app_id", app.ID); err != nil {
+				return err
+			}
+			if err = d.Set("client_id", clientID); err != nil {
+				return err
+			}
 		}
 	}
 	if !found {
@@ -193,9 +201,15 @@ func resourceWallarmAppImport(d *schema.ResourceData, m interface{}) ([]*schema.
 
 		for _, app := range appResp.Body {
 			if app.ID == appID {
-				d.Set("name", name)
-				d.Set("app_id", app.ID)
-				d.Set("client_id", clientID)
+				if err = d.Set("name", name); err != nil {
+					return nil, err
+				}
+				if err = d.Set("app_id", app.ID); err != nil {
+					return nil, err
+				}
+				if err = d.Set("client_id", clientID); err != nil {
+					return nil, err
+				}
 			}
 		}
 
@@ -205,7 +219,9 @@ func resourceWallarmAppImport(d *schema.ResourceData, m interface{}) ([]*schema.
 		return nil, fmt.Errorf("invalid id (%q) specified, should be in format \"{clientID}/{name}/{id}\"", d.Id())
 	}
 
-	resourceWallarmAppRead(d, m)
+	if err := resourceWallarmAppRead(d, m); err != nil {
+		return nil, err
+	}
 
 	return []*schema.ResourceData{d}, nil
 }

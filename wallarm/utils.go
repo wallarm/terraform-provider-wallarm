@@ -37,15 +37,6 @@ func expandInterfaceToStringList(list interface{}) []string {
 	return vs
 }
 
-func expandInterfaceToIntList(list interface{}) []int {
-	ifaceList := list.([]interface{})
-	vs := []int{}
-	for _, v := range ifaceList {
-		vs = append(vs, v.(int))
-	}
-	return vs
-}
-
 func expandSetToActionDetailsList(action *schema.Set) ([]wallarm.ActionDetails, error) {
 	var as []wallarm.ActionDetails
 	for _, actionMap := range action.List() {
@@ -140,16 +131,19 @@ func expandSetToActionDetailsList(action *schema.Set) ([]wallarm.ActionDetails, 
 	return as, nil
 }
 
-func actionDetailsToMap(actionDetails wallarm.ActionDetails) (mapActions map[string]interface{}, err error) {
+func actionDetailsToMap(actionDetails wallarm.ActionDetails) (map[string]interface{}, error) {
 	jsonActions, err := json.Marshal(actionDetails)
 	if err != nil {
-		return
+		return nil, err
 	}
-	json.Unmarshal(jsonActions, &mapActions)
+	var mapActions map[string]interface{}
+	if err = json.Unmarshal(jsonActions, &mapActions); err != nil {
+		return nil, err
+	}
 	if _, ok := mapActions["value"]; !ok {
 		mapActions["value"] = ""
 	}
-	return
+	return mapActions, nil
 }
 
 func hashResponseActionDetails(v interface{}) int {
@@ -295,21 +289,13 @@ func alignPointScheme(rulePoint []interface{}) []interface{} {
 }
 
 func interfaceToString(i interface{}) string {
-	switch i.(type) {
-	case string:
-		return i.(string)
-	default:
-		return ""
-	}
+	r, _ := i.(string)
+	return r
 }
 
 func interfaceToInt(i interface{}) int {
-	switch i.(type) {
-	case int:
-		return i.(int)
-	default:
-		return 0
-	}
+	r, _ := i.(int)
+	return r
 }
 
 func appendMap(united, b map[string]int) map[string]int {
@@ -317,14 +303,6 @@ func appendMap(united, b map[string]int) map[string]int {
 		united[k] = v
 	}
 	return united
-}
-
-func reverseMap(m map[string]int) map[int]string {
-	n := make(map[int]string)
-	for k, v := range m {
-		n[v] = k
-	}
-	return n
 }
 
 func retrieveClientID(d *schema.ResourceData, client wallarm.API) int {

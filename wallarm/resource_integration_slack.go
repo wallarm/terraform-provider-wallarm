@@ -100,7 +100,7 @@ func resourceWallarmSlackCreate(d *schema.ResourceData, m interface{}) error {
 	name := d.Get("name").(string)
 	webhookURL := d.Get("webhook_url").(string)
 	active := d.Get("active").(bool)
-	events, err := expandWallarmEventToIntEvents(d.Get("event").(interface{}), "slack")
+	events, err := expandWallarmEventToIntEvents(d.Get("event"), "slack")
 	if err != nil {
 		d.SetId("")
 		return err
@@ -156,7 +156,7 @@ func resourceWallarmSlackUpdate(d *schema.ResourceData, m interface{}) error {
 	name := d.Get("name").(string)
 	webhookURL := d.Get("webhook_url").(string)
 	active := d.Get("active").(bool)
-	events, err := expandWallarmEventToIntEvents(d.Get("event").(interface{}), "slack")
+	events, err := expandWallarmEventToIntEvents(d.Get("event"), "slack")
 	if err != nil {
 		return err
 	}

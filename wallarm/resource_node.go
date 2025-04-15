@@ -218,7 +218,9 @@ func resourceWallarmNodeImport(d *schema.ResourceData, m interface{}) ([]*schema
 		return nil, fmt.Errorf("invalid id (%q) specified, should be in format \"{clientID}/{hostname}\"", d.Id())
 	}
 
-	resourceWallarmNodeRead(d, m)
+	if err := resourceWallarmNodeRead(d, m); err != nil {
+		return nil, err
+	}
 
 	return []*schema.ResourceData{d}, nil
 }

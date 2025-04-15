@@ -34,8 +34,6 @@ func TestProvider_impl(t *testing.T) {
 	var _ terraform.ResourceProvider = Provider()
 }
 
-type preCheckFunc = func(*testing.T)
-
 func testAccPreCheck(t *testing.T) {
 
 	if v := os.Getenv("WALLARM_API_HOST"); v == "" {

@@ -236,7 +236,7 @@ func resourceWallarmScannerUpdate(d *schema.ResourceData, m interface{}) error {
 		}
 
 	default:
-		resourceWallarmScannerCreate(d, m)
+		return resourceWallarmScannerCreate(d, m)
 	}
 
 	return nil

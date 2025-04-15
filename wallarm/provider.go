@@ -177,7 +177,7 @@ func providerConfigure(d *schema.ResourceData, terraformVersion string) (interfa
 	options = append(options, wallarm.HTTPClient(c))
 
 	tfUserAgent := httpclient.TerraformUserAgent(terraformVersion)
-	providerUserAgent := fmt.Sprintf("terraform-provider-wallarm")
+	providerUserAgent := "terraform-provider-wallarm"
 	ua := fmt.Sprintf("%s/%s/%s", tfUserAgent, providerUserAgent, version.ProviderVersion)
 	options = append(options, wallarm.UserAgent(ua))
 

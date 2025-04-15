@@ -1,0 +1,56 @@
+run:
+  timeout: 5m
+
+# all available settings of specific linters
+linters-settings:
+  errcheck:
+    check-type-assertions: true
+  govet:
+    settings:
+      printf:
+        funcs:
+          - printf
+          - debugf
+          - infof
+          - warnf
+          - errorf
+          - fatalf
+          - wrapf
+
+linters:
+  disable-all: true
+  enable:
+    - govet
+    - errcheck
+    - staticcheck
+    - unused
+    - gosimple
+    - revive
+    - gosec
+    - unconvert
+    - goconst
+    - misspell
+    - unparam
+    - prealloc
+    - exportloopref
+    - gochecknoinits
+    - gocritic
+    - dupl
+    - gocyclo
+    - goimports
+    - ineffassign
+  fast: false
+
+issues:
+  exclude-rules:
+    - path: _test\.go
+      linters:
+        - gocyclo
+        - errcheck
+        - dupl
+        - gosec
+        - scopelint
+        - gocritic
+
+  max-same-issues: 0
+  new: false
