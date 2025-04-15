@@ -21,6 +21,7 @@ linters:
   disable-all: true
   enable:
     - govet
+    - gofmt
     - errcheck
     - staticcheck
     - unused

@@ -90,19 +90,21 @@ func resourceWallarmNodeCreate(d *schema.ResourceData, m interface{}) error {
 		return err
 	}
 
-	if err := d.Set("node_id", nodeResp.Body.ID); err != nil {
+	if err = d.Set("node_id", nodeResp.Body.ID); err != nil {
 		return err
 	}
 
-	if err := d.Set("node_uuid", nodeResp.Body.UUID); err != nil {
+	if err = d.Set("node_uuid", nodeResp.Body.UUID); err != nil {
 		return err
 	}
 
-	if err := d.Set("token", nodeResp.Body.Token); err != nil {
+	if err = d.Set("token", nodeResp.Body.Token); err != nil {
 		return err
 	}
 
-	d.Set("client_id", clientID)
+	if err = d.Set("client_id", clientID); err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -179,7 +181,9 @@ func resourceWallarmNodeImport(d *schema.ResourceData, m interface{}) ([]*schema
 		}
 		hostname := idAttr[1]
 
-		d.Set("hostname", hostname)
+		if err = d.Set("hostname", hostname); err != nil {
+			return nil, err
+		}
 		nodes, err := client.NodeRead(clientID, "all")
 		if err != nil {
 			return nil, err

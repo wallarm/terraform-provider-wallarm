@@ -238,11 +238,21 @@ func resourceWallarmOverlimitResSettingsCreate(d *schema.ResourceData, m interfa
 	}
 	actionID := actionResp.Body.ActionID
 
-	d.Set("rule_id", actionResp.Body.ID)
-	d.Set("action_id", actionID)
-	d.Set("rule_type", actionResp.Body.Type)
-	d.Set("client_id", clientID)
-	d.Set("point", actionResp.Body.Point)
+	if err = d.Set("rule_id", actionResp.Body.ID); err != nil {
+		return err
+	}
+	if err = d.Set("action_id", actionID); err != nil {
+		return err
+	}
+	if err = d.Set("rule_type", actionResp.Body.Type); err != nil {
+		return err
+	}
+	if err = d.Set("client_id", clientID); err != nil {
+		return err
+	}
+	if err = d.Set("point", actionResp.Body.Point); err != nil {
+		return err
+	}
 
 	resID := fmt.Sprintf("%d/%d/%d", clientID, actionID, actionResp.Body.ID)
 	d.SetId(resID)
@@ -309,11 +319,13 @@ func resourceWallarmOverlimitResSettingsRead(d *schema.ResourceData, m interface
 		notFoundRules = append(notFoundRules, rule.ID)
 	}
 
-	if err := d.Set("rule_id", updatedRuleID); err != nil {
+	if err = d.Set("rule_id", updatedRuleID); err != nil {
 		return err
 	}
 
-	d.Set("client_id", clientID)
+	if err = d.Set("client_id", clientID); err != nil {
+		return err
+	}
 
 	if updatedRuleID == 0 {
 		log.Printf("[WARN] these rule IDs: %v have been found under the action ID: %d. But it isn't in the Terraform Plan.", notFoundRules, actionID)
@@ -358,9 +370,15 @@ func resourceWallarmOverlimitResSettingsImport(d *schema.ResourceData, m interfa
 		if err != nil {
 			return nil, err
 		}
-		d.Set("action_id", actionID)
-		d.Set("rule_id", ruleID)
-		d.Set("rule_type", "overlimit_res_settings")
+		if err = d.Set("action_id", actionID); err != nil {
+			return nil, err
+		}
+		if err = d.Set("rule_id", ruleID); err != nil {
+			return nil, err
+		}
+		if err = d.Set("rule_type", "overlimit_res_settings"); err != nil {
+			return nil, err
+		}
 
 		hint := &wallarm.HintRead{
 			Limit:     1000,
@@ -388,14 +406,18 @@ func resourceWallarmOverlimitResSettingsImport(d *schema.ResourceData, m interfa
 				}
 				actionsSet.Add(acts)
 			}
-			if err := d.Set("action", &actionsSet); err != nil {
+			if err = d.Set("action", &actionsSet); err != nil {
 				return nil, err
 			}
 
 		}
 
-		d.Set("mode", (*actionHints.Body)[0].Mode)
-		d.Set("overlimit_time", (*actionHints.Body)[0].OverlimitTime)
+		if err = d.Set("mode", (*actionHints.Body)[0].Mode); err != nil {
+			return nil, err
+		}
+		if err = d.Set("overlimit_time", (*actionHints.Body)[0].OverlimitTime); err != nil {
+			return nil, err
+		}
 
 		existingID := fmt.Sprintf("%d/%d/%d", clientID, actionID, ruleID)
 		d.SetId(existingID)

@@ -236,9 +236,15 @@ func resourceWallarmParserStateCreate(d *schema.ResourceData, m interface{}) err
 		return err
 	}
 
-	d.Set("rule_id", actionResp.Body.ID)
-	d.Set("action_id", actionResp.Body.ActionID)
-	d.Set("rule_type", actionResp.Body.Type)
+	if err = d.Set("rule_id", actionResp.Body.ID); err != nil {
+		return err
+	}
+	if err = d.Set("action_id", actionResp.Body.ActionID); err != nil {
+		return err
+	}
+	if err = d.Set("rule_type", actionResp.Body.Type); err != nil {
+		return err
+	}
 
 	resID := fmt.Sprintf("%d/%d/%d", clientID, actionResp.Body.ActionID, actionResp.Body.ID)
 	d.SetId(resID)
@@ -329,11 +335,13 @@ func resourceWallarmParserStateRead(d *schema.ResourceData, m interface{}) error
 		notFoundRules = append(notFoundRules, rule.ID)
 	}
 
-	if err := d.Set("rule_id", updatedRuleID); err != nil {
+	if err = d.Set("rule_id", updatedRuleID); err != nil {
 		return err
 	}
 
-	d.Set("client_id", clientID)
+	if err = d.Set("client_id", clientID); err != nil {
+		return err
+	}
 
 	if actionsSet.Len() != 0 {
 		if err := d.Set("action", &actionsSet); err != nil {
@@ -406,9 +414,15 @@ func resourceWallarmParserStateImport(d *schema.ResourceData, m interface{}) ([]
 		if err != nil {
 			return nil, err
 		}
-		d.Set("action_id", actionID)
-		d.Set("rule_id", ruleID)
-		d.Set("rule_type", "parser_state")
+		if err = d.Set("action_id", actionID); err != nil {
+			return nil, err
+		}
+		if err = d.Set("rule_id", ruleID); err != nil {
+			return nil, err
+		}
+		if err = d.Set("rule_type", "parser_state"); err != nil {
+			return nil, err
+		}
 
 		hint := &wallarm.HintRead{
 			Limit:     1000,
@@ -444,9 +458,15 @@ func resourceWallarmParserStateImport(d *schema.ResourceData, m interface{}) ([]
 
 		pointInterface := (*actionHints.Body)[0].Point
 		point := wrapPointElements(pointInterface)
-		d.Set("point", point)
-		d.Set("parser", (*actionHints.Body)[0].Parser)
-		d.Set("state", (*actionHints.Body)[0].State)
+		if err = d.Set("point", point); err != nil {
+			return nil, err
+		}
+		if err = d.Set("parser", (*actionHints.Body)[0].Parser); err != nil {
+			return nil, err
+		}
+		if err = d.Set("state", (*actionHints.Body)[0].State); err != nil {
+			return nil, err
+		}
 
 		existingID := fmt.Sprintf("%d/%d/%d", clientID, actionID, ruleID)
 		d.SetId(existingID)

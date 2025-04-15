@@ -182,7 +182,9 @@ func resourceWallarmWebhookCreate(d *schema.ResourceData, m interface{}) error {
 		return err
 	}
 
-	d.Set("integration_id", createRes.Body.ID)
+	if err = d.Set("integration_id", createRes.Body.ID); err != nil {
+		return err
+	}
 
 	resID := fmt.Sprintf("%d/%s/%d", clientID, createRes.Body.Type, createRes.Body.ID)
 	d.SetId(resID)
@@ -203,12 +205,24 @@ func resourceWallarmWebhookRead(d *schema.ResourceData, m interface{}) error {
 		}
 	}
 
-	d.Set("integration_id", webhook.ID)
-	d.Set("is_active", webhook.Active)
-	d.Set("name", webhook.Name)
-	d.Set("created_by", webhook.CreatedBy)
-	d.Set("type", webhook.Type)
-	d.Set("client_id", clientID)
+	if err = d.Set("integration_id", webhook.ID); err != nil {
+		return err
+	}
+	if err = d.Set("is_active", webhook.Active); err != nil {
+		return err
+	}
+	if err = d.Set("name", webhook.Name); err != nil {
+		return err
+	}
+	if err = d.Set("created_by", webhook.CreatedBy); err != nil {
+		return err
+	}
+	if err = d.Set("type", webhook.Type); err != nil {
+		return err
+	}
+	if err = d.Set("client_id", clientID); err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -264,7 +278,9 @@ func resourceWallarmWebhookUpdate(d *schema.ResourceData, m interface{}) error {
 		return err
 	}
 
-	d.Set("integration_id", updateRes.Body.ID)
+	if err = d.Set("integration_id", updateRes.Body.ID); err != nil {
+		return err
+	}
 
 	resID := fmt.Sprintf("%d/%s/%d", clientID, updateRes.Body.Type, updateRes.Body.ID)
 	d.SetId(resID)

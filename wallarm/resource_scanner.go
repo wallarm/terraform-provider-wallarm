@@ -118,7 +118,9 @@ func resourceWallarmScannerCreate(d *schema.ResourceData, m interface{}) error {
 		}
 	}
 
-	d.Set("client_id", clientID)
+	if err := d.Set("client_id", clientID); err != nil {
+		return err
+	}
 
 	resID := fmt.Sprintf("%d/%s", clientID, element)
 	d.SetId(resID)
@@ -142,7 +144,9 @@ func resourceWallarmScannerUpdate(d *schema.ResourceData, m interface{}) error {
 	resID := fmt.Sprintf("%d/%s", clientID, element)
 	d.SetId(resID)
 
-	d.Set("client_id", clientID)
+	if err := d.Set("client_id", clientID); err != nil {
+		return err
+	}
 
 	switch resourceIDs := d.Get("resource_id").(type) {
 

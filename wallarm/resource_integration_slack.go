@@ -120,7 +120,9 @@ func resourceWallarmSlackCreate(d *schema.ResourceData, m interface{}) error {
 		return err
 	}
 
-	d.Set("integration_id", createRes.Body.ID)
+	if err = d.Set("integration_id", createRes.Body.ID); err != nil {
+		return err
+	}
 
 	resID := fmt.Sprintf("%d/%s/%d", clientID, createRes.Body.Type, createRes.Body.ID)
 	d.SetId(resID)
@@ -140,12 +142,24 @@ func resourceWallarmSlackRead(d *schema.ResourceData, m interface{}) error {
 			return err
 		}
 	}
-	d.Set("integration_id", slack.ID)
-	d.Set("is_active", slack.Active)
-	d.Set("name", slack.Name)
-	d.Set("created_by", slack.CreatedBy)
-	d.Set("type", slack.Type)
-	d.Set("client_id", clientID)
+	if err = d.Set("integration_id", slack.ID); err != nil {
+		return err
+	}
+	if err = d.Set("is_active", slack.Active); err != nil {
+		return err
+	}
+	if err = d.Set("name", slack.Name); err != nil {
+		return err
+	}
+	if err = d.Set("created_by", slack.CreatedBy); err != nil {
+		return err
+	}
+	if err = d.Set("type", slack.Type); err != nil {
+		return err
+	}
+	if err = d.Set("client_id", clientID); err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -184,7 +198,9 @@ func resourceWallarmSlackUpdate(d *schema.ResourceData, m interface{}) error {
 		return err
 	}
 
-	d.Set("integration_id", updateRes.Body.ID)
+	if err = d.Set("integration_id", updateRes.Body.ID); err != nil {
+		return err
+	}
 
 	resID := fmt.Sprintf("%d/%s/%d", clientID, updateRes.Body.Type, updateRes.Body.ID)
 	d.SetId(resID)

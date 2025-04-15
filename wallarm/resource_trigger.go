@@ -235,7 +235,9 @@ func resourceWallarmTriggerCreate(d *schema.ResourceData, m interface{}) error {
 	}
 
 	triggerID := triggerResp.ID
-	d.Set("trigger_id", triggerID)
+	if err = d.Set("trigger_id", triggerID); err != nil {
+		return err
+	}
 
 	resID := fmt.Sprintf("%d/%s/%d", clientID, templateID, triggerID)
 	d.SetId(resID)
@@ -248,8 +250,12 @@ func resourceWallarmTriggerCreate(d *schema.ResourceData, m interface{}) error {
 
 		for _, t := range triggers.Triggers {
 			if t.ID == triggerID {
-				d.Set("trigger_id", t.ID)
-				d.Set("client_id", clientID)
+				if err = d.Set("trigger_id", t.ID); err != nil {
+					return resource.NonRetryableError(err)
+				}
+				if err = d.Set("client_id", clientID); err != nil {
+					return resource.NonRetryableError(err)
+				}
 				return resource.NonRetryableError(resourceWallarmTriggerRead(d, m))
 			}
 		}
@@ -269,8 +275,12 @@ func resourceWallarmTriggerRead(d *schema.ResourceData, m interface{}) error {
 
 	for _, t := range triggers.Triggers {
 		if t.ID == triggerID {
-			d.Set("trigger_id", t.ID)
-			d.Set("client_id", clientID)
+			if err = d.Set("trigger_id", t.ID); err != nil {
+				return err
+			}
+			if err = d.Set("client_id", clientID); err != nil {
+				return err
+			}
 			return nil
 		}
 	}
@@ -345,7 +355,9 @@ func resourceWallarmTriggerUpdate(d *schema.ResourceData, m interface{}) error {
 	}
 
 	triggerID = triggerResp.ID
-	d.Set("trigger_id", triggerID)
+	if err = d.Set("trigger_id", triggerID); err != nil {
+		return err
+	}
 
 	resID := fmt.Sprintf("%d/%s/%d", clientID, templateID, triggerID)
 	d.SetId(resID)

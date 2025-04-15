@@ -202,8 +202,12 @@ func resourceWallarmCredentialStuffingPointCreate(d *schema.ResourceData, m inte
 
 	resID := fmt.Sprintf("%d/%d/%d", resp.Body.Clientid, resp.Body.ActionID, resp.Body.ID)
 	d.SetId(resID)
-	d.Set("client_id", resp.Body.Clientid)
-	d.Set("rule_id", resp.Body.ID)
+	if err = d.Set("client_id", resp.Body.Clientid); err != nil {
+		return err
+	}
+	if err = d.Set("rule_id", resp.Body.ID); err != nil {
+		return err
+	}
 
 	return resourceWallarmCredentialStuffingPointRead(d, m)
 }
@@ -225,13 +229,21 @@ func resourceWallarmCredentialStuffingPointRead(d *schema.ResourceData, m interf
 		return err
 	}
 
-	d.Set("cred_stuff_type", rule.CredStuffType)
-
-	d.Set("point", rule.Point)
-	d.Set("login_point", rule.LoginPoint)
-
-	d.Set("rule_type", rule.Type)
-	d.Set("action_id", rule.ActionID)
+	if err = d.Set("cred_stuff_type", rule.CredStuffType); err != nil {
+		return err
+	}
+	if err = d.Set("point", rule.Point); err != nil {
+		return err
+	}
+	if err = d.Set("login_point", rule.LoginPoint); err != nil {
+		return err
+	}
+	if err = d.Set("rule_type", rule.Type); err != nil {
+		return err
+	}
+	if err = d.Set("action_id", rule.ActionID); err != nil {
+		return err
+	}
 	actionsSet := schema.Set{F: hashResponseActionDetails}
 	for _, a := range rule.Action {
 		acts, err := actionDetailsToMap(a)
@@ -292,10 +304,18 @@ func resourceWallarmCredentialStuffingPointImport(d *schema.ResourceData, m inte
 
 	ruleType := "credentials_point"
 
-	d.Set("client_id", clientID)
-	d.Set("rule_id", ruleID)
-	d.Set("action_id", actionID)
-	d.Set("type", ruleType)
+	if err = d.Set("client_id", clientID); err != nil {
+		return nil, err
+	}
+	if err = d.Set("rule_id", ruleID); err != nil {
+		return nil, err
+	}
+	if err = d.Set("action_id", actionID); err != nil {
+		return nil, err
+	}
+	if err = d.Set("type", ruleType); err != nil {
+		return nil, err
+	}
 
 	hint := &wallarm.HintRead{
 		Limit:     1000,
@@ -330,10 +350,14 @@ func resourceWallarmCredentialStuffingPointImport(d *schema.ResourceData, m inte
 
 	pointInterface := (*actionHints.Body)[0].Point
 	point := wrapPointElements(pointInterface)
-	d.Set("point", point)
+	if err = d.Set("point", point); err != nil {
+		return nil, err
+	}
 	pointInterface = (*actionHints.Body)[0].LoginPoint
 	point = wrapPointElements(pointInterface)
-	d.Set("login_point", point)
+	if err = d.Set("login_point", point); err != nil {
+		return nil, err
+	}
 
 	existingID := fmt.Sprintf("%d/%d/%d", clientID, actionID, ruleID)
 	d.SetId(existingID)

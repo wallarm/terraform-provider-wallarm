@@ -207,7 +207,7 @@ func hashResponseActionDetails(v interface{}) int {
 
 		buf.WriteString(fmt.Sprintf("%v-", m["point"]))
 	}
-	return hashcode.String(buf.String())
+	return hashcode.String(buf.String()) // nolint:staticcheck
 }
 
 func expandPointsToTwoDimensionalArray(ps []interface{}) (wallarm.TwoDimensionalSlice, error) {

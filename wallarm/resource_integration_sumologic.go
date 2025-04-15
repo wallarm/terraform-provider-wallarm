@@ -120,7 +120,9 @@ func resourceWallarmSumologicCreate(d *schema.ResourceData, m interface{}) error
 		return err
 	}
 
-	d.Set("integration_id", createRes.Body.ID)
+	if err = d.Set("integration_id", createRes.Body.ID); err != nil {
+		return err
+	}
 
 	resID := fmt.Sprintf("%d/%s/%d", clientID, createRes.Body.Type, createRes.Body.ID)
 	d.SetId(resID)
@@ -141,12 +143,24 @@ func resourceWallarmSumologicRead(d *schema.ResourceData, m interface{}) error {
 		}
 	}
 
-	d.Set("integration_id", sumo.ID)
-	d.Set("is_active", sumo.Active)
-	d.Set("name", sumo.Name)
-	d.Set("created_by", sumo.CreatedBy)
-	d.Set("type", sumo.Type)
-	d.Set("client_id", clientID)
+	if err = d.Set("integration_id", sumo.ID); err != nil {
+		return err
+	}
+	if err = d.Set("is_active", sumo.Active); err != nil {
+		return err
+	}
+	if err = d.Set("name", sumo.Name); err != nil {
+		return err
+	}
+	if err = d.Set("created_by", sumo.CreatedBy); err != nil {
+		return err
+	}
+	if err = d.Set("type", sumo.Type); err != nil {
+		return err
+	}
+	if err = d.Set("client_id", clientID); err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -185,7 +199,9 @@ func resourceWallarmSumologicUpdate(d *schema.ResourceData, m interface{}) error
 		return err
 	}
 
-	d.Set("integration_id", updateRes.Body.ID)
+	if err = d.Set("integration_id", updateRes.Body.ID); err != nil {
+		return err
+	}
 
 	resID := fmt.Sprintf("%d/%s/%d", clientID, updateRes.Body.Type, updateRes.Body.ID)
 	d.SetId(resID)

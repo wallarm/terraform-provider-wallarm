@@ -170,8 +170,12 @@ func resourceWallarmCredentialStuffingModeCreate(d *schema.ResourceData, m inter
 
 	resID := fmt.Sprintf("%d/%d/%d", resp.Body.Clientid, resp.Body.ActionID, resp.Body.ID)
 	d.SetId(resID)
-	d.Set("client_id", resp.Body.Clientid)
-	d.Set("rule_id", resp.Body.ID)
+	if err = d.Set("client_id", resp.Body.Clientid); err != nil {
+		return err
+	}
+	if err = d.Set("rule_id", resp.Body.ID); err != nil {
+		return err
+	}
 
 	return resourceWallarmCredentialStuffingModeRead(d, m)
 }
@@ -193,10 +197,15 @@ func resourceWallarmCredentialStuffingModeRead(d *schema.ResourceData, m interfa
 		return err
 	}
 
-	d.Set("mode", rule.Mode)
-
-	d.Set("rule_type", rule.Type)
-	d.Set("action_id", rule.ActionID)
+	if err = d.Set("mode", rule.Mode); err != nil {
+		return err
+	}
+	if err = d.Set("rule_type", rule.Type); err != nil {
+		return err
+	}
+	if err = d.Set("action_id", rule.ActionID); err != nil {
+		return err
+	}
 	actionsSet := schema.Set{F: hashResponseActionDetails}
 	for _, a := range rule.Action {
 		acts, err := actionDetailsToMap(a)
@@ -251,8 +260,12 @@ func resourceWallarmCredentialStuffingModeImport(d *schema.ResourceData, m inter
 		return nil, err
 	}
 
-	d.Set("client_id", clientID)
-	d.Set("rule_id", ruleID)
+	if err = d.Set("client_id", clientID); err != nil {
+		return nil, err
+	}
+	if err = d.Set("rule_id", ruleID); err != nil {
+		return nil, err
+	}
 
 	return []*schema.ResourceData{d}, nil
 }

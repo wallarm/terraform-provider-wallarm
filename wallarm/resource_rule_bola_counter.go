@@ -201,9 +201,15 @@ func resourceWallarmBolaCounterCreate(d *schema.ResourceData, m interface{}) err
 		return err
 	}
 
-	d.Set("rule_id", actionResp.Body.ID)
-	d.Set("action_id", actionResp.Body.ActionID)
-	d.Set("rule_type", actionResp.Body.Type)
+	if err = d.Set("rule_id", actionResp.Body.ID); err != nil {
+		return err
+	}
+	if err = d.Set("action_id", actionResp.Body.ActionID); err != nil {
+		return err
+	}
+	if err = d.Set("rule_type", actionResp.Body.Type); err != nil {
+		return err
+	}
 
 	resID := fmt.Sprintf("%d/%d/%d", clientID, actionResp.Body.ActionID, actionResp.Body.ID)
 	d.SetId(resID)
@@ -279,15 +285,17 @@ func resourceWallarmBolaCounterRead(d *schema.ResourceData, m interface{}) error
 		notFoundRules = append(notFoundRules, rule.ID)
 	}
 
-	if err := d.Set("rule_id", updatedRuleID); err != nil {
+	if err = d.Set("rule_id", updatedRuleID); err != nil {
 		return err
 	}
 
-	if err := d.Set("counter", updatedCounter); err != nil {
+	if err = d.Set("counter", updatedCounter); err != nil {
 		return err
 	}
 
-	d.Set("client_id", clientID)
+	if err = d.Set("client_id", clientID); err != nil {
+		return err
+	}
 
 	if actionsSet.Len() != 0 {
 		if err := d.Set("action", &actionsSet); err != nil {
@@ -360,9 +368,15 @@ func resourceWallarmBolaCounterImport(d *schema.ResourceData, m interface{}) ([]
 		if err != nil {
 			return nil, err
 		}
-		d.Set("action_id", actionID)
-		d.Set("rule_id", ruleID)
-		d.Set("rule_type", "bola_counter")
+		if err = d.Set("action_id", actionID); err != nil {
+			return nil, err
+		}
+		if err = d.Set("rule_id", ruleID); err != nil {
+			return nil, err
+		}
+		if err = d.Set("rule_type", "bola_counter"); err != nil {
+			return nil, err
+		}
 
 		hint := &wallarm.HintRead{
 			Limit:     1000,

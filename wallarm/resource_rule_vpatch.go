@@ -230,11 +230,21 @@ func resourceWallarmVpatchCreate(d *schema.ResourceData, m interface{}) error {
 		return err
 	}
 
-	d.Set("rule_id", actionResp.Body.ID)
-	d.Set("action_id", actionResp.Body.ActionID)
-	d.Set("rule_type", actionResp.Body.Type)
-	d.Set("attack_type", actionResp.Body.AttackType)
-	d.Set("client_id", clientID)
+	if err = d.Set("rule_id", actionResp.Body.ID); err != nil {
+		return err
+	}
+	if err = d.Set("action_id", actionResp.Body.ActionID); err != nil {
+		return err
+	}
+	if err = d.Set("rule_type", actionResp.Body.Type); err != nil {
+		return err
+	}
+	if err = d.Set("attack_type", actionResp.Body.AttackType); err != nil {
+		return err
+	}
+	if err = d.Set("client_id", clientID); err != nil {
+		return err
+	}
 
 	resID := fmt.Sprintf("%d/%d/%d", clientID, actionResp.Body.ActionID, actionResp.Body.ID)
 	d.SetId(resID)
@@ -325,11 +335,13 @@ func resourceWallarmVpatchRead(d *schema.ResourceData, m interface{}) error {
 		notFoundRules = append(notFoundRules, rule.ID)
 	}
 
-	if err := d.Set("rule_id", updatedRuleID); err != nil {
+	if err = d.Set("rule_id", updatedRuleID); err != nil {
 		return err
 	}
 
-	d.Set("client_id", clientID)
+	if err = d.Set("client_id", clientID); err != nil {
+		return err
+	}
 
 	if actionsSet.Len() != 0 {
 		if err := d.Set("action", &actionsSet); err != nil {
@@ -409,9 +421,15 @@ func resourceWallarmVpatchImport(d *schema.ResourceData, m interface{}) ([]*sche
 		if err != nil {
 			return nil, err
 		}
-		d.Set("action_id", actionID)
-		d.Set("rule_id", ruleID)
-		d.Set("rule_type", "vpatch")
+		if err = d.Set("action_id", actionID); err != nil {
+			return nil, err
+		}
+		if err = d.Set("rule_id", ruleID); err != nil {
+			return nil, err
+		}
+		if err = d.Set("rule_type", "vpatch"); err != nil {
+			return nil, err
+		}
 
 		hint := &wallarm.HintRead{
 			Limit:     1000,
@@ -439,15 +457,19 @@ func resourceWallarmVpatchImport(d *schema.ResourceData, m interface{}) ([]*sche
 				}
 				actionsSet.Add(acts)
 			}
-			if err := d.Set("action", &actionsSet); err != nil {
+			if err = d.Set("action", &actionsSet); err != nil {
 				return nil, err
 			}
 		}
 
-		d.Set("attack_type", (*actionHints.Body)[0].AttackType)
+		if err = d.Set("attack_type", (*actionHints.Body)[0].AttackType); err != nil {
+			return nil, err
+		}
 		pointInterface := (*actionHints.Body)[0].Point
 		point := wrapPointElements(pointInterface)
-		d.Set("point", point)
+		if err = d.Set("point", point); err != nil {
+			return nil, err
+		}
 
 		existingID := fmt.Sprintf("%d/%d/%d", clientID, actionID, ruleID)
 		d.SetId(existingID)

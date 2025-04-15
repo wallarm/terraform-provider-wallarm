@@ -214,9 +214,15 @@ func resourceWallarmModeCreate(d *schema.ResourceData, m interface{}) error {
 		return err
 	}
 
-	d.Set("rule_id", actionResp.Body.ID)
-	d.Set("action_id", actionResp.Body.ActionID)
-	d.Set("rule_type", actionResp.Body.Type)
+	if err = d.Set("rule_id", actionResp.Body.ID); err != nil {
+		return err
+	}
+	if err = d.Set("action_id", actionResp.Body.ActionID); err != nil {
+		return err
+	}
+	if err = d.Set("rule_type", actionResp.Body.Type); err != nil {
+		return err
+	}
 
 	resID := fmt.Sprintf("%d/%d/%d/%s", clientID, actionResp.Body.ActionID, actionResp.Body.ID, actionResp.Body.Mode)
 	d.SetId(resID)
@@ -295,11 +301,13 @@ func resourceWallarmModeRead(d *schema.ResourceData, m interface{}) error {
 		notFoundRules = append(notFoundRules, rule.ID)
 	}
 
-	if err := d.Set("rule_id", updatedRuleID); err != nil {
+	if err = d.Set("rule_id", updatedRuleID); err != nil {
 		return err
 	}
 
-	d.Set("client_id", clientID)
+	if err = d.Set("client_id", clientID); err != nil {
+		return err
+	}
 
 	if actionsSet.Len() != 0 {
 		if err := d.Set("action", &actionsSet); err != nil {
@@ -373,10 +381,18 @@ func resourceWallarmModeImport(d *schema.ResourceData, m interface{}) ([]*schema
 			return nil, err
 		}
 		mode := idAttr[3]
-		d.Set("action_id", actionID)
-		d.Set("rule_id", ruleID)
-		d.Set("mode", mode)
-		d.Set("rule_type", "wallarm_mode")
+		if err = d.Set("action_id", actionID); err != nil {
+			return nil, err
+		}
+		if err = d.Set("rule_id", ruleID); err != nil {
+			return nil, err
+		}
+		if err = d.Set("mode", mode); err != nil {
+			return nil, err
+		}
+		if err = d.Set("rule_type", "wallarm_mode"); err != nil {
+			return nil, err
+		}
 
 		hint := &wallarm.HintRead{
 			Limit:     1000,

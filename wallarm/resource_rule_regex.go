@@ -253,10 +253,18 @@ func resourceWallarmRegexCreate(d *schema.ResourceData, m interface{}) error {
 		return err
 	}
 
-	d.Set("regex_id", regexResp.Body.RegexID.(float64))
-	d.Set("rule_id", regexResp.Body.ID)
-	d.Set("action_id", regexResp.Body.ActionID)
-	d.Set("rule_type", regexResp.Body.Type)
+	if err = d.Set("regex_id", regexResp.Body.RegexID.(float64)); err != nil {
+		return err
+	}
+	if err = d.Set("rule_id", regexResp.Body.ID); err != nil {
+		return err
+	}
+	if err = d.Set("action_id", regexResp.Body.ActionID); err != nil {
+		return err
+	}
+	if err = d.Set("rule_type", regexResp.Body.Type); err != nil {
+		return err
+	}
 
 	resID := fmt.Sprintf("%d/%d/%d/%s", clientID, regexResp.Body.ActionID, regexResp.Body.ID, regexResp.Body.Type)
 	d.SetId(resID)
@@ -367,11 +375,13 @@ func resourceWallarmRegexRead(d *schema.ResourceData, m interface{}) error {
 		notFoundRules = append(notFoundRules, rule.ID)
 	}
 
-	if err := d.Set("rule_id", updatedRuleID); err != nil {
+	if err = d.Set("rule_id", updatedRuleID); err != nil {
 		return err
 	}
 
-	d.Set("client_id", clientID)
+	if err = d.Set("client_id", clientID); err != nil {
+		return err
+	}
 
 	if actionsSet.Len() != 0 {
 		if err := d.Set("action", &actionsSet); err != nil {
@@ -425,9 +435,15 @@ func resourceWallarmRegexImport(d *schema.ResourceData, m interface{}) ([]*schem
 			return nil, err
 		}
 		hintType := idAttr[3]
-		d.Set("action_id", actionID)
-		d.Set("rule_id", ruleID)
-		d.Set("rule_type", hintType)
+		if err = d.Set("action_id", actionID); err != nil {
+			return nil, err
+		}
+		if err = d.Set("rule_id", ruleID); err != nil {
+			return nil, err
+		}
+		if err = d.Set("rule_type", hintType); err != nil {
+			return nil, err
+		}
 
 		hint := &wallarm.HintRead{
 			Limit:     1000,
@@ -447,7 +463,7 @@ func resourceWallarmRegexImport(d *schema.ResourceData, m interface{}) ([]*schem
 		actionsSet := schema.Set{
 			F: hashResponseActionDetails,
 		}
-		if len((*actionHints.Body)) != 0 && len((*actionHints.Body)[0].Action) != 0 {
+		if len(*actionHints.Body) != 0 && len((*actionHints.Body)[0].Action) != 0 {
 			for _, a := range (*actionHints.Body)[0].Action {
 				acts, err := actionDetailsToMap(a)
 				if err != nil {
@@ -455,22 +471,34 @@ func resourceWallarmRegexImport(d *schema.ResourceData, m interface{}) ([]*schem
 				}
 				actionsSet.Add(acts)
 			}
-			if err := d.Set("action", &actionsSet); err != nil {
+			if err = d.Set("action", &actionsSet); err != nil {
 				return nil, err
 			}
-			d.Set("regex_id", (*actionHints.Body)[0].RegexID)
-			d.Set("regex", (*actionHints.Body)[0].Regex)
-			d.Set("attack_type", (*actionHints.Body)[0].AttackType)
+			if err = d.Set("regex_id", (*actionHints.Body)[0].RegexID); err != nil {
+				return nil, err
+			}
+			if err = d.Set("regex", (*actionHints.Body)[0].Regex); err != nil {
+				return nil, err
+			}
+			if err = d.Set("attack_type", (*actionHints.Body)[0].AttackType); err != nil {
+				return nil, err
+			}
 
 			pointInterface := (*actionHints.Body)[0].Point
 			point := wrapPointElements(pointInterface)
-			d.Set("point", point)
+			if err = d.Set("point", point); err != nil {
+				return nil, err
+			}
 		}
 
 		if hintType == "experimental_regex" {
-			d.Set("experimental", true)
+			if err = d.Set("experimental", true); err != nil {
+				return nil, err
+			}
 		} else {
-			d.Set("experimental", false)
+			if err = d.Set("experimental", false); err != nil {
+				return nil, err
+			}
 		}
 
 		existingID := fmt.Sprintf("%d/%d/%d/%s", clientID, actionID, ruleID, hintType)

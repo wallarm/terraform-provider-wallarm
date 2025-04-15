@@ -179,23 +179,21 @@ func resourceWallarmUserRead(d *schema.ResourceData, m interface{}) error {
 		return nil
 	}
 
-	if err := d.Set("realname", res.Body[0].Realname); err != nil {
+	if err = d.Set("realname", res.Body[0].Realname); err != nil {
 		return err
 	}
 
-	if err := d.Set("username", res.Body[0].Username); err != nil {
+	if err = d.Set("username", res.Body[0].Username); err != nil {
 		return err
 	}
 
-	// if err := d.Set("permissions", d.Get("permissions").(string)); err != nil {
-	// 	return err
-	// }
-
-	if err := d.Set("enabled", res.Body[0].Enabled); err != nil {
+	if err = d.Set("enabled", res.Body[0].Enabled); err != nil {
 		return err
 	}
 
-	d.Set("client_id", clientID)
+	if err = d.Set("client_id", clientID); err != nil {
+		return err
+	}
 
 	return nil
 }

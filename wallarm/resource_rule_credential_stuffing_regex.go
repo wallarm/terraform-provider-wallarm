@@ -192,8 +192,12 @@ func resourceWallarmCredentialStuffingRegexCreate(d *schema.ResourceData, m inte
 
 	resID := fmt.Sprintf("%d/%d/%d", resp.Body.Clientid, resp.Body.ActionID, resp.Body.ID)
 	d.SetId(resID)
-	d.Set("client_id", resp.Body.Clientid)
-	d.Set("rule_id", resp.Body.ID)
+	if err = d.Set("client_id", resp.Body.Clientid); err != nil {
+		return err
+	}
+	if err = d.Set("rule_id", resp.Body.ID); err != nil {
+		return err
+	}
 
 	return resourceWallarmCredentialStuffingRegexRead(d, m)
 }
@@ -215,13 +219,24 @@ func resourceWallarmCredentialStuffingRegexRead(d *schema.ResourceData, m interf
 		return err
 	}
 
-	d.Set("regex", rule.Regex)
-	d.Set("cred_stuff_type", rule.CredStuffType)
-	d.Set("case_sensitive", rule.CaseSensitive)
-	d.Set("login_regex", rule.LoginRegex)
-
-	d.Set("rule_type", rule.Type)
-	d.Set("action_id", rule.ActionID)
+	if err = d.Set("regex", rule.Regex); err != nil {
+		return err
+	}
+	if err = d.Set("cred_stuff_type", rule.CredStuffType); err != nil {
+		return err
+	}
+	if err = d.Set("case_sensitive", rule.CaseSensitive); err != nil {
+		return err
+	}
+	if err = d.Set("login_regex", rule.LoginRegex); err != nil {
+		return err
+	}
+	if err = d.Set("rule_type", rule.Type); err != nil {
+		return err
+	}
+	if err = d.Set("action_id", rule.ActionID); err != nil {
+		return err
+	}
 	actionsSet := schema.Set{F: hashResponseActionDetails}
 	for _, a := range rule.Action {
 		acts, err := actionDetailsToMap(a)
@@ -276,8 +291,12 @@ func resourceWallarmCredentialStuffingRegexImport(d *schema.ResourceData, m inte
 		return nil, err
 	}
 
-	d.Set("client_id", clientID)
-	d.Set("rule_id", ruleID)
+	if err = d.Set("client_id", clientID); err != nil {
+		return nil, err
+	}
+	if err = d.Set("rule_id", ruleID); err != nil {
+		return nil, err
+	}
 
 	return []*schema.ResourceData{d}, nil
 }

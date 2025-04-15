@@ -92,7 +92,9 @@ func resourceWallarmTenantCreate(d *schema.ResourceData, m interface{}) error {
 		return err
 	}
 
-	d.Set("client_id", clientID)
+	if err = d.Set("client_id", clientID); err != nil {
+		return err
+	}
 
 	tenantID := res.Body.ID
 	if err := d.Set("tenant_id", tenantID); err != nil {
@@ -131,11 +133,13 @@ func resourceWallarmTenantRead(d *schema.ResourceData, m interface{}) error {
 		return nil
 	}
 
-	if err := d.Set("name", res.Body[0].Name); err != nil {
+	if err = d.Set("name", res.Body[0].Name); err != nil {
 		return err
 	}
 
-	d.Set("client_id", clientID)
+	if err = d.Set("client_id", clientID); err != nil {
+		return err
+	}
 
 	return nil
 }

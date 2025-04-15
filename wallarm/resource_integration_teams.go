@@ -118,7 +118,9 @@ func resourceWallarmTeamsCreate(d *schema.ResourceData, m interface{}) error {
 		return err
 	}
 
-	d.Set("integration_id", createRes.Body.ID)
+	if err = d.Set("integration_id", createRes.Body.ID); err != nil {
+		return err
+	}
 
 	resID := fmt.Sprintf("%d/%s/%d", clientID, createRes.Body.Type, createRes.Body.ID)
 	d.SetId(resID)
@@ -133,12 +135,24 @@ func resourceWallarmTeamsRead(d *schema.ResourceData, m interface{}) error {
 	if err != nil {
 		return err
 	}
-	d.Set("integration_id", teams.ID)
-	d.Set("is_active", teams.Active)
-	d.Set("name", teams.Name)
-	d.Set("created_by", teams.CreatedBy)
-	d.Set("type", teams.Type)
-	d.Set("client_id", clientID)
+	if err = d.Set("integration_id", teams.ID); err != nil {
+		return err
+	}
+	if err = d.Set("is_active", teams.Active); err != nil {
+		return err
+	}
+	if err = d.Set("name", teams.Name); err != nil {
+		return err
+	}
+	if err = d.Set("created_by", teams.CreatedBy); err != nil {
+		return err
+	}
+	if err = d.Set("type", teams.Type); err != nil {
+		return err
+	}
+	if err = d.Set("client_id", clientID); err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -172,7 +186,9 @@ func resourceWallarmTeamsUpdate(d *schema.ResourceData, m interface{}) error {
 		return err
 	}
 
-	d.Set("integration_id", updateRes.Body.ID)
+	if err = d.Set("integration_id", updateRes.Body.ID); err != nil {
+		return err
+	}
 
 	resID := fmt.Sprintf("%d/%s/%d", clientID, updateRes.Body.Type, updateRes.Body.ID)
 	d.SetId(resID)

@@ -205,7 +205,9 @@ func resourceWallarmPagerDutyUpdate(d *schema.ResourceData, m interface{}) error
 		return err
 	}
 
-	d.Set("integration_id", updateRes.Body.ID)
+	if err = d.Set("integration_id", updateRes.Body.ID); err != nil {
+		return err
+	}
 
 	resID := fmt.Sprintf("%d/%s/%d", clientID, updateRes.Body.Type, updateRes.Body.ID)
 	d.SetId(resID)

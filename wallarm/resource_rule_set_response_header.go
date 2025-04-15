@@ -230,9 +230,15 @@ func resourceWallarmSetResponseHeaderCreate(d *schema.ResourceData, m interface{
 		return err
 	}
 
-	d.Set("action_id", actionResp.Body.ActionID)
-	d.Set("rule_id", actionResp.Body.ID)
-	d.Set("client_id", clientID)
+	if err = d.Set("action_id", actionResp.Body.ActionID); err != nil {
+		return err
+	}
+	if err = d.Set("rule_id", actionResp.Body.ID); err != nil {
+		return err
+	}
+	if err = d.Set("client_id", clientID); err != nil {
+		return err
+	}
 	resID := fmt.Sprintf("%d/%d/%d", clientID, actionResp.Body.ActionID, actionResp.Body.ID)
 	d.SetId(resID)
 
@@ -303,11 +309,13 @@ func resourceWallarmSetResponseHeaderRead(d *schema.ResourceData, m interface{})
 		notFoundRules = append(notFoundRules, rule.ID)
 	}
 
-	if err := d.Set("rule_id", updatedRuleID); err != nil {
+	if err = d.Set("rule_id", updatedRuleID); err != nil {
 		return err
 	}
 
-	d.Set("client_id", clientID)
+	if err = d.Set("client_id", clientID); err != nil {
+		return err
+	}
 
 	if updatedRuleID == 0 {
 		log.Printf("[WARN] these rule IDs: %v have been found under the action ID: %d. But it isn't in the Terraform Plan.", notFoundRules, actionID)
@@ -359,9 +367,15 @@ func resourceWallarmSetResponseHeaderImport(d *schema.ResourceData, m interface{
 		if err != nil {
 			return nil, err
 		}
-		d.Set("action_id", actionID)
-		d.Set("rule_id", ruleID)
-		d.Set("rule_type", "set_response_header")
+		if err = d.Set("action_id", actionID); err != nil {
+			return nil, err
+		}
+		if err = d.Set("rule_id", ruleID); err != nil {
+			return nil, err
+		}
+		if err = d.Set("rule_type", "set_response_header"); err != nil {
+			return nil, err
+		}
 
 		hint := &wallarm.HintRead{
 			Limit:     1000,
@@ -381,7 +395,7 @@ func resourceWallarmSetResponseHeaderImport(d *schema.ResourceData, m interface{
 		actionsSet := schema.Set{
 			F: hashResponseActionDetails,
 		}
-		if len((*actionHints.Body)) != 0 && len((*actionHints.Body)[0].Action) != 0 {
+		if len(*actionHints.Body) != 0 && len((*actionHints.Body)[0].Action) != 0 {
 			for _, a := range (*actionHints.Body)[0].Action {
 				acts, err := actionDetailsToMap(a)
 				if err != nil {
@@ -389,14 +403,20 @@ func resourceWallarmSetResponseHeaderImport(d *schema.ResourceData, m interface{
 				}
 				actionsSet.Add(acts)
 			}
-			if err := d.Set("action", &actionsSet); err != nil {
+			if err = d.Set("action", &actionsSet); err != nil {
 				return nil, err
 			}
 		}
 
-		d.Set("mode", (*actionHints.Body)[0].Mode)
-		d.Set("name", (*actionHints.Body)[0].Name)
-		d.Set("values", (*actionHints.Body)[0].Values)
+		if err = d.Set("mode", (*actionHints.Body)[0].Mode); err != nil {
+			return nil, err
+		}
+		if err = d.Set("name", (*actionHints.Body)[0].Name); err != nil {
+			return nil, err
+		}
+		if err = d.Set("values", (*actionHints.Body)[0].Values); err != nil {
+			return nil, err
+		}
 
 		existingID := fmt.Sprintf("%d/%d/%d", clientID, actionID, ruleID)
 		d.SetId(existingID)

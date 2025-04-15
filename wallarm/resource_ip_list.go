@@ -299,11 +299,13 @@ func resourceWallarmIPListRead(listType wallarm.IPListType) schema.ReadFunc {
 			return nil
 		}
 
-		if err := d.Set("address_id", addrIDs); err != nil {
+		if err = d.Set("address_id", addrIDs); err != nil {
 			return fmt.Errorf("cannot set content for ip_range: %v", err)
 		}
 
-		d.Set("client_id", clientID)
+		if err = d.Set("client_id", clientID); err != nil {
+			return err
+		}
 
 		return nil
 	}

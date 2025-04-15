@@ -227,9 +227,15 @@ func resourceWallarmUploadsCreate(d *schema.ResourceData, m interface{}) error {
 		return err
 	}
 
-	d.Set("rule_id", actionResp.Body.ID)
-	d.Set("action_id", actionResp.Body.ActionID)
-	d.Set("rule_type", actionResp.Body.Type)
+	if err = d.Set("rule_id", actionResp.Body.ID); err != nil {
+		return err
+	}
+	if err = d.Set("action_id", actionResp.Body.ActionID); err != nil {
+		return err
+	}
+	if err = d.Set("rule_type", actionResp.Body.Type); err != nil {
+		return err
+	}
 
 	resID := fmt.Sprintf("%d/%d/%d", clientID, actionResp.Body.ActionID, actionResp.Body.ID)
 	d.SetId(resID)
@@ -320,11 +326,13 @@ func resourceWallarmUploadsRead(d *schema.ResourceData, m interface{}) error {
 		notFoundRules = append(notFoundRules, rule.ID)
 	}
 
-	if err := d.Set("rule_id", updatedRuleID); err != nil {
+	if err = d.Set("rule_id", updatedRuleID); err != nil {
 		return err
 	}
 
-	d.Set("client_id", clientID)
+	if err = d.Set("client_id", clientID); err != nil {
+		return err
+	}
 
 	if actionsSet.Len() != 0 {
 		if err := d.Set("action", &actionsSet); err != nil {
@@ -397,9 +405,15 @@ func resourceWallarmUploadsImport(d *schema.ResourceData, m interface{}) ([]*sch
 		if err != nil {
 			return nil, err
 		}
-		d.Set("action_id", actionID)
-		d.Set("rule_id", ruleID)
-		d.Set("rule_type", "uploads")
+		if err = d.Set("action_id", actionID); err != nil {
+			return nil, err
+		}
+		if err = d.Set("rule_id", ruleID); err != nil {
+			return nil, err
+		}
+		if err = d.Set("rule_type", "uploads"); err != nil {
+			return nil, err
+		}
 
 		hint := &wallarm.HintRead{
 			Limit:     1000,
@@ -427,14 +441,18 @@ func resourceWallarmUploadsImport(d *schema.ResourceData, m interface{}) ([]*sch
 				}
 				actionsSet.Add(acts)
 			}
-			if err := d.Set("action", &actionsSet); err != nil {
+			if err = d.Set("action", &actionsSet); err != nil {
 				return nil, err
 			}
 
-			d.Set("file_type", (*actionHints.Body)[0].FileType)
+			if err = d.Set("file_type", (*actionHints.Body)[0].FileType); err != nil {
+				return nil, err
+			}
 			pointInterface := (*actionHints.Body)[0].Point
 			point := wrapPointElements(pointInterface)
-			d.Set("point", point)
+			if err = d.Set("point", point); err != nil {
+				return nil, err
+			}
 		}
 
 		existingID := fmt.Sprintf("%d/%d/%d", clientID, actionID, ruleID)

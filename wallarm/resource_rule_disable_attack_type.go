@@ -228,9 +228,15 @@ func resourceWallarmDisableAttackTypeCreate(d *schema.ResourceData, m interface{
 		return err
 	}
 
-	d.Set("rule_id", actionResp.Body.ID)
-	d.Set("action_id", actionResp.Body.ActionID)
-	d.Set("rule_type", actionResp.Body.Type)
+	if err = d.Set("rule_id", actionResp.Body.ID); err != nil {
+		return err
+	}
+	if err = d.Set("action_id", actionResp.Body.ActionID); err != nil {
+		return err
+	}
+	if err = d.Set("rule_type", actionResp.Body.Type); err != nil {
+		return err
+	}
 
 	resID := fmt.Sprintf("%d/%d/%d", clientID, actionResp.Body.ActionID, actionResp.Body.ID)
 	d.SetId(resID)
@@ -321,14 +327,16 @@ func resourceWallarmDisableAttackTypeRead(d *schema.ResourceData, m interface{})
 		notFoundRules = append(notFoundRules, rule.ID)
 	}
 
-	if err := d.Set("rule_id", updatedRuleID); err != nil {
+	if err = d.Set("rule_id", updatedRuleID); err != nil {
 		return err
 	}
 
-	d.Set("client_id", clientID)
+	if err = d.Set("client_id", clientID); err != nil {
+		return err
+	}
 
 	if actionsSet.Len() != 0 {
-		if err := d.Set("action", &actionsSet); err != nil {
+		if err = d.Set("action", &actionsSet); err != nil {
 			return err
 		}
 	} else {
@@ -398,9 +406,15 @@ func resourceWallarmDisableAttackTypeImport(d *schema.ResourceData, m interface{
 		if err != nil {
 			return nil, err
 		}
-		d.Set("action_id", actionID)
-		d.Set("rule_id", ruleID)
-		d.Set("rule_type", "disable_attack_type")
+		if err = d.Set("action_id", actionID); err != nil {
+			return nil, err
+		}
+		if err = d.Set("rule_id", ruleID); err != nil {
+			return nil, err
+		}
+		if err = d.Set("rule_type", "disable_attack_type"); err != nil {
+			return nil, err
+		}
 
 		hint := &wallarm.HintRead{
 			Limit:     1000,
@@ -433,10 +447,14 @@ func resourceWallarmDisableAttackTypeImport(d *schema.ResourceData, m interface{
 			}
 		}
 
-		d.Set("attack_type", (*actionHints.Body)[0].AttackType)
+		if err = d.Set("attack_type", (*actionHints.Body)[0].AttackType); err != nil {
+			return nil, err
+		}
 		pointInterface := (*actionHints.Body)[0].Point
 		point := wrapPointElements(pointInterface)
-		d.Set("point", point)
+		if err = d.Set("point", point); err != nil {
+			return nil, err
+		}
 
 		existingID := fmt.Sprintf("%d/%d/%d", clientID, actionID, ruleID)
 		d.SetId(existingID)
