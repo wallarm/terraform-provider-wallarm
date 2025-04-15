@@ -35,7 +35,7 @@ resource "wallarm_integration_slack" "slack_integration" {
   }
   
   event {
-    event_type = "vuln"
+    event_type = "vuln_high"
     active = true
   }
 }
@@ -81,7 +81,7 @@ Example:
   }
   
   event {
-    event_type = "vuln"
+    event_type = "vuln_high"
     active = false
   }
 

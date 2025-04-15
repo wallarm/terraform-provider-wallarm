@@ -8,8 +8,6 @@ description: |-
 
 # wallarm_rule_bruteforce_counter
 
-!> The resource will be deprecated in the future versions.
-
 Provides the resource to manage rules with the "Define brute-force attacks counter" action type. For detecting brute-force attacks, with every request, one of the statistical counters is incremented. By default, the counter name is automatically defined based on the domain name and the request path.
 
 **Important:** Rules made with Terraform can't be altered by other rules that usually change how rules work (middleware, variative_values, variative_by_regex).
