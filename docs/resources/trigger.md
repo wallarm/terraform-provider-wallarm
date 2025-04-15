@@ -62,7 +62,7 @@ resource "wallarm_integration_email" "email_integration" {
   }
   
   event {
-    event_type = "vuln"
+    event_type = "vuln_high"
     active = true
   }
 

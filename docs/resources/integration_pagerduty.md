@@ -41,7 +41,7 @@ resource "wallarm_integration_pagerduty" "pagerduty_integration" {
   }
   
   event {
-    event_type = "vuln"
+    event_type = "vuln_high"
     active = true
   }
 }
@@ -93,7 +93,7 @@ Example:
   }
   
   event {
-    event_type = "vuln"
+    event_type = "vuln_high"
     active = false
   }
 

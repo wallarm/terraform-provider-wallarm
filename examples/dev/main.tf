@@ -207,7 +207,7 @@ provider "wallarm" {
 #     active = true
 #   }
 #   event {
-#     event_type = "vuln"
+#     event_type = "vuln_high"
 #     active = true
 #   }
 #   headers = {
@@ -616,7 +616,7 @@ provider "wallarm" {
 #   }
 
 #   event {
-#     event_type = "vuln"
+#     event_type = "vuln_high"
 #     active = true
 #   }
 # }

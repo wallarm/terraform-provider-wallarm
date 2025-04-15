@@ -8,8 +8,6 @@ description: |-
 
 # wallarm_rule_dirbust_counter
 
-!> The resource will be deprecated in the future versions.
-
 Provides the resource to manage rules with the "Define force browsing attacks counter" action type. For detecting force browsing attacks, there is a counter that increments whenever a request hits 404 status code (resource not found). By default, every application has its own counter.
 
 This rule should be used when an independent detection of force browsing attacks is required for different parts of the application.
