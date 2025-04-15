@@ -1,3 +1,11 @@
+# v1.7.0 (April 15, 2025)
+
+## NOTES:
+
+* Updated event_type: 'vuln' -> 'vuln_high' in docs/resources
+* Removed unused resources 'attack_rechecker', 'attack_rechecker_rewrite'
+* Extended validation for resourceWallarmTrigger, added check 'forced_browsing_started'
+* Fixed lock_time for triggers, now it fills only for action_id 'block_ips' or 'add_to_graylist'
 
 # v1.6.0 (December 6, 2024)
 
