@@ -3,7 +3,7 @@ package wallarm
 import (
 	"log"
 
-	wallarm "github.com/wallarm/wallarm-go"
+	"github.com/wallarm/wallarm-go"
 
 	"github.com/pkg/errors"
 )

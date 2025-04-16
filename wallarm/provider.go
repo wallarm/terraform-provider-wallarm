@@ -8,7 +8,7 @@ import (
 	"regexp"
 
 	"github.com/wallarm/terraform-provider-wallarm/version"
-	wallarm "github.com/wallarm/wallarm-go"
+	"github.com/wallarm/wallarm-go"
 
 	cleanhttp "github.com/hashicorp/go-cleanhttp"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/logging"
