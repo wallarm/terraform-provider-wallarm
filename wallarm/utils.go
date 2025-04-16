@@ -10,7 +10,6 @@ import (
 	"sort"
 	"strconv"
 	"strings"
-	"time"
 	"unicode"
 
 	"github.com/wallarm/wallarm-go"
@@ -327,7 +326,6 @@ func diffStringSlice(a, b []string) []string {
 }
 
 func passwordGenerate(length int) string {
-	rand.Seed(time.Now().UnixNano())
 	digits := "0123456789"
 	specials := "~=+%^*()_[]{}!@#$?"
 	all := "ABCDEFGHIJKLMNOPQRSTUVWXYZ" +

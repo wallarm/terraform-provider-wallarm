@@ -1,9 +1,9 @@
 package wallarm
 
 import (
+	"crypto/rand"
 	"fmt"
 	"log"
-	"math/rand"
 	"os"
 	"regexp"
 	"strconv"
