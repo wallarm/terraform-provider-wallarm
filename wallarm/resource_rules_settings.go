@@ -130,67 +130,67 @@ func resourceWallarmRulesSettingsRead(d *schema.ResourceData, m interface{}) err
 		return err
 	}
 
-	if err := d.Set("min_lom_format", res.Body.MinLomFormat); err != nil {
+	if err = d.Set("min_lom_format", res.Body.MinLomFormat); err != nil {
 		return err
 	}
 
-	if err := d.Set("max_lom_format", res.Body.MaxLomFormat); err != nil {
+	if err = d.Set("max_lom_format", res.Body.MaxLomFormat); err != nil {
 		return err
 	}
 
-	if err := d.Set("max_lom_size", res.Body.MaxLomSize); err != nil {
+	if err = d.Set("max_lom_size", res.Body.MaxLomSize); err != nil {
 		return err
 	}
 
-	if err := d.Set("lom_disabled", res.Body.LomDisabled); err != nil {
+	if err = d.Set("lom_disabled", res.Body.LomDisabled); err != nil {
 		return err
 	}
 
-	if err := d.Set("lom_compilation_delay", res.Body.LomCompilationDelay); err != nil {
+	if err = d.Set("lom_compilation_delay", res.Body.LomCompilationDelay); err != nil {
 		return err
 	}
 
-	if err := d.Set("rules_snapshot_enabled", res.Body.RulesSnapshotEnabled); err != nil {
+	if err = d.Set("rules_snapshot_enabled", res.Body.RulesSnapshotEnabled); err != nil {
 		return err
 	}
 
-	if err := d.Set("rules_snapshot_max_count", res.Body.RulesSnapshotMaxCount); err != nil {
+	if err = d.Set("rules_snapshot_max_count", res.Body.RulesSnapshotMaxCount); err != nil {
 		return err
 	}
 
-	if err := d.Set("rules_manipulation_locked", res.Body.RulesManipulationLocked); err != nil {
+	if err = d.Set("rules_manipulation_locked", res.Body.RulesManipulationLocked); err != nil {
 		return err
 	}
 
-	if err := d.Set("heavy_lom", res.Body.HeavyLom); err != nil {
+	if err = d.Set("heavy_lom", res.Body.HeavyLom); err != nil {
 		return err
 	}
 
-	if err := d.Set("parameters_count_weight", res.Body.ParametersCountWeight); err != nil {
+	if err = d.Set("parameters_count_weight", res.Body.ParametersCountWeight); err != nil {
 		return err
 	}
 
-	if err := d.Set("path_variativity_weight", res.Body.PathVariativityWeight); err != nil {
+	if err = d.Set("path_variativity_weight", res.Body.PathVariativityWeight); err != nil {
 		return err
 	}
 
-	if err := d.Set("pii_weight", res.Body.PiiWeight); err != nil {
+	if err = d.Set("pii_weight", res.Body.PiiWeight); err != nil {
 		return err
 	}
 
-	if err := d.Set("request_content_weight", res.Body.RequestContentWeight); err != nil {
+	if err = d.Set("request_content_weight", res.Body.RequestContentWeight); err != nil {
 		return err
 	}
 
-	if err := d.Set("open_vulns_weight", res.Body.OpenVulnsWeight); err != nil {
+	if err = d.Set("open_vulns_weight", res.Body.OpenVulnsWeight); err != nil {
 		return err
 	}
 
-	if err := d.Set("serialized_data_weight", res.Body.SerializedDataWeight); err != nil {
+	if err = d.Set("serialized_data_weight", res.Body.SerializedDataWeight); err != nil {
 		return err
 	}
 
-	if err := d.Set("risk_score_algo", res.Body.RiskScoreAlgo); err != nil {
+	if err = d.Set("risk_score_algo", res.Body.RiskScoreAlgo); err != nil {
 		return err
 	}
 

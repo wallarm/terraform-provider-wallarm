@@ -655,9 +655,9 @@ func existsHint(d *schema.ResourceData, m interface{}, actionID int, hintType st
 // accepts resource name with its resource identificator.
 // Generally, ID is something like `/6039/4123/93830`
 func ImportAsExistsError(resourceName, id string) error {
-	return fmt.Errorf("the resource with the ID %q already exists "+
-		"- to be managed via Terraform this resource needs to be imported into the State. "+
-		"Please see the resource documentation for %q for more information.", id, resourceName)
+	return fmt.Errorf(`the resource with the ID %q already exists -
+		to be managed via Terraform this resource needs to be imported into the State. 
+		Please see the resource documentation for %q for more information.`, id, resourceName)
 }
 
 func isNotFoundError(err error) (bool, error) {
