@@ -142,7 +142,7 @@ func resourceWallarmUserCreate(d *schema.ResourceData, m interface{}) error {
 
 	userID := res.Body.ID
 
-	if err := d.Set("user_id", userID); err != nil {
+	if err = d.Set("user_id", userID); err != nil {
 		return err
 	}
 

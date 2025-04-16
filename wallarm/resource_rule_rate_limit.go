@@ -426,7 +426,7 @@ func resourceWallarmRateLimitImport(d *schema.ResourceData, m interface{}) ([]*s
 		actionsSet := schema.Set{
 			F: hashResponseActionDetails,
 		}
-		if len((*actionHints.Body)) != 0 && len((*actionHints.Body)[0].Action) != 0 {
+		if len(*actionHints.Body) != 0 && len((*actionHints.Body)[0].Action) != 0 {
 			for _, a := range (*actionHints.Body)[0].Action {
 				acts, err := actionDetailsToMap(a)
 				if err != nil {

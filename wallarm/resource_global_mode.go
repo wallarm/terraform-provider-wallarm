@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"net/http"
 
 	"github.com/wallarm/wallarm-go"
 
@@ -107,7 +108,7 @@ func resourceWallarmGlobalModeRead(d *schema.ResourceData, m interface{}) error 
 	if err != nil {
 		return err
 	}
-	if wallarmModeResp.Status != 200 {
+	if wallarmModeResp.Status != http.StatusOK {
 		body, err := json.Marshal(wallarmModeResp)
 		if err != nil {
 			return err
@@ -153,7 +154,7 @@ func resourceWallarmGlobalModeRead(d *schema.ResourceData, m interface{}) error 
 		scannerMode = "on"
 	}
 
-	if err := d.Set("scanner_mode", scannerMode); err != nil {
+	if err = d.Set("scanner_mode", scannerMode); err != nil {
 		return err
 	}
 

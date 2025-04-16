@@ -310,7 +310,7 @@ func resourceWallarmModeRead(d *schema.ResourceData, m interface{}) error {
 	}
 
 	if actionsSet.Len() != 0 {
-		if err := d.Set("action", &actionsSet); err != nil {
+		if err = d.Set("action", &actionsSet); err != nil {
 			return err
 		}
 	} else {
@@ -345,7 +345,7 @@ func resourceWallarmModeDelete(d *schema.ResourceData, m interface{}) error {
 	}
 
 	if len(respRules.Body) == 1 && respRules.Body[0].Hints == 1 && respRules.Body[0].GroupedHintsCount == 1 {
-		if err := client.RuleDelete(actionID); err != nil {
+		if err = client.RuleDelete(actionID); err != nil {
 			return err
 		}
 	} else {
