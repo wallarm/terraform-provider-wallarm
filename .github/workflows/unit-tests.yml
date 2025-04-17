@@ -7,19 +7,24 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        go: [1.14, 1.15, 1.16]
+        go: [1.23]
         os: [ubuntu-latest, macos-13]
-        make_target: [test, vet]
+        make_target: [test, lint]
 
     steps:
-      - name: Set up Go
-        uses: actions/setup-go@v1
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
         with:
           go-version: ${{ matrix.go }}
-        id: go
 
       - name: Check out code repository source code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
+
+      - name: Install golangci‑lint
+        if: ${{ matrix.make_target == 'lint' }}
+        run: |
+          go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.64.8
+          # бинарь окажется в $(go env GOPATH)/bin, PATH уже прописан setup‑go
 
       - name: Set build variables
         run: |

@@ -7,7 +7,7 @@ import (
 	"log"
 	"regexp"
 
-	wallarm "github.com/wallarm/wallarm-go"
+	"github.com/wallarm/wallarm-go"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
@@ -21,19 +21,7 @@ func resourceWallarmUser() *schema.Resource {
 		Delete: resourceWallarmUserDelete,
 
 		Schema: map[string]*schema.Schema{
-			"client_id": {
-				Type:        schema.TypeInt,
-				Optional:    true,
-				Computed:    true,
-				Description: "The Client ID to perform changes",
-				ValidateFunc: func(val interface{}, key string) (warns []string, errs []error) {
-					v := val.(int)
-					if v <= 0 {
-						errs = append(errs, fmt.Errorf("%q must be positive, got: %d", key, v))
-					}
-					return
-				},
-			},
+			"client_id": defaultClientIDWithValidationSchema,
 
 			"email": {
 				Type:     schema.TypeString,
@@ -142,7 +130,7 @@ func resourceWallarmUserCreate(d *schema.ResourceData, m interface{}) error {
 
 	userID := res.Body.ID
 
-	if err := d.Set("user_id", userID); err != nil {
+	if err = d.Set("user_id", userID); err != nil {
 		return err
 	}
 
@@ -179,23 +167,21 @@ func resourceWallarmUserRead(d *schema.ResourceData, m interface{}) error {
 		return nil
 	}
 
-	if err := d.Set("realname", res.Body[0].Realname); err != nil {
+	if err = d.Set("realname", res.Body[0].Realname); err != nil {
 		return err
 	}
 
-	if err := d.Set("username", res.Body[0].Username); err != nil {
+	if err = d.Set("username", res.Body[0].Username); err != nil {
 		return err
 	}
 
-	// if err := d.Set("permissions", d.Get("permissions").(string)); err != nil {
-	// 	return err
-	// }
-
-	if err := d.Set("enabled", res.Body[0].Enabled); err != nil {
+	if err = d.Set("enabled", res.Body[0].Enabled); err != nil {
 		return err
 	}
 
-	d.Set("client_id", clientID)
+	if err = d.Set("client_id", clientID); err != nil {
+		return err
+	}
 
 	return nil
 }

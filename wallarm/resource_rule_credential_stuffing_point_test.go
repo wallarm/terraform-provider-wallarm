@@ -7,7 +7,7 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/terraform"
-	wallarm "github.com/wallarm/wallarm-go"
+	"github.com/wallarm/wallarm-go"
 )
 
 func TestAccRuleCredentialStuffingPoint_basic(t *testing.T) {
@@ -87,16 +87,5 @@ func testAccRuleCredentialStuffingPointDestroy() resource.TestCheckFunc {
 		}
 
 		return nil
-	}
-}
-
-func testAccRuleCredentialStuffingPointIdFunc(resourceAddress string) resource.ImportStateIdFunc {
-	return func(s *terraform.State) (string, error) {
-		rs, ok := s.RootModule().Resources[resourceAddress]
-		if !ok {
-			return "", fmt.Errorf("Not Found: %s", resourceAddress)
-		}
-
-		return fmt.Sprintf("%s/%s/%s", rs.Primary.Attributes["client_id"], rs.Primary.Attributes["action_id"], rs.Primary.Attributes["rule_id"]), nil
 	}
 }

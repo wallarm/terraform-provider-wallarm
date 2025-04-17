@@ -3,7 +3,7 @@ package wallarm
 import (
 	"fmt"
 
-	wallarm "github.com/wallarm/wallarm-go"
+	"github.com/wallarm/wallarm-go"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
@@ -17,19 +17,7 @@ func resourceWallarmDataDog() *schema.Resource {
 		Delete: resourceWallarmDataDogDelete,
 
 		Schema: map[string]*schema.Schema{
-			"client_id": {
-				Type:        schema.TypeInt,
-				Optional:    true,
-				Computed:    true,
-				Description: "The Client ID to perform changes",
-				ValidateFunc: func(val interface{}, key string) (warns []string, errs []error) {
-					v := val.(int)
-					if v <= 0 {
-						errs = append(errs, fmt.Errorf("%q must be positive, got: %d", key, v))
-					}
-					return
-				},
-			},
+			"client_id": defaultClientIDWithValidationSchema,
 
 			"active": {
 				Type:     schema.TypeBool,
@@ -103,7 +91,7 @@ func resourceWallarmDataDogCreate(d *schema.ResourceData, m interface{}) error {
 	token := d.Get("token").(string)
 	region := d.Get("region").(string)
 	active := d.Get("active").(bool)
-	events, err := expandWallarmEventToIntEvents(d.Get("event").(interface{}), "data_dog")
+	events, err := expandWallarmEventToIntEvents(d.Get("event"), "data_dog")
 	if err != nil {
 		return err
 	}
@@ -125,7 +113,9 @@ func resourceWallarmDataDogCreate(d *schema.ResourceData, m interface{}) error {
 		return err
 	}
 
-	d.Set("integration_id", createRes.Body.ID)
+	if err = d.Set("integration_id", createRes.Body.ID); err != nil {
+		return err
+	}
 
 	resID := fmt.Sprintf("%d/%s/%d", clientID, createRes.Body.Type, createRes.Body.ID)
 	d.SetId(resID)
@@ -141,12 +131,24 @@ func resourceWallarmDataDogRead(d *schema.ResourceData, m interface{}) error {
 		return err
 	}
 
-	d.Set("integration_id", dd.ID)
-	d.Set("is_active", dd.Active)
-	d.Set("name", dd.Name)
-	d.Set("created_by", dd.CreatedBy)
-	d.Set("type", dd.Type)
-	d.Set("client_id", clientID)
+	if err = d.Set("integration_id", dd.ID); err != nil {
+		return err
+	}
+	if err = d.Set("is_active", dd.Active); err != nil {
+		return err
+	}
+	if err = d.Set("name", dd.Name); err != nil {
+		return err
+	}
+	if err = d.Set("created_by", dd.CreatedBy); err != nil {
+		return err
+	}
+	if err = d.Set("type", dd.Type); err != nil {
+		return err
+	}
+	if err = d.Set("client_id", clientID); err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -158,7 +160,7 @@ func resourceWallarmDataDogUpdate(d *schema.ResourceData, m interface{}) error {
 	region := d.Get("region").(string)
 	token := d.Get("token").(string)
 	active := d.Get("active").(bool)
-	events, err := expandWallarmEventToIntEvents(d.Get("event").(interface{}), "data_dog")
+	events, err := expandWallarmEventToIntEvents(d.Get("event"), "data_dog")
 	if err != nil {
 		return err
 	}
@@ -184,7 +186,9 @@ func resourceWallarmDataDogUpdate(d *schema.ResourceData, m interface{}) error {
 		return err
 	}
 
-	d.Set("integration_id", updateRes.Body.ID)
+	if err = d.Set("integration_id", updateRes.Body.ID); err != nil {
+		return err
+	}
 
 	resID := fmt.Sprintf("%d/%s/%d", clientID, updateRes.Body.Type, updateRes.Body.ID)
 	d.SetId(resID)

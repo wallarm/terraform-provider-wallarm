@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"strings"
 
-	wallarm "github.com/wallarm/wallarm-go"
+	"github.com/wallarm/wallarm-go"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -39,19 +39,7 @@ func resourceWallarmOverlimitResSettings() *schema.Resource {
 				Computed: true,
 			},
 
-			"client_id": {
-				Type:        schema.TypeInt,
-				Optional:    true,
-				Computed:    true,
-				Description: "The Client ID to perform changes",
-				ValidateFunc: func(val interface{}, key string) (warns []string, errs []error) {
-					v := val.(int)
-					if v <= 0 {
-						errs = append(errs, fmt.Errorf("%q must be positive, got: %d", key, v))
-					}
-					return
-				},
-			},
+			"client_id": defaultClientIDWithValidationSchema,
 
 			"comment": {
 				Type:     schema.TypeString,
@@ -238,11 +226,21 @@ func resourceWallarmOverlimitResSettingsCreate(d *schema.ResourceData, m interfa
 	}
 	actionID := actionResp.Body.ActionID
 
-	d.Set("rule_id", actionResp.Body.ID)
-	d.Set("action_id", actionID)
-	d.Set("rule_type", actionResp.Body.Type)
-	d.Set("client_id", clientID)
-	d.Set("point", actionResp.Body.Point)
+	if err = d.Set("rule_id", actionResp.Body.ID); err != nil {
+		return err
+	}
+	if err = d.Set("action_id", actionID); err != nil {
+		return err
+	}
+	if err = d.Set("rule_type", actionResp.Body.Type); err != nil {
+		return err
+	}
+	if err = d.Set("client_id", clientID); err != nil {
+		return err
+	}
+	if err = d.Set("point", actionResp.Body.Point); err != nil {
+		return err
+	}
 
 	resID := fmt.Sprintf("%d/%d/%d", clientID, actionID, actionResp.Body.ID)
 	d.SetId(resID)
@@ -309,11 +307,13 @@ func resourceWallarmOverlimitResSettingsRead(d *schema.ResourceData, m interface
 		notFoundRules = append(notFoundRules, rule.ID)
 	}
 
-	if err := d.Set("rule_id", updatedRuleID); err != nil {
+	if err = d.Set("rule_id", updatedRuleID); err != nil {
 		return err
 	}
 
-	d.Set("client_id", clientID)
+	if err = d.Set("client_id", clientID); err != nil {
+		return err
+	}
 
 	if updatedRuleID == 0 {
 		log.Printf("[WARN] these rule IDs: %v have been found under the action ID: %d. But it isn't in the Terraform Plan.", notFoundRules, actionID)
@@ -358,9 +358,15 @@ func resourceWallarmOverlimitResSettingsImport(d *schema.ResourceData, m interfa
 		if err != nil {
 			return nil, err
 		}
-		d.Set("action_id", actionID)
-		d.Set("rule_id", ruleID)
-		d.Set("rule_type", "overlimit_res_settings")
+		if err = d.Set("action_id", actionID); err != nil {
+			return nil, err
+		}
+		if err = d.Set("rule_id", ruleID); err != nil {
+			return nil, err
+		}
+		if err = d.Set("rule_type", "overlimit_res_settings"); err != nil {
+			return nil, err
+		}
 
 		hint := &wallarm.HintRead{
 			Limit:     1000,
@@ -380,24 +386,26 @@ func resourceWallarmOverlimitResSettingsImport(d *schema.ResourceData, m interfa
 		actionsSet := schema.Set{
 			F: hashResponseActionDetails,
 		}
-		var actsSlice []map[string]interface{}
 		if len((*actionHints.Body)) != 0 && len((*actionHints.Body)[0].Action) != 0 {
 			for _, a := range (*actionHints.Body)[0].Action {
 				acts, err := actionDetailsToMap(a)
 				if err != nil {
 					return nil, err
 				}
-				actsSlice = append(actsSlice, acts)
 				actionsSet.Add(acts)
 			}
-			if err := d.Set("action", &actionsSet); err != nil {
+			if err = d.Set("action", &actionsSet); err != nil {
 				return nil, err
 			}
 
 		}
 
-		d.Set("mode", (*actionHints.Body)[0].Mode)
-		d.Set("overlimit_time", (*actionHints.Body)[0].OverlimitTime)
+		if err = d.Set("mode", (*actionHints.Body)[0].Mode); err != nil {
+			return nil, err
+		}
+		if err = d.Set("overlimit_time", (*actionHints.Body)[0].OverlimitTime); err != nil {
+			return nil, err
+		}
 
 		existingID := fmt.Sprintf("%d/%d/%d", clientID, actionID, ruleID)
 		d.SetId(existingID)
@@ -406,7 +414,9 @@ func resourceWallarmOverlimitResSettingsImport(d *schema.ResourceData, m interfa
 		return nil, fmt.Errorf("invalid id (%q) specified, should be in format \"{clientID}/{actionID}/{ruleID}\"", d.Id())
 	}
 
-	resourceWallarmOverlimitResSettingsRead(d, m)
+	if err := resourceWallarmOverlimitResSettingsRead(d, m); err != nil {
+		return nil, err
+	}
 
 	return []*schema.ResourceData{d}, nil
 }

@@ -8,7 +8,7 @@ import (
 	"regexp"
 
 	"github.com/wallarm/terraform-provider-wallarm/version"
-	wallarm "github.com/wallarm/wallarm-go"
+	"github.com/wallarm/wallarm-go"
 
 	cleanhttp "github.com/hashicorp/go-cleanhttp"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/logging"
@@ -176,8 +176,8 @@ func providerConfigure(d *schema.ResourceData, terraformVersion string) (interfa
 	c.Transport = logging.NewTransport("Wallarm", c.Transport)
 	options = append(options, wallarm.HTTPClient(c))
 
-	tfUserAgent := httpclient.TerraformUserAgent(terraformVersion)
-	providerUserAgent := fmt.Sprintf("terraform-provider-wallarm")
+	tfUserAgent := httpclient.TerraformUserAgent(terraformVersion) // nolint:staticcheck
+	providerUserAgent := "terraform-provider-wallarm"
 	ua := fmt.Sprintf("%s/%s/%s", tfUserAgent, providerUserAgent, version.ProviderVersion)
 	options = append(options, wallarm.UserAgent(ua))
 

@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"strings"
 
-	wallarm "github.com/wallarm/wallarm-go"
+	"github.com/wallarm/wallarm-go"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -39,19 +39,7 @@ func resourceWallarmRateLimit() *schema.Resource {
 				Computed: true,
 			},
 
-			"client_id": {
-				Type:        schema.TypeInt,
-				Optional:    true,
-				Computed:    true,
-				Description: "The Client ID to perform changes",
-				ValidateFunc: func(val interface{}, key string) (warns []string, errs []error) {
-					v := val.(int)
-					if v <= 0 {
-						errs = append(errs, fmt.Errorf("%q must be positive, got: %d", key, v))
-					}
-					return
-				},
-			},
+			"client_id": defaultClientIDWithValidationSchema,
 
 			"comment": {
 				Type:     schema.TypeString,
@@ -266,11 +254,21 @@ func resourceWallarmRateLimitCreate(d *schema.ResourceData, m interface{}) error
 	}
 	actionID := actionResp.Body.ActionID
 
-	d.Set("rule_id", actionResp.Body.ID)
-	d.Set("action_id", actionID)
-	d.Set("rule_type", actionResp.Body.Type)
-	d.Set("client_id", clientID)
-	d.Set("point", actionResp.Body.Point)
+	if err = d.Set("rule_id", actionResp.Body.ID); err != nil {
+		return err
+	}
+	if err = d.Set("action_id", actionID); err != nil {
+		return err
+	}
+	if err = d.Set("rule_type", actionResp.Body.Type); err != nil {
+		return err
+	}
+	if err = d.Set("client_id", clientID); err != nil {
+		return err
+	}
+	if err = d.Set("point", actionResp.Body.Point); err != nil {
+		return err
+	}
 
 	resID := fmt.Sprintf("%d/%d/%d", clientID, actionID, actionResp.Body.ID)
 	d.SetId(resID)
@@ -337,11 +335,13 @@ func resourceWallarmRateLimitRead(d *schema.ResourceData, m interface{}) error {
 		notFoundRules = append(notFoundRules, rule.ID)
 	}
 
-	if err := d.Set("rule_id", updatedRuleID); err != nil {
+	if err = d.Set("rule_id", updatedRuleID); err != nil {
 		return err
 	}
 
-	d.Set("client_id", clientID)
+	if err = d.Set("client_id", clientID); err != nil {
+		return err
+	}
 
 	if updatedRuleID == 0 {
 		log.Printf("[WARN] these rule IDs: %v have been found under the action ID: %d. But it isn't in the Terraform Plan.", notFoundRules, actionID)
@@ -386,9 +386,15 @@ func resourceWallarmRateLimitImport(d *schema.ResourceData, m interface{}) ([]*s
 		if err != nil {
 			return nil, err
 		}
-		d.Set("action_id", actionID)
-		d.Set("rule_id", ruleID)
-		d.Set("rule_type", "rate_limit")
+		if err = d.Set("action_id", actionID); err != nil {
+			return nil, err
+		}
+		if err = d.Set("rule_id", ruleID); err != nil {
+			return nil, err
+		}
+		if err = d.Set("rule_type", "rate_limit"); err != nil {
+			return nil, err
+		}
 
 		hint := &wallarm.HintRead{
 			Limit:     1000,
@@ -408,14 +414,12 @@ func resourceWallarmRateLimitImport(d *schema.ResourceData, m interface{}) ([]*s
 		actionsSet := schema.Set{
 			F: hashResponseActionDetails,
 		}
-		var actsSlice []map[string]interface{}
-		if len((*actionHints.Body)) != 0 && len((*actionHints.Body)[0].Action) != 0 {
+		if len(*actionHints.Body) != 0 && len((*actionHints.Body)[0].Action) != 0 {
 			for _, a := range (*actionHints.Body)[0].Action {
 				acts, err := actionDetailsToMap(a)
 				if err != nil {
 					return nil, err
 				}
-				actsSlice = append(actsSlice, acts)
 				actionsSet.Add(acts)
 			}
 			if err := d.Set("action", &actionsSet); err != nil {
@@ -425,13 +429,27 @@ func resourceWallarmRateLimitImport(d *schema.ResourceData, m interface{}) ([]*s
 		}
 		pointInterface := (*actionHints.Body)[0].Point
 		point := wrapPointElements(pointInterface)
-		d.Set("point", point)
-		d.Set("delay", (*actionHints.Body)[0].Delay)
-		d.Set("rate", (*actionHints.Body)[0].Rate)
-		d.Set("burst", (*actionHints.Body)[0].Burst)
-		d.Set("rsp_status", (*actionHints.Body)[0].RspStatus)
-		d.Set("time_unit", (*actionHints.Body)[0].TimeUnit)
-		d.Set("suffix", (*actionHints.Body)[0].Suffix)
+		if err = d.Set("point", point); err != nil {
+			return nil, err
+		}
+		if err = d.Set("delay", (*actionHints.Body)[0].Delay); err != nil {
+			return nil, err
+		}
+		if err = d.Set("rate", (*actionHints.Body)[0].Rate); err != nil {
+			return nil, err
+		}
+		if err = d.Set("burst", (*actionHints.Body)[0].Burst); err != nil {
+			return nil, err
+		}
+		if err = d.Set("rsp_status", (*actionHints.Body)[0].RspStatus); err != nil {
+			return nil, err
+		}
+		if err = d.Set("time_unit", (*actionHints.Body)[0].TimeUnit); err != nil {
+			return nil, err
+		}
+		if err = d.Set("suffix", (*actionHints.Body)[0].Suffix); err != nil {
+			return nil, err
+		}
 
 		existingID := fmt.Sprintf("%d/%d/%d", clientID, actionID, ruleID)
 		d.SetId(existingID)
@@ -440,7 +458,9 @@ func resourceWallarmRateLimitImport(d *schema.ResourceData, m interface{}) ([]*s
 		return nil, fmt.Errorf("invalid id (%q) specified, should be in format \"{clientID}/{actionID}/{ruleID}\"", d.Id())
 	}
 
-	resourceWallarmRateLimitRead(d, m)
+	if err := resourceWallarmRateLimitRead(d, m); err != nil {
+		return nil, err
+	}
 
 	return []*schema.ResourceData{d}, nil
 }

@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"sort"
 
-	wallarm "github.com/wallarm/wallarm-go"
+	"github.com/wallarm/wallarm-go"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
@@ -19,19 +19,7 @@ func resourceWallarmScanner() *schema.Resource {
 		Delete: resourceWallarmScannerDelete,
 
 		Schema: map[string]*schema.Schema{
-			"client_id": {
-				Type:        schema.TypeInt,
-				Optional:    true,
-				Computed:    true,
-				Description: "The Client ID to perform changes",
-				ValidateFunc: func(val interface{}, key string) (warns []string, errs []error) {
-					v := val.(int)
-					if v <= 0 {
-						errs = append(errs, fmt.Errorf("%q must be positive, got: %d", key, v))
-					}
-					return
-				},
-			},
+			"client_id": defaultClientIDWithValidationSchema,
 
 			"element": {
 				Type:     schema.TypeList,
@@ -118,7 +106,9 @@ func resourceWallarmScannerCreate(d *schema.ResourceData, m interface{}) error {
 		}
 	}
 
-	d.Set("client_id", clientID)
+	if err := d.Set("client_id", clientID); err != nil {
+		return err
+	}
 
 	resID := fmt.Sprintf("%d/%s", clientID, element)
 	d.SetId(resID)
@@ -142,7 +132,9 @@ func resourceWallarmScannerUpdate(d *schema.ResourceData, m interface{}) error {
 	resID := fmt.Sprintf("%d/%s", clientID, element)
 	d.SetId(resID)
 
-	d.Set("client_id", clientID)
+	if err := d.Set("client_id", clientID); err != nil {
+		return err
+	}
 
 	switch resourceIDs := d.Get("resource_id").(type) {
 
@@ -236,7 +228,7 @@ func resourceWallarmScannerUpdate(d *schema.ResourceData, m interface{}) error {
 		}
 
 	default:
-		resourceWallarmScannerCreate(d, m)
+		return resourceWallarmScannerCreate(d, m)
 	}
 
 	return nil

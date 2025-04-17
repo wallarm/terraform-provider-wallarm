@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	wallarm "github.com/wallarm/wallarm-go"
+	"github.com/wallarm/wallarm-go"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
@@ -18,19 +18,7 @@ func resourceWallarmInsightConnect() *schema.Resource {
 		Delete: resourceWallarmInsightConnectDelete,
 
 		Schema: map[string]*schema.Schema{
-			"client_id": {
-				Type:        schema.TypeInt,
-				Optional:    true,
-				Computed:    true,
-				Description: "The Client ID to perform changes",
-				ValidateFunc: func(val interface{}, key string) (warns []string, errs []error) {
-					v := val.(int)
-					if v <= 0 {
-						errs = append(errs, fmt.Errorf("%q must be positive, got: %d", key, v))
-					}
-					return
-				},
-			},
+			"client_id": defaultClientIDWithValidationSchema,
 
 			"active": {
 				Type:     schema.TypeBool,
@@ -107,7 +95,7 @@ func resourceWallarmInsightConnectCreate(d *schema.ResourceData, m interface{}) 
 	apiURL := d.Get("api_url").(string)
 	apiToken := d.Get("api_token").(string)
 	active := d.Get("active").(bool)
-	events, err := expandWallarmEventToIntEvents(d.Get("event").(interface{}), "insight_connect")
+	events, err := expandWallarmEventToIntEvents(d.Get("event"), "insight_connect")
 	if err != nil {
 		return err
 	}
@@ -129,7 +117,9 @@ func resourceWallarmInsightConnectCreate(d *schema.ResourceData, m interface{}) 
 		return err
 	}
 
-	d.Set("integration_id", createRes.Body.ID)
+	if err = d.Set("integration_id", createRes.Body.ID); err != nil {
+		return err
+	}
 
 	resID := fmt.Sprintf("%d/%s/%d", clientID, createRes.Body.Type, createRes.Body.ID)
 	d.SetId(resID)
@@ -150,12 +140,24 @@ func resourceWallarmInsightConnectRead(d *schema.ResourceData, m interface{}) er
 		}
 	}
 
-	d.Set("integration_id", insight.ID)
-	d.Set("is_active", insight.Active)
-	d.Set("name", insight.Name)
-	d.Set("created_by", insight.CreatedBy)
-	d.Set("type", insight.Type)
-	d.Set("client_id", clientID)
+	if err = d.Set("integration_id", insight.ID); err != nil {
+		return err
+	}
+	if err = d.Set("is_active", insight.Active); err != nil {
+		return err
+	}
+	if err = d.Set("name", insight.Name); err != nil {
+		return err
+	}
+	if err = d.Set("created_by", insight.CreatedBy); err != nil {
+		return err
+	}
+	if err = d.Set("type", insight.Type); err != nil {
+		return err
+	}
+	if err = d.Set("client_id", clientID); err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -167,7 +169,7 @@ func resourceWallarmInsightConnectUpdate(d *schema.ResourceData, m interface{}) 
 	apiURL := d.Get("api_url").(string)
 	apiToken := d.Get("api_token").(string)
 	active := d.Get("active").(bool)
-	events, err := expandWallarmEventToIntEvents(d.Get("event").(interface{}), "insight_connect")
+	events, err := expandWallarmEventToIntEvents(d.Get("event"), "insight_connect")
 	if err != nil {
 		return err
 	}
@@ -199,7 +201,9 @@ func resourceWallarmInsightConnectUpdate(d *schema.ResourceData, m interface{}) 
 		return err
 	}
 
-	d.Set("integration_id", updateRes.Body.ID)
+	if err = d.Set("integration_id", updateRes.Body.ID); err != nil {
+		return err
+	}
 
 	resID := fmt.Sprintf("%d/%s/%d", clientID, updateRes.Body.Type, updateRes.Body.ID)
 	d.SetId(resID)

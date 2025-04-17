@@ -142,13 +142,3 @@ data "wallarm_vuln" "vulns" {
 	}
 }
 `
-
-const testAccWallarmVulnFilterFullConfig = `
-data "wallarm_vuln" "vulns" {
-	filter {
-		status = "open"
-		limit = 100
-		offset = 0
-	}
-}
-`

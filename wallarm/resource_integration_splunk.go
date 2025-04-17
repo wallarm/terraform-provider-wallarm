@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	wallarm "github.com/wallarm/wallarm-go"
+	"github.com/wallarm/wallarm-go"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
@@ -18,19 +18,7 @@ func resourceWallarmSplunk() *schema.Resource {
 		Delete: resourceWallarmSplunkDelete,
 
 		Schema: map[string]*schema.Schema{
-			"client_id": {
-				Type:        schema.TypeInt,
-				Optional:    true,
-				Computed:    true,
-				Description: "The Client ID to perform changes",
-				ValidateFunc: func(val interface{}, key string) (warns []string, errs []error) {
-					v := val.(int)
-					if v <= 0 {
-						errs = append(errs, fmt.Errorf("%q must be positive, got: %d", key, v))
-					}
-					return
-				},
-			},
+			"client_id": defaultClientIDWithValidationSchema,
 
 			"active": {
 				Type:     schema.TypeBool,
@@ -108,7 +96,7 @@ func resourceWallarmSplunkCreate(d *schema.ResourceData, m interface{}) error {
 	apiURL := d.Get("api_url").(string)
 	apiToken := d.Get("api_token").(string)
 	active := d.Get("active").(bool)
-	events, err := expandWallarmEventToIntEvents(d.Get("event").(interface{}), "splunk")
+	events, err := expandWallarmEventToIntEvents(d.Get("event"), "splunk")
 	if err != nil {
 		d.SetId("")
 		return err
@@ -131,7 +119,9 @@ func resourceWallarmSplunkCreate(d *schema.ResourceData, m interface{}) error {
 		return err
 	}
 
-	d.Set("integration_id", createRes.Body.ID)
+	if err = d.Set("integration_id", createRes.Body.ID); err != nil {
+		return err
+	}
 
 	resID := fmt.Sprintf("%d/%s/%d", clientID, createRes.Body.Type, createRes.Body.ID)
 	d.SetId(resID)
@@ -151,12 +141,24 @@ func resourceWallarmSplunkRead(d *schema.ResourceData, m interface{}) error {
 			return err
 		}
 	}
-	d.Set("integration_id", splunk.ID)
-	d.Set("is_active", splunk.Active)
-	d.Set("name", splunk.Name)
-	d.Set("created_by", splunk.CreatedBy)
-	d.Set("type", splunk.Type)
-	d.Set("client_id", clientID)
+	if err = d.Set("integration_id", splunk.ID); err != nil {
+		return err
+	}
+	if err = d.Set("is_active", splunk.Active); err != nil {
+		return err
+	}
+	if err = d.Set("name", splunk.Name); err != nil {
+		return err
+	}
+	if err = d.Set("created_by", splunk.CreatedBy); err != nil {
+		return err
+	}
+	if err = d.Set("type", splunk.Type); err != nil {
+		return err
+	}
+	if err = d.Set("client_id", clientID); err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -168,7 +170,7 @@ func resourceWallarmSplunkUpdate(d *schema.ResourceData, m interface{}) error {
 	apiURL := d.Get("api_url").(string)
 	apiToken := d.Get("api_token").(string)
 	active := d.Get("active").(bool)
-	events, err := expandWallarmEventToIntEvents(d.Get("event").(interface{}), "splunk")
+	events, err := expandWallarmEventToIntEvents(d.Get("event"), "splunk")
 	if err != nil {
 		return err
 	}
@@ -194,7 +196,9 @@ func resourceWallarmSplunkUpdate(d *schema.ResourceData, m interface{}) error {
 		return err
 	}
 
-	d.Set("integration_id", updateRes.Body.ID)
+	if err = d.Set("integration_id", updateRes.Body.ID); err != nil {
+		return err
+	}
 
 	resID := fmt.Sprintf("%d/%s/%d", clientID, updateRes.Body.Type, updateRes.Body.ID)
 	d.SetId(resID)

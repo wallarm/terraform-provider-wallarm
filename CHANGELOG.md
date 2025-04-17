@@ -1,3 +1,10 @@
+# v1.8.0 (April 17, 2025)
+
+## NOTES:
+
+* Code refactored
+* Go mod updated 1.15 -> 1.23
+
 # v1.7.0 (April 15, 2025)
 
 ## NOTES:

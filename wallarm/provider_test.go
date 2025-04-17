@@ -1,9 +1,9 @@
 package wallarm
 
 import (
+	"crypto/rand"
 	"fmt"
 	"log"
-	"math/rand"
 	"os"
 	"regexp"
 	"strconv"
@@ -33,8 +33,6 @@ func TestProvider(t *testing.T) {
 func TestProvider_impl(t *testing.T) {
 	var _ terraform.ResourceProvider = Provider()
 }
-
-type preCheckFunc = func(*testing.T)
 
 func testAccPreCheck(t *testing.T) {
 

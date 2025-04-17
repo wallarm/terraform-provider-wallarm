@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"strings"
 
-	wallarm "github.com/wallarm/wallarm-go"
+	"github.com/wallarm/wallarm-go"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -45,19 +45,7 @@ func resourceWallarmVpatch() *schema.Resource {
 				Computed: true,
 			},
 
-			"client_id": {
-				Type:        schema.TypeInt,
-				Optional:    true,
-				Computed:    true,
-				Description: "The Client ID to perform changes",
-				ValidateFunc: func(val interface{}, key string) (warns []string, errs []error) {
-					v := val.(int)
-					if v <= 0 {
-						errs = append(errs, fmt.Errorf("%q must be positive, got: %d", key, v))
-					}
-					return
-				},
-			},
+			"client_id": defaultClientIDWithValidationSchema,
 
 			"comment": {
 				Type:     schema.TypeString,
@@ -230,11 +218,21 @@ func resourceWallarmVpatchCreate(d *schema.ResourceData, m interface{}) error {
 		return err
 	}
 
-	d.Set("rule_id", actionResp.Body.ID)
-	d.Set("action_id", actionResp.Body.ActionID)
-	d.Set("rule_type", actionResp.Body.Type)
-	d.Set("attack_type", actionResp.Body.AttackType)
-	d.Set("client_id", clientID)
+	if err = d.Set("rule_id", actionResp.Body.ID); err != nil {
+		return err
+	}
+	if err = d.Set("action_id", actionResp.Body.ActionID); err != nil {
+		return err
+	}
+	if err = d.Set("rule_type", actionResp.Body.Type); err != nil {
+		return err
+	}
+	if err = d.Set("attack_type", actionResp.Body.AttackType); err != nil {
+		return err
+	}
+	if err = d.Set("client_id", clientID); err != nil {
+		return err
+	}
 
 	resID := fmt.Sprintf("%d/%d/%d", clientID, actionResp.Body.ActionID, actionResp.Body.ID)
 	d.SetId(resID)
@@ -325,11 +323,13 @@ func resourceWallarmVpatchRead(d *schema.ResourceData, m interface{}) error {
 		notFoundRules = append(notFoundRules, rule.ID)
 	}
 
-	if err := d.Set("rule_id", updatedRuleID); err != nil {
+	if err = d.Set("rule_id", updatedRuleID); err != nil {
 		return err
 	}
 
-	d.Set("client_id", clientID)
+	if err = d.Set("client_id", clientID); err != nil {
+		return err
+	}
 
 	if actionsSet.Len() != 0 {
 		if err := d.Set("action", &actionsSet); err != nil {
@@ -409,9 +409,15 @@ func resourceWallarmVpatchImport(d *schema.ResourceData, m interface{}) ([]*sche
 		if err != nil {
 			return nil, err
 		}
-		d.Set("action_id", actionID)
-		d.Set("rule_id", ruleID)
-		d.Set("rule_type", "vpatch")
+		if err = d.Set("action_id", actionID); err != nil {
+			return nil, err
+		}
+		if err = d.Set("rule_id", ruleID); err != nil {
+			return nil, err
+		}
+		if err = d.Set("rule_type", "vpatch"); err != nil {
+			return nil, err
+		}
 
 		hint := &wallarm.HintRead{
 			Limit:     1000,
@@ -431,25 +437,27 @@ func resourceWallarmVpatchImport(d *schema.ResourceData, m interface{}) ([]*sche
 		actionsSet := schema.Set{
 			F: hashResponseActionDetails,
 		}
-		var actsSlice []map[string]interface{}
 		if len((*actionHints.Body)) != 0 && len((*actionHints.Body)[0].Action) != 0 {
 			for _, a := range (*actionHints.Body)[0].Action {
 				acts, err := actionDetailsToMap(a)
 				if err != nil {
 					return nil, err
 				}
-				actsSlice = append(actsSlice, acts)
 				actionsSet.Add(acts)
 			}
-			if err := d.Set("action", &actionsSet); err != nil {
+			if err = d.Set("action", &actionsSet); err != nil {
 				return nil, err
 			}
 		}
 
-		d.Set("attack_type", (*actionHints.Body)[0].AttackType)
+		if err = d.Set("attack_type", (*actionHints.Body)[0].AttackType); err != nil {
+			return nil, err
+		}
 		pointInterface := (*actionHints.Body)[0].Point
 		point := wrapPointElements(pointInterface)
-		d.Set("point", point)
+		if err = d.Set("point", point); err != nil {
+			return nil, err
+		}
 
 		existingID := fmt.Sprintf("%d/%d/%d", clientID, actionID, ruleID)
 		d.SetId(existingID)
@@ -458,7 +466,9 @@ func resourceWallarmVpatchImport(d *schema.ResourceData, m interface{}) ([]*sche
 		return nil, fmt.Errorf("invalid id (%q) specified, should be in format \"{clientID}/{actionID}/{ruleID}\"", d.Id())
 	}
 
-	resourceWallarmVpatchRead(d, m)
+	if err := resourceWallarmVpatchRead(d, m); err != nil {
+		return nil, err
+	}
 
 	return []*schema.ResourceData{d}, nil
 }

@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	wallarm "github.com/wallarm/wallarm-go"
+	"github.com/wallarm/wallarm-go"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
@@ -20,19 +20,7 @@ func resourceWallarmIPList(listType wallarm.IPListType) *schema.Resource {
 		Update: resourceWallarmIPListUpdate(listType),
 		Delete: resourceWallarmIPListDelete(listType),
 		Schema: map[string]*schema.Schema{
-			"client_id": {
-				Type:        schema.TypeInt,
-				Optional:    true,
-				Computed:    true,
-				Description: "The Client ID to perform changes",
-				ValidateFunc: func(val interface{}, key string) (warns []string, errs []error) {
-					v := val.(int)
-					if v <= 0 {
-						errs = append(errs, fmt.Errorf("%q must be positive, got: %d", key, v))
-					}
-					return
-				},
-			},
+			"client_id": defaultClientIDWithValidationSchema,
 			"ip_range": {
 				Type:     schema.TypeList,
 				Required: true,
@@ -98,7 +86,7 @@ func resourceWallarmIPListCreate(listType wallarm.IPListType) schema.CreateFunc 
 			ips = append(ips, v.(string))
 		}
 
-		apps := []int{}
+		var apps []int
 		if v, ok := d.GetOk("application"); ok {
 			applications := v.([]interface{})
 			apps = make([]int, len(applications))
@@ -221,7 +209,7 @@ func resourceWallarmIPListRead(listType wallarm.IPListType) schema.ReadFunc {
 			ips[i] = IPRange[i].(string)
 		}
 
-		apps := []int{}
+		var apps []int
 		if v, ok := d.GetOk("application"); ok {
 			applications := v.([]interface{})
 			apps = make([]int, len(applications))
@@ -299,11 +287,13 @@ func resourceWallarmIPListRead(listType wallarm.IPListType) schema.ReadFunc {
 			return nil
 		}
 
-		if err := d.Set("address_id", addrIDs); err != nil {
+		if err = d.Set("address_id", addrIDs); err != nil {
 			return fmt.Errorf("cannot set content for ip_range: %v", err)
 		}
 
-		d.Set("client_id", clientID)
+		if err = d.Set("client_id", clientID); err != nil {
+			return err
+		}
 
 		return nil
 	}

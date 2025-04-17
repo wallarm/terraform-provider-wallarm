@@ -4,8 +4,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"net/http"
 
-	wallarm "github.com/wallarm/wallarm-go"
+	"github.com/wallarm/wallarm-go"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
@@ -19,19 +20,7 @@ func resourceWallarmGlobalMode() *schema.Resource {
 		Delete: resourceWallarmGlobalModeDelete,
 
 		Schema: map[string]*schema.Schema{
-			"client_id": {
-				Type:        schema.TypeInt,
-				Optional:    true,
-				Computed:    true,
-				Description: "The Client ID to perform changes",
-				ValidateFunc: func(val interface{}, key string) (warns []string, errs []error) {
-					v := val.(int)
-					if v <= 0 {
-						errs = append(errs, fmt.Errorf("%q must be positive, got: %d", key, v))
-					}
-					return
-				},
-			},
+			"client_id": defaultClientIDWithValidationSchema,
 
 			"filtration_mode": {
 				Type:         schema.TypeString,
@@ -92,7 +81,9 @@ func resourceWallarmGlobalModeCreate(d *schema.ResourceData, m interface{}) erro
 	resID := fmt.Sprintf("%d/%s/%s/%s", clientID, filtrationMode, scannerMode, recheckerMode)
 	d.SetId(resID)
 
-	d.Set("client_id", clientID)
+	if err = d.Set("client_id", clientID); err != nil {
+		return err
+	}
 
 	return resourceWallarmGlobalModeRead(d, m)
 }
@@ -105,7 +96,7 @@ func resourceWallarmGlobalModeRead(d *schema.ResourceData, m interface{}) error 
 	if err != nil {
 		return err
 	}
-	if wallarmModeResp.Status != 200 {
+	if wallarmModeResp.Status != http.StatusOK {
 		body, err := json.Marshal(wallarmModeResp)
 		if err != nil {
 			return err
@@ -151,17 +142,19 @@ func resourceWallarmGlobalModeRead(d *schema.ResourceData, m interface{}) error 
 		scannerMode = "on"
 	}
 
-	if err := d.Set("scanner_mode", scannerMode); err != nil {
+	if err = d.Set("scanner_mode", scannerMode); err != nil {
 		return err
 	}
 
 	recheckerMode := otherModesResp.Body[0].AttackRecheckerMode
 
-	if err := d.Set("rechecker_mode", recheckerMode); err != nil {
+	if err = d.Set("rechecker_mode", recheckerMode); err != nil {
 		return err
 	}
 
-	d.Set("client_id", clientID)
+	if err = d.Set("client_id", clientID); err != nil {
+		return err
+	}
 
 	return nil
 }

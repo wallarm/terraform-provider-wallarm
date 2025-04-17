@@ -10,10 +10,9 @@ import (
 	"sort"
 	"strconv"
 	"strings"
-	"time"
 	"unicode"
 
-	wallarm "github.com/wallarm/wallarm-go"
+	"github.com/wallarm/wallarm-go"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/hashcode"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -33,15 +32,6 @@ func expandInterfaceToStringList(list interface{}) []string {
 	vs := []string{}
 	for _, v := range ifaceList {
 		vs = append(vs, v.(string))
-	}
-	return vs
-}
-
-func expandInterfaceToIntList(list interface{}) []int {
-	ifaceList := list.([]interface{})
-	vs := []int{}
-	for _, v := range ifaceList {
-		vs = append(vs, v.(int))
 	}
 	return vs
 }
@@ -140,16 +130,19 @@ func expandSetToActionDetailsList(action *schema.Set) ([]wallarm.ActionDetails, 
 	return as, nil
 }
 
-func actionDetailsToMap(actionDetails wallarm.ActionDetails) (mapActions map[string]interface{}, err error) {
+func actionDetailsToMap(actionDetails wallarm.ActionDetails) (map[string]interface{}, error) {
 	jsonActions, err := json.Marshal(actionDetails)
 	if err != nil {
-		return
+		return nil, err
 	}
-	json.Unmarshal(jsonActions, &mapActions)
+	var mapActions map[string]interface{}
+	if err = json.Unmarshal(jsonActions, &mapActions); err != nil {
+		return nil, err
+	}
 	if _, ok := mapActions["value"]; !ok {
 		mapActions["value"] = ""
 	}
-	return
+	return mapActions, nil
 }
 
 func hashResponseActionDetails(v interface{}) int {
@@ -213,7 +206,7 @@ func hashResponseActionDetails(v interface{}) int {
 
 		buf.WriteString(fmt.Sprintf("%v-", m["point"]))
 	}
-	return hashcode.String(buf.String())
+	return hashcode.String(buf.String()) // nolint:staticcheck
 }
 
 func expandPointsToTwoDimensionalArray(ps []interface{}) (wallarm.TwoDimensionalSlice, error) {
@@ -295,21 +288,13 @@ func alignPointScheme(rulePoint []interface{}) []interface{} {
 }
 
 func interfaceToString(i interface{}) string {
-	switch i.(type) {
-	case string:
-		return i.(string)
-	default:
-		return ""
-	}
+	r, _ := i.(string)
+	return r
 }
 
 func interfaceToInt(i interface{}) int {
-	switch i.(type) {
-	case int:
-		return i.(int)
-	default:
-		return 0
-	}
+	r, _ := i.(int)
+	return r
 }
 
 func appendMap(united, b map[string]int) map[string]int {
@@ -317,14 +302,6 @@ func appendMap(united, b map[string]int) map[string]int {
 		united[k] = v
 	}
 	return united
-}
-
-func reverseMap(m map[string]int) map[int]string {
-	n := make(map[int]string)
-	for k, v := range m {
-		n[v] = k
-	}
-	return n
 }
 
 func retrieveClientID(d *schema.ResourceData, client wallarm.API) int {
@@ -349,7 +326,6 @@ func diffStringSlice(a, b []string) []string {
 }
 
 func passwordGenerate(length int) string {
-	rand.Seed(time.Now().UnixNano())
 	digits := "0123456789"
 	specials := "~=+%^*()_[]{}!@#$?"
 	all := "ABCDEFGHIJKLMNOPQRSTUVWXYZ" +
@@ -679,9 +655,9 @@ func existsHint(d *schema.ResourceData, m interface{}, actionID int, hintType st
 // accepts resource name with its resource identificator.
 // Generally, ID is something like `/6039/4123/93830`
 func ImportAsExistsError(resourceName, id string) error {
-	return fmt.Errorf("the resource with the ID %q already exists "+
-		"- to be managed via Terraform this resource needs to be imported into the State. "+
-		"Please see the resource documentation for %q for more information.", id, resourceName)
+	return fmt.Errorf(`the resource with the ID %q already exists -
+		to be managed via Terraform this resource needs to be imported into the State. 
+		Please see the resource documentation for %q for more information.`, id, resourceName)
 }
 
 func isNotFoundError(err error) (bool, error) {

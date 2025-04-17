@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"strings"
 
-	wallarm "github.com/wallarm/wallarm-go"
+	"github.com/wallarm/wallarm-go"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -39,19 +39,7 @@ func resourceWallarmUploads() *schema.Resource {
 				Computed: true,
 			},
 
-			"client_id": {
-				Type:        schema.TypeInt,
-				Optional:    true,
-				Computed:    true,
-				Description: "The Client ID to perform changes",
-				ValidateFunc: func(val interface{}, key string) (warns []string, errs []error) {
-					v := val.(int)
-					if v <= 0 {
-						errs = append(errs, fmt.Errorf("%q must be positive, got: %d", key, v))
-					}
-					return
-				},
-			},
+			"client_id": defaultClientIDWithValidationSchema,
 
 			"comment": {
 				Type:     schema.TypeString,
@@ -66,115 +54,7 @@ func resourceWallarmUploads() *schema.Resource {
 				ForceNew:     true,
 			},
 
-			"action": {
-				Type:     schema.TypeSet,
-				Optional: true,
-				ForceNew: true,
-				Elem: &schema.Resource{
-					Schema: map[string]*schema.Schema{
-						"type": {
-							Type:         schema.TypeString,
-							Optional:     true,
-							ValidateFunc: validation.StringInSlice([]string{"equal", "iequal", "regex", "absent"}, false),
-							ForceNew:     true,
-						},
-
-						"value": {
-							Type:     schema.TypeString,
-							Optional: true,
-							ForceNew: true,
-							Computed: true,
-						},
-
-						"point": {
-							Type:     schema.TypeMap,
-							Optional: true,
-							ForceNew: true,
-							Elem: &schema.Resource{
-								Schema: map[string]*schema.Schema{
-									"header": {
-										Type:     schema.TypeList,
-										Optional: true,
-										ForceNew: true,
-										Elem:     &schema.Schema{Type: schema.TypeString},
-									},
-									"method": {
-										Type:     schema.TypeString,
-										Optional: true,
-										ForceNew: true,
-										ValidateFunc: validation.StringInSlice([]string{"GET", "HEAD", "POST",
-											"PUT", "DELETE", "CONNECT", "OPTIONS", "TRACE", "PATCH"}, false),
-									},
-
-									"path": {
-										Type:     schema.TypeInt,
-										Optional: true,
-										ForceNew: true,
-										ValidateFunc: func(val interface{}, key string) (warns []string, errs []error) {
-											v := val.(int)
-											if v < 0 || v > 60 {
-												errs = append(errs, fmt.Errorf("%q must be between 0 and 60 inclusive, got: %d", key, v))
-											}
-											return
-										},
-									},
-
-									"action_name": {
-										Type:     schema.TypeString,
-										Optional: true,
-										ForceNew: true,
-									},
-
-									"action_ext": {
-										Type:     schema.TypeString,
-										Optional: true,
-										ForceNew: true,
-									},
-
-									"query": {
-										Type:     schema.TypeString,
-										Optional: true,
-										ForceNew: true,
-									},
-
-									"proto": {
-										Type:         schema.TypeString,
-										Optional:     true,
-										ForceNew:     true,
-										ValidateFunc: validation.StringInSlice([]string{"1.0", "1.1", "2.0", "3.0"}, false),
-									},
-
-									"scheme": {
-										Type:         schema.TypeString,
-										Optional:     true,
-										ForceNew:     true,
-										ValidateFunc: validation.StringInSlice([]string{"http", "https"}, true),
-									},
-
-									"uri": {
-										Type:     schema.TypeString,
-										Optional: true,
-										ForceNew: true,
-									},
-
-									"instance": {
-										Type:     schema.TypeInt,
-										Optional: true,
-										ForceNew: true,
-										ValidateFunc: func(val interface{}, key string) (warns []string, errs []error) {
-											v := val.(int)
-											if v < -1 {
-												errs = append(errs, fmt.Errorf("%q must be be greater than -1 inclusive, got: %d", key, v))
-											}
-											return
-										},
-									},
-								},
-							},
-						},
-					},
-				},
-			},
+			"action": defaultResourceRuleActionSchema,
 
 			"point": {
 				Type:     schema.TypeList,
@@ -227,9 +107,15 @@ func resourceWallarmUploadsCreate(d *schema.ResourceData, m interface{}) error {
 		return err
 	}
 
-	d.Set("rule_id", actionResp.Body.ID)
-	d.Set("action_id", actionResp.Body.ActionID)
-	d.Set("rule_type", actionResp.Body.Type)
+	if err = d.Set("rule_id", actionResp.Body.ID); err != nil {
+		return err
+	}
+	if err = d.Set("action_id", actionResp.Body.ActionID); err != nil {
+		return err
+	}
+	if err = d.Set("rule_type", actionResp.Body.Type); err != nil {
+		return err
+	}
 
 	resID := fmt.Sprintf("%d/%d/%d", clientID, actionResp.Body.ActionID, actionResp.Body.ID)
 	d.SetId(resID)
@@ -320,11 +206,13 @@ func resourceWallarmUploadsRead(d *schema.ResourceData, m interface{}) error {
 		notFoundRules = append(notFoundRules, rule.ID)
 	}
 
-	if err := d.Set("rule_id", updatedRuleID); err != nil {
+	if err = d.Set("rule_id", updatedRuleID); err != nil {
 		return err
 	}
 
-	d.Set("client_id", clientID)
+	if err = d.Set("client_id", clientID); err != nil {
+		return err
+	}
 
 	if actionsSet.Len() != 0 {
 		if err := d.Set("action", &actionsSet); err != nil {
@@ -397,9 +285,15 @@ func resourceWallarmUploadsImport(d *schema.ResourceData, m interface{}) ([]*sch
 		if err != nil {
 			return nil, err
 		}
-		d.Set("action_id", actionID)
-		d.Set("rule_id", ruleID)
-		d.Set("rule_type", "uploads")
+		if err = d.Set("action_id", actionID); err != nil {
+			return nil, err
+		}
+		if err = d.Set("rule_id", ruleID); err != nil {
+			return nil, err
+		}
+		if err = d.Set("rule_type", "uploads"); err != nil {
+			return nil, err
+		}
 
 		hint := &wallarm.HintRead{
 			Limit:     1000,
@@ -419,24 +313,26 @@ func resourceWallarmUploadsImport(d *schema.ResourceData, m interface{}) ([]*sch
 		actionsSet := schema.Set{
 			F: hashResponseActionDetails,
 		}
-		var actsSlice []map[string]interface{}
 		if len((*actionHints.Body)) != 0 && len((*actionHints.Body)[0].Action) != 0 {
 			for _, a := range (*actionHints.Body)[0].Action {
 				acts, err := actionDetailsToMap(a)
 				if err != nil {
 					return nil, err
 				}
-				actsSlice = append(actsSlice, acts)
 				actionsSet.Add(acts)
 			}
-			if err := d.Set("action", &actionsSet); err != nil {
+			if err = d.Set("action", &actionsSet); err != nil {
 				return nil, err
 			}
 
-			d.Set("file_type", (*actionHints.Body)[0].FileType)
+			if err = d.Set("file_type", (*actionHints.Body)[0].FileType); err != nil {
+				return nil, err
+			}
 			pointInterface := (*actionHints.Body)[0].Point
 			point := wrapPointElements(pointInterface)
-			d.Set("point", point)
+			if err = d.Set("point", point); err != nil {
+				return nil, err
+			}
 		}
 
 		existingID := fmt.Sprintf("%d/%d/%d", clientID, actionID, ruleID)
@@ -446,7 +342,9 @@ func resourceWallarmUploadsImport(d *schema.ResourceData, m interface{}) ([]*sch
 		return nil, fmt.Errorf("invalid id (%q) specified, should be in format \"{clientID}/{actionID}/{ruleID}\"", d.Id())
 	}
 
-	resourceWallarmUploadsRead(d, m)
+	if err := resourceWallarmUploadsRead(d, m); err != nil {
+		return nil, err
+	}
 
 	return []*schema.ResourceData{d}, nil
 }

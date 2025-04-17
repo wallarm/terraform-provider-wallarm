@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"strings"
 
-	wallarm "github.com/wallarm/wallarm-go"
+	"github.com/wallarm/wallarm-go"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
@@ -21,19 +21,7 @@ func resourceWallarmNode() *schema.Resource {
 		},
 
 		Schema: map[string]*schema.Schema{
-			"client_id": {
-				Type:        schema.TypeInt,
-				Optional:    true,
-				Computed:    true,
-				Description: "The Client ID to perform changes",
-				ValidateFunc: func(val interface{}, key string) (warns []string, errs []error) {
-					v := val.(int)
-					if v <= 0 {
-						errs = append(errs, fmt.Errorf("%q must be positive, got: %d", key, v))
-					}
-					return
-				},
-			},
+			"client_id": defaultClientIDWithValidationSchema,
 
 			"hostname": {
 				Type:     schema.TypeString,
@@ -90,19 +78,21 @@ func resourceWallarmNodeCreate(d *schema.ResourceData, m interface{}) error {
 		return err
 	}
 
-	if err := d.Set("node_id", nodeResp.Body.ID); err != nil {
+	if err = d.Set("node_id", nodeResp.Body.ID); err != nil {
 		return err
 	}
 
-	if err := d.Set("node_uuid", nodeResp.Body.UUID); err != nil {
+	if err = d.Set("node_uuid", nodeResp.Body.UUID); err != nil {
 		return err
 	}
 
-	if err := d.Set("token", nodeResp.Body.Token); err != nil {
+	if err = d.Set("token", nodeResp.Body.Token); err != nil {
 		return err
 	}
 
-	d.Set("client_id", clientID)
+	if err = d.Set("client_id", clientID); err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -179,7 +169,9 @@ func resourceWallarmNodeImport(d *schema.ResourceData, m interface{}) ([]*schema
 		}
 		hostname := idAttr[1]
 
-		d.Set("hostname", hostname)
+		if err = d.Set("hostname", hostname); err != nil {
+			return nil, err
+		}
 		nodes, err := client.NodeRead(clientID, "all")
 		if err != nil {
 			return nil, err
@@ -218,7 +210,9 @@ func resourceWallarmNodeImport(d *schema.ResourceData, m interface{}) ([]*schema
 		return nil, fmt.Errorf("invalid id (%q) specified, should be in format \"{clientID}/{hostname}\"", d.Id())
 	}
 
-	resourceWallarmNodeRead(d, m)
+	if err := resourceWallarmNodeRead(d, m); err != nil {
+		return nil, err
+	}
 
 	return []*schema.ResourceData{d}, nil
 }
