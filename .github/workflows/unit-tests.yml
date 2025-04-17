@@ -12,14 +12,19 @@ jobs:
         make_target: [test, lint]
 
     steps:
-      - name: Set up Go
-        uses: actions/setup-go@v1
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
         with:
           go-version: ${{ matrix.go }}
-        id: go
 
       - name: Check out code repository source code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
+
+      - name: Install golangci‑lint
+        if: ${{ matrix.make_target == 'lint' }}
+        run: |
+          go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.64.0
+          # бинарь окажется в $(go env GOPATH)/bin, PATH уже прописан setup‑go
 
       - name: Set build variables
         run: |
