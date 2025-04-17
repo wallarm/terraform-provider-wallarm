@@ -3,7 +3,7 @@
 ## NOTES:
 
 * Code refactored
-* Go mod updated 1.15 -> 1.22
+* Go mod updated 1.15 -> 1.23
 
 # v1.7.0 (April 15, 2025)
 
