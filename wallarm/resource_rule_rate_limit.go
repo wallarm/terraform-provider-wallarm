@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/wallarm/wallarm-go"
+	wallarm "github.com/wallarm/wallarm-go"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -212,6 +212,7 @@ func resourceWallarmRateLimit() *schema.Resource {
 	}
 }
 
+// nolint:errcheck
 func resourceWallarmRateLimitCreate(d *schema.ResourceData, m interface{}) error {
 	client := m.(wallarm.API)
 	clientID := retrieveClientID(d, client)
@@ -254,21 +255,11 @@ func resourceWallarmRateLimitCreate(d *schema.ResourceData, m interface{}) error
 	}
 	actionID := actionResp.Body.ActionID
 
-	if err = d.Set("rule_id", actionResp.Body.ID); err != nil {
-		return err
-	}
-	if err = d.Set("action_id", actionID); err != nil {
-		return err
-	}
-	if err = d.Set("rule_type", actionResp.Body.Type); err != nil {
-		return err
-	}
-	if err = d.Set("client_id", clientID); err != nil {
-		return err
-	}
-	if err = d.Set("point", actionResp.Body.Point); err != nil {
-		return err
-	}
+	d.Set("rule_id", actionResp.Body.ID)
+	d.Set("action_id", actionID)
+	d.Set("rule_type", actionResp.Body.Type)
+	d.Set("client_id", clientID)
+	d.Set("point", actionResp.Body.Point)
 
 	resID := fmt.Sprintf("%d/%d/%d", clientID, actionID, actionResp.Body.ID)
 	d.SetId(resID)

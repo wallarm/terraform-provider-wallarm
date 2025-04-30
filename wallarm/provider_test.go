@@ -35,7 +35,6 @@ func TestProvider_impl(t *testing.T) {
 }
 
 func testAccPreCheck(t *testing.T) {
-
 	if v := os.Getenv("WALLARM_API_HOST"); v == "" {
 		t.Fatal(`
 		WALLARM_API_HOST must be set for acceptance tests
