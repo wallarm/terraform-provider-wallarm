@@ -90,15 +90,12 @@ func resourceWallarmInsightConnect() *schema.Resource {
 
 func resourceWallarmInsightConnectCreate(d *schema.ResourceData, m interface{}) error {
 	client := m.(wallarm.API)
-	clientID := retrieveClientID(d, client)
+	clientID := retrieveClientID(d)
 	name := d.Get("name").(string)
 	apiURL := d.Get("api_url").(string)
 	apiToken := d.Get("api_token").(string)
 	active := d.Get("active").(bool)
-	events, err := expandWallarmEventToIntEvents(d.Get("event"), "insight_connect")
-	if err != nil {
-		return err
-	}
+	events := expandWallarmEventToIntEvents(d.Get("event"), "insight_connect")
 
 	insightBody := wallarm.IntegrationWithAPICreate{
 		Name:   name,
@@ -117,9 +114,7 @@ func resourceWallarmInsightConnectCreate(d *schema.ResourceData, m interface{}) 
 		return err
 	}
 
-	if err = d.Set("integration_id", createRes.Body.ID); err != nil {
-		return err
-	}
+	d.Set("integration_id", createRes.Body.ID)
 
 	resID := fmt.Sprintf("%d/%s/%d", clientID, createRes.Body.Type, createRes.Body.ID)
 	d.SetId(resID)
@@ -129,59 +124,42 @@ func resourceWallarmInsightConnectCreate(d *schema.ResourceData, m interface{}) 
 
 func resourceWallarmInsightConnectRead(d *schema.ResourceData, m interface{}) error {
 	client := m.(wallarm.API)
-	clientID := retrieveClientID(d, client)
+	clientID := retrieveClientID(d)
 	insight, err := client.IntegrationRead(clientID, d.Get("integration_id").(int))
 	if err != nil {
 		if strings.HasPrefix(err.Error(), "Not found.") {
 			d.SetId("")
 			return nil
-		} else {
-			return err
 		}
+		return err
 	}
 
-	if err = d.Set("integration_id", insight.ID); err != nil {
-		return err
-	}
-	if err = d.Set("is_active", insight.Active); err != nil {
-		return err
-	}
-	if err = d.Set("name", insight.Name); err != nil {
-		return err
-	}
-	if err = d.Set("created_by", insight.CreatedBy); err != nil {
-		return err
-	}
-	if err = d.Set("type", insight.Type); err != nil {
-		return err
-	}
-	if err = d.Set("client_id", clientID); err != nil {
-		return err
-	}
+	d.Set("integration_id", insight.ID)
+	d.Set("is_active", insight.Active)
+	d.Set("name", insight.Name)
+	d.Set("created_by", insight.CreatedBy)
+	d.Set("type", insight.Type)
+	d.Set("client_id", clientID)
 
 	return nil
 }
 
 func resourceWallarmInsightConnectUpdate(d *schema.ResourceData, m interface{}) error {
 	client := m.(wallarm.API)
-	clientID := retrieveClientID(d, client)
+	clientID := retrieveClientID(d)
 	name := d.Get("name").(string)
 	apiURL := d.Get("api_url").(string)
 	apiToken := d.Get("api_token").(string)
 	active := d.Get("active").(bool)
-	events, err := expandWallarmEventToIntEvents(d.Get("event"), "insight_connect")
-	if err != nil {
-		return err
-	}
+	events := expandWallarmEventToIntEvents(d.Get("event"), "insight_connect")
 
 	insight, err := client.IntegrationRead(clientID, d.Get("integration_id").(int))
 	if err != nil {
 		if strings.HasPrefix(err.Error(), "Not found.") {
 			d.SetId("")
 			return nil
-		} else {
-			return err
 		}
+		return err
 	}
 
 	insightBody := wallarm.IntegrationWithAPICreate{
@@ -201,9 +179,7 @@ func resourceWallarmInsightConnectUpdate(d *schema.ResourceData, m interface{}) 
 		return err
 	}
 
-	if err = d.Set("integration_id", updateRes.Body.ID); err != nil {
-		return err
-	}
+	d.Set("integration_id", updateRes.Body.ID)
 
 	resID := fmt.Sprintf("%d/%s/%d", clientID, updateRes.Body.Type, updateRes.Body.ID)
 	d.SetId(resID)

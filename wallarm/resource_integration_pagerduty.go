@@ -90,15 +90,11 @@ func resourceWallarmPagerDuty() *schema.Resource {
 
 func resourceWallarmPagerDutyCreate(d *schema.ResourceData, m interface{}) error {
 	client := m.(wallarm.API)
-	clientID := retrieveClientID(d, client)
+	clientID := retrieveClientID(d)
 	name := d.Get("name").(string)
 	apiToken := d.Get("integration_key").(string)
 	active := d.Get("active").(bool)
-	events, err := expandWallarmEventToIntEvents(d.Get("event"), "pager_duty")
-	if err != nil {
-		d.SetId("")
-		return err
-	}
+	events := expandWallarmEventToIntEvents(d.Get("event"), "pager_duty")
 
 	pagerdutyBody := wallarm.IntegrationCreate{
 		Name:     name,
@@ -114,9 +110,7 @@ func resourceWallarmPagerDutyCreate(d *schema.ResourceData, m interface{}) error
 		return err
 	}
 
-	if err = d.Set("integration_id", createRes.Body.ID); err != nil {
-		return err
-	}
+	d.Set("integration_id", createRes.Body.ID)
 
 	resID := fmt.Sprintf("%d/%s/%d", clientID, createRes.Body.Type, createRes.Body.ID)
 	d.SetId(resID)
@@ -126,58 +120,42 @@ func resourceWallarmPagerDutyCreate(d *schema.ResourceData, m interface{}) error
 
 func resourceWallarmPagerDutyRead(d *schema.ResourceData, m interface{}) error {
 	client := m.(wallarm.API)
-	clientID := retrieveClientID(d, client)
+	clientID := retrieveClientID(d)
 	pagerduty, err := client.IntegrationRead(clientID, d.Get("integration_id").(int))
 	if err != nil {
 		if strings.HasPrefix(err.Error(), "Not found.") {
 			d.SetId("")
 			return nil
-		} else {
-			return err
 		}
+		return err
 	}
 
-	if err = d.Set("integration_id", pagerduty.ID); err != nil {
-		return err
-	}
-	if err = d.Set("is_active", pagerduty.Active); err != nil {
-		return err
-	}
-	if err = d.Set("name", pagerduty.Name); err != nil {
-		return err
-	}
-	if err = d.Set("created_by", pagerduty.CreatedBy); err != nil {
-		return err
-	}
-	if err = d.Set("type", pagerduty.Type); err != nil {
-		return err
-	}
-	if err = d.Set("client_id", clientID); err != nil {
-		return err
-	}
+	d.Set("integration_id", pagerduty.ID)
+	d.Set("is_active", pagerduty.Active)
+	d.Set("name", pagerduty.Name)
+	d.Set("created_by", pagerduty.CreatedBy)
+	d.Set("type", pagerduty.Type)
+	d.Set("client_id", clientID)
 
 	return nil
 }
 
+// nolint:dupl
 func resourceWallarmPagerDutyUpdate(d *schema.ResourceData, m interface{}) error {
 	client := m.(wallarm.API)
-	clientID := retrieveClientID(d, client)
+	clientID := retrieveClientID(d)
 	name := d.Get("name").(string)
 	integrationKey := d.Get("integration_key").(string)
 	active := d.Get("active").(bool)
-	events, err := expandWallarmEventToIntEvents(d.Get("event"), "pager_duty")
-	if err != nil {
-		return err
-	}
+	events := expandWallarmEventToIntEvents(d.Get("event"), "pager_duty")
 
 	pagerDuty, err := client.IntegrationRead(clientID, d.Get("integration_id").(int))
 	if err != nil {
 		if strings.HasPrefix(err.Error(), "Not found.") {
 			d.SetId("")
 			return nil
-		} else {
-			return err
 		}
+		return err
 	}
 
 	pagerBody := wallarm.IntegrationCreate{
@@ -193,9 +171,7 @@ func resourceWallarmPagerDutyUpdate(d *schema.ResourceData, m interface{}) error
 		return err
 	}
 
-	if err = d.Set("integration_id", updateRes.Body.ID); err != nil {
-		return err
-	}
+	d.Set("integration_id", updateRes.Body.ID)
 
 	resID := fmt.Sprintf("%d/%s/%d", clientID, updateRes.Body.Type, updateRes.Body.ID)
 	d.SetId(resID)

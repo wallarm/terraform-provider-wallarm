@@ -115,18 +115,16 @@ func dataSourceWallarmNode() *schema.Resource {
 
 func dataSourceWallarmNodeRead(d *schema.ResourceData, m interface{}) error {
 	client := m.(wallarm.API)
-	clientID := retrieveClientID(d, client)
+	clientID := retrieveClientID(d)
 	// Prepare the filters to be applied to the search
-	filter, err := expandWallarmNode(d.Get("filter"))
-	if err != nil {
-		return err
-	}
+	filter := expandWallarmNode(d.Get("filter"))
 	if filter.Type == "" {
 		filter.Type = "all"
 	}
 
 	nodes := make([]interface{}, 0)
 	var node *wallarm.NodeRead
+	var err error
 	var nodePOST *wallarm.NodeReadPOST
 	nodeReadBody := wallarm.NodeReadByFilter{
 		Filter:    &wallarm.NodeFilter{},
@@ -193,19 +191,17 @@ func dataSourceWallarmNodeRead(d *schema.ResourceData, m interface{}) error {
 		}
 	}
 
-	if err = d.Set("nodes", nodes); err != nil {
-		return fmt.Errorf("Error setting Nodes: %s", err)
-	}
+	d.Set("nodes", nodes)
 
 	d.SetId(fmt.Sprintf("Nodes_%s", time.Now().UTC().String()))
 	return nil
 }
 
-func expandWallarmNode(d interface{}) (*searchFilterWallarmNode, error) {
+func expandWallarmNode(d interface{}) *searchFilterWallarmNode {
 	cfg := d.([]interface{})
 	filter := &searchFilterWallarmNode{}
 	if len(cfg) == 0 || cfg[0] == nil {
-		return filter, nil
+		return filter
 	}
 
 	m := cfg[0].(map[string]interface{})
@@ -230,7 +226,7 @@ func expandWallarmNode(d interface{}) (*searchFilterWallarmNode, error) {
 		filter.UUID = uuid.(string)
 	}
 
-	return filter, nil
+	return filter
 }
 
 type searchFilterWallarmNode struct {

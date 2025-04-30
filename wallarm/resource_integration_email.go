@@ -84,14 +84,11 @@ func resourceWallarmEmail() *schema.Resource {
 
 func resourceWallarmIntegrationCreate(d *schema.ResourceData, m interface{}) error {
 	client := m.(wallarm.API)
-	clientID := retrieveClientID(d, client)
+	clientID := retrieveClientID(d)
 	name := d.Get("name").(string)
 	active := d.Get("active").(bool)
 	emails := expandInterfaceToStringList(d.Get("emails"))
-	events, err := expandWallarmEventToIntEvents(d.Get("event"), "email")
-	if err != nil {
-		return err
-	}
+	events := expandWallarmEventToIntEvents(d.Get("event"), "email")
 
 	emailBody := wallarm.EmailIntegrationCreate{
 		Name:     name,
@@ -107,9 +104,7 @@ func resourceWallarmIntegrationCreate(d *schema.ResourceData, m interface{}) err
 		return err
 	}
 
-	if err = d.Set("integration_id", createRes.Body.ID); err != nil {
-		return err
-	}
+	d.Set("integration_id", createRes.Body.ID)
 
 	resID := fmt.Sprintf("%d/%s/%d", clientID, createRes.Body.Type, createRes.Body.ID)
 	d.SetId(resID)
@@ -119,58 +114,41 @@ func resourceWallarmIntegrationCreate(d *schema.ResourceData, m interface{}) err
 
 func resourceWallarmEmailRead(d *schema.ResourceData, m interface{}) error {
 	client := m.(wallarm.API)
-	clientID := retrieveClientID(d, client)
+	clientID := retrieveClientID(d)
 	email, err := client.IntegrationRead(clientID, d.Get("integration_id").(int))
 	if err != nil {
 		if strings.HasPrefix(err.Error(), "Not found.") {
 			d.SetId("")
 			return nil
-		} else {
-			return err
 		}
+		return err
 	}
 
-	if err = d.Set("integration_id", email.ID); err != nil {
-		return err
-	}
-	if err = d.Set("is_active", email.Active); err != nil {
-		return err
-	}
-	if err = d.Set("name", email.Name); err != nil {
-		return err
-	}
-	if err = d.Set("created_by", email.CreatedBy); err != nil {
-		return err
-	}
-	if err = d.Set("type", email.Type); err != nil {
-		return err
-	}
-	if err = d.Set("client_id", clientID); err != nil {
-		return err
-	}
+	d.Set("integration_id", email.ID)
+	d.Set("is_active", email.Active)
+	d.Set("name", email.Name)
+	d.Set("created_by", email.CreatedBy)
+	d.Set("type", email.Type)
+	d.Set("client_id", clientID)
 
 	return nil
 }
 
 func resourceWallarmEmailUpdate(d *schema.ResourceData, m interface{}) error {
 	client := m.(wallarm.API)
-	clientID := retrieveClientID(d, client)
+	clientID := retrieveClientID(d)
 	name := d.Get("name").(string)
 	active := d.Get("active").(bool)
 	emails := expandInterfaceToStringList(d.Get("emails"))
-	events, err := expandWallarmEventToIntEvents(d.Get("event"), "email")
-	if err != nil {
-		return err
-	}
+	events := expandWallarmEventToIntEvents(d.Get("event"), "email")
 
 	email, err := client.IntegrationRead(clientID, d.Get("integration_id").(int))
 	if err != nil {
 		if strings.HasPrefix(err.Error(), "Not found.") {
 			d.SetId("")
 			return nil
-		} else {
-			return err
 		}
+		return err
 	}
 
 	var updateRes *wallarm.IntegrationCreateResp
@@ -205,9 +183,7 @@ func resourceWallarmEmailUpdate(d *schema.ResourceData, m interface{}) error {
 		return nil
 	}
 
-	if err = d.Set("integration_id", updateRes.Body.ID); err != nil {
-		return err
-	}
+	d.Set("integration_id", updateRes.Body.ID)
 
 	resID := fmt.Sprintf("%d/%s/%d", clientID, updateRes.Body.Type, updateRes.Body.ID)
 	d.SetId(resID)

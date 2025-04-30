@@ -19,7 +19,7 @@ func TestAccRuleCredentialStuffingMode_basic(t *testing.T) {
 		Providers:    testAccProviders,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccRuleCredentialStuffingMode_basic(resourceName, "default"),
+				Config: testAccRuleCredentialStuffingModeBasic(resourceName, "default"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceAddress, "mode", "default"),
 					resource.TestCheckResourceAttr(resourceAddress, "action.#", "1"),
@@ -29,7 +29,7 @@ func TestAccRuleCredentialStuffingMode_basic(t *testing.T) {
 	})
 }
 
-func testAccRuleCredentialStuffingMode_basic(resourceName string, mode string) string {
+func testAccRuleCredentialStuffingModeBasic(resourceName string, mode string) string {
 	return fmt.Sprintf(`
 resource "wallarm_rule_credential_stuffing_mode" %[1]q {
 	mode = %[2]q

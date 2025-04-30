@@ -32,7 +32,7 @@ func resourceWallarmUser() *schema.Resource {
 				Type:      schema.TypeString,
 				Optional:  true,
 				Sensitive: true,
-				ValidateFunc: func(val interface{}, key string) (warns []string, errs []error) {
+				ValidateFunc: func(val interface{}, _ string) (warns []string, errs []error) {
 					v := val.(string)
 					if isPasswordValid(v) {
 						return
@@ -80,7 +80,7 @@ func resourceWallarmUser() *schema.Resource {
 
 func resourceWallarmUserCreate(d *schema.ResourceData, m interface{}) error {
 	client := m.(wallarm.API)
-	clientID := retrieveClientID(d, client)
+	clientID := retrieveClientID(d)
 	email := d.Get("email").(string)
 	realname := d.Get("realname").(string)
 	permissions := d.Get("permissions").(string)
@@ -104,9 +104,7 @@ func resourceWallarmUserCreate(d *schema.ResourceData, m interface{}) error {
 		password = v.(string)
 	} else {
 		password = passwordGenerate(10)
-		if err := d.Set("generated_password", password); err != nil {
-			return err
-		}
+		d.Set("generated_password", password)
 	}
 
 	userBody := &wallarm.UserCreate{
@@ -130,9 +128,7 @@ func resourceWallarmUserCreate(d *schema.ResourceData, m interface{}) error {
 
 	userID := res.Body.ID
 
-	if err = d.Set("user_id", userID); err != nil {
-		return err
-	}
+	d.Set("user_id", userID)
 
 	resID := fmt.Sprintf("%d/%s/%d", clientID, realname, userID)
 	d.SetId(resID)
@@ -141,7 +137,7 @@ func resourceWallarmUserCreate(d *schema.ResourceData, m interface{}) error {
 }
 func resourceWallarmUserRead(d *schema.ResourceData, m interface{}) error {
 	client := m.(wallarm.API)
-	clientID := retrieveClientID(d, client)
+	clientID := retrieveClientID(d)
 	userID := d.Get("user_id").(int)
 	user := &wallarm.UserGet{
 		Limit:     1000,
@@ -167,21 +163,13 @@ func resourceWallarmUserRead(d *schema.ResourceData, m interface{}) error {
 		return nil
 	}
 
-	if err = d.Set("realname", res.Body[0].Realname); err != nil {
-		return err
-	}
+	d.Set("realname", res.Body[0].Realname)
 
-	if err = d.Set("username", res.Body[0].Username); err != nil {
-		return err
-	}
+	d.Set("username", res.Body[0].Username)
 
-	if err = d.Set("enabled", res.Body[0].Enabled); err != nil {
-		return err
-	}
+	d.Set("enabled", res.Body[0].Enabled)
 
-	if err = d.Set("client_id", clientID); err != nil {
-		return err
-	}
+	d.Set("client_id", clientID)
 
 	return nil
 }
@@ -196,7 +184,7 @@ func resourceWallarmUserUpdate(d *schema.ResourceData, m interface{}) error {
 		}
 	} else {
 		client := m.(wallarm.API)
-		clientID := retrieveClientID(d, client)
+		clientID := retrieveClientID(d)
 		email := d.Get("email").(string)
 		realname := d.Get("realname").(string)
 		permissions := d.Get("permissions").(string)

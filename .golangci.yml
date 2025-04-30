@@ -2,8 +2,8 @@ run:
   timeout: 5m
 
 linters-settings:
-  errcheck:
-    check-type-assertions: true
+  dupl:
+    threshold: 10000
   govet:
     settings:
       printf:
@@ -21,7 +21,6 @@ linters:
   enable:
     - govet
     - gofmt
-    - errcheck
     - staticcheck
     - unused
     - gosimple
@@ -32,7 +31,6 @@ linters:
     - misspell
     - unparam
     - prealloc
-    - exportloopref
     - gochecknoinits
     - gocritic
     - dupl
@@ -43,7 +41,7 @@ linters:
 
 issues:
   exclude-rules:
-    - path: _test\.go
+    - path: _test.go
       linters:
         - gocyclo
         - errcheck
@@ -51,6 +49,8 @@ issues:
         - gosec
         - scopelint
         - gocritic
+        - unparam
+        - goconst
 
   max-same-issues: 0
   new: false

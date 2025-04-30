@@ -71,14 +71,12 @@ func resourceWallarmIgnoreRegex() *schema.Resource {
 
 func resourceWallarmIgnoreRegexCreate(d *schema.ResourceData, m interface{}) error {
 	client := m.(wallarm.API)
-	clientID := retrieveClientID(d, client)
+	clientID := retrieveClientID(d)
 	comment := d.Get("comment").(string)
 	regexID := d.Get("regex_id").(int)
 
 	ps := d.Get("point").([]interface{})
-	if err := d.Set("point", ps); err != nil {
-		return err
-	}
+	d.Set("point", ps)
 
 	points, err := expandPointsToTwoDimensionalArray(ps)
 	if err != nil {
@@ -106,18 +104,10 @@ func resourceWallarmIgnoreRegexCreate(d *schema.ResourceData, m interface{}) err
 		return err
 	}
 
-	if err = d.Set("rule_id", actionResp.Body.ID); err != nil {
-		return err
-	}
-	if err = d.Set("action_id", actionResp.Body.ActionID); err != nil {
-		return err
-	}
-	if err = d.Set("rule_type", actionResp.Body.Type); err != nil {
-		return err
-	}
-	if err = d.Set("regex_id", actionResp.Body.RegexID); err != nil {
-		return err
-	}
+	d.Set("rule_id", actionResp.Body.ID)
+	d.Set("action_id", actionResp.Body.ActionID)
+	d.Set("rule_type", actionResp.Body.Type)
+	d.Set("regex_id", actionResp.Body.RegexID)
 
 	resID := fmt.Sprintf("%d/%d/%d/%s", clientID, actionResp.Body.ActionID, actionResp.Body.ID, actionResp.Body.Type)
 	d.SetId(resID)
@@ -127,7 +117,7 @@ func resourceWallarmIgnoreRegexCreate(d *schema.ResourceData, m interface{}) err
 
 func resourceWallarmIgnoreRegexRead(d *schema.ResourceData, m interface{}) error {
 	client := m.(wallarm.API)
-	clientID := retrieveClientID(d, client)
+	clientID := retrieveClientID(d)
 	actionID := d.Get("action_id").(int)
 	ruleID := d.Get("rule_id").(int)
 	regexID := d.Get("regex_id").(int)
@@ -145,7 +135,7 @@ func resourceWallarmIgnoreRegexRead(d *schema.ResourceData, m interface{}) error
 		return err
 	}
 
-	var actsSlice []interface{}
+	actsSlice := make([]interface{}, 0, len(action))
 	for _, a := range action {
 		acts, err := actionDetailsToMap(a)
 		if err != nil {
@@ -182,7 +172,7 @@ func resourceWallarmIgnoreRegexRead(d *schema.ResourceData, m interface{}) error
 		RegexID:  regexID,
 	}
 
-	var notFoundRules []int
+	notFoundRules := make([]int, 0)
 	var updatedRuleID int
 	for _, rule := range *actionHints.Body {
 		if ruleID == rule.ID {
@@ -209,18 +199,12 @@ func resourceWallarmIgnoreRegexRead(d *schema.ResourceData, m interface{}) error
 		notFoundRules = append(notFoundRules, rule.ID)
 	}
 
-	if err = d.Set("rule_id", updatedRuleID); err != nil {
-		return err
-	}
+	d.Set("rule_id", updatedRuleID)
 
-	if err = d.Set("client_id", clientID); err != nil {
-		return err
-	}
+	d.Set("client_id", clientID)
 
 	if actionsSet.Len() != 0 {
-		if err := d.Set("action", &actionsSet); err != nil {
-			return err
-		}
+		d.Set("action", &actionsSet)
 	} else {
 		log.Printf("[WARN] action was empty so it either doesn't exist or it is a default branch which has no conditions. Actions: %v", &actionsSet)
 	}
@@ -235,7 +219,7 @@ func resourceWallarmIgnoreRegexRead(d *schema.ResourceData, m interface{}) error
 
 func resourceWallarmIgnoreRegexDelete(d *schema.ResourceData, m interface{}) error {
 	client := m.(wallarm.API)
-	clientID := retrieveClientID(d, client)
+	clientID := retrieveClientID(d)
 	actionID := d.Get("action_id").(int)
 
 	rule := &wallarm.ActionRead{
@@ -289,15 +273,9 @@ func resourceWallarmIgnoreRegexImport(d *schema.ResourceData, m interface{}) ([]
 		if err != nil {
 			return nil, err
 		}
-		if err = d.Set("action_id", actionID); err != nil {
-			return nil, err
-		}
-		if err = d.Set("rule_id", ruleID); err != nil {
-			return nil, err
-		}
-		if err = d.Set("rule_type", "disable_regex"); err != nil {
-			return nil, err
-		}
+		d.Set("action_id", actionID)
+		d.Set("rule_id", ruleID)
+		d.Set("rule_type", "disable_regex")
 
 		hint := &wallarm.HintRead{
 			Limit:     1000,
@@ -325,20 +303,14 @@ func resourceWallarmIgnoreRegexImport(d *schema.ResourceData, m interface{}) ([]
 				}
 				actionsSet.Add(acts)
 			}
-			if err := d.Set("action", &actionsSet); err != nil {
-				return nil, err
-			}
+			d.Set("action", &actionsSet)
 		}
 
 		pointInterface := (*actionHints.Body)[0].Point
 		point := wrapPointElements(pointInterface)
-		if err = d.Set("point", point); err != nil {
-			return nil, err
-		}
+		d.Set("point", point)
 
-		if err = d.Set("regex_id", (*actionHints.Body)[0].RegexID); err != nil {
-			return nil, err
-		}
+		d.Set("regex_id", (*actionHints.Body)[0].RegexID)
 
 		existingID := fmt.Sprintf("%d/%d/%d", clientID, actionID, ruleID)
 		d.SetId(existingID)

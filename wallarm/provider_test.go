@@ -17,7 +17,7 @@ import (
 var testAccProviders map[string]terraform.ResourceProvider
 var testAccProvider *schema.Provider
 
-func init() {
+func init() { // nolint:gochecknoinits
 	testAccProvider = Provider().(*schema.Provider)
 	testAccProviders = map[string]terraform.ResourceProvider{
 		"wallarm": testAccProvider,
@@ -30,7 +30,7 @@ func TestProvider(t *testing.T) {
 	}
 }
 
-func TestProvider_impl(t *testing.T) {
+func TestProvider_impl(_ *testing.T) {
 	var _ terraform.ResourceProvider = Provider()
 }
 

@@ -75,13 +75,13 @@ func resourceWallarmSetResponseHeader() *schema.Resource {
 
 func resourceWallarmSetResponseHeaderCreate(d *schema.ResourceData, m interface{}) error {
 	client := m.(wallarm.API)
-	clientID := retrieveClientID(d, client)
+	clientID := retrieveClientID(d)
 	comment := d.Get("comment").(string)
 	mode := d.Get("mode").(string)
 	name := d.Get("name").(string)
 	valuesInterface := d.Get("values").([]interface{})
-	var values []string
 
+	values := make([]string, 0, len(valuesInterface))
 	for _, item := range valuesInterface {
 		str, _ := item.(string)
 		values = append(values, str)
@@ -110,15 +110,9 @@ func resourceWallarmSetResponseHeaderCreate(d *schema.ResourceData, m interface{
 		return err
 	}
 
-	if err = d.Set("action_id", actionResp.Body.ActionID); err != nil {
-		return err
-	}
-	if err = d.Set("rule_id", actionResp.Body.ID); err != nil {
-		return err
-	}
-	if err = d.Set("client_id", clientID); err != nil {
-		return err
-	}
+	d.Set("action_id", actionResp.Body.ActionID)
+	d.Set("rule_id", actionResp.Body.ID)
+	d.Set("client_id", clientID)
 	resID := fmt.Sprintf("%d/%d/%d", clientID, actionResp.Body.ActionID, actionResp.Body.ID)
 	d.SetId(resID)
 
@@ -127,7 +121,7 @@ func resourceWallarmSetResponseHeaderCreate(d *schema.ResourceData, m interface{
 
 func resourceWallarmSetResponseHeaderRead(d *schema.ResourceData, m interface{}) error {
 	client := m.(wallarm.API)
-	clientID := retrieveClientID(d, client)
+	clientID := retrieveClientID(d)
 	ruleID := d.Get("rule_id").(int)
 	actionID := d.Get("action_id").(int)
 	mode := d.Get("mode").(string)
@@ -168,7 +162,7 @@ func resourceWallarmSetResponseHeaderRead(d *schema.ResourceData, m interface{})
 		Values:   values,
 	}
 
-	var notFoundRules []int
+	notFoundRules := make([]int, 0)
 	var updatedRuleID int
 	for _, rule := range *actionHints.Body {
 		if ruleID == rule.ID {
@@ -189,13 +183,8 @@ func resourceWallarmSetResponseHeaderRead(d *schema.ResourceData, m interface{})
 		notFoundRules = append(notFoundRules, rule.ID)
 	}
 
-	if err = d.Set("rule_id", updatedRuleID); err != nil {
-		return err
-	}
-
-	if err = d.Set("client_id", clientID); err != nil {
-		return err
-	}
+	d.Set("rule_id", updatedRuleID)
+	d.Set("client_id", clientID)
 
 	if updatedRuleID == 0 {
 		log.Printf("[WARN] these rule IDs: %v have been found under the action ID: %d. But it isn't in the Terraform Plan.", notFoundRules, actionID)
@@ -207,7 +196,7 @@ func resourceWallarmSetResponseHeaderRead(d *schema.ResourceData, m interface{})
 
 func resourceWallarmSetResponseHeaderDelete(d *schema.ResourceData, m interface{}) error {
 	client := m.(wallarm.API)
-	clientID := retrieveClientID(d, client)
+	clientID := retrieveClientID(d)
 	ruleID := d.Get("rule_id").(int)
 
 	h := &wallarm.HintDelete{
@@ -247,15 +236,9 @@ func resourceWallarmSetResponseHeaderImport(d *schema.ResourceData, m interface{
 		if err != nil {
 			return nil, err
 		}
-		if err = d.Set("action_id", actionID); err != nil {
-			return nil, err
-		}
-		if err = d.Set("rule_id", ruleID); err != nil {
-			return nil, err
-		}
-		if err = d.Set("rule_type", "set_response_header"); err != nil {
-			return nil, err
-		}
+		d.Set("action_id", actionID)
+		d.Set("rule_id", ruleID)
+		d.Set("rule_type", "set_response_header")
 
 		hint := &wallarm.HintRead{
 			Limit:     1000,
@@ -283,20 +266,12 @@ func resourceWallarmSetResponseHeaderImport(d *schema.ResourceData, m interface{
 				}
 				actionsSet.Add(acts)
 			}
-			if err = d.Set("action", &actionsSet); err != nil {
-				return nil, err
-			}
+			d.Set("action", &actionsSet)
 		}
 
-		if err = d.Set("mode", (*actionHints.Body)[0].Mode); err != nil {
-			return nil, err
-		}
-		if err = d.Set("name", (*actionHints.Body)[0].Name); err != nil {
-			return nil, err
-		}
-		if err = d.Set("values", (*actionHints.Body)[0].Values); err != nil {
-			return nil, err
-		}
+		d.Set("mode", (*actionHints.Body)[0].Mode)
+		d.Set("name", (*actionHints.Body)[0].Name)
+		d.Set("values", (*actionHints.Body)[0].Values)
 
 		existingID := fmt.Sprintf("%d/%d/%d", clientID, actionID, ruleID)
 		d.SetId(existingID)

@@ -47,121 +47,7 @@ func resourceWallarmOverlimitResSettings() *schema.Resource {
 				ForceNew: true,
 			},
 
-			"action": {
-				Type:     schema.TypeSet,
-				Optional: true,
-				ForceNew: true,
-				Elem: &schema.Resource{
-					Schema: map[string]*schema.Schema{
-						"type": {
-							Type:         schema.TypeString,
-							Optional:     true,
-							ValidateFunc: validation.StringInSlice([]string{"equal", "iequal", "regex", "absent"}, false),
-							ForceNew:     true,
-						},
-
-						"value": {
-							Type:     schema.TypeString,
-							Optional: true,
-							ForceNew: true,
-							Computed: true,
-						},
-
-						"point": {
-							Type:     schema.TypeMap,
-							Optional: true,
-							ForceNew: true,
-							Elem: &schema.Resource{
-								Schema: map[string]*schema.Schema{
-									"header": {
-										Type:     schema.TypeList,
-										Optional: true,
-										ForceNew: true,
-										Computed: true,
-										Elem:     &schema.Schema{Type: schema.TypeString},
-									},
-									"method": {
-										Type:     schema.TypeString,
-										Optional: true,
-										ForceNew: true,
-										ValidateFunc: validation.StringInSlice([]string{"GET", "HEAD", "POST",
-											"PUT", "DELETE", "CONNECT", "OPTIONS", "TRACE", "PATCH"}, false),
-									},
-
-									"path": {
-										Type:     schema.TypeInt,
-										Optional: true,
-										ForceNew: true,
-										ValidateFunc: func(val interface{}, key string) (warns []string, errs []error) {
-											v := val.(int)
-											if v < 0 || v > 60 {
-												errs = append(errs, fmt.Errorf("%q must be between 0 and 60 inclusive, got: %d", key, v))
-											}
-											return
-										},
-									},
-
-									"action_name": {
-										Type:     schema.TypeString,
-										Optional: true,
-										ForceNew: true,
-										Computed: true,
-									},
-
-									"action_ext": {
-										Type:     schema.TypeString,
-										Optional: true,
-										ForceNew: true,
-										Computed: true,
-									},
-
-									"query": {
-										Type:     schema.TypeString,
-										Optional: true,
-										ForceNew: true,
-										Computed: true,
-									},
-
-									"proto": {
-										Type:     schema.TypeString,
-										Optional: true,
-										ForceNew: true,
-										Computed: true,
-									},
-
-									"scheme": {
-										Type:         schema.TypeString,
-										Optional:     true,
-										ForceNew:     true,
-										Computed:     true,
-										ValidateFunc: validation.StringInSlice([]string{"http", "https"}, true),
-									},
-
-									"uri": {
-										Type:     schema.TypeString,
-										Optional: true,
-										ForceNew: true,
-										Computed: true,
-									},
-
-									"instance": {
-										Type:     schema.TypeInt,
-										Optional: true,
-										ForceNew: true,
-										ValidateFunc: func(val interface{}, key string) (warns []string, errs []error) {
-											v := val.(int)
-											if v < -1 {
-												errs = append(errs, fmt.Errorf("%q must be greater than -1 inclusive, got: %d", key, v))
-											}
-											return
-										},
-									},
-								},
-							},
-						},
-					},
-				},
-			},
+			"action": defaultResourceLimitActionSchema,
 
 			"point": {
 				Type:     schema.TypeList,
@@ -192,7 +78,7 @@ func resourceWallarmOverlimitResSettings() *schema.Resource {
 
 func resourceWallarmOverlimitResSettingsCreate(d *schema.ResourceData, m interface{}) error {
 	client := m.(wallarm.API)
-	clientID := retrieveClientID(d, client)
+	clientID := retrieveClientID(d)
 	comment := d.Get("comment").(string)
 
 	actionsFromState := d.Get("action").(*schema.Set)
@@ -226,21 +112,11 @@ func resourceWallarmOverlimitResSettingsCreate(d *schema.ResourceData, m interfa
 	}
 	actionID := actionResp.Body.ActionID
 
-	if err = d.Set("rule_id", actionResp.Body.ID); err != nil {
-		return err
-	}
-	if err = d.Set("action_id", actionID); err != nil {
-		return err
-	}
-	if err = d.Set("rule_type", actionResp.Body.Type); err != nil {
-		return err
-	}
-	if err = d.Set("client_id", clientID); err != nil {
-		return err
-	}
-	if err = d.Set("point", actionResp.Body.Point); err != nil {
-		return err
-	}
+	d.Set("rule_id", actionResp.Body.ID)
+	d.Set("action_id", actionID)
+	d.Set("rule_type", actionResp.Body.Type)
+	d.Set("client_id", clientID)
+	d.Set("point", actionResp.Body.Point)
 
 	resID := fmt.Sprintf("%d/%d/%d", clientID, actionID, actionResp.Body.ID)
 	d.SetId(resID)
@@ -250,7 +126,7 @@ func resourceWallarmOverlimitResSettingsCreate(d *schema.ResourceData, m interfa
 
 func resourceWallarmOverlimitResSettingsRead(d *schema.ResourceData, m interface{}) error {
 	client := m.(wallarm.API)
-	clientID := retrieveClientID(d, client)
+	clientID := retrieveClientID(d)
 	actionID := d.Get("action_id").(int)
 	ruleID := d.Get("rule_id").(int)
 
@@ -285,7 +161,7 @@ func resourceWallarmOverlimitResSettingsRead(d *schema.ResourceData, m interface
 		Action:   action,
 	}
 
-	var notFoundRules []int
+	notFoundRules := make([]int, 0)
 	var updatedRuleID int
 	for _, rule := range *actionHints.Body {
 		if ruleID == rule.ID {
@@ -307,13 +183,9 @@ func resourceWallarmOverlimitResSettingsRead(d *schema.ResourceData, m interface
 		notFoundRules = append(notFoundRules, rule.ID)
 	}
 
-	if err = d.Set("rule_id", updatedRuleID); err != nil {
-		return err
-	}
+	d.Set("rule_id", updatedRuleID)
 
-	if err = d.Set("client_id", clientID); err != nil {
-		return err
-	}
+	d.Set("client_id", clientID)
 
 	if updatedRuleID == 0 {
 		log.Printf("[WARN] these rule IDs: %v have been found under the action ID: %d. But it isn't in the Terraform Plan.", notFoundRules, actionID)
@@ -325,7 +197,7 @@ func resourceWallarmOverlimitResSettingsRead(d *schema.ResourceData, m interface
 
 func resourceWallarmOverlimitResSettingsDelete(d *schema.ResourceData, m interface{}) error {
 	client := m.(wallarm.API)
-	clientID := retrieveClientID(d, client)
+	clientID := retrieveClientID(d)
 	ruleID := d.Get("rule_id").(int)
 
 	h := &wallarm.HintDelete{
@@ -358,15 +230,9 @@ func resourceWallarmOverlimitResSettingsImport(d *schema.ResourceData, m interfa
 		if err != nil {
 			return nil, err
 		}
-		if err = d.Set("action_id", actionID); err != nil {
-			return nil, err
-		}
-		if err = d.Set("rule_id", ruleID); err != nil {
-			return nil, err
-		}
-		if err = d.Set("rule_type", "overlimit_res_settings"); err != nil {
-			return nil, err
-		}
+		d.Set("action_id", actionID)
+		d.Set("rule_id", ruleID)
+		d.Set("rule_type", "overlimit_res_settings")
 
 		hint := &wallarm.HintRead{
 			Limit:     1000,
@@ -394,18 +260,12 @@ func resourceWallarmOverlimitResSettingsImport(d *schema.ResourceData, m interfa
 				}
 				actionsSet.Add(acts)
 			}
-			if err = d.Set("action", &actionsSet); err != nil {
-				return nil, err
-			}
+			d.Set("action", &actionsSet)
 
 		}
 
-		if err = d.Set("mode", (*actionHints.Body)[0].Mode); err != nil {
-			return nil, err
-		}
-		if err = d.Set("overlimit_time", (*actionHints.Body)[0].OverlimitTime); err != nil {
-			return nil, err
-		}
+		d.Set("mode", (*actionHints.Body)[0].Mode)
+		d.Set("overlimit_time", (*actionHints.Body)[0].OverlimitTime)
 
 		existingID := fmt.Sprintf("%d/%d/%d", clientID, actionID, ruleID)
 		d.SetId(existingID)

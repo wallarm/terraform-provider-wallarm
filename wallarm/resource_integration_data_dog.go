@@ -86,15 +86,12 @@ func resourceWallarmDataDog() *schema.Resource {
 
 func resourceWallarmDataDogCreate(d *schema.ResourceData, m interface{}) error {
 	client := m.(wallarm.API)
-	clientID := retrieveClientID(d, client)
+	clientID := retrieveClientID(d)
 	name := d.Get("name").(string)
 	token := d.Get("token").(string)
 	region := d.Get("region").(string)
 	active := d.Get("active").(bool)
-	events, err := expandWallarmEventToIntEvents(d.Get("event"), "data_dog")
-	if err != nil {
-		return err
-	}
+	events := expandWallarmEventToIntEvents(d.Get("event"), "data_dog")
 
 	ddBody := wallarm.IntegrationCreate{
 		Name:   name,
@@ -113,9 +110,7 @@ func resourceWallarmDataDogCreate(d *schema.ResourceData, m interface{}) error {
 		return err
 	}
 
-	if err = d.Set("integration_id", createRes.Body.ID); err != nil {
-		return err
-	}
+	d.Set("integration_id", createRes.Body.ID)
 
 	resID := fmt.Sprintf("%d/%s/%d", clientID, createRes.Body.Type, createRes.Body.ID)
 	d.SetId(resID)
@@ -125,45 +120,30 @@ func resourceWallarmDataDogCreate(d *schema.ResourceData, m interface{}) error {
 
 func resourceWallarmDataDogRead(d *schema.ResourceData, m interface{}) error {
 	client := m.(wallarm.API)
-	clientID := retrieveClientID(d, client)
+	clientID := retrieveClientID(d)
 	dd, err := client.IntegrationRead(clientID, d.Get("integration_id").(int))
 	if err != nil {
 		return err
 	}
 
-	if err = d.Set("integration_id", dd.ID); err != nil {
-		return err
-	}
-	if err = d.Set("is_active", dd.Active); err != nil {
-		return err
-	}
-	if err = d.Set("name", dd.Name); err != nil {
-		return err
-	}
-	if err = d.Set("created_by", dd.CreatedBy); err != nil {
-		return err
-	}
-	if err = d.Set("type", dd.Type); err != nil {
-		return err
-	}
-	if err = d.Set("client_id", clientID); err != nil {
-		return err
-	}
+	d.Set("integration_id", dd.ID)
+	d.Set("is_active", dd.Active)
+	d.Set("name", dd.Name)
+	d.Set("created_by", dd.CreatedBy)
+	d.Set("type", dd.Type)
+	d.Set("client_id", clientID)
 
 	return nil
 }
 
 func resourceWallarmDataDogUpdate(d *schema.ResourceData, m interface{}) error {
 	client := m.(wallarm.API)
-	clientID := retrieveClientID(d, client)
+	clientID := retrieveClientID(d)
 	name := d.Get("name").(string)
 	region := d.Get("region").(string)
 	token := d.Get("token").(string)
 	active := d.Get("active").(bool)
-	events, err := expandWallarmEventToIntEvents(d.Get("event"), "data_dog")
-	if err != nil {
-		return err
-	}
+	events := expandWallarmEventToIntEvents(d.Get("event"), "data_dog")
 
 	dd, err := client.IntegrationRead(clientID, d.Get("integration_id").(int))
 	if err != nil {
@@ -186,9 +166,7 @@ func resourceWallarmDataDogUpdate(d *schema.ResourceData, m interface{}) error {
 		return err
 	}
 
-	if err = d.Set("integration_id", updateRes.Body.ID); err != nil {
-		return err
-	}
+	d.Set("integration_id", updateRes.Body.ID)
 
 	resID := fmt.Sprintf("%d/%s/%d", clientID, updateRes.Body.Type, updateRes.Body.ID)
 	d.SetId(resID)

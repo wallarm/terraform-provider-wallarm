@@ -16,7 +16,7 @@ func TestAccWallarmGlobalMode_FiltrationSafeBlocking(t *testing.T) {
 		Providers: testAccProviders,
 		Steps: []resource.TestStep{
 			{
-				Config: testWallarmGlobalMode_FiltrationConfig(rnd, "safe_blocking"),
+				Config: testWallarmGlobalModeFiltrationConfig(rnd, "safe_blocking"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(name, "filtration_mode", "safe_blocking"),
 				),
@@ -34,7 +34,7 @@ func TestAccWallarmGlobalMode_ScannerOff(t *testing.T) {
 		Providers: testAccProviders,
 		Steps: []resource.TestStep{
 			{
-				Config: testWallarmGlobalMode_ScannerConfig(rnd, "off"),
+				Config: testWallarmGlobalModeScannerConfig(rnd, "off"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(name, "scanner_mode", "off"),
 				),
@@ -52,7 +52,7 @@ func TestAccWallarmGlobalMode_RecheckerOn(t *testing.T) {
 		Providers: testAccProviders,
 		Steps: []resource.TestStep{
 			{
-				Config: testWallarmGlobalMode_RecheckerConfig(rnd, "on"),
+				Config: testWallarmGlobalModeRecheckerConfig(rnd, "on"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(name, "rechecker_mode", "on"),
 				),
@@ -70,7 +70,7 @@ func TestAccWallarmGlobalMode_FiltrationBlock_ScannerOff_RechkeckerOn(t *testing
 		Providers: testAccProviders,
 		Steps: []resource.TestStep{
 			{
-				Config: testWallarmGlobalMode_FullConfig(rnd, "block", "off", "on"),
+				Config: testWallarmGlobalModeFullConfig(rnd, "block", "off", "on"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(name, "filtration_mode", "block"),
 					resource.TestCheckResourceAttr(name, "scanner_mode", "off"),
@@ -90,7 +90,7 @@ func TestAccWallarmGlobalMode_FiltrationDefault_ScannerOn_RecheckerOff(t *testin
 		Providers: testAccProviders,
 		Steps: []resource.TestStep{
 			{
-				Config: testWallarmGlobalMode_FullConfig(rnd, "default", "on", "off"),
+				Config: testWallarmGlobalModeFullConfig(rnd, "default", "on", "off"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(name, "filtration_mode", "default"),
 					resource.TestCheckResourceAttr(name, "scanner_mode", "on"),
@@ -101,28 +101,28 @@ func TestAccWallarmGlobalMode_FiltrationDefault_ScannerOn_RecheckerOff(t *testin
 	})
 }
 
-func testWallarmGlobalMode_FiltrationConfig(resourceID, filtrationMode string) string {
+func testWallarmGlobalModeFiltrationConfig(resourceID, filtrationMode string) string {
 	return fmt.Sprintf(`
 resource "wallarm_global_mode" "%[1]s" {
   filtration_mode = "%[2]s"
 }`, resourceID, filtrationMode)
 }
 
-func testWallarmGlobalMode_ScannerConfig(resourceID, scannerMode string) string {
+func testWallarmGlobalModeScannerConfig(resourceID, scannerMode string) string {
 	return fmt.Sprintf(`
 resource "wallarm_global_mode" "%[1]s" {
   scanner_mode = "%[2]s"
 }`, resourceID, scannerMode)
 }
 
-func testWallarmGlobalMode_RecheckerConfig(resourceID, recheckerMode string) string {
+func testWallarmGlobalModeRecheckerConfig(resourceID, recheckerMode string) string {
 	return fmt.Sprintf(`
 resource "wallarm_global_mode" "%[1]s" {
   rechecker_mode = "%[2]s"
 }`, resourceID, recheckerMode)
 }
 
-func testWallarmGlobalMode_FullConfig(resourceID, filtrationMode, scannerMode, recheckerMode string) string {
+func testWallarmGlobalModeFullConfig(resourceID, filtrationMode, scannerMode, recheckerMode string) string {
 	return fmt.Sprintf(`
 resource "wallarm_global_mode" "%[1]s" {
   filtration_mode = "%[2]s"

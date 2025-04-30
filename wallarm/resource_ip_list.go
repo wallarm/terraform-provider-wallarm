@@ -68,7 +68,7 @@ func resourceWallarmIPList(listType wallarm.IPListType) *schema.Resource {
 func resourceWallarmIPListCreate(listType wallarm.IPListType) schema.CreateFunc {
 	return func(d *schema.ResourceData, m interface{}) error {
 		client := m.(wallarm.API)
-		clientID := retrieveClientID(d, client)
+		clientID := retrieveClientID(d)
 
 		var ips []string
 		v := d.Get("ip_range")
@@ -113,7 +113,7 @@ func resourceWallarmIPListCreate(listType wallarm.IPListType) schema.CreateFunc 
 
 		var unixTime int
 		switch d.Get("time_format") {
-		case "Minutes":
+		case Minutes:
 			expireTime, err := strconv.Atoi(d.Get("time").(string))
 			if err != nil {
 				return fmt.Errorf("cannot parse time to integer. must be the number when `time_format` equals `Minute`, got %v", err)
@@ -202,7 +202,7 @@ func resourceWallarmIPListCreate(listType wallarm.IPListType) schema.CreateFunc 
 func resourceWallarmIPListRead(listType wallarm.IPListType) schema.ReadFunc {
 	return func(d *schema.ResourceData, m interface{}) error {
 		client := m.(wallarm.API)
-		clientID := retrieveClientID(d, client)
+		clientID := retrieveClientID(d)
 		IPRange := d.Get("ip_range").([]interface{})
 		ips := make([]string, len(IPRange))
 		for i := range IPRange {
@@ -291,9 +291,7 @@ func resourceWallarmIPListRead(listType wallarm.IPListType) schema.ReadFunc {
 			return fmt.Errorf("cannot set content for ip_range: %v", err)
 		}
 
-		if err = d.Set("client_id", clientID); err != nil {
-			return err
-		}
+		d.Set("client_id", clientID)
 
 		return nil
 	}
@@ -311,7 +309,7 @@ func resourceWallarmIPListUpdate(listType wallarm.IPListType) schema.UpdateFunc 
 func resourceWallarmIPListDelete(listType wallarm.IPListType) schema.DeleteFunc {
 	return func(d *schema.ResourceData, m interface{}) error {
 		client := m.(wallarm.API)
-		clientID := retrieveClientID(d, client)
+		clientID := retrieveClientID(d)
 		addrIDInterface := d.Get("address_id").([]interface{})
 		addrIDs := make([]map[string]interface{}, len(addrIDInterface))
 		for i := range addrIDInterface {

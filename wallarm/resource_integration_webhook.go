@@ -129,7 +129,7 @@ func resourceWallarmWebhook() *schema.Resource {
 
 func resourceWallarmWebhookCreate(d *schema.ResourceData, m interface{}) error {
 	client := m.(wallarm.API)
-	clientID := retrieveClientID(d, client)
+	clientID := retrieveClientID(d)
 	name := d.Get("name").(string)
 	active := d.Get("active").(bool)
 	webhookURL := d.Get("webhook_url").(string)
@@ -141,11 +141,7 @@ func resourceWallarmWebhookCreate(d *schema.ResourceData, m interface{}) error {
 	headers := d.Get("headers").(map[string]interface{})
 	format := d.Get("format").(string)
 
-	events, err := expandWallarmEventToIntEvents(d.Get("event"), "web_hooks")
-	if err != nil {
-		d.SetId("")
-		return err
-	}
+	events := expandWallarmEventToIntEvents(d.Get("event"), "web_hooks")
 
 	webhookBody := wallarm.IntegrationWithAPICreate{
 		Name:   name,
@@ -170,9 +166,7 @@ func resourceWallarmWebhookCreate(d *schema.ResourceData, m interface{}) error {
 		return err
 	}
 
-	if err = d.Set("integration_id", createRes.Body.ID); err != nil {
-		return err
-	}
+	d.Set("integration_id", createRes.Body.ID)
 
 	resID := fmt.Sprintf("%d/%s/%d", clientID, createRes.Body.Type, createRes.Body.ID)
 	d.SetId(resID)
@@ -182,42 +176,29 @@ func resourceWallarmWebhookCreate(d *schema.ResourceData, m interface{}) error {
 
 func resourceWallarmWebhookRead(d *schema.ResourceData, m interface{}) error {
 	client := m.(wallarm.API)
-	clientID := retrieveClientID(d, client)
+	clientID := retrieveClientID(d)
 	webhook, err := client.IntegrationRead(clientID, d.Get("integration_id").(int))
 	if err != nil {
 		if strings.HasPrefix(err.Error(), "Not found.") {
 			d.SetId("")
 			return nil
-		} else {
-			return err
 		}
+		return err
 	}
 
-	if err = d.Set("integration_id", webhook.ID); err != nil {
-		return err
-	}
-	if err = d.Set("is_active", webhook.Active); err != nil {
-		return err
-	}
-	if err = d.Set("name", webhook.Name); err != nil {
-		return err
-	}
-	if err = d.Set("created_by", webhook.CreatedBy); err != nil {
-		return err
-	}
-	if err = d.Set("type", webhook.Type); err != nil {
-		return err
-	}
-	if err = d.Set("client_id", clientID); err != nil {
-		return err
-	}
+	d.Set("integration_id", webhook.ID)
+	d.Set("is_active", webhook.Active)
+	d.Set("name", webhook.Name)
+	d.Set("created_by", webhook.CreatedBy)
+	d.Set("type", webhook.Type)
+	d.Set("client_id", clientID)
 
 	return nil
 }
 
 func resourceWallarmWebhookUpdate(d *schema.ResourceData, m interface{}) error {
 	client := m.(wallarm.API)
-	clientID := retrieveClientID(d, client)
+	clientID := retrieveClientID(d)
 	name := d.Get("name").(string)
 	active := d.Get("active").(bool)
 	webhookURL := d.Get("webhook_url").(string)
@@ -229,19 +210,15 @@ func resourceWallarmWebhookUpdate(d *schema.ResourceData, m interface{}) error {
 	headers := d.Get("headers").(map[string]interface{})
 	format := d.Get("format").(string)
 
-	events, err := expandWallarmEventToIntEvents(d.Get("event"), "web_hooks")
-	if err != nil {
-		return err
-	}
+	events := expandWallarmEventToIntEvents(d.Get("event"), "web_hooks")
 
 	webhook, err := client.IntegrationRead(clientID, d.Get("integration_id").(int))
 	if err != nil {
 		if strings.HasPrefix(err.Error(), "Not found.") {
 			d.SetId("")
 			return nil
-		} else {
-			return err
 		}
+		return err
 	}
 
 	webhookBody := wallarm.IntegrationWithAPICreate{
@@ -266,9 +243,7 @@ func resourceWallarmWebhookUpdate(d *schema.ResourceData, m interface{}) error {
 		return err
 	}
 
-	if err = d.Set("integration_id", updateRes.Body.ID); err != nil {
-		return err
-	}
+	d.Set("integration_id", updateRes.Body.ID)
 
 	resID := fmt.Sprintf("%d/%s/%d", clientID, updateRes.Body.Type, updateRes.Body.ID)
 	d.SetId(resID)

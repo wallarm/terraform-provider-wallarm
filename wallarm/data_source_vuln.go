@@ -120,10 +120,7 @@ func dataSourceWallarmVulnRead(d *schema.ResourceData, m interface{}) error {
 	client := m.(wallarm.API)
 
 	// Prepare the filters to be applied to the search
-	filter, err := expandWallarmVuln(d.Get("filter"))
-	if err != nil {
-		return err
-	}
+	filter := expandWallarmVuln(d.Get("filter"))
 
 	vulns := make([]interface{}, 0)
 
@@ -169,7 +166,7 @@ func dataSourceWallarmVulnRead(d *schema.ResourceData, m interface{}) error {
 	return nil
 }
 
-func expandWallarmVuln(d interface{}) (*searchFilterWallarmVuln, error) {
+func expandWallarmVuln(d interface{}) *searchFilterWallarmVuln {
 	cfg := d.([]interface{})
 	log.Println("CFG", cfg)
 	filter := &searchFilterWallarmVuln{
@@ -178,7 +175,7 @@ func expandWallarmVuln(d interface{}) (*searchFilterWallarmVuln, error) {
 		Offset: 0,
 	}
 	if len(cfg) == 0 || cfg[0] == nil {
-		return filter, nil
+		return filter
 	}
 
 	m := cfg[0].(map[string]interface{})
@@ -198,7 +195,7 @@ func expandWallarmVuln(d interface{}) (*searchFilterWallarmVuln, error) {
 		filter.Offset = offset.(int)
 	}
 
-	return filter, nil
+	return filter
 }
 
 type searchFilterWallarmVuln struct {

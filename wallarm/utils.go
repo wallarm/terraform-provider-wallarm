@@ -57,7 +57,7 @@ func expandSetToActionDetailsList(action *schema.Set) ([]wallarm.ActionDetails, 
 				point := actionMap[k].(map[string]interface{})
 				for pointKey, pointValue := range point {
 					switch pointKey {
-					case "path":
+					case path:
 						// Marshalling of the number leads to float64 even though it was int initially
 						// Therefore, we parse string into float64 to compare structs properly afterwards
 						pointValue, err := strconv.ParseFloat(pointValue.(string), 64)
@@ -69,23 +69,24 @@ func expandSetToActionDetailsList(action *schema.Set) ([]wallarm.ActionDetails, 
 						"proto", "scheme", "uri":
 						a.Point = []interface{}{pointKey}
 						// This is required by the API when case is insensitive
-						if actionMap["type"] == "iequal" {
+						switch {
+						case actionMap["type"] == iequal:
 							a.Value = strings.ToLower(pointValue.(string))
-						} else if actionMap["type"] == "absent" {
+						case actionMap["type"] == "absent":
 							a.Value = nil
-						} else {
+						default:
 							a.Value = pointValue.(string)
 						}
 					case "instance":
 						a.Point = []interface{}{pointKey}
 						a.Value = pointValue.(string)
 						a.Type = "equal"
-					case "header":
+					case header:
 						// This is required by the API when a header field is specified
 						a.Point = []interface{}{pointKey, strings.ToUpper(pointValue.(string))}
 					case "query":
 						// This is required by the API when case is insensitive
-						if actionMap["type"] == "iequal" {
+						if actionMap["type"] == iequal {
 							a.Point = []interface{}{"get", strings.ToLower(pointValue.(string))}
 						} else {
 							a.Point = []interface{}{"get", pointValue.(string)}
@@ -184,9 +185,9 @@ func hashResponseActionDetails(v interface{}) int {
 			pointMap["method"] = m["value"].(string)
 			m["point"] = pointMap
 			m["value"] = ""
-		case "path":
+		case path:
 			pointMap := make(map[string]string)
-			pointMap["path"] = fmt.Sprintf("%d", int(p[1].(float64)))
+			pointMap[path] = fmt.Sprintf("%d", int(p[1].(float64)))
 			m["point"] = pointMap
 		case "instance":
 			pointMap := make(map[string]string)
@@ -304,7 +305,7 @@ func appendMap(united, b map[string]int) map[string]int {
 	return united
 }
 
-func retrieveClientID(d *schema.ResourceData, client wallarm.API) int {
+func retrieveClientID(d *schema.ResourceData) int {
 	if v, ok := d.GetOk("client_id"); ok {
 		return v.(int)
 	}
@@ -325,6 +326,7 @@ func diffStringSlice(a, b []string) []string {
 	return diff
 }
 
+// nolint:gosec
 func passwordGenerate(length int) string {
 	digits := "0123456789"
 	specials := "~=+%^*()_[]{}!@#$?"
@@ -370,7 +372,7 @@ func isPasswordValid(s string) bool {
 	return hasMinLen && hasUpper && hasLower && hasNumber && hasSpecial
 }
 
-func expandWallarmEventToIntEvents(d interface{}, resourceType string) (*[]wallarm.IntegrationEvents, error) {
+func expandWallarmEventToIntEvents(d interface{}, resourceType string) *[]wallarm.IntegrationEvents {
 	cfg := d.(*schema.Set).List()
 	events := []wallarm.IntegrationEvents{}
 	if len(cfg) == 0 || cfg[0] == nil {
@@ -447,7 +449,7 @@ func expandWallarmEventToIntEvents(d interface{}, resourceType string) (*[]walla
 			}
 			events = append(events, event)
 		}
-		return &events, nil
+		return &events
 	}
 
 	for _, conf := range cfg {
@@ -469,11 +471,11 @@ func expandWallarmEventToIntEvents(d interface{}, resourceType string) (*[]walla
 		}
 		events = append(events, e)
 	}
-	return &events, nil
+	return &events
 }
 
 func fillInDefaultValues(action *[]wallarm.ActionDetails) {
-	var acts []wallarm.ActionDetails
+	acts := make([]wallarm.ActionDetails, 0, len(*action))
 	for _, a := range *action {
 		if a.Type == "absent" {
 			a.Value = nil
@@ -486,32 +488,32 @@ func fillInDefaultValues(action *[]wallarm.ActionDetails) {
 // equalWithoutOrder tells whether a and b contain
 // the same elements regardless the order.
 // Applicable only for []wallarm.ActionDetails
-func equalWithoutOrder(conditions_a, conditions_b []wallarm.ActionDetails) bool {
-	if len(conditions_a) != len(conditions_b) {
+func equalWithoutOrder(conditionsA, conditionsB []wallarm.ActionDetails) bool {
+	if len(conditionsA) != len(conditionsB) {
 		return false
 	}
 
 	// To embrace the default branch without conditions
-	if len(conditions_a) == 0 && len(conditions_b) == 0 {
+	if len(conditionsA) == 0 && len(conditionsB) == 0 {
 		return true
 	}
 
-	sort.Slice(conditions_a, func(i, j int) bool {
+	sort.Slice(conditionsA, func(i, j int) bool {
 		// Преобразуем Point в строку для сравнения
-		pointStrI := strings.Join(convertToStringSlice(conditions_a[i].Point), "/")
-		pointStrJ := strings.Join(convertToStringSlice(conditions_a[j].Point), "/")
+		pointStrI := strings.Join(convertToStringSlice(conditionsA[i].Point), "/")
+		pointStrJ := strings.Join(convertToStringSlice(conditionsA[j].Point), "/")
 		return pointStrI < pointStrJ
 	})
 
-	sort.Slice(conditions_b, func(i, j int) bool {
+	sort.Slice(conditionsB, func(i, j int) bool {
 		// Преобразуем Point в строку для сравнения
-		pointStrI := strings.Join(convertToStringSlice(conditions_b[i].Point), "/")
-		pointStrJ := strings.Join(convertToStringSlice(conditions_b[j].Point), "/")
+		pointStrI := strings.Join(convertToStringSlice(conditionsB[i].Point), "/")
+		pointStrJ := strings.Join(convertToStringSlice(conditionsB[j].Point), "/")
 		return pointStrI < pointStrJ
 	})
 
-	for i := range conditions_a {
-		if !compareActionDetails(conditions_a[i], conditions_b[i]) {
+	for i := range conditionsA {
+		if !compareActionDetails(conditionsA[i], conditionsB[i]) {
 			return false
 		}
 	}
@@ -519,7 +521,7 @@ func equalWithoutOrder(conditions_a, conditions_b []wallarm.ActionDetails) bool 
 	return true
 }
 func convertToStringSlice(input []interface{}) []string {
-	var result []string
+	result := make([]string, 0, len(input))
 	for _, v := range input {
 		result = append(result, fmt.Sprintf("%v", v))
 	}
@@ -565,7 +567,7 @@ func actionPointsEqual(listA, listB []interface{}) bool {
 
 func existsAction(d *schema.ResourceData, m interface{}, hintType string) (string, bool, error) {
 	client := m.(wallarm.API)
-	clientID := retrieveClientID(d, client)
+	clientID := retrieveClientID(d)
 
 	actionsFromState := d.Get("action").(*schema.Set)
 	action, err := expandSetToActionDetailsList(actionsFromState)
@@ -589,7 +591,7 @@ func existsAction(d *schema.ResourceData, m interface{}, hintType string) (strin
 
 	for _, body := range respRules.Body {
 
-		var apiActions []wallarm.ActionDetails = nil
+		var apiActions []wallarm.ActionDetails
 
 		for _, condition := range body.Conditions {
 			apiAct := condition.(map[string]interface{})
@@ -614,7 +616,7 @@ func existsAction(d *schema.ResourceData, m interface{}, hintType string) (strin
 
 func existsHint(d *schema.ResourceData, m interface{}, actionID int, hintType string) (string, bool, error) {
 	client := m.(wallarm.API)
-	clientID := retrieveClientID(d, client)
+	clientID := retrieveClientID(d)
 
 	var points wallarm.TwoDimensionalSlice
 
@@ -657,7 +659,7 @@ func existsHint(d *schema.ResourceData, m interface{}, actionID int, hintType st
 func ImportAsExistsError(resourceName, id string) error {
 	return fmt.Errorf(`the resource with the ID %q already exists -
 		to be managed via Terraform this resource needs to be imported into the State. 
-		Please see the resource documentation for %q for more information.`, id, resourceName)
+		Please see the resource documentation for %q for more information`, id, resourceName)
 }
 
 func isNotFoundError(err error) (bool, error) {

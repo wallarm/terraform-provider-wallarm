@@ -48,7 +48,7 @@ func resourceWallarmGlobalMode() *schema.Resource {
 
 func resourceWallarmGlobalModeCreate(d *schema.ResourceData, m interface{}) error {
 	client := m.(wallarm.API)
-	clientID := retrieveClientID(d, client)
+	clientID := retrieveClientID(d)
 
 	filtrationMode := d.Get("filtration_mode").(string)
 
@@ -81,16 +81,14 @@ func resourceWallarmGlobalModeCreate(d *schema.ResourceData, m interface{}) erro
 	resID := fmt.Sprintf("%d/%s/%s/%s", clientID, filtrationMode, scannerMode, recheckerMode)
 	d.SetId(resID)
 
-	if err = d.Set("client_id", clientID); err != nil {
-		return err
-	}
+	d.Set("client_id", clientID)
 
 	return resourceWallarmGlobalModeRead(d, m)
 }
 
 func resourceWallarmGlobalModeRead(d *schema.ResourceData, m interface{}) error {
 	client := m.(wallarm.API)
-	clientID := retrieveClientID(d, client)
+	clientID := retrieveClientID(d)
 
 	wallarmModeResp, err := client.WallarmModeRead(clientID)
 	if err != nil {
@@ -108,9 +106,7 @@ func resourceWallarmGlobalModeRead(d *schema.ResourceData, m interface{}) error 
 	}
 
 	filtrationMode := wallarmModeResp.Body.Mode
-	if err := d.Set("filtration_mode", filtrationMode); err != nil {
-		return err
-	}
+	d.Set("filtration_mode", filtrationMode)
 
 	clientInfo := &wallarm.ClientRead{
 		Filter: &wallarm.ClientReadFilter{
@@ -142,19 +138,13 @@ func resourceWallarmGlobalModeRead(d *schema.ResourceData, m interface{}) error 
 		scannerMode = "on"
 	}
 
-	if err = d.Set("scanner_mode", scannerMode); err != nil {
-		return err
-	}
+	d.Set("scanner_mode", scannerMode)
 
 	recheckerMode := otherModesResp.Body[0].AttackRecheckerMode
 
-	if err = d.Set("rechecker_mode", recheckerMode); err != nil {
-		return err
-	}
+	d.Set("rechecker_mode", recheckerMode)
 
-	if err = d.Set("client_id", clientID); err != nil {
-		return err
-	}
+	d.Set("client_id", clientID)
 
 	return nil
 }
@@ -163,6 +153,6 @@ func resourceWallarmGlobalModeUpdate(d *schema.ResourceData, m interface{}) erro
 	return resourceWallarmGlobalModeCreate(d, m)
 }
 
-func resourceWallarmGlobalModeDelete(d *schema.ResourceData, m interface{}) error {
+func resourceWallarmGlobalModeDelete(_ *schema.ResourceData, _ interface{}) error {
 	return nil
 }

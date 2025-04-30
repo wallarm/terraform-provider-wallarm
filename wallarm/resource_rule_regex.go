@@ -89,21 +89,19 @@ func resourceWallarmRegexCreate(d *schema.ResourceData, m interface{}) error {
 	experimental := d.Get("experimental").(bool)
 	var actionType string
 	if experimental {
-		actionType = "experimental_regex"
+		actionType = experimentalRegex
 	} else {
 		actionType = "regex"
 	}
 
 	client := m.(wallarm.API)
-	clientID := retrieveClientID(d, client)
+	clientID := retrieveClientID(d)
 	comment := d.Get("comment").(string)
 	regex := d.Get("regex").(string)
 	attackType := d.Get("attack_type").(string)
 
 	ps := d.Get("point").([]interface{})
-	if err := d.Set("point", ps); err != nil {
-		return err
-	}
+	d.Set("point", ps)
 
 	points, err := expandPointsToTwoDimensionalArray(ps)
 	if err != nil {
@@ -132,18 +130,10 @@ func resourceWallarmRegexCreate(d *schema.ResourceData, m interface{}) error {
 		return err
 	}
 
-	if err = d.Set("regex_id", regexResp.Body.RegexID.(float64)); err != nil {
-		return err
-	}
-	if err = d.Set("rule_id", regexResp.Body.ID); err != nil {
-		return err
-	}
-	if err = d.Set("action_id", regexResp.Body.ActionID); err != nil {
-		return err
-	}
-	if err = d.Set("rule_type", regexResp.Body.Type); err != nil {
-		return err
-	}
+	d.Set("regex_id", regexResp.Body.RegexID.(float64))
+	d.Set("rule_id", regexResp.Body.ID)
+	d.Set("action_id", regexResp.Body.ActionID)
+	d.Set("rule_type", regexResp.Body.Type)
 
 	resID := fmt.Sprintf("%d/%d/%d/%s", clientID, regexResp.Body.ActionID, regexResp.Body.ID, regexResp.Body.Type)
 	d.SetId(resID)
@@ -153,7 +143,7 @@ func resourceWallarmRegexCreate(d *schema.ResourceData, m interface{}) error {
 
 func resourceWallarmRegexRead(d *schema.ResourceData, m interface{}) error {
 	client := m.(wallarm.API)
-	clientID := retrieveClientID(d, client)
+	clientID := retrieveClientID(d)
 	actionID := d.Get("action_id").(int)
 	ruleID := d.Get("rule_id").(int)
 	regex := d.Get("regex").(string)
@@ -186,7 +176,7 @@ func resourceWallarmRegexRead(d *schema.ResourceData, m interface{}) error {
 		return err
 	}
 
-	var actsSlice []interface{}
+	actsSlice := make([]interface{}, 0, len(action))
 	for _, a := range action {
 		acts, err := actionDetailsToMap(a)
 		if err != nil {
@@ -225,7 +215,7 @@ func resourceWallarmRegexRead(d *schema.ResourceData, m interface{}) error {
 		Point:      points,
 	}
 
-	var notFoundRules []int
+	notFoundRules := make([]int, 0)
 	var updatedRuleID int
 	for _, rule := range *actionHints.Body {
 		if ruleID == rule.ID {
@@ -254,18 +244,12 @@ func resourceWallarmRegexRead(d *schema.ResourceData, m interface{}) error {
 		notFoundRules = append(notFoundRules, rule.ID)
 	}
 
-	if err = d.Set("rule_id", updatedRuleID); err != nil {
-		return err
-	}
+	d.Set("rule_id", updatedRuleID)
 
-	if err = d.Set("client_id", clientID); err != nil {
-		return err
-	}
+	d.Set("client_id", clientID)
 
 	if actionsSet.Len() != 0 {
-		if err := d.Set("action", &actionsSet); err != nil {
-			return err
-		}
+		d.Set("action", &actionsSet)
 	} else {
 		log.Printf("[WARN] action was empty so it either doesn't exist or it is a default branch which has no conditions. Actions: %v", &actionsSet)
 	}
@@ -280,7 +264,7 @@ func resourceWallarmRegexRead(d *schema.ResourceData, m interface{}) error {
 
 func resourceWallarmRegexDelete(d *schema.ResourceData, m interface{}) error {
 	client := m.(wallarm.API)
-	clientID := retrieveClientID(d, client)
+	clientID := retrieveClientID(d)
 
 	ruleID := d.Get("rule_id").(int)
 	h := &wallarm.HintDelete{
@@ -314,15 +298,9 @@ func resourceWallarmRegexImport(d *schema.ResourceData, m interface{}) ([]*schem
 			return nil, err
 		}
 		hintType := idAttr[3]
-		if err = d.Set("action_id", actionID); err != nil {
-			return nil, err
-		}
-		if err = d.Set("rule_id", ruleID); err != nil {
-			return nil, err
-		}
-		if err = d.Set("rule_type", hintType); err != nil {
-			return nil, err
-		}
+		d.Set("action_id", actionID)
+		d.Set("rule_id", ruleID)
+		d.Set("rule_type", hintType)
 
 		hint := &wallarm.HintRead{
 			Limit:     1000,
@@ -350,34 +328,20 @@ func resourceWallarmRegexImport(d *schema.ResourceData, m interface{}) ([]*schem
 				}
 				actionsSet.Add(acts)
 			}
-			if err = d.Set("action", &actionsSet); err != nil {
-				return nil, err
-			}
-			if err = d.Set("regex_id", (*actionHints.Body)[0].RegexID); err != nil {
-				return nil, err
-			}
-			if err = d.Set("regex", (*actionHints.Body)[0].Regex); err != nil {
-				return nil, err
-			}
-			if err = d.Set("attack_type", (*actionHints.Body)[0].AttackType); err != nil {
-				return nil, err
-			}
+			d.Set("action", &actionsSet)
+			d.Set("regex_id", (*actionHints.Body)[0].RegexID)
+			d.Set("regex", (*actionHints.Body)[0].Regex)
+			d.Set("attack_type", (*actionHints.Body)[0].AttackType)
 
 			pointInterface := (*actionHints.Body)[0].Point
 			point := wrapPointElements(pointInterface)
-			if err = d.Set("point", point); err != nil {
-				return nil, err
-			}
+			d.Set("point", point)
 		}
 
 		if hintType == "experimental_regex" {
-			if err = d.Set("experimental", true); err != nil {
-				return nil, err
-			}
+			d.Set("experimental", true)
 		} else {
-			if err = d.Set("experimental", false); err != nil {
-				return nil, err
-			}
+			d.Set("experimental", false)
 		}
 
 		existingID := fmt.Sprintf("%d/%d/%d/%s", clientID, actionID, ruleID, hintType)

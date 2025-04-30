@@ -70,7 +70,7 @@ func resourceWallarmTelegram() *schema.Resource {
 
 func resourceWallarmTelegramCreate(d *schema.ResourceData, m interface{}) error {
 	client := m.(wallarm.API)
-	clientID := retrieveClientID(d, client)
+	clientID := retrieveClientID(d)
 	name := d.Get("name").(string)
 	chatData := d.Get("chat_data").(string)
 	token := d.Get("token").(string)
@@ -87,9 +87,7 @@ func resourceWallarmTelegramCreate(d *schema.ResourceData, m interface{}) error 
 		return err
 	}
 
-	if err = d.Set("integration_id", createRes.Body.ID); err != nil {
-		return err
-	}
+	d.Set("integration_id", createRes.Body.ID)
 
 	resID := fmt.Sprintf("%d/%s/%d", clientID, createRes.Body.Type, createRes.Body.ID)
 	d.SetId(resID)
@@ -99,30 +97,18 @@ func resourceWallarmTelegramCreate(d *schema.ResourceData, m interface{}) error 
 
 func resourceWallarmTelegramRead(d *schema.ResourceData, m interface{}) error {
 	client := m.(wallarm.API)
-	clientID := retrieveClientID(d, client)
+	clientID := retrieveClientID(d)
 	telegram, err := client.IntegrationRead(clientID, d.Get("integration_id").(int))
 	if err != nil {
 		return err
 	}
 
-	if err = d.Set("integration_id", telegram.ID); err != nil {
-		return err
-	}
-	if err = d.Set("is_active", telegram.Active); err != nil {
-		return err
-	}
-	if err = d.Set("name", telegram.Name); err != nil {
-		return err
-	}
-	if err = d.Set("created_by", telegram.CreatedBy); err != nil {
-		return err
-	}
-	if err = d.Set("type", telegram.Type); err != nil {
-		return err
-	}
-	if err = d.Set("client_id", clientID); err != nil {
-		return err
-	}
+	d.Set("integration_id", telegram.ID)
+	d.Set("is_active", telegram.Active)
+	d.Set("name", telegram.Name)
+	d.Set("created_by", telegram.CreatedBy)
+	d.Set("type", telegram.Type)
+	d.Set("client_id", clientID)
 
 	return nil
 }

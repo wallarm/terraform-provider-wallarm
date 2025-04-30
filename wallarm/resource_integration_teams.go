@@ -9,6 +9,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 )
 
+// nolint:dupl
 func resourceWallarmTeams() *schema.Resource {
 	return &schema.Resource{
 		Create: resourceWallarmTeamsCreate,
@@ -83,14 +84,11 @@ func resourceWallarmTeams() *schema.Resource {
 
 func resourceWallarmTeamsCreate(d *schema.ResourceData, m interface{}) error {
 	client := m.(wallarm.API)
-	clientID := retrieveClientID(d, client)
+	clientID := retrieveClientID(d)
 	name := d.Get("name").(string)
 	webhookURL := d.Get("webhook_url").(string)
 	active := d.Get("active").(bool)
-	events, err := expandWallarmEventToIntEvents(d.Get("event"), "ms_teams")
-	if err != nil {
-		return err
-	}
+	events := expandWallarmEventToIntEvents(d.Get("event"), "ms_teams")
 
 	teamsBody := wallarm.IntegrationCreate{
 		Name:     name,
@@ -106,9 +104,7 @@ func resourceWallarmTeamsCreate(d *schema.ResourceData, m interface{}) error {
 		return err
 	}
 
-	if err = d.Set("integration_id", createRes.Body.ID); err != nil {
-		return err
-	}
+	d.Set("integration_id", createRes.Body.ID)
 
 	resID := fmt.Sprintf("%d/%s/%d", clientID, createRes.Body.Type, createRes.Body.ID)
 	d.SetId(resID)
@@ -118,43 +114,28 @@ func resourceWallarmTeamsCreate(d *schema.ResourceData, m interface{}) error {
 
 func resourceWallarmTeamsRead(d *schema.ResourceData, m interface{}) error {
 	client := m.(wallarm.API)
-	clientID := retrieveClientID(d, client)
+	clientID := retrieveClientID(d)
 	teams, err := client.IntegrationRead(clientID, d.Get("integration_id").(int))
 	if err != nil {
 		return err
 	}
-	if err = d.Set("integration_id", teams.ID); err != nil {
-		return err
-	}
-	if err = d.Set("is_active", teams.Active); err != nil {
-		return err
-	}
-	if err = d.Set("name", teams.Name); err != nil {
-		return err
-	}
-	if err = d.Set("created_by", teams.CreatedBy); err != nil {
-		return err
-	}
-	if err = d.Set("type", teams.Type); err != nil {
-		return err
-	}
-	if err = d.Set("client_id", clientID); err != nil {
-		return err
-	}
+	d.Set("integration_id", teams.ID)
+	d.Set("is_active", teams.Active)
+	d.Set("name", teams.Name)
+	d.Set("created_by", teams.CreatedBy)
+	d.Set("type", teams.Type)
+	d.Set("client_id", clientID)
 
 	return nil
 }
 
 func resourceWallarmTeamsUpdate(d *schema.ResourceData, m interface{}) error {
 	client := m.(wallarm.API)
-	clientID := retrieveClientID(d, client)
+	clientID := retrieveClientID(d)
 	name := d.Get("name").(string)
 	webhookURL := d.Get("webhook_url").(string)
 	active := d.Get("active").(bool)
-	events, err := expandWallarmEventToIntEvents(d.Get("event"), "ms_teams")
-	if err != nil {
-		return err
-	}
+	events := expandWallarmEventToIntEvents(d.Get("event"), "ms_teams")
 
 	teams, err := client.IntegrationRead(clientID, d.Get("integration_id").(int))
 	if err != nil {
@@ -174,9 +155,7 @@ func resourceWallarmTeamsUpdate(d *schema.ResourceData, m interface{}) error {
 		return err
 	}
 
-	if err = d.Set("integration_id", updateRes.Body.ID); err != nil {
-		return err
-	}
+	d.Set("integration_id", updateRes.Body.ID)
 
 	resID := fmt.Sprintf("%d/%s/%d", clientID, updateRes.Body.Type, updateRes.Body.ID)
 	d.SetId(resID)

@@ -84,15 +84,11 @@ func resourceWallarmSumologic() *schema.Resource {
 
 func resourceWallarmSumologicCreate(d *schema.ResourceData, m interface{}) error {
 	client := m.(wallarm.API)
-	clientID := retrieveClientID(d, client)
+	clientID := retrieveClientID(d)
 	name := d.Get("name").(string)
 	apiToken := d.Get("sumologic_url").(string)
 	active := d.Get("active").(bool)
-	events, err := expandWallarmEventToIntEvents(d.Get("event"), "sumo_logic")
-	if err != nil {
-		d.SetId("")
-		return err
-	}
+	events := expandWallarmEventToIntEvents(d.Get("event"), "sumo_logic")
 
 	sumoBody := wallarm.IntegrationCreate{
 		Name:     name,
@@ -108,9 +104,7 @@ func resourceWallarmSumologicCreate(d *schema.ResourceData, m interface{}) error
 		return err
 	}
 
-	if err = d.Set("integration_id", createRes.Body.ID); err != nil {
-		return err
-	}
+	d.Set("integration_id", createRes.Body.ID)
 
 	resID := fmt.Sprintf("%d/%s/%d", clientID, createRes.Body.Type, createRes.Body.ID)
 	d.SetId(resID)
@@ -120,58 +114,42 @@ func resourceWallarmSumologicCreate(d *schema.ResourceData, m interface{}) error
 
 func resourceWallarmSumologicRead(d *schema.ResourceData, m interface{}) error {
 	client := m.(wallarm.API)
-	clientID := retrieveClientID(d, client)
+	clientID := retrieveClientID(d)
 	sumo, err := client.IntegrationRead(clientID, d.Get("integration_id").(int))
 	if err != nil {
 		if strings.HasPrefix(err.Error(), "Not found.") {
 			d.SetId("")
 			return nil
-		} else {
-			return err
 		}
+		return err
 	}
 
-	if err = d.Set("integration_id", sumo.ID); err != nil {
-		return err
-	}
-	if err = d.Set("is_active", sumo.Active); err != nil {
-		return err
-	}
-	if err = d.Set("name", sumo.Name); err != nil {
-		return err
-	}
-	if err = d.Set("created_by", sumo.CreatedBy); err != nil {
-		return err
-	}
-	if err = d.Set("type", sumo.Type); err != nil {
-		return err
-	}
-	if err = d.Set("client_id", clientID); err != nil {
-		return err
-	}
+	d.Set("integration_id", sumo.ID)
+	d.Set("is_active", sumo.Active)
+	d.Set("name", sumo.Name)
+	d.Set("created_by", sumo.CreatedBy)
+	d.Set("type", sumo.Type)
+	d.Set("client_id", clientID)
 
 	return nil
 }
 
+// nolint:dupl
 func resourceWallarmSumologicUpdate(d *schema.ResourceData, m interface{}) error {
 	client := m.(wallarm.API)
-	clientID := retrieveClientID(d, client)
+	clientID := retrieveClientID(d)
 	name := d.Get("name").(string)
 	sumologicURL := d.Get("sumologic_url").(string)
 	active := d.Get("active").(bool)
-	events, err := expandWallarmEventToIntEvents(d.Get("event"), "sumo_logic")
-	if err != nil {
-		return err
-	}
+	events := expandWallarmEventToIntEvents(d.Get("event"), "sumo_logic")
 
 	sumo, err := client.IntegrationRead(clientID, d.Get("integration_id").(int))
 	if err != nil {
 		if strings.HasPrefix(err.Error(), "Not found.") {
 			d.SetId("")
 			return nil
-		} else {
-			return err
 		}
+		return err
 	}
 
 	sumoBody := wallarm.IntegrationCreate{
@@ -187,9 +165,7 @@ func resourceWallarmSumologicUpdate(d *schema.ResourceData, m interface{}) error
 		return err
 	}
 
-	if err = d.Set("integration_id", updateRes.Body.ID); err != nil {
-		return err
-	}
+	d.Set("integration_id", updateRes.Body.ID)
 
 	resID := fmt.Sprintf("%d/%s/%d", clientID, updateRes.Body.Type, updateRes.Body.ID)
 	d.SetId(resID)

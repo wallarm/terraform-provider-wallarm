@@ -63,13 +63,11 @@ func resourceWallarmVariativeValues() *schema.Resource {
 
 func resourceWallarmVariativeValuesCreate(d *schema.ResourceData, m interface{}) error {
 	client := m.(wallarm.API)
-	clientID := retrieveClientID(d, client)
+	clientID := retrieveClientID(d)
 	comment := d.Get("comment").(string)
 
 	ps := d.Get("point").([]interface{})
-	if err := d.Set("point", ps); err != nil {
-		return err
-	}
+	d.Set("point", ps)
 
 	points, err := expandPointsToTwoDimensionalArray(ps)
 	if err != nil {
@@ -97,15 +95,9 @@ func resourceWallarmVariativeValuesCreate(d *schema.ResourceData, m interface{})
 		return err
 	}
 
-	if err = d.Set("rule_id", actionResp.Body.ID); err != nil {
-		return err
-	}
-	if err = d.Set("action_id", actionResp.Body.ActionID); err != nil {
-		return err
-	}
-	if err = d.Set("rule_type", actionResp.Body.Type); err != nil {
-		return err
-	}
+	d.Set("rule_id", actionResp.Body.ID)
+	d.Set("action_id", actionResp.Body.ActionID)
+	d.Set("rule_type", actionResp.Body.Type)
 
 	resID := fmt.Sprintf("%d/%d/%d", clientID, actionResp.Body.ActionID, actionResp.Body.ID)
 	d.SetId(resID)
@@ -115,7 +107,7 @@ func resourceWallarmVariativeValuesCreate(d *schema.ResourceData, m interface{})
 
 func resourceWallarmVariativeValuesRead(d *schema.ResourceData, m interface{}) error {
 	client := m.(wallarm.API)
-	clientID := retrieveClientID(d, client)
+	clientID := retrieveClientID(d)
 	actionID := d.Get("action_id").(int)
 	ruleID := d.Get("rule_id").(int)
 
@@ -132,7 +124,7 @@ func resourceWallarmVariativeValuesRead(d *schema.ResourceData, m interface{}) e
 		return err
 	}
 
-	var actsSlice []interface{}
+	actsSlice := make([]interface{}, 0, len(action))
 	for _, a := range action {
 		acts, err := actionDetailsToMap(a)
 		if err != nil {
@@ -169,7 +161,7 @@ func resourceWallarmVariativeValuesRead(d *schema.ResourceData, m interface{}) e
 		Point:    points,
 	}
 
-	var notFoundRules []int
+	notFoundRules := make([]int, 0)
 	var updatedRuleID int
 	for _, rule := range *actionHints.Body {
 
@@ -196,18 +188,12 @@ func resourceWallarmVariativeValuesRead(d *schema.ResourceData, m interface{}) e
 		notFoundRules = append(notFoundRules, rule.ID)
 	}
 
-	if err = d.Set("rule_id", updatedRuleID); err != nil {
-		return err
-	}
+	d.Set("rule_id", updatedRuleID)
 
-	if err = d.Set("client_id", clientID); err != nil {
-		return err
-	}
+	d.Set("client_id", clientID)
 
 	if actionsSet.Len() != 0 {
-		if err := d.Set("action", &actionsSet); err != nil {
-			return err
-		}
+		d.Set("action", &actionsSet)
 	} else {
 		log.Printf("[WARN] action was empty so it either doesn't exist or it is a default branch which has no conditions. Actions: %v", &actionsSet)
 	}
@@ -222,7 +208,7 @@ func resourceWallarmVariativeValuesRead(d *schema.ResourceData, m interface{}) e
 
 func resourceWallarmVariativeValuesDelete(d *schema.ResourceData, m interface{}) error {
 	client := m.(wallarm.API)
-	clientID := retrieveClientID(d, client)
+	clientID := retrieveClientID(d)
 	actionID := d.Get("action_id").(int)
 
 	rule := &wallarm.ActionRead{
@@ -275,15 +261,9 @@ func resourceWallarmVariativeValuesImport(d *schema.ResourceData, m interface{})
 		if err != nil {
 			return nil, err
 		}
-		if err = d.Set("action_id", actionID); err != nil {
-			return nil, err
-		}
-		if err = d.Set("rule_id", ruleID); err != nil {
-			return nil, err
-		}
-		if err = d.Set("rule_type", "variative_values"); err != nil {
-			return nil, err
-		}
+		d.Set("action_id", actionID)
+		d.Set("rule_id", ruleID)
+		d.Set("rule_type", "variative_values")
 
 		hint := &wallarm.HintRead{
 			Limit:     1000,
@@ -311,16 +291,12 @@ func resourceWallarmVariativeValuesImport(d *schema.ResourceData, m interface{})
 				}
 				actionsSet.Add(acts)
 			}
-			if err := d.Set("action", &actionsSet); err != nil {
-				return nil, err
-			}
+			d.Set("action", &actionsSet)
 		}
 
 		pointInterface := (*actionHints.Body)[0].Point
 		point := wrapPointElements(pointInterface)
-		if err = d.Set("point", point); err != nil {
-			return nil, err
-		}
+		d.Set("point", point)
 
 		existingID := fmt.Sprintf("%d/%d/%d", clientID, actionID, ruleID)
 		d.SetId(existingID)

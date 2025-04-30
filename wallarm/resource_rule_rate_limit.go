@@ -47,121 +47,7 @@ func resourceWallarmRateLimit() *schema.Resource {
 				ForceNew: true,
 			},
 
-			"action": {
-				Type:     schema.TypeSet,
-				Optional: true,
-				ForceNew: true,
-				Elem: &schema.Resource{
-					Schema: map[string]*schema.Schema{
-						"type": {
-							Type:         schema.TypeString,
-							Optional:     true,
-							ValidateFunc: validation.StringInSlice([]string{"equal", "iequal", "regex", "absent"}, false),
-							ForceNew:     true,
-						},
-
-						"value": {
-							Type:     schema.TypeString,
-							Optional: true,
-							ForceNew: true,
-							Computed: true,
-						},
-
-						"point": {
-							Type:     schema.TypeMap,
-							Optional: true,
-							ForceNew: true,
-							Elem: &schema.Resource{
-								Schema: map[string]*schema.Schema{
-									"header": {
-										Type:     schema.TypeList,
-										Optional: true,
-										ForceNew: true,
-										Computed: true,
-										Elem:     &schema.Schema{Type: schema.TypeString},
-									},
-									"method": {
-										Type:     schema.TypeString,
-										Optional: true,
-										ForceNew: true,
-										ValidateFunc: validation.StringInSlice([]string{"GET", "HEAD", "POST",
-											"PUT", "DELETE", "CONNECT", "OPTIONS", "TRACE", "PATCH"}, false),
-									},
-
-									"path": {
-										Type:     schema.TypeInt,
-										Optional: true,
-										ForceNew: true,
-										ValidateFunc: func(val interface{}, key string) (warns []string, errs []error) {
-											v := val.(int)
-											if v < 0 || v > 60 {
-												errs = append(errs, fmt.Errorf("%q must be between 0 and 60 inclusive, got: %d", key, v))
-											}
-											return
-										},
-									},
-
-									"action_name": {
-										Type:     schema.TypeString,
-										Optional: true,
-										ForceNew: true,
-										Computed: true,
-									},
-
-									"action_ext": {
-										Type:     schema.TypeString,
-										Optional: true,
-										ForceNew: true,
-										Computed: true,
-									},
-
-									"query": {
-										Type:     schema.TypeString,
-										Optional: true,
-										ForceNew: true,
-										Computed: true,
-									},
-
-									"proto": {
-										Type:     schema.TypeString,
-										Optional: true,
-										ForceNew: true,
-										Computed: true,
-									},
-
-									"scheme": {
-										Type:         schema.TypeString,
-										Optional:     true,
-										ForceNew:     true,
-										Computed:     true,
-										ValidateFunc: validation.StringInSlice([]string{"http", "https"}, true),
-									},
-
-									"uri": {
-										Type:     schema.TypeString,
-										Optional: true,
-										ForceNew: true,
-										Computed: true,
-									},
-
-									"instance": {
-										Type:     schema.TypeInt,
-										Optional: true,
-										ForceNew: true,
-										ValidateFunc: func(val interface{}, key string) (warns []string, errs []error) {
-											v := val.(int)
-											if v < -1 {
-												errs = append(errs, fmt.Errorf("%q must be greater than -1 inclusive, got: %d", key, v))
-											}
-											return
-										},
-									},
-								},
-							},
-						},
-					},
-				},
-			},
+			"action": defaultResourceLimitActionSchema,
 
 			"point": {
 				Type:     schema.TypeList,
@@ -212,10 +98,9 @@ func resourceWallarmRateLimit() *schema.Resource {
 	}
 }
 
-// nolint:errcheck
 func resourceWallarmRateLimitCreate(d *schema.ResourceData, m interface{}) error {
 	client := m.(wallarm.API)
-	clientID := retrieveClientID(d, client)
+	clientID := retrieveClientID(d)
 	comment := d.Get("comment").(string)
 
 	actionsFromState := d.Get("action").(*schema.Set)
@@ -269,7 +154,7 @@ func resourceWallarmRateLimitCreate(d *schema.ResourceData, m interface{}) error
 
 func resourceWallarmRateLimitRead(d *schema.ResourceData, m interface{}) error {
 	client := m.(wallarm.API)
-	clientID := retrieveClientID(d, client)
+	clientID := retrieveClientID(d)
 	actionID := d.Get("action_id").(int)
 	ruleID := d.Get("rule_id").(int)
 
@@ -304,7 +189,7 @@ func resourceWallarmRateLimitRead(d *schema.ResourceData, m interface{}) error {
 		Action:   action,
 	}
 
-	var notFoundRules []int
+	notFoundRules := make([]int, 0)
 	var updatedRuleID int
 	for _, rule := range *actionHints.Body {
 		if ruleID == rule.ID {
@@ -326,13 +211,9 @@ func resourceWallarmRateLimitRead(d *schema.ResourceData, m interface{}) error {
 		notFoundRules = append(notFoundRules, rule.ID)
 	}
 
-	if err = d.Set("rule_id", updatedRuleID); err != nil {
-		return err
-	}
+	d.Set("rule_id", updatedRuleID)
 
-	if err = d.Set("client_id", clientID); err != nil {
-		return err
-	}
+	d.Set("client_id", clientID)
 
 	if updatedRuleID == 0 {
 		log.Printf("[WARN] these rule IDs: %v have been found under the action ID: %d. But it isn't in the Terraform Plan.", notFoundRules, actionID)
@@ -344,7 +225,7 @@ func resourceWallarmRateLimitRead(d *schema.ResourceData, m interface{}) error {
 
 func resourceWallarmRateLimitDelete(d *schema.ResourceData, m interface{}) error {
 	client := m.(wallarm.API)
-	clientID := retrieveClientID(d, client)
+	clientID := retrieveClientID(d)
 	ruleID := d.Get("rule_id").(int)
 
 	h := &wallarm.HintDelete{
@@ -377,15 +258,9 @@ func resourceWallarmRateLimitImport(d *schema.ResourceData, m interface{}) ([]*s
 		if err != nil {
 			return nil, err
 		}
-		if err = d.Set("action_id", actionID); err != nil {
-			return nil, err
-		}
-		if err = d.Set("rule_id", ruleID); err != nil {
-			return nil, err
-		}
-		if err = d.Set("rule_type", "rate_limit"); err != nil {
-			return nil, err
-		}
+		d.Set("action_id", actionID)
+		d.Set("rule_id", ruleID)
+		d.Set("rule_type", "rate_limit")
 
 		hint := &wallarm.HintRead{
 			Limit:     1000,
@@ -413,34 +288,18 @@ func resourceWallarmRateLimitImport(d *schema.ResourceData, m interface{}) ([]*s
 				}
 				actionsSet.Add(acts)
 			}
-			if err := d.Set("action", &actionsSet); err != nil {
-				return nil, err
-			}
+			d.Set("action", &actionsSet)
 
 		}
 		pointInterface := (*actionHints.Body)[0].Point
 		point := wrapPointElements(pointInterface)
-		if err = d.Set("point", point); err != nil {
-			return nil, err
-		}
-		if err = d.Set("delay", (*actionHints.Body)[0].Delay); err != nil {
-			return nil, err
-		}
-		if err = d.Set("rate", (*actionHints.Body)[0].Rate); err != nil {
-			return nil, err
-		}
-		if err = d.Set("burst", (*actionHints.Body)[0].Burst); err != nil {
-			return nil, err
-		}
-		if err = d.Set("rsp_status", (*actionHints.Body)[0].RspStatus); err != nil {
-			return nil, err
-		}
-		if err = d.Set("time_unit", (*actionHints.Body)[0].TimeUnit); err != nil {
-			return nil, err
-		}
-		if err = d.Set("suffix", (*actionHints.Body)[0].Suffix); err != nil {
-			return nil, err
-		}
+		d.Set("point", point)
+		d.Set("delay", (*actionHints.Body)[0].Delay)
+		d.Set("rate", (*actionHints.Body)[0].Rate)
+		d.Set("burst", (*actionHints.Body)[0].Burst)
+		d.Set("rsp_status", (*actionHints.Body)[0].RspStatus)
+		d.Set("time_unit", (*actionHints.Body)[0].TimeUnit)
+		d.Set("suffix", (*actionHints.Body)[0].Suffix)
 
 		existingID := fmt.Sprintf("%d/%d/%d", clientID, actionID, ruleID)
 		d.SetId(existingID)

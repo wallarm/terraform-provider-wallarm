@@ -10,6 +10,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 )
 
+// nolint:dupl
 func resourceWallarmSlack() *schema.Resource {
 	return &schema.Resource{
 		Create: resourceWallarmSlackCreate,
@@ -84,15 +85,11 @@ func resourceWallarmSlack() *schema.Resource {
 
 func resourceWallarmSlackCreate(d *schema.ResourceData, m interface{}) error {
 	client := m.(wallarm.API)
-	clientID := retrieveClientID(d, client)
+	clientID := retrieveClientID(d)
 	name := d.Get("name").(string)
 	webhookURL := d.Get("webhook_url").(string)
 	active := d.Get("active").(bool)
-	events, err := expandWallarmEventToIntEvents(d.Get("event"), "slack")
-	if err != nil {
-		d.SetId("")
-		return err
-	}
+	events := expandWallarmEventToIntEvents(d.Get("event"), "slack")
 
 	slackBody := wallarm.IntegrationCreate{
 		Name:     name,
@@ -108,9 +105,7 @@ func resourceWallarmSlackCreate(d *schema.ResourceData, m interface{}) error {
 		return err
 	}
 
-	if err = d.Set("integration_id", createRes.Body.ID); err != nil {
-		return err
-	}
+	d.Set("integration_id", createRes.Body.ID)
 
 	resID := fmt.Sprintf("%d/%s/%d", clientID, createRes.Body.Type, createRes.Body.ID)
 	d.SetId(resID)
@@ -120,57 +115,41 @@ func resourceWallarmSlackCreate(d *schema.ResourceData, m interface{}) error {
 
 func resourceWallarmSlackRead(d *schema.ResourceData, m interface{}) error {
 	client := m.(wallarm.API)
-	clientID := retrieveClientID(d, client)
+	clientID := retrieveClientID(d)
 	slack, err := client.IntegrationRead(clientID, d.Get("integration_id").(int))
 	if err != nil {
 		if strings.HasPrefix(err.Error(), "Not found.") {
 			d.SetId("")
 			return nil
-		} else {
-			return err
 		}
-	}
-	if err = d.Set("integration_id", slack.ID); err != nil {
 		return err
 	}
-	if err = d.Set("is_active", slack.Active); err != nil {
-		return err
-	}
-	if err = d.Set("name", slack.Name); err != nil {
-		return err
-	}
-	if err = d.Set("created_by", slack.CreatedBy); err != nil {
-		return err
-	}
-	if err = d.Set("type", slack.Type); err != nil {
-		return err
-	}
-	if err = d.Set("client_id", clientID); err != nil {
-		return err
-	}
+	d.Set("integration_id", slack.ID)
+	d.Set("is_active", slack.Active)
+	d.Set("name", slack.Name)
+	d.Set("created_by", slack.CreatedBy)
+	d.Set("type", slack.Type)
+	d.Set("client_id", clientID)
 
 	return nil
 }
 
+// nolint:dupl
 func resourceWallarmSlackUpdate(d *schema.ResourceData, m interface{}) error {
 	client := m.(wallarm.API)
-	clientID := retrieveClientID(d, client)
+	clientID := retrieveClientID(d)
 	name := d.Get("name").(string)
 	webhookURL := d.Get("webhook_url").(string)
 	active := d.Get("active").(bool)
-	events, err := expandWallarmEventToIntEvents(d.Get("event"), "slack")
-	if err != nil {
-		return err
-	}
+	events := expandWallarmEventToIntEvents(d.Get("event"), "slack")
 
 	slack, err := client.IntegrationRead(clientID, d.Get("integration_id").(int))
 	if err != nil {
 		if strings.HasPrefix(err.Error(), "Not found.") {
 			d.SetId("")
 			return nil
-		} else {
-			return err
 		}
+		return err
 	}
 
 	slackBody := wallarm.IntegrationCreate{
@@ -186,9 +165,7 @@ func resourceWallarmSlackUpdate(d *schema.ResourceData, m interface{}) error {
 		return err
 	}
 
-	if err = d.Set("integration_id", updateRes.Body.ID); err != nil {
-		return err
-	}
+	d.Set("integration_id", updateRes.Body.ID)
 
 	resID := fmt.Sprintf("%d/%s/%d", clientID, updateRes.Body.Type, updateRes.Body.ID)
 	d.SetId(resID)

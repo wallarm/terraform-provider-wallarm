@@ -90,16 +90,12 @@ func resourceWallarmOpsGenie() *schema.Resource {
 
 func resourceWallarmOpsGenieCreate(d *schema.ResourceData, m interface{}) error {
 	client := m.(wallarm.API)
-	clientID := retrieveClientID(d, client)
+	clientID := retrieveClientID(d)
 	name := d.Get("name").(string)
 	apiURL := d.Get("api_url").(string)
 	apiToken := d.Get("api_token").(string)
 	active := d.Get("active").(bool)
-	events, err := expandWallarmEventToIntEvents(d.Get("event"), "opsgenie")
-	if err != nil {
-		d.SetId("")
-		return err
-	}
+	events := expandWallarmEventToIntEvents(d.Get("event"), "opsgenie")
 
 	opsGenieBody := wallarm.IntegrationWithAPICreate{
 		Name:   name,
@@ -118,9 +114,7 @@ func resourceWallarmOpsGenieCreate(d *schema.ResourceData, m interface{}) error 
 		return err
 	}
 
-	if err = d.Set("integration_id", createRes.Body.ID); err != nil {
-		return err
-	}
+	d.Set("integration_id", createRes.Body.ID)
 
 	resID := fmt.Sprintf("%d/%s/%d", clientID, createRes.Body.Type, createRes.Body.ID)
 	d.SetId(resID)
@@ -130,59 +124,42 @@ func resourceWallarmOpsGenieCreate(d *schema.ResourceData, m interface{}) error 
 
 func resourceWallarmOpsGenieRead(d *schema.ResourceData, m interface{}) error {
 	client := m.(wallarm.API)
-	clientID := retrieveClientID(d, client)
+	clientID := retrieveClientID(d)
 	opsGenie, err := client.IntegrationRead(clientID, d.Get("integration_id").(int))
 	if err != nil {
 		if strings.HasPrefix(err.Error(), "Not found.") {
 			d.SetId("")
 			return nil
-		} else {
-			return err
 		}
+		return err
 	}
 
-	if err = d.Set("integration_id", opsGenie.ID); err != nil {
-		return err
-	}
-	if err = d.Set("is_active", opsGenie.Active); err != nil {
-		return err
-	}
-	if err = d.Set("name", opsGenie.Name); err != nil {
-		return err
-	}
-	if err = d.Set("created_by", opsGenie.CreatedBy); err != nil {
-		return err
-	}
-	if err = d.Set("type", opsGenie.Type); err != nil {
-		return err
-	}
-	if err = d.Set("client_id", clientID); err != nil {
-		return err
-	}
+	d.Set("integration_id", opsGenie.ID)
+	d.Set("is_active", opsGenie.Active)
+	d.Set("name", opsGenie.Name)
+	d.Set("created_by", opsGenie.CreatedBy)
+	d.Set("type", opsGenie.Type)
+	d.Set("client_id", clientID)
 
 	return nil
 }
 
 func resourceWallarmOpsGenieUpdate(d *schema.ResourceData, m interface{}) error {
 	client := m.(wallarm.API)
-	clientID := retrieveClientID(d, client)
+	clientID := retrieveClientID(d)
 	name := d.Get("name").(string)
 	apiURL := d.Get("api_url").(string)
 	apiToken := d.Get("api_token").(string)
 	active := d.Get("active").(bool)
-	events, err := expandWallarmEventToIntEvents(d.Get("event"), "opsgenie")
-	if err != nil {
-		return err
-	}
+	events := expandWallarmEventToIntEvents(d.Get("event"), "opsgenie")
 
 	opsgenie, err := client.IntegrationRead(clientID, d.Get("integration_id").(int))
 	if err != nil {
 		if strings.HasPrefix(err.Error(), "Not found.") {
 			d.SetId("")
 			return nil
-		} else {
-			return err
 		}
+		return err
 	}
 
 	opsgenieBody := wallarm.IntegrationWithAPICreate{
@@ -201,9 +178,7 @@ func resourceWallarmOpsGenieUpdate(d *schema.ResourceData, m interface{}) error 
 		return err
 	}
 
-	if err = d.Set("integration_id", updateRes.Body.ID); err != nil {
-		return err
-	}
+	d.Set("integration_id", updateRes.Body.ID)
 
 	resID := fmt.Sprintf("%d/%s/%d", clientID, updateRes.Body.Type, updateRes.Body.ID)
 	d.SetId(resID)

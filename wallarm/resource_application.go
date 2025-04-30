@@ -45,7 +45,7 @@ func resourceWallarmApp() *schema.Resource {
 
 func resourceWallarmAppCreate(d *schema.ResourceData, m interface{}) error {
 	client := m.(wallarm.API)
-	clientID := retrieveClientID(d, client)
+	clientID := retrieveClientID(d)
 	name := d.Get("name").(string)
 	appID := d.Get("app_id").(int)
 
@@ -64,9 +64,7 @@ func resourceWallarmAppCreate(d *schema.ResourceData, m interface{}) error {
 		return err
 	}
 
-	if err := d.Set("app_id", appID); err != nil {
-		return err
-	}
+	d.Set("app_id", appID)
 
 	resID := fmt.Sprintf("%d/%s/%d", clientID, name, appID)
 	d.SetId(resID)
@@ -76,7 +74,7 @@ func resourceWallarmAppCreate(d *schema.ResourceData, m interface{}) error {
 
 func resourceWallarmAppRead(d *schema.ResourceData, m interface{}) error {
 	client := m.(wallarm.API)
-	clientID := retrieveClientID(d, client)
+	clientID := retrieveClientID(d)
 	name := d.Get("name").(string)
 	appID := d.Get("app_id").(int)
 
@@ -95,15 +93,9 @@ func resourceWallarmAppRead(d *schema.ResourceData, m interface{}) error {
 	for _, app := range appResp.Body {
 		if app.ID == appID {
 			found = true
-			if err = d.Set("name", name); err != nil {
-				return err
-			}
-			if err = d.Set("app_id", app.ID); err != nil {
-				return err
-			}
-			if err = d.Set("client_id", clientID); err != nil {
-				return err
-			}
+			d.Set("name", name)
+			d.Set("app_id", app.ID)
+			d.Set("client_id", clientID)
 		}
 	}
 	if !found {
@@ -114,7 +106,7 @@ func resourceWallarmAppRead(d *schema.ResourceData, m interface{}) error {
 
 func resourceWallarmAppUpdate(d *schema.ResourceData, m interface{}) error {
 	client := m.(wallarm.API)
-	clientID := retrieveClientID(d, client)
+	clientID := retrieveClientID(d)
 	appID := d.Get("app_id").(int)
 	name := d.Get("name").(string)
 
@@ -144,7 +136,7 @@ func resourceWallarmAppUpdate(d *schema.ResourceData, m interface{}) error {
 
 func resourceWallarmAppDelete(d *schema.ResourceData, m interface{}) error {
 	client := m.(wallarm.API)
-	clientID := retrieveClientID(d, client)
+	clientID := retrieveClientID(d)
 	appID := d.Get("app_id").(int)
 
 	appBody := &wallarm.AppDelete{
@@ -189,15 +181,9 @@ func resourceWallarmAppImport(d *schema.ResourceData, m interface{}) ([]*schema.
 
 		for _, app := range appResp.Body {
 			if app.ID == appID {
-				if err = d.Set("name", name); err != nil {
-					return nil, err
-				}
-				if err = d.Set("app_id", app.ID); err != nil {
-					return nil, err
-				}
-				if err = d.Set("client_id", clientID); err != nil {
-					return nil, err
-				}
+				d.Set("name", name)
+				d.Set("app_id", app.ID)
+				d.Set("client_id", clientID)
 			}
 		}
 

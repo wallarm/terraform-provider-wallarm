@@ -148,7 +148,7 @@ func Provider() terraform.ResourceProvider {
 			"wallarm_rule_uploads":                   resourceWallarmUploads(),
 			"wallarm_rules_settings":                 resourceWallarmRulesSettings(),
 			"wallarm_tenant":                         resourceWallarmTenant(),
-			"wallarm_api_spec":                       resourceWallarmApiSpec(),
+			"wallarm_api_spec":                       resourceWallarmAPISpec(),
 			"wallarm_rule_credential_stuffing_regex": resourceWallarmCredentialStuffingRegex(),
 			"wallarm_rule_credential_stuffing_point": resourceWallarmCredentialStuffingPoint(),
 			"wallarm_rule_credential_stuffing_mode":  resourceWallarmCredentialStuffingMode(),

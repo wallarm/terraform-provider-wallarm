@@ -163,7 +163,7 @@ func resourceWallarmCredentialStuffingPoint() *schema.Resource {
 
 func resourceWallarmCredentialStuffingPointCreate(d *schema.ResourceData, m interface{}) error {
 	client := m.(wallarm.API)
-	clientID := retrieveClientID(d, client)
+	clientID := retrieveClientID(d)
 	comment := d.Get("comment").(string)
 	credStuffType := d.Get("cred_stuff_type").(string)
 
@@ -202,19 +202,15 @@ func resourceWallarmCredentialStuffingPointCreate(d *schema.ResourceData, m inte
 
 	resID := fmt.Sprintf("%d/%d/%d", resp.Body.Clientid, resp.Body.ActionID, resp.Body.ID)
 	d.SetId(resID)
-	if err = d.Set("client_id", resp.Body.Clientid); err != nil {
-		return err
-	}
-	if err = d.Set("rule_id", resp.Body.ID); err != nil {
-		return err
-	}
+	d.Set("client_id", resp.Body.Clientid)
+	d.Set("rule_id", resp.Body.ID)
 
 	return resourceWallarmCredentialStuffingPointRead(d, m)
 }
 
 func resourceWallarmCredentialStuffingPointRead(d *schema.ResourceData, m interface{}) error {
 	client := m.(wallarm.API)
-	clientID := retrieveClientID(d, client)
+	clientID := retrieveClientID(d)
 	ruleID := d.Get("rule_id").(int)
 
 	rule, err := findRule(client, clientID, ruleID)
@@ -229,21 +225,11 @@ func resourceWallarmCredentialStuffingPointRead(d *schema.ResourceData, m interf
 		return err
 	}
 
-	if err = d.Set("cred_stuff_type", rule.CredStuffType); err != nil {
-		return err
-	}
-	if err = d.Set("point", rule.Point); err != nil {
-		return err
-	}
-	if err = d.Set("login_point", rule.LoginPoint); err != nil {
-		return err
-	}
-	if err = d.Set("rule_type", rule.Type); err != nil {
-		return err
-	}
-	if err = d.Set("action_id", rule.ActionID); err != nil {
-		return err
-	}
+	d.Set("cred_stuff_type", rule.CredStuffType)
+	d.Set("point", rule.Point)
+	d.Set("login_point", rule.LoginPoint)
+	d.Set("rule_type", rule.Type)
+	d.Set("action_id", rule.ActionID)
 	actionsSet := schema.Set{F: hashResponseActionDetails}
 	for _, a := range rule.Action {
 		acts, err := actionDetailsToMap(a)
@@ -252,16 +238,14 @@ func resourceWallarmCredentialStuffingPointRead(d *schema.ResourceData, m interf
 		}
 		actionsSet.Add(acts)
 	}
-	if err := d.Set("action", &actionsSet); err != nil {
-		return err
-	}
+	d.Set("action", &actionsSet)
 
 	return nil
 }
 
 func resourceWallarmCredentialStuffingPointDelete(d *schema.ResourceData, m interface{}) error {
 	client := m.(wallarm.API)
-	clientID := retrieveClientID(d, client)
+	clientID := retrieveClientID(d)
 	ruleID := d.Get("rule_id").(int)
 
 	err := client.HintDelete(&wallarm.HintDelete{
@@ -304,18 +288,10 @@ func resourceWallarmCredentialStuffingPointImport(d *schema.ResourceData, m inte
 
 	ruleType := "credentials_point"
 
-	if err = d.Set("client_id", clientID); err != nil {
-		return nil, err
-	}
-	if err = d.Set("rule_id", ruleID); err != nil {
-		return nil, err
-	}
-	if err = d.Set("action_id", actionID); err != nil {
-		return nil, err
-	}
-	if err = d.Set("type", ruleType); err != nil {
-		return nil, err
-	}
+	d.Set("client_id", clientID)
+	d.Set("rule_id", ruleID)
+	d.Set("action_id", actionID)
+	d.Set("type", ruleType)
 
 	hint := &wallarm.HintRead{
 		Limit:     1000,
@@ -343,21 +319,15 @@ func resourceWallarmCredentialStuffingPointImport(d *schema.ResourceData, m inte
 			}
 			actionsSet.Add(acts)
 		}
-		if err := d.Set("action", &actionsSet); err != nil {
-			return nil, err
-		}
+		d.Set("action", &actionsSet)
 	}
 
 	pointInterface := (*actionHints.Body)[0].Point
 	point := wrapPointElements(pointInterface)
-	if err = d.Set("point", point); err != nil {
-		return nil, err
-	}
+	d.Set("point", point)
 	pointInterface = (*actionHints.Body)[0].LoginPoint
 	point = wrapPointElements(pointInterface)
-	if err = d.Set("login_point", point); err != nil {
-		return nil, err
-	}
+	d.Set("login_point", point)
 
 	existingID := fmt.Sprintf("%d/%d/%d", clientID, actionID, ruleID)
 	d.SetId(existingID)

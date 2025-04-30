@@ -123,83 +123,50 @@ func resourceWallarmRulesSettings() *schema.Resource {
 
 func resourceWallarmRulesSettingsRead(d *schema.ResourceData, m interface{}) error {
 	client := m.(wallarm.API)
-	clientID := retrieveClientID(d, client)
+	clientID := retrieveClientID(d)
 
 	res, err := client.RulesSettingsRead(clientID)
 	if err != nil {
 		return err
 	}
 
-	if err = d.Set("min_lom_format", res.Body.MinLomFormat); err != nil {
-		return err
-	}
+	d.Set("min_lom_format", res.Body.MinLomFormat)
 
-	if err = d.Set("max_lom_format", res.Body.MaxLomFormat); err != nil {
-		return err
-	}
+	d.Set("max_lom_format", res.Body.MaxLomFormat)
 
-	if err = d.Set("max_lom_size", res.Body.MaxLomSize); err != nil {
-		return err
-	}
+	d.Set("max_lom_size", res.Body.MaxLomSize)
 
-	if err = d.Set("lom_disabled", res.Body.LomDisabled); err != nil {
-		return err
-	}
+	d.Set("lom_disabled", res.Body.LomDisabled)
 
-	if err = d.Set("lom_compilation_delay", res.Body.LomCompilationDelay); err != nil {
-		return err
-	}
+	d.Set("lom_compilation_delay", res.Body.LomCompilationDelay)
 
-	if err = d.Set("rules_snapshot_enabled", res.Body.RulesSnapshotEnabled); err != nil {
-		return err
-	}
+	d.Set("rules_snapshot_enabled", res.Body.RulesSnapshotEnabled)
 
-	if err = d.Set("rules_snapshot_max_count", res.Body.RulesSnapshotMaxCount); err != nil {
-		return err
-	}
+	d.Set("rules_snapshot_max_count", res.Body.RulesSnapshotMaxCount)
 
-	if err = d.Set("rules_manipulation_locked", res.Body.RulesManipulationLocked); err != nil {
-		return err
-	}
+	d.Set("rules_manipulation_locked", res.Body.RulesManipulationLocked)
 
-	if err = d.Set("heavy_lom", res.Body.HeavyLom); err != nil {
-		return err
-	}
+	d.Set("heavy_lom", res.Body.HeavyLom)
 
-	if err = d.Set("parameters_count_weight", res.Body.ParametersCountWeight); err != nil {
-		return err
-	}
+	d.Set("parameters_count_weight", res.Body.ParametersCountWeight)
 
-	if err = d.Set("path_variativity_weight", res.Body.PathVariativityWeight); err != nil {
-		return err
-	}
+	d.Set("path_variativity_weight", res.Body.PathVariativityWeight)
 
-	if err = d.Set("pii_weight", res.Body.PiiWeight); err != nil {
-		return err
-	}
+	d.Set("pii_weight", res.Body.PiiWeight)
 
-	if err = d.Set("request_content_weight", res.Body.RequestContentWeight); err != nil {
-		return err
-	}
+	d.Set("request_content_weight", res.Body.RequestContentWeight)
 
-	if err = d.Set("open_vulns_weight", res.Body.OpenVulnsWeight); err != nil {
-		return err
-	}
+	d.Set("open_vulns_weight", res.Body.OpenVulnsWeight)
 
-	if err = d.Set("serialized_data_weight", res.Body.SerializedDataWeight); err != nil {
-		return err
-	}
+	d.Set("serialized_data_weight", res.Body.SerializedDataWeight)
 
-	if err = d.Set("risk_score_algo", res.Body.RiskScoreAlgo); err != nil {
-		return err
-	}
+	d.Set("risk_score_algo", res.Body.RiskScoreAlgo)
 
 	return nil
 }
 
 func resourceWallarmRulesSettingsCreate(d *schema.ResourceData, m interface{}) error {
-	client := m.(wallarm.API)
-	clientID := retrieveClientID(d, client)
+	clientID := retrieveClientID(d)
 
 	err := updateRulesSettings(d, m)
 	if err != nil {
@@ -215,13 +182,14 @@ func resourceWallarmRulesSettingsUpdate(d *schema.ResourceData, m interface{}) e
 	return updateRulesSettings(d, m)
 }
 
-func resourceWallarmRulesSettingsDelete(d *schema.ResourceData, m interface{}) error {
+func resourceWallarmRulesSettingsDelete(_ *schema.ResourceData, _ interface{}) error {
 	return nil
 }
 
+// nolint:gocyclo
 func updateRulesSettings(d *schema.ResourceData, m interface{}) error {
 	client := m.(wallarm.API)
-	clientID := retrieveClientID(d, client)
+	clientID := retrieveClientID(d)
 
 	params := &wallarm.RuleSettingsParams{}
 

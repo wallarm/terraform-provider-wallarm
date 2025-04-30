@@ -19,7 +19,7 @@ func TestAccRuleCredentialStuffingRegex_basic(t *testing.T) {
 		Providers:    testAccProviders,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccRuleCredentialStuffingRegex_basic(resourceName),
+				Config: testAccRuleCredentialStuffingRegexBasic(resourceName),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceAddress, "regex", "abc"),
 					resource.TestCheckResourceAttr(resourceAddress, "login_regex", "def"),
@@ -32,7 +32,7 @@ func TestAccRuleCredentialStuffingRegex_basic(t *testing.T) {
 	})
 }
 
-func testAccRuleCredentialStuffingRegex_basic(resourceName string) string {
+func testAccRuleCredentialStuffingRegexBasic(resourceName string) string {
 	return fmt.Sprintf(`
 resource "wallarm_rule_credential_stuffing_regex" %[1]q {
 	regex = "abc"

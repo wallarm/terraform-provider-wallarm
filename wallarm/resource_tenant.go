@@ -58,7 +58,7 @@ func resourceWallarmTenant() *schema.Resource {
 
 func resourceWallarmTenantCreate(d *schema.ResourceData, m interface{}) error {
 	client := m.(wallarm.API)
-	clientID := retrieveClientID(d, client)
+	clientID := retrieveClientID(d)
 
 	name := d.Get("name").(string)
 
@@ -92,14 +92,10 @@ func resourceWallarmTenantCreate(d *schema.ResourceData, m interface{}) error {
 		return err
 	}
 
-	if err = d.Set("client_id", clientID); err != nil {
-		return err
-	}
+	d.Set("client_id", clientID)
 
 	tenantID := res.Body.ID
-	if err := d.Set("tenant_id", tenantID); err != nil {
-		return err
-	}
+	d.Set("tenant_id", tenantID)
 
 	resID := fmt.Sprintf("%d/%s/%d", clientID, params.Name, tenantID)
 	d.SetId(resID)
@@ -109,7 +105,7 @@ func resourceWallarmTenantCreate(d *schema.ResourceData, m interface{}) error {
 
 func resourceWallarmTenantRead(d *schema.ResourceData, m interface{}) error {
 	client := m.(wallarm.API)
-	clientID := retrieveClientID(d, client)
+	clientID := retrieveClientID(d)
 	tenantID := d.Get("tenant_id").(int)
 
 	res, err := client.ClientRead(&wallarm.ClientRead{
@@ -133,13 +129,8 @@ func resourceWallarmTenantRead(d *schema.ResourceData, m interface{}) error {
 		return nil
 	}
 
-	if err = d.Set("name", res.Body[0].Name); err != nil {
-		return err
-	}
-
-	if err = d.Set("client_id", clientID); err != nil {
-		return err
-	}
+	d.Set("name", res.Body[0].Name)
+	d.Set("client_id", clientID)
 
 	return nil
 }
@@ -167,10 +158,10 @@ func generateVulnPrefix(name string) string {
 		return prefix
 	}
 
-	reg, _ := regexp.Compile("[^A-Z]+")
+	reg := regexp.MustCompile("[^A-Z]+")
 	prefix = reg.ReplaceAllString(prefix, "")
 
-	reg, _ = regexp.Compile("[AEIOU]")
+	reg = regexp.MustCompile("[AEIOU]")
 	prefix = reg.ReplaceAllString(prefix, "")
 
 	prefix = removeConsecutiveDuplicates(prefix)

@@ -19,7 +19,7 @@ func TestAccRuleCredentialStuffingPoint_basic(t *testing.T) {
 		Providers:    testAccProviders,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccRuleCredentialStuffingPoint_basic(resourceName),
+				Config: testAccRuleCredentialStuffingPointBasic(resourceName),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceAddress, "point.0.0", "header"),
 					resource.TestCheckResourceAttr(resourceAddress, "point.0.1", "HOST"),
@@ -33,7 +33,7 @@ func TestAccRuleCredentialStuffingPoint_basic(t *testing.T) {
 	})
 }
 
-func testAccRuleCredentialStuffingPoint_basic(resourceName string) string {
+func testAccRuleCredentialStuffingPointBasic(resourceName string) string {
 	return fmt.Sprintf(`
 resource "wallarm_rule_credential_stuffing_point" %[1]q {
 	point = [["header", "HOST"]]

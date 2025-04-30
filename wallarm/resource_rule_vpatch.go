@@ -182,14 +182,12 @@ func resourceWallarmVpatch() *schema.Resource {
 
 func resourceWallarmVpatchCreate(d *schema.ResourceData, m interface{}) error {
 	client := m.(wallarm.API)
-	clientID := retrieveClientID(d, client)
+	clientID := retrieveClientID(d)
 	comment := d.Get("comment").(string)
 	attackType := d.Get("attack_type").(string)
 
 	ps := d.Get("point").([]interface{})
-	if err := d.Set("point", ps); err != nil {
-		return err
-	}
+	d.Set("point", ps)
 
 	points, err := expandPointsToTwoDimensionalArray(ps)
 	if err != nil {
@@ -218,21 +216,11 @@ func resourceWallarmVpatchCreate(d *schema.ResourceData, m interface{}) error {
 		return err
 	}
 
-	if err = d.Set("rule_id", actionResp.Body.ID); err != nil {
-		return err
-	}
-	if err = d.Set("action_id", actionResp.Body.ActionID); err != nil {
-		return err
-	}
-	if err = d.Set("rule_type", actionResp.Body.Type); err != nil {
-		return err
-	}
-	if err = d.Set("attack_type", actionResp.Body.AttackType); err != nil {
-		return err
-	}
-	if err = d.Set("client_id", clientID); err != nil {
-		return err
-	}
+	d.Set("rule_id", actionResp.Body.ID)
+	d.Set("action_id", actionResp.Body.ActionID)
+	d.Set("rule_type", actionResp.Body.Type)
+	d.Set("attack_type", actionResp.Body.AttackType)
+	d.Set("client_id", clientID)
 
 	resID := fmt.Sprintf("%d/%d/%d", clientID, actionResp.Body.ActionID, actionResp.Body.ID)
 	d.SetId(resID)
@@ -242,7 +230,7 @@ func resourceWallarmVpatchCreate(d *schema.ResourceData, m interface{}) error {
 
 func resourceWallarmVpatchRead(d *schema.ResourceData, m interface{}) error {
 	client := m.(wallarm.API)
-	clientID := retrieveClientID(d, client)
+	clientID := retrieveClientID(d)
 	actionID := d.Get("action_id").(int)
 	ruleID := d.Get("rule_id").(int)
 
@@ -259,7 +247,7 @@ func resourceWallarmVpatchRead(d *schema.ResourceData, m interface{}) error {
 		return err
 	}
 
-	var actsSlice []interface{}
+	actsSlice := make([]interface{}, 0, len(action))
 	for _, a := range action {
 		acts, err := actionDetailsToMap(a)
 		if err != nil {
@@ -296,7 +284,7 @@ func resourceWallarmVpatchRead(d *schema.ResourceData, m interface{}) error {
 		Point:    points,
 	}
 
-	var notFoundRules []int
+	notFoundRules := make([]int, 0)
 	var updatedRuleID int
 	for _, rule := range *actionHints.Body {
 
@@ -323,18 +311,11 @@ func resourceWallarmVpatchRead(d *schema.ResourceData, m interface{}) error {
 		notFoundRules = append(notFoundRules, rule.ID)
 	}
 
-	if err = d.Set("rule_id", updatedRuleID); err != nil {
-		return err
-	}
-
-	if err = d.Set("client_id", clientID); err != nil {
-		return err
-	}
+	d.Set("rule_id", updatedRuleID)
+	d.Set("client_id", clientID)
 
 	if actionsSet.Len() != 0 {
-		if err := d.Set("action", &actionsSet); err != nil {
-			return err
-		}
+		d.Set("action", &actionsSet)
 	} else {
 		log.Printf("[WARN] action was empty so it either doesn't exist or it is a default branch which has no conditions. Actions: %v", &actionsSet)
 	}
@@ -349,7 +330,7 @@ func resourceWallarmVpatchRead(d *schema.ResourceData, m interface{}) error {
 
 func resourceWallarmVpatchDelete(d *schema.ResourceData, m interface{}) error {
 	client := m.(wallarm.API)
-	clientID := retrieveClientID(d, client)
+	clientID := retrieveClientID(d)
 	actionID := d.Get("action_id").(int)
 
 	rule := &wallarm.ActionRead{
@@ -393,6 +374,7 @@ func resourceWallarmVpatchUpdate(d *schema.ResourceData, m interface{}) error {
 	return resourceWallarmVpatchCreate(d, m)
 }
 
+// nolint:dupl
 func resourceWallarmVpatchImport(d *schema.ResourceData, m interface{}) ([]*schema.ResourceData, error) {
 	client := m.(wallarm.API)
 	idAttr := strings.SplitN(d.Id(), "/", 3)
@@ -409,15 +391,9 @@ func resourceWallarmVpatchImport(d *schema.ResourceData, m interface{}) ([]*sche
 		if err != nil {
 			return nil, err
 		}
-		if err = d.Set("action_id", actionID); err != nil {
-			return nil, err
-		}
-		if err = d.Set("rule_id", ruleID); err != nil {
-			return nil, err
-		}
-		if err = d.Set("rule_type", "vpatch"); err != nil {
-			return nil, err
-		}
+		d.Set("action_id", actionID)
+		d.Set("rule_id", ruleID)
+		d.Set("rule_type", "vpatch")
 
 		hint := &wallarm.HintRead{
 			Limit:     1000,
@@ -445,19 +421,13 @@ func resourceWallarmVpatchImport(d *schema.ResourceData, m interface{}) ([]*sche
 				}
 				actionsSet.Add(acts)
 			}
-			if err = d.Set("action", &actionsSet); err != nil {
-				return nil, err
-			}
+			d.Set("action", &actionsSet)
 		}
 
-		if err = d.Set("attack_type", (*actionHints.Body)[0].AttackType); err != nil {
-			return nil, err
-		}
+		d.Set("attack_type", (*actionHints.Body)[0].AttackType)
 		pointInterface := (*actionHints.Body)[0].Point
 		point := wrapPointElements(pointInterface)
-		if err = d.Set("point", point); err != nil {
-			return nil, err
-		}
+		d.Set("point", point)
 
 		existingID := fmt.Sprintf("%d/%d/%d", clientID, actionID, ruleID)
 		d.SetId(existingID)
