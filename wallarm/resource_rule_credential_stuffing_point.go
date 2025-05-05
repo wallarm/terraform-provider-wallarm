@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"strings"
 
-	wallarm "github.com/wallarm/wallarm-go"
+	"github.com/wallarm/wallarm-go"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
@@ -163,7 +163,7 @@ func resourceWallarmCredentialStuffingPoint() *schema.Resource {
 
 func resourceWallarmCredentialStuffingPointCreate(d *schema.ResourceData, m interface{}) error {
 	client := m.(wallarm.API)
-	clientID := retrieveClientID(d, client)
+	clientID := retrieveClientID(d)
 	comment := d.Get("comment").(string)
 	credStuffType := d.Get("cred_stuff_type").(string)
 
@@ -210,7 +210,7 @@ func resourceWallarmCredentialStuffingPointCreate(d *schema.ResourceData, m inte
 
 func resourceWallarmCredentialStuffingPointRead(d *schema.ResourceData, m interface{}) error {
 	client := m.(wallarm.API)
-	clientID := retrieveClientID(d, client)
+	clientID := retrieveClientID(d)
 	ruleID := d.Get("rule_id").(int)
 
 	rule, err := findRule(client, clientID, ruleID)
@@ -226,10 +226,8 @@ func resourceWallarmCredentialStuffingPointRead(d *schema.ResourceData, m interf
 	}
 
 	d.Set("cred_stuff_type", rule.CredStuffType)
-
 	d.Set("point", rule.Point)
 	d.Set("login_point", rule.LoginPoint)
-
 	d.Set("rule_type", rule.Type)
 	d.Set("action_id", rule.ActionID)
 	actionsSet := schema.Set{F: hashResponseActionDetails}
@@ -240,16 +238,14 @@ func resourceWallarmCredentialStuffingPointRead(d *schema.ResourceData, m interf
 		}
 		actionsSet.Add(acts)
 	}
-	if err := d.Set("action", &actionsSet); err != nil {
-		return err
-	}
+	d.Set("action", &actionsSet)
 
 	return nil
 }
 
 func resourceWallarmCredentialStuffingPointDelete(d *schema.ResourceData, m interface{}) error {
 	client := m.(wallarm.API)
-	clientID := retrieveClientID(d, client)
+	clientID := retrieveClientID(d)
 	ruleID := d.Get("rule_id").(int)
 
 	err := client.HintDelete(&wallarm.HintDelete{
@@ -315,19 +311,15 @@ func resourceWallarmCredentialStuffingPointImport(d *schema.ResourceData, m inte
 	actionsSet := schema.Set{
 		F: hashResponseActionDetails,
 	}
-	var actsSlice []map[string]interface{}
 	if len((*actionHints.Body)) != 0 && len((*actionHints.Body)[0].Action) != 0 {
 		for _, a := range (*actionHints.Body)[0].Action {
 			acts, err := actionDetailsToMap(a)
 			if err != nil {
 				return nil, err
 			}
-			actsSlice = append(actsSlice, acts)
 			actionsSet.Add(acts)
 		}
-		if err := d.Set("action", &actionsSet); err != nil {
-			return nil, err
-		}
+		d.Set("action", &actionsSet)
 	}
 
 	pointInterface := (*actionHints.Body)[0].Point

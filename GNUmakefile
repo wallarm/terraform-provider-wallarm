@@ -25,6 +25,11 @@ init-plugin: build
 	./scripts/plugindircheck.sh $(GOOS) $(GOARCH) $(VERSION)
 	@terraform init
 
+lint:
+	@echo "Running golangci-lint..."
+	@go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.64.8
+	@golangci-lint run
+
 test:
 	go test $(TEST) -v -timeout=30s -parallel=4 -race -cover
 

@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"time"
 
-	wallarm "github.com/wallarm/wallarm-go"
+	"github.com/wallarm/wallarm-go"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -20,19 +20,7 @@ func resourceWallarmTrigger() *schema.Resource {
 		Delete: resourceWallarmTriggerDelete,
 
 		Schema: map[string]*schema.Schema{
-			"client_id": {
-				Type:        schema.TypeInt,
-				Optional:    true,
-				Computed:    true,
-				Description: "The Client ID to perform changes",
-				ValidateFunc: func(val interface{}, key string) (warns []string, errs []error) {
-					v := val.(int)
-					if v <= 0 {
-						errs = append(errs, fmt.Errorf("%q must be positive, got: %d", key, v))
-					}
-					return
-				},
-			},
+			"client_id": defaultClientIDWithValidationSchema,
 
 			"template_id": {
 				Type:     schema.TypeString,
@@ -170,7 +158,7 @@ func resourceWallarmTriggerCreate(d *schema.ResourceData, m interface{}) error {
 	)
 
 	client := m.(wallarm.API)
-	clientID := retrieveClientID(d, client)
+	clientID := retrieveClientID(d)
 	name := d.Get("name").(string)
 	comment := d.Get("comment").(string)
 	templateID := d.Get("template_id").(string)
@@ -185,16 +173,13 @@ func resourceWallarmTriggerCreate(d *schema.ResourceData, m interface{}) error {
 		}
 	}
 
-	filters, err := expandWallarmTriggerFilter(d.Get("filters").(interface{}))
+	filters, err := expandWallarmTriggerFilter(d.Get("filters"))
 	if err != nil {
 		return err
 	}
-	actions, err := expandWallarmTriggerAction(d.Get("actions").(interface{}))
-	if err != nil {
-		return err
-	}
+	actions := expandWallarmTriggerAction(d.Get("actions"))
 	if _, ok := d.GetOk("threshold"); ok {
-		threshold, err := expandWallarmTriggerThreshold(d.Get("threshold").(interface{}))
+		threshold, err := expandWallarmTriggerThreshold(d.Get("threshold"))
 		if err != nil {
 			return err
 		}
@@ -248,8 +233,12 @@ func resourceWallarmTriggerCreate(d *schema.ResourceData, m interface{}) error {
 
 		for _, t := range triggers.Triggers {
 			if t.ID == triggerID {
-				d.Set("trigger_id", t.ID)
-				d.Set("client_id", clientID)
+				if err = d.Set("trigger_id", t.ID); err != nil {
+					return resource.NonRetryableError(err)
+				}
+				if err = d.Set("client_id", clientID); err != nil {
+					return resource.NonRetryableError(err)
+				}
 				return resource.NonRetryableError(resourceWallarmTriggerRead(d, m))
 			}
 		}
@@ -259,7 +248,7 @@ func resourceWallarmTriggerCreate(d *schema.ResourceData, m interface{}) error {
 
 func resourceWallarmTriggerRead(d *schema.ResourceData, m interface{}) error {
 	client := m.(wallarm.API)
-	clientID := retrieveClientID(d, client)
+	clientID := retrieveClientID(d)
 	triggerID := d.Get("trigger_id").(int)
 
 	triggers, err := client.TriggerRead(clientID)
@@ -285,25 +274,22 @@ func resourceWallarmTriggerUpdate(d *schema.ResourceData, m interface{}) error {
 	)
 
 	client := m.(wallarm.API)
-	clientID := retrieveClientID(d, client)
+	clientID := retrieveClientID(d)
 	name := d.Get("name").(string)
 	comment := d.Get("comment").(string)
 	templateID := d.Get("template_id").(string)
 	enabled := d.Get("enabled").(bool)
 	triggerID := d.Get("trigger_id").(int)
 
-	filters, err := expandWallarmTriggerFilter(d.Get("filters").(interface{}))
+	filters, err := expandWallarmTriggerFilter(d.Get("filters"))
 	if err != nil {
 		return err
 	}
 
-	actions, err := expandWallarmTriggerAction(d.Get("actions").(interface{}))
-	if err != nil {
-		return err
-	}
+	actions := expandWallarmTriggerAction(d.Get("actions"))
 
 	if _, ok := d.GetOk("threshold"); ok {
-		threshold, err := expandWallarmTriggerThreshold(d.Get("threshold").(interface{}))
+		threshold, err := expandWallarmTriggerThreshold(d.Get("threshold"))
 		if err != nil {
 			return err
 		}
@@ -355,7 +341,7 @@ func resourceWallarmTriggerUpdate(d *schema.ResourceData, m interface{}) error {
 
 func resourceWallarmTriggerDelete(d *schema.ResourceData, m interface{}) error {
 	client := m.(wallarm.API)
-	clientID := retrieveClientID(d, client)
+	clientID := retrieveClientID(d)
 	triggerID := d.Get("trigger_id").(int)
 
 	if err := client.TriggerDelete(clientID, triggerID); err != nil {
@@ -432,11 +418,11 @@ func expandWallarmTriggerFilter(d interface{}) (*[]wallarm.TriggerFilters, error
 	return &filters, nil
 }
 
-func expandWallarmTriggerAction(d interface{}) (*[]wallarm.TriggerActions, error) {
+func expandWallarmTriggerAction(d interface{}) *[]wallarm.TriggerActions {
 	cfg := d.([]interface{})
 	actions := []wallarm.TriggerActions{}
 	if len(cfg) == 0 || cfg[0] == nil {
-		return &actions, nil
+		return &actions
 	}
 
 	for _, conf := range cfg {
@@ -465,7 +451,7 @@ func expandWallarmTriggerAction(d interface{}) (*[]wallarm.TriggerActions, error
 			lockTimeInt := lockTime.(int)
 			switch m["lock_time_format"] {
 			case "Minutes":
-				lockTimeInt = lockTimeInt * 60
+				lockTimeInt *= 60
 			case "Hours":
 				lockTimeInt = lockTimeInt * 60 * 60
 			case "Days":
@@ -486,11 +472,10 @@ func expandWallarmTriggerAction(d interface{}) (*[]wallarm.TriggerActions, error
 		actions = append(actions, a)
 
 	}
-	return &actions, nil
+	return &actions
 }
 
-func expandWallarmTriggerThreshold(d interface{}) (*wallarm.TriggerThreshold, error) {
-	cfg := d.(interface{})
+func expandWallarmTriggerThreshold(cfg interface{}) (*wallarm.TriggerThreshold, error) {
 	threshold := wallarm.TriggerThreshold{}
 	m := cfg.(map[string]interface{})
 

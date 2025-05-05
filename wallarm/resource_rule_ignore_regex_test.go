@@ -2,13 +2,9 @@ package wallarm
 
 import (
 	"fmt"
-	"strconv"
 	"testing"
 
-	wallarm "github.com/wallarm/wallarm-go"
-
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/terraform"
 )
 
 func TestAccRuleIgnoreRegexCreate(t *testing.T) {
@@ -59,42 +55,4 @@ resource "wallarm_rule_ignore_regex" "%[1]s" {
 	}
 	point = [["header", "X-AUTH"]]
 }`, resourceID, regex)
-}
-
-func testAccCheckWallarmRuleIgnoreRegexDestroy(s *terraform.State) error {
-	client := testAccProvider.Meta().(wallarm.API)
-
-	for _, rs := range s.RootModule().Resources {
-		if rs.Type != "wallarm_rule_ignore_regex" {
-			continue
-		}
-
-		clientID, err := strconv.Atoi(rs.Primary.Attributes["client_id"])
-		if err != nil {
-			return err
-		}
-		actionID, err := strconv.Atoi(rs.Primary.Attributes["action_id"])
-		if err != nil {
-			return err
-		}
-
-		hint := &wallarm.HintRead{
-			Limit:     1000,
-			Offset:    0,
-			OrderBy:   "updated_at",
-			OrderDesc: true,
-			Filter: &wallarm.HintFilter{
-				Clientid: []int{clientID},
-				ActionID: []int{actionID},
-				Type:     []string{"disable_regex"},
-			},
-		}
-
-		rule, err := client.HintRead(hint)
-		if err != nil && len(*rule.Body) != 0 {
-			return fmt.Errorf("Disable Regular Expression rule still exists")
-		}
-	}
-
-	return nil
 }

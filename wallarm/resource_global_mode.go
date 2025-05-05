@@ -4,8 +4,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"net/http"
 
-	wallarm "github.com/wallarm/wallarm-go"
+	"github.com/wallarm/wallarm-go"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
@@ -19,19 +20,7 @@ func resourceWallarmGlobalMode() *schema.Resource {
 		Delete: resourceWallarmGlobalModeDelete,
 
 		Schema: map[string]*schema.Schema{
-			"client_id": {
-				Type:        schema.TypeInt,
-				Optional:    true,
-				Computed:    true,
-				Description: "The Client ID to perform changes",
-				ValidateFunc: func(val interface{}, key string) (warns []string, errs []error) {
-					v := val.(int)
-					if v <= 0 {
-						errs = append(errs, fmt.Errorf("%q must be positive, got: %d", key, v))
-					}
-					return
-				},
-			},
+			"client_id": defaultClientIDWithValidationSchema,
 
 			"filtration_mode": {
 				Type:         schema.TypeString,
@@ -59,7 +48,7 @@ func resourceWallarmGlobalMode() *schema.Resource {
 
 func resourceWallarmGlobalModeCreate(d *schema.ResourceData, m interface{}) error {
 	client := m.(wallarm.API)
-	clientID := retrieveClientID(d, client)
+	clientID := retrieveClientID(d)
 
 	filtrationMode := d.Get("filtration_mode").(string)
 
@@ -99,13 +88,13 @@ func resourceWallarmGlobalModeCreate(d *schema.ResourceData, m interface{}) erro
 
 func resourceWallarmGlobalModeRead(d *schema.ResourceData, m interface{}) error {
 	client := m.(wallarm.API)
-	clientID := retrieveClientID(d, client)
+	clientID := retrieveClientID(d)
 
 	wallarmModeResp, err := client.WallarmModeRead(clientID)
 	if err != nil {
 		return err
 	}
-	if wallarmModeResp.Status != 200 {
+	if wallarmModeResp.Status != http.StatusOK {
 		body, err := json.Marshal(wallarmModeResp)
 		if err != nil {
 			return err
@@ -117,9 +106,7 @@ func resourceWallarmGlobalModeRead(d *schema.ResourceData, m interface{}) error 
 	}
 
 	filtrationMode := wallarmModeResp.Body.Mode
-	if err := d.Set("filtration_mode", filtrationMode); err != nil {
-		return err
-	}
+	d.Set("filtration_mode", filtrationMode)
 
 	clientInfo := &wallarm.ClientRead{
 		Filter: &wallarm.ClientReadFilter{
@@ -151,15 +138,11 @@ func resourceWallarmGlobalModeRead(d *schema.ResourceData, m interface{}) error 
 		scannerMode = "on"
 	}
 
-	if err := d.Set("scanner_mode", scannerMode); err != nil {
-		return err
-	}
+	d.Set("scanner_mode", scannerMode)
 
 	recheckerMode := otherModesResp.Body[0].AttackRecheckerMode
 
-	if err := d.Set("rechecker_mode", recheckerMode); err != nil {
-		return err
-	}
+	d.Set("rechecker_mode", recheckerMode)
 
 	d.Set("client_id", clientID)
 
@@ -170,6 +153,6 @@ func resourceWallarmGlobalModeUpdate(d *schema.ResourceData, m interface{}) erro
 	return resourceWallarmGlobalModeCreate(d, m)
 }
 
-func resourceWallarmGlobalModeDelete(d *schema.ResourceData, m interface{}) error {
+func resourceWallarmGlobalModeDelete(_ *schema.ResourceData, _ interface{}) error {
 	return nil
 }

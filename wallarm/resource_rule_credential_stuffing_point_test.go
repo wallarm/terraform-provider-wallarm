@@ -7,7 +7,7 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/terraform"
-	wallarm "github.com/wallarm/wallarm-go"
+	"github.com/wallarm/wallarm-go"
 )
 
 func TestAccRuleCredentialStuffingPoint_basic(t *testing.T) {
@@ -19,7 +19,7 @@ func TestAccRuleCredentialStuffingPoint_basic(t *testing.T) {
 		Providers:    testAccProviders,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccRuleCredentialStuffingPoint_basic(resourceName),
+				Config: testAccRuleCredentialStuffingPointBasic(resourceName),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceAddress, "point.0.0", "header"),
 					resource.TestCheckResourceAttr(resourceAddress, "point.0.1", "HOST"),
@@ -33,7 +33,7 @@ func TestAccRuleCredentialStuffingPoint_basic(t *testing.T) {
 	})
 }
 
-func testAccRuleCredentialStuffingPoint_basic(resourceName string) string {
+func testAccRuleCredentialStuffingPointBasic(resourceName string) string {
 	return fmt.Sprintf(`
 resource "wallarm_rule_credential_stuffing_point" %[1]q {
 	point = [["header", "HOST"]]
@@ -87,16 +87,5 @@ func testAccRuleCredentialStuffingPointDestroy() resource.TestCheckFunc {
 		}
 
 		return nil
-	}
-}
-
-func testAccRuleCredentialStuffingPointIdFunc(resourceAddress string) resource.ImportStateIdFunc {
-	return func(s *terraform.State) (string, error) {
-		rs, ok := s.RootModule().Resources[resourceAddress]
-		if !ok {
-			return "", fmt.Errorf("Not Found: %s", resourceAddress)
-		}
-
-		return fmt.Sprintf("%s/%s/%s", rs.Primary.Attributes["client_id"], rs.Primary.Attributes["action_id"], rs.Primary.Attributes["rule_id"]), nil
 	}
 }

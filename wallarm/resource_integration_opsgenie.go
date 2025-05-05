@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	wallarm "github.com/wallarm/wallarm-go"
+	"github.com/wallarm/wallarm-go"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
@@ -18,19 +18,7 @@ func resourceWallarmOpsGenie() *schema.Resource {
 		Delete: resourceWallarmOpsGenieDelete,
 
 		Schema: map[string]*schema.Schema{
-			"client_id": {
-				Type:        schema.TypeInt,
-				Optional:    true,
-				Computed:    true,
-				Description: "The Client ID to perform changes",
-				ValidateFunc: func(val interface{}, key string) (warns []string, errs []error) {
-					v := val.(int)
-					if v <= 0 {
-						errs = append(errs, fmt.Errorf("%q must be positive, got: %d", key, v))
-					}
-					return
-				},
-			},
+			"client_id": defaultClientIDWithValidationSchema,
 
 			"active": {
 				Type:     schema.TypeBool,
@@ -102,16 +90,12 @@ func resourceWallarmOpsGenie() *schema.Resource {
 
 func resourceWallarmOpsGenieCreate(d *schema.ResourceData, m interface{}) error {
 	client := m.(wallarm.API)
-	clientID := retrieveClientID(d, client)
+	clientID := retrieveClientID(d)
 	name := d.Get("name").(string)
 	apiURL := d.Get("api_url").(string)
 	apiToken := d.Get("api_token").(string)
 	active := d.Get("active").(bool)
-	events, err := expandWallarmEventToIntEvents(d.Get("event").(interface{}), "opsgenie")
-	if err != nil {
-		d.SetId("")
-		return err
-	}
+	events := expandWallarmEventToIntEvents(d.Get("event"), "opsgenie")
 
 	opsGenieBody := wallarm.IntegrationWithAPICreate{
 		Name:   name,
@@ -140,15 +124,14 @@ func resourceWallarmOpsGenieCreate(d *schema.ResourceData, m interface{}) error 
 
 func resourceWallarmOpsGenieRead(d *schema.ResourceData, m interface{}) error {
 	client := m.(wallarm.API)
-	clientID := retrieveClientID(d, client)
+	clientID := retrieveClientID(d)
 	opsGenie, err := client.IntegrationRead(clientID, d.Get("integration_id").(int))
 	if err != nil {
 		if strings.HasPrefix(err.Error(), "Not found.") {
 			d.SetId("")
 			return nil
-		} else {
-			return err
 		}
+		return err
 	}
 
 	d.Set("integration_id", opsGenie.ID)
@@ -163,24 +146,20 @@ func resourceWallarmOpsGenieRead(d *schema.ResourceData, m interface{}) error {
 
 func resourceWallarmOpsGenieUpdate(d *schema.ResourceData, m interface{}) error {
 	client := m.(wallarm.API)
-	clientID := retrieveClientID(d, client)
+	clientID := retrieveClientID(d)
 	name := d.Get("name").(string)
 	apiURL := d.Get("api_url").(string)
 	apiToken := d.Get("api_token").(string)
 	active := d.Get("active").(bool)
-	events, err := expandWallarmEventToIntEvents(d.Get("event").(interface{}), "opsgenie")
-	if err != nil {
-		return err
-	}
+	events := expandWallarmEventToIntEvents(d.Get("event"), "opsgenie")
 
 	opsgenie, err := client.IntegrationRead(clientID, d.Get("integration_id").(int))
 	if err != nil {
 		if strings.HasPrefix(err.Error(), "Not found.") {
 			d.SetId("")
 			return nil
-		} else {
-			return err
 		}
+		return err
 	}
 
 	opsgenieBody := wallarm.IntegrationWithAPICreate{

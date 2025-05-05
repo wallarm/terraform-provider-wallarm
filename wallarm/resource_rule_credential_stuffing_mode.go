@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"strings"
 
-	wallarm "github.com/wallarm/wallarm-go"
+	"github.com/wallarm/wallarm-go"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
@@ -145,7 +145,7 @@ func resourceWallarmCredentialStuffingMode() *schema.Resource {
 
 func resourceWallarmCredentialStuffingModeCreate(d *schema.ResourceData, m interface{}) error {
 	client := m.(wallarm.API)
-	clientID := retrieveClientID(d, client)
+	clientID := retrieveClientID(d)
 	comment := d.Get("comment").(string)
 	mode := d.Get("mode").(string)
 
@@ -178,7 +178,7 @@ func resourceWallarmCredentialStuffingModeCreate(d *schema.ResourceData, m inter
 
 func resourceWallarmCredentialStuffingModeRead(d *schema.ResourceData, m interface{}) error {
 	client := m.(wallarm.API)
-	clientID := retrieveClientID(d, client)
+	clientID := retrieveClientID(d)
 	ruleID := d.Get("rule_id").(int)
 
 	rule, err := findRule(client, clientID, ruleID)
@@ -194,7 +194,6 @@ func resourceWallarmCredentialStuffingModeRead(d *schema.ResourceData, m interfa
 	}
 
 	d.Set("mode", rule.Mode)
-
 	d.Set("rule_type", rule.Type)
 	d.Set("action_id", rule.ActionID)
 	actionsSet := schema.Set{F: hashResponseActionDetails}
@@ -205,16 +204,14 @@ func resourceWallarmCredentialStuffingModeRead(d *schema.ResourceData, m interfa
 		}
 		actionsSet.Add(acts)
 	}
-	if err := d.Set("action", &actionsSet); err != nil {
-		return err
-	}
+	d.Set("action", &actionsSet)
 
 	return nil
 }
 
 func resourceWallarmCredentialStuffingModeDelete(d *schema.ResourceData, m interface{}) error {
 	client := m.(wallarm.API)
-	clientID := retrieveClientID(d, client)
+	clientID := retrieveClientID(d)
 	ruleID := d.Get("rule_id").(int)
 
 	err := client.HintDelete(&wallarm.HintDelete{

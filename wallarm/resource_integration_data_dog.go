@@ -3,7 +3,7 @@ package wallarm
 import (
 	"fmt"
 
-	wallarm "github.com/wallarm/wallarm-go"
+	"github.com/wallarm/wallarm-go"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
@@ -17,19 +17,7 @@ func resourceWallarmDataDog() *schema.Resource {
 		Delete: resourceWallarmDataDogDelete,
 
 		Schema: map[string]*schema.Schema{
-			"client_id": {
-				Type:        schema.TypeInt,
-				Optional:    true,
-				Computed:    true,
-				Description: "The Client ID to perform changes",
-				ValidateFunc: func(val interface{}, key string) (warns []string, errs []error) {
-					v := val.(int)
-					if v <= 0 {
-						errs = append(errs, fmt.Errorf("%q must be positive, got: %d", key, v))
-					}
-					return
-				},
-			},
+			"client_id": defaultClientIDWithValidationSchema,
 
 			"active": {
 				Type:     schema.TypeBool,
@@ -98,15 +86,12 @@ func resourceWallarmDataDog() *schema.Resource {
 
 func resourceWallarmDataDogCreate(d *schema.ResourceData, m interface{}) error {
 	client := m.(wallarm.API)
-	clientID := retrieveClientID(d, client)
+	clientID := retrieveClientID(d)
 	name := d.Get("name").(string)
 	token := d.Get("token").(string)
 	region := d.Get("region").(string)
 	active := d.Get("active").(bool)
-	events, err := expandWallarmEventToIntEvents(d.Get("event").(interface{}), "data_dog")
-	if err != nil {
-		return err
-	}
+	events := expandWallarmEventToIntEvents(d.Get("event"), "data_dog")
 
 	ddBody := wallarm.IntegrationCreate{
 		Name:   name,
@@ -135,7 +120,7 @@ func resourceWallarmDataDogCreate(d *schema.ResourceData, m interface{}) error {
 
 func resourceWallarmDataDogRead(d *schema.ResourceData, m interface{}) error {
 	client := m.(wallarm.API)
-	clientID := retrieveClientID(d, client)
+	clientID := retrieveClientID(d)
 	dd, err := client.IntegrationRead(clientID, d.Get("integration_id").(int))
 	if err != nil {
 		return err
@@ -153,15 +138,12 @@ func resourceWallarmDataDogRead(d *schema.ResourceData, m interface{}) error {
 
 func resourceWallarmDataDogUpdate(d *schema.ResourceData, m interface{}) error {
 	client := m.(wallarm.API)
-	clientID := retrieveClientID(d, client)
+	clientID := retrieveClientID(d)
 	name := d.Get("name").(string)
 	region := d.Get("region").(string)
 	token := d.Get("token").(string)
 	active := d.Get("active").(bool)
-	events, err := expandWallarmEventToIntEvents(d.Get("event").(interface{}), "data_dog")
-	if err != nil {
-		return err
-	}
+	events := expandWallarmEventToIntEvents(d.Get("event"), "data_dog")
 
 	dd, err := client.IntegrationRead(clientID, d.Get("integration_id").(int))
 	if err != nil {

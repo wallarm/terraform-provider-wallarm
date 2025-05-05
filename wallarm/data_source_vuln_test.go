@@ -84,7 +84,7 @@ func TestAccWallarmVulnFilterOffset(t *testing.T) {
 func testAccWallarmVuln(n string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		var (
-			limit     int = 1000
+			limit     = 1000
 			vulnCount int
 			err       error
 		)
@@ -107,7 +107,7 @@ func testAccWallarmVuln(n string) resource.TestCheckFunc {
 		}
 
 		if vulnCount > limit {
-			return fmt.Errorf(`the API returned more vulnerabilites %d than requested %d`, vulnCount, limit)
+			return fmt.Errorf(`the API returned more vulnerabilities %d than requested %d`, vulnCount, limit)
 		}
 
 		return nil
@@ -139,16 +139,6 @@ const testAccWallarmVulnFilterOffset = `
 data "wallarm_vuln" "vulns" {
 	filter {
 		offset = 100
-	}
-}
-`
-
-const testAccWallarmVulnFilterFullConfig = `
-data "wallarm_vuln" "vulns" {
-	filter {
-		status = "open"
-		limit = 100
-		offset = 0
 	}
 }
 `

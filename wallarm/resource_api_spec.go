@@ -1,18 +1,18 @@
 package wallarm
 
 import (
-	"fmt"
+	"strconv"
 
-	wallarm "github.com/wallarm/wallarm-go"
+	"github.com/wallarm/wallarm-go"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
-func resourceWallarmApiSpec() *schema.Resource {
+func resourceWallarmAPISpec() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceWallarmApiSpecCreate,
-		Read:   resourceWallarmApiSpecRead,
-		Delete: resourceWallarmApiSpecDelete,
+		Create: resourceWallarmAPISpecCreate,
+		Read:   resourceWallarmAPISpecRead,
+		Delete: resourceWallarmAPISpecDelete,
 
 		Schema: map[string]*schema.Schema{
 			"client_id": {
@@ -77,7 +77,7 @@ func resourceWallarmApiSpec() *schema.Resource {
 	}
 }
 
-func resourceWallarmApiSpecCreate(d *schema.ResourceData, m interface{}) error {
+func resourceWallarmAPISpecCreate(d *schema.ResourceData, m interface{}) error {
 	client := m.(wallarm.API)
 
 	apiSpecBody := wallarm.ApiSpecCreate{
@@ -97,12 +97,12 @@ func resourceWallarmApiSpecCreate(d *schema.ResourceData, m interface{}) error {
 	}
 
 	d.Set("api_spec_id", createRes.Body.ID)
-	d.SetId(fmt.Sprintf("%d", createRes.Body.ID))
+	d.SetId(strconv.Itoa(createRes.Body.ID))
 
-	return resourceWallarmApiSpecRead(d, m)
+	return resourceWallarmAPISpecRead(d, m)
 }
 
-func resourceWallarmApiSpecRead(d *schema.ResourceData, m interface{}) error {
+func resourceWallarmAPISpecRead(d *schema.ResourceData, m interface{}) error {
 	client := m.(wallarm.API)
 	clientID := d.Get("client_id").(int)
 	apiSpecID := d.Get("api_spec_id").(int)
@@ -124,10 +124,11 @@ func resourceWallarmApiSpecRead(d *schema.ResourceData, m interface{}) error {
 	d.Set("client_id", apiSpec.ClientID)
 	d.Set("instances", apiSpec.Instances)
 	d.Set("domains", apiSpec.Domains)
+
 	return nil
 }
 
-func resourceWallarmApiSpecDelete(d *schema.ResourceData, m interface{}) error {
+func resourceWallarmAPISpecDelete(d *schema.ResourceData, m interface{}) error {
 	client := m.(wallarm.API)
 	clientID := d.Get("client_id").(int)
 	apiSpecID := d.Get("api_spec_id").(int)

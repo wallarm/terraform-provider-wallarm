@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"sort"
 
-	wallarm "github.com/wallarm/wallarm-go"
+	"github.com/wallarm/wallarm-go"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
@@ -19,19 +19,7 @@ func resourceWallarmScanner() *schema.Resource {
 		Delete: resourceWallarmScannerDelete,
 
 		Schema: map[string]*schema.Schema{
-			"client_id": {
-				Type:        schema.TypeInt,
-				Optional:    true,
-				Computed:    true,
-				Description: "The Client ID to perform changes",
-				ValidateFunc: func(val interface{}, key string) (warns []string, errs []error) {
-					v := val.(int)
-					if v <= 0 {
-						errs = append(errs, fmt.Errorf("%q must be positive, got: %d", key, v))
-					}
-					return
-				},
-			},
+			"client_id": defaultClientIDWithValidationSchema,
 
 			"element": {
 				Type:     schema.TypeList,
@@ -56,9 +44,9 @@ func resourceWallarmScanner() *schema.Resource {
 
 func resourceWallarmScannerCreate(d *schema.ResourceData, m interface{}) error {
 	client := m.(wallarm.API)
-	clientID := retrieveClientID(d, client)
+	clientID := retrieveClientID(d)
 	elementInterface := d.Get("element").([]interface{})
-	var element []string
+	element := make([]string, 0, len(elementInterface))
 	for _, v := range elementInterface {
 		element = append(element, v.(string))
 	}
@@ -95,9 +83,7 @@ func resourceWallarmScannerCreate(d *schema.ResourceData, m interface{}) error {
 		return ImportAsExistsError("wallarm_scanner", existingID)
 	}
 
-	if err := d.Set("resource_id", resources); err != nil {
-		return err
-	}
+	d.Set("resource_id", resources)
 
 	if d.Get("disabled").(bool) {
 		for k, resID := range resources {
@@ -126,15 +112,15 @@ func resourceWallarmScannerCreate(d *schema.ResourceData, m interface{}) error {
 	return nil
 }
 
-func resourceWallarmScannerRead(d *schema.ResourceData, m interface{}) error {
+func resourceWallarmScannerRead(_ *schema.ResourceData, _ interface{}) error {
 	return nil
 }
 
 func resourceWallarmScannerUpdate(d *schema.ResourceData, m interface{}) error {
 	client := m.(wallarm.API)
-	clientID := retrieveClientID(d, client)
+	clientID := retrieveClientID(d)
 	elementInterface := d.Get("element").([]interface{})
-	var element []string
+	element := make([]string, 0, len(elementInterface))
 	for _, v := range elementInterface {
 		element = append(element, v.(string))
 	}
@@ -205,16 +191,13 @@ func resourceWallarmScannerUpdate(d *schema.ResourceData, m interface{}) error {
 		for k, v := range resIDreversed {
 			if wallarm.Contains(delElem, k) {
 				continue
-			} else {
-				resourcesUpdated[v] = k
 			}
+			resourcesUpdated[v] = k
 		}
 
 		resourcesID := appendMap(resourcesUpdated, resources)
 
-		if err := d.Set("resource_id", resourcesID); err != nil {
-			return err
-		}
+		d.Set("resource_id", resourcesID)
 
 		if d.HasChange("disabled") {
 			for k, resID := range resourcesID {
@@ -236,7 +219,7 @@ func resourceWallarmScannerUpdate(d *schema.ResourceData, m interface{}) error {
 		}
 
 	default:
-		resourceWallarmScannerCreate(d, m)
+		return resourceWallarmScannerCreate(d, m)
 	}
 
 	return nil
@@ -244,7 +227,7 @@ func resourceWallarmScannerUpdate(d *schema.ResourceData, m interface{}) error {
 
 func resourceWallarmScannerDelete(d *schema.ResourceData, m interface{}) error {
 	client := m.(wallarm.API)
-	clientID := retrieveClientID(d, client)
+	clientID := retrieveClientID(d)
 
 	switch resourceIDs := d.Get("resource_id").(type) {
 
@@ -317,6 +300,6 @@ func scopeDeletion(client wallarm.API, clientID int, resourceIDs map[string]inte
 			}
 		}
 	}
-	delElem := append(deleteIP, deleteDomain...)
+	delElem := append(deleteIP, deleteDomain...) // nolint:gocritic
 	return delElem, nil
 }

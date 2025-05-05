@@ -1,9 +1,9 @@
 package wallarm
 
 import (
+	"crypto/rand"
 	"fmt"
 	"log"
-	"math/rand"
 	"os"
 	"regexp"
 	"strconv"
@@ -17,7 +17,7 @@ import (
 var testAccProviders map[string]terraform.ResourceProvider
 var testAccProvider *schema.Provider
 
-func init() {
+func init() { // nolint:gochecknoinits
 	testAccProvider = Provider().(*schema.Provider)
 	testAccProviders = map[string]terraform.ResourceProvider{
 		"wallarm": testAccProvider,
@@ -30,14 +30,11 @@ func TestProvider(t *testing.T) {
 	}
 }
 
-func TestProvider_impl(t *testing.T) {
+func TestProvider_impl(_ *testing.T) {
 	var _ terraform.ResourceProvider = Provider()
 }
 
-type preCheckFunc = func(*testing.T)
-
 func testAccPreCheck(t *testing.T) {
-
 	if v := os.Getenv("WALLARM_API_HOST"); v == "" {
 		t.Fatal(`
 		WALLARM_API_HOST must be set for acceptance tests

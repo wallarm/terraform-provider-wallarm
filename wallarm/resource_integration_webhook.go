@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	wallarm "github.com/wallarm/wallarm-go"
+	"github.com/wallarm/wallarm-go"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
@@ -18,19 +18,7 @@ func resourceWallarmWebhook() *schema.Resource {
 		Delete: resourceWallarmWebhookDelete,
 
 		Schema: map[string]*schema.Schema{
-			"client_id": {
-				Type:        schema.TypeInt,
-				Optional:    true,
-				Computed:    true,
-				Description: "The Client ID to perform changes",
-				ValidateFunc: func(val interface{}, key string) (warns []string, errs []error) {
-					v := val.(int)
-					if v <= 0 {
-						errs = append(errs, fmt.Errorf("%q must be positive, got: %d", key, v))
-					}
-					return
-				},
-			},
+			"client_id": defaultClientIDWithValidationSchema,
 
 			"active": {
 				Type:     schema.TypeBool,
@@ -141,7 +129,7 @@ func resourceWallarmWebhook() *schema.Resource {
 
 func resourceWallarmWebhookCreate(d *schema.ResourceData, m interface{}) error {
 	client := m.(wallarm.API)
-	clientID := retrieveClientID(d, client)
+	clientID := retrieveClientID(d)
 	name := d.Get("name").(string)
 	active := d.Get("active").(bool)
 	webhookURL := d.Get("webhook_url").(string)
@@ -153,11 +141,7 @@ func resourceWallarmWebhookCreate(d *schema.ResourceData, m interface{}) error {
 	headers := d.Get("headers").(map[string]interface{})
 	format := d.Get("format").(string)
 
-	events, err := expandWallarmEventToIntEvents(d.Get("event").(interface{}), "web_hooks")
-	if err != nil {
-		d.SetId("")
-		return err
-	}
+	events := expandWallarmEventToIntEvents(d.Get("event"), "web_hooks")
 
 	webhookBody := wallarm.IntegrationWithAPICreate{
 		Name:   name,
@@ -192,15 +176,14 @@ func resourceWallarmWebhookCreate(d *schema.ResourceData, m interface{}) error {
 
 func resourceWallarmWebhookRead(d *schema.ResourceData, m interface{}) error {
 	client := m.(wallarm.API)
-	clientID := retrieveClientID(d, client)
+	clientID := retrieveClientID(d)
 	webhook, err := client.IntegrationRead(clientID, d.Get("integration_id").(int))
 	if err != nil {
 		if strings.HasPrefix(err.Error(), "Not found.") {
 			d.SetId("")
 			return nil
-		} else {
-			return err
 		}
+		return err
 	}
 
 	d.Set("integration_id", webhook.ID)
@@ -215,7 +198,7 @@ func resourceWallarmWebhookRead(d *schema.ResourceData, m interface{}) error {
 
 func resourceWallarmWebhookUpdate(d *schema.ResourceData, m interface{}) error {
 	client := m.(wallarm.API)
-	clientID := retrieveClientID(d, client)
+	clientID := retrieveClientID(d)
 	name := d.Get("name").(string)
 	active := d.Get("active").(bool)
 	webhookURL := d.Get("webhook_url").(string)
@@ -227,19 +210,15 @@ func resourceWallarmWebhookUpdate(d *schema.ResourceData, m interface{}) error {
 	headers := d.Get("headers").(map[string]interface{})
 	format := d.Get("format").(string)
 
-	events, err := expandWallarmEventToIntEvents(d.Get("event").(interface{}), "web_hooks")
-	if err != nil {
-		return err
-	}
+	events := expandWallarmEventToIntEvents(d.Get("event"), "web_hooks")
 
 	webhook, err := client.IntegrationRead(clientID, d.Get("integration_id").(int))
 	if err != nil {
 		if strings.HasPrefix(err.Error(), "Not found.") {
 			d.SetId("")
 			return nil
-		} else {
-			return err
 		}
+		return err
 	}
 
 	webhookBody := wallarm.IntegrationWithAPICreate{

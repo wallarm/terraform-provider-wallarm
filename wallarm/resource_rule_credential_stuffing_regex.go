@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"strings"
 
-	wallarm "github.com/wallarm/wallarm-go"
+	"github.com/wallarm/wallarm-go"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
@@ -161,7 +161,7 @@ func resourceWallarmCredentialStuffingRegex() *schema.Resource {
 
 func resourceWallarmCredentialStuffingRegexCreate(d *schema.ResourceData, m interface{}) error {
 	client := m.(wallarm.API)
-	clientID := retrieveClientID(d, client)
+	clientID := retrieveClientID(d)
 	comment := d.Get("comment").(string)
 	regex := d.Get("regex").(string)
 	credStuffType := d.Get("cred_stuff_type").(string)
@@ -200,7 +200,7 @@ func resourceWallarmCredentialStuffingRegexCreate(d *schema.ResourceData, m inte
 
 func resourceWallarmCredentialStuffingRegexRead(d *schema.ResourceData, m interface{}) error {
 	client := m.(wallarm.API)
-	clientID := retrieveClientID(d, client)
+	clientID := retrieveClientID(d)
 	ruleID := d.Get("rule_id").(int)
 
 	rule, err := findRule(client, clientID, ruleID)
@@ -219,7 +219,6 @@ func resourceWallarmCredentialStuffingRegexRead(d *schema.ResourceData, m interf
 	d.Set("cred_stuff_type", rule.CredStuffType)
 	d.Set("case_sensitive", rule.CaseSensitive)
 	d.Set("login_regex", rule.LoginRegex)
-
 	d.Set("rule_type", rule.Type)
 	d.Set("action_id", rule.ActionID)
 	actionsSet := schema.Set{F: hashResponseActionDetails}
@@ -230,16 +229,14 @@ func resourceWallarmCredentialStuffingRegexRead(d *schema.ResourceData, m interf
 		}
 		actionsSet.Add(acts)
 	}
-	if err := d.Set("action", &actionsSet); err != nil {
-		return err
-	}
+	d.Set("action", &actionsSet)
 
 	return nil
 }
 
 func resourceWallarmCredentialStuffingRegexDelete(d *schema.ResourceData, m interface{}) error {
 	client := m.(wallarm.API)
-	clientID := retrieveClientID(d, client)
+	clientID := retrieveClientID(d)
 	ruleID := d.Get("rule_id").(int)
 
 	err := client.HintDelete(&wallarm.HintDelete{

@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	wallarm "github.com/wallarm/wallarm-go"
+	"github.com/wallarm/wallarm-go"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
@@ -20,19 +20,7 @@ func resourceWallarmIPList(listType wallarm.IPListType) *schema.Resource {
 		Update: resourceWallarmIPListUpdate(listType),
 		Delete: resourceWallarmIPListDelete(listType),
 		Schema: map[string]*schema.Schema{
-			"client_id": {
-				Type:        schema.TypeInt,
-				Optional:    true,
-				Computed:    true,
-				Description: "The Client ID to perform changes",
-				ValidateFunc: func(val interface{}, key string) (warns []string, errs []error) {
-					v := val.(int)
-					if v <= 0 {
-						errs = append(errs, fmt.Errorf("%q must be positive, got: %d", key, v))
-					}
-					return
-				},
-			},
+			"client_id": defaultClientIDWithValidationSchema,
 			"ip_range": {
 				Type:     schema.TypeList,
 				Required: true,
@@ -80,7 +68,7 @@ func resourceWallarmIPList(listType wallarm.IPListType) *schema.Resource {
 func resourceWallarmIPListCreate(listType wallarm.IPListType) schema.CreateFunc {
 	return func(d *schema.ResourceData, m interface{}) error {
 		client := m.(wallarm.API)
-		clientID := retrieveClientID(d, client)
+		clientID := retrieveClientID(d)
 
 		var ips []string
 		v := d.Get("ip_range")
@@ -98,7 +86,7 @@ func resourceWallarmIPListCreate(listType wallarm.IPListType) schema.CreateFunc 
 			ips = append(ips, v.(string))
 		}
 
-		apps := []int{}
+		var apps []int
 		if v, ok := d.GetOk("application"); ok {
 			applications := v.([]interface{})
 			apps = make([]int, len(applications))
@@ -125,7 +113,7 @@ func resourceWallarmIPListCreate(listType wallarm.IPListType) schema.CreateFunc 
 
 		var unixTime int
 		switch d.Get("time_format") {
-		case "Minutes":
+		case Minutes:
 			expireTime, err := strconv.Atoi(d.Get("time").(string))
 			if err != nil {
 				return fmt.Errorf("cannot parse time to integer. must be the number when `time_format` equals `Minute`, got %v", err)
@@ -214,14 +202,14 @@ func resourceWallarmIPListCreate(listType wallarm.IPListType) schema.CreateFunc 
 func resourceWallarmIPListRead(listType wallarm.IPListType) schema.ReadFunc {
 	return func(d *schema.ResourceData, m interface{}) error {
 		client := m.(wallarm.API)
-		clientID := retrieveClientID(d, client)
+		clientID := retrieveClientID(d)
 		IPRange := d.Get("ip_range").([]interface{})
 		ips := make([]string, len(IPRange))
 		for i := range IPRange {
 			ips[i] = IPRange[i].(string)
 		}
 
-		apps := []int{}
+		var apps []int
 		if v, ok := d.GetOk("application"); ok {
 			applications := v.([]interface{})
 			apps = make([]int, len(applications))
@@ -299,7 +287,7 @@ func resourceWallarmIPListRead(listType wallarm.IPListType) schema.ReadFunc {
 			return nil
 		}
 
-		if err := d.Set("address_id", addrIDs); err != nil {
+		if err = d.Set("address_id", addrIDs); err != nil {
 			return fmt.Errorf("cannot set content for ip_range: %v", err)
 		}
 
@@ -321,7 +309,7 @@ func resourceWallarmIPListUpdate(listType wallarm.IPListType) schema.UpdateFunc 
 func resourceWallarmIPListDelete(listType wallarm.IPListType) schema.DeleteFunc {
 	return func(d *schema.ResourceData, m interface{}) error {
 		client := m.(wallarm.API)
-		clientID := retrieveClientID(d, client)
+		clientID := retrieveClientID(d)
 		addrIDInterface := d.Get("address_id").([]interface{})
 		addrIDs := make([]map[string]interface{}, len(addrIDInterface))
 		for i := range addrIDInterface {

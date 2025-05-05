@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"strings"
 
-	wallarm "github.com/wallarm/wallarm-go"
+	"github.com/wallarm/wallarm-go"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
@@ -22,19 +22,7 @@ func resourceWallarmApp() *schema.Resource {
 		},
 
 		Schema: map[string]*schema.Schema{
-			"client_id": {
-				Type:        schema.TypeInt,
-				Optional:    true,
-				Computed:    true,
-				Description: "The Client ID to perform changes",
-				ValidateFunc: func(val interface{}, key string) (warns []string, errs []error) {
-					v := val.(int)
-					if v <= 0 {
-						errs = append(errs, fmt.Errorf("%q must be positive, got: %d", key, v))
-					}
-					return
-				},
-			},
+			"client_id": defaultClientIDWithValidationSchema,
 			"name": {
 				Type:     schema.TypeString,
 				Required: true,
@@ -57,7 +45,7 @@ func resourceWallarmApp() *schema.Resource {
 
 func resourceWallarmAppCreate(d *schema.ResourceData, m interface{}) error {
 	client := m.(wallarm.API)
-	clientID := retrieveClientID(d, client)
+	clientID := retrieveClientID(d)
 	name := d.Get("name").(string)
 	appID := d.Get("app_id").(int)
 
@@ -86,7 +74,7 @@ func resourceWallarmAppCreate(d *schema.ResourceData, m interface{}) error {
 
 func resourceWallarmAppRead(d *schema.ResourceData, m interface{}) error {
 	client := m.(wallarm.API)
-	clientID := retrieveClientID(d, client)
+	clientID := retrieveClientID(d)
 	name := d.Get("name").(string)
 	appID := d.Get("app_id").(int)
 
@@ -118,7 +106,7 @@ func resourceWallarmAppRead(d *schema.ResourceData, m interface{}) error {
 
 func resourceWallarmAppUpdate(d *schema.ResourceData, m interface{}) error {
 	client := m.(wallarm.API)
-	clientID := retrieveClientID(d, client)
+	clientID := retrieveClientID(d)
 	appID := d.Get("app_id").(int)
 	name := d.Get("name").(string)
 
@@ -148,7 +136,7 @@ func resourceWallarmAppUpdate(d *schema.ResourceData, m interface{}) error {
 
 func resourceWallarmAppDelete(d *schema.ResourceData, m interface{}) error {
 	client := m.(wallarm.API)
-	clientID := retrieveClientID(d, client)
+	clientID := retrieveClientID(d)
 	appID := d.Get("app_id").(int)
 
 	appBody := &wallarm.AppDelete{
@@ -205,7 +193,9 @@ func resourceWallarmAppImport(d *schema.ResourceData, m interface{}) ([]*schema.
 		return nil, fmt.Errorf("invalid id (%q) specified, should be in format \"{clientID}/{name}/{id}\"", d.Id())
 	}
 
-	resourceWallarmAppRead(d, m)
+	if err := resourceWallarmAppRead(d, m); err != nil {
+		return nil, err
+	}
 
 	return []*schema.ResourceData{d}, nil
 }

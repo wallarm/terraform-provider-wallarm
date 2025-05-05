@@ -3,12 +3,13 @@ package wallarm
 import (
 	"fmt"
 
-	wallarm "github.com/wallarm/wallarm-go"
+	"github.com/wallarm/wallarm-go"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 )
 
+// nolint:dupl
 func resourceWallarmTeams() *schema.Resource {
 	return &schema.Resource{
 		Create: resourceWallarmTeamsCreate,
@@ -17,19 +18,7 @@ func resourceWallarmTeams() *schema.Resource {
 		Delete: resourceWallarmTeamsDelete,
 
 		Schema: map[string]*schema.Schema{
-			"client_id": {
-				Type:        schema.TypeInt,
-				Optional:    true,
-				Computed:    true,
-				Description: "The Client ID to perform changes",
-				ValidateFunc: func(val interface{}, key string) (warns []string, errs []error) {
-					v := val.(int)
-					if v <= 0 {
-						errs = append(errs, fmt.Errorf("%q must be positive, got: %d", key, v))
-					}
-					return
-				},
-			},
+			"client_id": defaultClientIDWithValidationSchema,
 
 			"active": {
 				Type:     schema.TypeBool,
@@ -95,14 +84,11 @@ func resourceWallarmTeams() *schema.Resource {
 
 func resourceWallarmTeamsCreate(d *schema.ResourceData, m interface{}) error {
 	client := m.(wallarm.API)
-	clientID := retrieveClientID(d, client)
+	clientID := retrieveClientID(d)
 	name := d.Get("name").(string)
 	webhookURL := d.Get("webhook_url").(string)
 	active := d.Get("active").(bool)
-	events, err := expandWallarmEventToIntEvents(d.Get("event").(interface{}), "ms_teams")
-	if err != nil {
-		return err
-	}
+	events := expandWallarmEventToIntEvents(d.Get("event"), "ms_teams")
 
 	teamsBody := wallarm.IntegrationCreate{
 		Name:     name,
@@ -128,7 +114,7 @@ func resourceWallarmTeamsCreate(d *schema.ResourceData, m interface{}) error {
 
 func resourceWallarmTeamsRead(d *schema.ResourceData, m interface{}) error {
 	client := m.(wallarm.API)
-	clientID := retrieveClientID(d, client)
+	clientID := retrieveClientID(d)
 	teams, err := client.IntegrationRead(clientID, d.Get("integration_id").(int))
 	if err != nil {
 		return err
@@ -145,14 +131,11 @@ func resourceWallarmTeamsRead(d *schema.ResourceData, m interface{}) error {
 
 func resourceWallarmTeamsUpdate(d *schema.ResourceData, m interface{}) error {
 	client := m.(wallarm.API)
-	clientID := retrieveClientID(d, client)
+	clientID := retrieveClientID(d)
 	name := d.Get("name").(string)
 	webhookURL := d.Get("webhook_url").(string)
 	active := d.Get("active").(bool)
-	events, err := expandWallarmEventToIntEvents(d.Get("event").(interface{}), "ms_teams")
-	if err != nil {
-		return err
-	}
+	events := expandWallarmEventToIntEvents(d.Get("event"), "ms_teams")
 
 	teams, err := client.IntegrationRead(clientID, d.Get("integration_id").(int))
 	if err != nil {
