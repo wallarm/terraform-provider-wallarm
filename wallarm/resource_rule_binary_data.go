@@ -10,9 +10,23 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/samber/lo"
 )
 
 func resourceWallarmBinaryData() *schema.Resource {
+	fields := map[string]*schema.Schema{
+		"action": defaultResourceRuleActionSchema,
+		"point": {
+			Type:     schema.TypeList,
+			Required: true,
+			ForceNew: true,
+			Elem: &schema.Schema{
+				Type: schema.TypeList,
+				Elem: &schema.Schema{Type: schema.TypeString},
+			},
+		},
+	}
+
 	return &schema.Resource{
 		Create: resourceWallarmBinaryDataCreate,
 		Read:   resourceWallarmBinaryDataRead,
@@ -20,51 +34,14 @@ func resourceWallarmBinaryData() *schema.Resource {
 		Importer: &schema.ResourceImporter{
 			State: resourceWallarmBinaryDataImport,
 		},
-
-		Schema: map[string]*schema.Schema{
-
-			"rule_id": {
-				Type:     schema.TypeInt,
-				Computed: true,
-			},
-
-			"action_id": {
-				Type:     schema.TypeInt,
-				Computed: true,
-			},
-
-			"rule_type": {
-				Type:     schema.TypeString,
-				Computed: true,
-			},
-
-			"client_id": defaultClientIDWithValidationSchema,
-
-			"comment": {
-				Type:     schema.TypeString,
-				Optional: true,
-				ForceNew: true,
-			},
-
-			"action": defaultResourceRuleActionSchema,
-
-			"point": {
-				Type:     schema.TypeList,
-				Required: true,
-				ForceNew: true,
-				Elem: &schema.Schema{
-					Type: schema.TypeList,
-					Elem: &schema.Schema{Type: schema.TypeString},
-				},
-			},
-		},
+		Schema: lo.Assign(fields, commonResourceRuleFields),
 	}
 }
 
 func resourceWallarmBinaryDataCreate(d *schema.ResourceData, m interface{}) error {
 	client := m.(wallarm.API)
 	clientID := retrieveClientID(d)
-	comment := d.Get("comment").(string)
+	fields := getCommonResourceRuleFieldsDTOFromResourceData(d)
 
 	ps := d.Get("point").([]interface{})
 	d.Set("point", ps)
@@ -86,8 +63,12 @@ func resourceWallarmBinaryDataCreate(d *schema.ResourceData, m interface{}) erro
 		Action:              &action,
 		Point:               points,
 		Validated:           false,
-		Comment:             comment,
+		Comment:             fields.Comment,
 		VariativityDisabled: true,
+		Set:                 fields.Set,
+		Active:              fields.Active,
+		Title:               fields.Title,
+		Mitigation:          fields.Mitigation,
 	}
 
 	actionResp, err := client.HintCreate(wm)

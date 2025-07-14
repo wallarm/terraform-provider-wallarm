@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/samber/lo"
 	"github.com/wallarm/wallarm-go"
 
 	"github.com/google/go-cmp/cmp"
@@ -13,6 +14,42 @@ import (
 )
 
 func resourceWallarmRegex() *schema.Resource {
+	fields := map[string]*schema.Schema{
+		"regex_id": {
+			Type:     schema.TypeFloat,
+			Computed: true,
+		},
+		"attack_type": {
+			Type:     schema.TypeString,
+			Required: true,
+			ForceNew: true,
+		},
+
+		"action": defaultResourceRuleActionSchema,
+
+		"regex": {
+			Type:     schema.TypeString,
+			Required: true,
+			ForceNew: true,
+		},
+
+		"point": {
+			Type:     schema.TypeList,
+			Required: true,
+			ForceNew: true,
+			Elem: &schema.Schema{
+				Type: schema.TypeList,
+				Elem: &schema.Schema{Type: schema.TypeString},
+			},
+		},
+
+		"experimental": {
+			Type:     schema.TypeBool,
+			Optional: true,
+			Default:  true,
+			ForceNew: true,
+		},
+	}
 	return &schema.Resource{
 		Create: resourceWallarmRegexCreate,
 		Read:   resourceWallarmRegexRead,
@@ -20,68 +57,7 @@ func resourceWallarmRegex() *schema.Resource {
 		Importer: &schema.ResourceImporter{
 			State: resourceWallarmRegexImport,
 		},
-
-		Schema: map[string]*schema.Schema{
-
-			"rule_id": {
-				Type:     schema.TypeInt,
-				Computed: true,
-			},
-
-			"action_id": {
-				Type:     schema.TypeInt,
-				Computed: true,
-			},
-
-			"rule_type": {
-				Type:     schema.TypeString,
-				Computed: true,
-			},
-
-			"regex_id": {
-				Type:     schema.TypeFloat,
-				Computed: true,
-			},
-
-			"client_id": defaultClientIDWithValidationSchema,
-
-			"comment": {
-				Type:     schema.TypeString,
-				Optional: true,
-				ForceNew: true,
-			},
-
-			"attack_type": {
-				Type:     schema.TypeString,
-				Required: true,
-				ForceNew: true,
-			},
-
-			"action": defaultResourceRuleActionSchema,
-
-			"regex": {
-				Type:     schema.TypeString,
-				Required: true,
-				ForceNew: true,
-			},
-
-			"point": {
-				Type:     schema.TypeList,
-				Required: true,
-				ForceNew: true,
-				Elem: &schema.Schema{
-					Type: schema.TypeList,
-					Elem: &schema.Schema{Type: schema.TypeString},
-				},
-			},
-
-			"experimental": {
-				Type:     schema.TypeBool,
-				Optional: true,
-				Default:  true,
-				ForceNew: true,
-			},
-		},
+		Schema: lo.Assign(fields, commonResourceRuleFields),
 	}
 }
 
@@ -96,7 +72,7 @@ func resourceWallarmRegexCreate(d *schema.ResourceData, m interface{}) error {
 
 	client := m.(wallarm.API)
 	clientID := retrieveClientID(d)
-	comment := d.Get("comment").(string)
+	fields := getCommonResourceRuleFieldsDTOFromResourceData(d)
 	regex := d.Get("regex").(string)
 	attackType := d.Get("attack_type").(string)
 
@@ -122,8 +98,12 @@ func resourceWallarmRegexCreate(d *schema.ResourceData, m interface{}) error {
 		Point:               points,
 		Regex:               regex,
 		Validated:           false,
-		Comment:             comment,
+		Comment:             fields.Comment,
 		VariativityDisabled: true,
+		Set:                 fields.Set,
+		Active:              fields.Active,
+		Title:               fields.Title,
+		Mitigation:          fields.Mitigation,
 	}
 	regexResp, err := client.HintCreate(rx)
 	if err != nil {

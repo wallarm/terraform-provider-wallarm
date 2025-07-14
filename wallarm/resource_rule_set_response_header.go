@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/samber/lo"
 	"github.com/wallarm/wallarm-go"
 
 	"github.com/google/go-cmp/cmp"
@@ -14,6 +15,29 @@ import (
 )
 
 func resourceWallarmSetResponseHeader() *schema.Resource {
+	fields := map[string]*schema.Schema{
+		"mode": {
+			Type:         schema.TypeString,
+			Required:     true,
+			ForceNew:     true,
+			ValidateFunc: validation.StringInSlice([]string{"append", "replace"}, false),
+		},
+
+		"name": {
+			Type:     schema.TypeString,
+			Required: true,
+			ForceNew: true,
+		},
+
+		"values": {
+			Type:     schema.TypeList,
+			Required: true,
+			ForceNew: true,
+			Elem:     &schema.Schema{Type: schema.TypeString},
+		},
+
+		"action": defaultResourceRuleActionSchema,
+	}
 	return &schema.Resource{
 		Create: resourceWallarmSetResponseHeaderCreate,
 		Read:   resourceWallarmSetResponseHeaderRead,
@@ -22,61 +46,14 @@ func resourceWallarmSetResponseHeader() *schema.Resource {
 		Importer: &schema.ResourceImporter{
 			State: resourceWallarmSetResponseHeaderImport,
 		},
-
-		Schema: map[string]*schema.Schema{
-
-			"rule_id": {
-				Type:     schema.TypeInt,
-				Computed: true,
-			},
-
-			"action_id": {
-				Type:     schema.TypeInt,
-				Computed: true,
-			},
-
-			"rule_type": {
-				Type:     schema.TypeString,
-				Computed: true,
-			},
-
-			"client_id": defaultClientIDWithValidationSchema,
-
-			"comment": {
-				Type:     schema.TypeString,
-				Optional: true,
-				ForceNew: true,
-			},
-
-			"mode": {
-				Type:         schema.TypeString,
-				Required:     true,
-				ForceNew:     true,
-				ValidateFunc: validation.StringInSlice([]string{"append", "replace"}, false),
-			},
-
-			"name": {
-				Type:     schema.TypeString,
-				Required: true,
-				ForceNew: true,
-			},
-
-			"values": {
-				Type:     schema.TypeList,
-				Required: true,
-				ForceNew: true,
-				Elem:     &schema.Schema{Type: schema.TypeString},
-			},
-
-			"action": defaultResourceRuleActionSchema,
-		},
+		Schema: lo.Assign(fields, commonResourceRuleFields),
 	}
 }
 
 func resourceWallarmSetResponseHeaderCreate(d *schema.ResourceData, m interface{}) error {
 	client := m.(wallarm.API)
 	clientID := retrieveClientID(d)
-	comment := d.Get("comment").(string)
+	fields := getCommonResourceRuleFieldsDTOFromResourceData(d)
 	mode := d.Get("mode").(string)
 	name := d.Get("name").(string)
 	valuesInterface := d.Get("values").([]interface{})
@@ -101,8 +78,12 @@ func resourceWallarmSetResponseHeaderCreate(d *schema.ResourceData, m interface{
 		Name:                name,
 		Values:              values,
 		Validated:           false,
-		Comment:             comment,
+		Comment:             fields.Comment,
 		VariativityDisabled: true,
+		Set:                 fields.Set,
+		Active:              fields.Active,
+		Title:               fields.Title,
+		Mitigation:          fields.Mitigation,
 	}
 	actionResp, err := client.HintCreate(vp)
 

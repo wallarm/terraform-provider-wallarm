@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/samber/lo"
 	"github.com/wallarm/wallarm-go"
 
 	"github.com/google/go-cmp/cmp"
@@ -14,6 +15,33 @@ import (
 )
 
 func resourceWallarmOverlimitResSettings() *schema.Resource {
+	fields := map[string]*schema.Schema{
+		"action": defaultResourceLimitActionSchema,
+
+		"point": {
+			Type:     schema.TypeList,
+			Optional: true,
+			ForceNew: true,
+			Elem: &schema.Schema{
+				Type: schema.TypeList,
+				Elem: &schema.Schema{Type: schema.TypeString},
+			},
+		},
+
+		"overlimit_time": {
+			Type:         schema.TypeInt,
+			ForceNew:     true,
+			Required:     true,
+			ValidateFunc: validation.IntBetween(0, 2_147_483_647),
+		},
+
+		"mode": {
+			Type:         schema.TypeString,
+			Required:     true,
+			ForceNew:     true,
+			ValidateFunc: validation.StringInSlice([]string{"off", "monitoring", "blocking"}, false),
+		},
+	}
 	return &schema.Resource{
 		Create: resourceWallarmOverlimitResSettingsCreate,
 		Read:   resourceWallarmOverlimitResSettingsRead,
@@ -21,65 +49,14 @@ func resourceWallarmOverlimitResSettings() *schema.Resource {
 		Importer: &schema.ResourceImporter{
 			State: resourceWallarmOverlimitResSettingsImport,
 		},
-
-		Schema: map[string]*schema.Schema{
-
-			"rule_id": {
-				Type:     schema.TypeInt,
-				Computed: true,
-			},
-
-			"action_id": {
-				Type:     schema.TypeInt,
-				Computed: true,
-			},
-
-			"rule_type": {
-				Type:     schema.TypeString,
-				Computed: true,
-			},
-
-			"client_id": defaultClientIDWithValidationSchema,
-
-			"comment": {
-				Type:     schema.TypeString,
-				Optional: true,
-				ForceNew: true,
-			},
-
-			"action": defaultResourceLimitActionSchema,
-
-			"point": {
-				Type:     schema.TypeList,
-				Optional: true,
-				ForceNew: true,
-				Elem: &schema.Schema{
-					Type: schema.TypeList,
-					Elem: &schema.Schema{Type: schema.TypeString},
-				},
-			},
-
-			"overlimit_time": {
-				Type:         schema.TypeInt,
-				ForceNew:     true,
-				Required:     true,
-				ValidateFunc: validation.IntBetween(0, 2_147_483_647),
-			},
-
-			"mode": {
-				Type:         schema.TypeString,
-				Required:     true,
-				ForceNew:     true,
-				ValidateFunc: validation.StringInSlice([]string{"off", "monitoring", "blocking"}, false),
-			},
-		},
+		Schema: lo.Assign(fields, commonResourceRuleFields),
 	}
 }
 
 func resourceWallarmOverlimitResSettingsCreate(d *schema.ResourceData, m interface{}) error {
 	client := m.(wallarm.API)
 	clientID := retrieveClientID(d)
-	comment := d.Get("comment").(string)
+	fields := getCommonResourceRuleFieldsDTOFromResourceData(d)
 
 	actionsFromState := d.Get("action").(*schema.Set)
 	action, err := expandSetToActionDetailsList(actionsFromState)
@@ -100,10 +77,14 @@ func resourceWallarmOverlimitResSettingsCreate(d *schema.ResourceData, m interfa
 		Clientid:      clientID,
 		Action:        &action,
 		Validated:     false,
-		Comment:       comment,
+		Comment:       fields.Comment,
 		Point:         point,
 		Mode:          mode,
 		OverlimitTime: overlimitTime,
+		Set:           fields.Set,
+		Active:        fields.Active,
+		Title:         fields.Title,
+		Mitigation:    fields.Mitigation,
 	}
 
 	actionResp, err := client.HintCreate(actionBody)

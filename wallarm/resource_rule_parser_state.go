@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/samber/lo"
 	"github.com/wallarm/wallarm-go"
 
 	"github.com/google/go-cmp/cmp"
@@ -14,6 +15,33 @@ import (
 )
 
 func resourceWallarmParserState() *schema.Resource {
+	fields := map[string]*schema.Schema{
+		"parser": {
+			Type:         schema.TypeString,
+			Required:     true,
+			ValidateFunc: validation.StringInSlice([]string{"base64", "cookie", "form_urlencoded", "gzip", "grpc", "json_doc", "multipart", "percent", "protobuf", "htmljs", "viewstate", "xml", "jwt", "gql"}, false),
+			ForceNew:     true,
+		},
+
+		"state": {
+			Type:         schema.TypeString,
+			Required:     true,
+			ValidateFunc: validation.StringInSlice([]string{"enabled", "disabled"}, false),
+			ForceNew:     true,
+		},
+
+		"action": defaultResourceRuleActionSchema,
+
+		"point": {
+			Type:     schema.TypeList,
+			Required: true,
+			ForceNew: true,
+			Elem: &schema.Schema{
+				Type: schema.TypeList,
+				Elem: &schema.Schema{Type: schema.TypeString},
+			},
+		},
+	}
 	return &schema.Resource{
 		Create: resourceWallarmParserStateCreate,
 		Read:   resourceWallarmParserStateRead,
@@ -21,65 +49,14 @@ func resourceWallarmParserState() *schema.Resource {
 		Importer: &schema.ResourceImporter{
 			State: resourceWallarmParserStateImport,
 		},
-
-		Schema: map[string]*schema.Schema{
-
-			"rule_id": {
-				Type:     schema.TypeInt,
-				Computed: true,
-			},
-
-			"action_id": {
-				Type:     schema.TypeInt,
-				Computed: true,
-			},
-
-			"rule_type": {
-				Type:     schema.TypeString,
-				Computed: true,
-			},
-
-			"client_id": defaultClientIDWithValidationSchema,
-
-			"comment": {
-				Type:     schema.TypeString,
-				Optional: true,
-				ForceNew: true,
-			},
-
-			"parser": {
-				Type:         schema.TypeString,
-				Required:     true,
-				ValidateFunc: validation.StringInSlice([]string{"base64", "cookie", "form_urlencoded", "gzip", "grpc", "json_doc", "multipart", "percent", "protobuf", "htmljs", "viewstate", "xml", "jwt", "gql"}, false),
-				ForceNew:     true,
-			},
-
-			"state": {
-				Type:         schema.TypeString,
-				Required:     true,
-				ValidateFunc: validation.StringInSlice([]string{"enabled", "disabled"}, false),
-				ForceNew:     true,
-			},
-
-			"action": defaultResourceRuleActionSchema,
-
-			"point": {
-				Type:     schema.TypeList,
-				Required: true,
-				ForceNew: true,
-				Elem: &schema.Schema{
-					Type: schema.TypeList,
-					Elem: &schema.Schema{Type: schema.TypeString},
-				},
-			},
-		},
+		Schema: lo.Assign(fields, commonResourceRuleFields),
 	}
 }
 
 func resourceWallarmParserStateCreate(d *schema.ResourceData, m interface{}) error {
 	client := m.(wallarm.API)
 	clientID := retrieveClientID(d)
-	comment := d.Get("comment").(string)
+	fields := getCommonResourceRuleFieldsDTOFromResourceData(d)
 	parser := d.Get("parser").(string)
 	state := d.Get("state").(string)
 
@@ -103,10 +80,14 @@ func resourceWallarmParserStateCreate(d *schema.ResourceData, m interface{}) err
 		Action:              &action,
 		Point:               points,
 		Validated:           false,
-		Comment:             comment,
+		Comment:             fields.Comment,
 		Parser:              parser,
 		State:               state,
 		VariativityDisabled: true,
+		Set:                 fields.Set,
+		Active:              fields.Active,
+		Title:               fields.Title,
+		Mitigation:          fields.Mitigation,
 	}
 
 	actionResp, err := client.HintCreate(wm)

@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/samber/lo"
 	"github.com/wallarm/wallarm-go"
 
 	"github.com/google/go-cmp/cmp"
@@ -13,6 +14,27 @@ import (
 )
 
 func resourceWallarmIgnoreRegex() *schema.Resource {
+	fields := map[string]*schema.Schema{
+		"regex_id": {
+			Type:     schema.TypeInt,
+			Required: true,
+			ForceNew: true,
+		},
+
+		"action": defaultResourceRuleActionSchema,
+
+		"point": {
+			Type:     schema.TypeList,
+			Required: true,
+			ForceNew: true,
+			Elem: &schema.Schema{
+				Type: schema.TypeList,
+				Elem: &schema.Schema{
+					Type: schema.TypeString,
+				},
+			},
+		},
+	}
 	return &schema.Resource{
 		Create: resourceWallarmIgnoreRegexCreate,
 		Read:   resourceWallarmIgnoreRegexRead,
@@ -20,59 +42,14 @@ func resourceWallarmIgnoreRegex() *schema.Resource {
 		Importer: &schema.ResourceImporter{
 			State: resourceWallarmIgnoreRegexImport,
 		},
-
-		Schema: map[string]*schema.Schema{
-
-			"rule_id": {
-				Type:     schema.TypeInt,
-				Computed: true,
-			},
-
-			"action_id": {
-				Type:     schema.TypeInt,
-				Computed: true,
-			},
-
-			"rule_type": {
-				Type:     schema.TypeString,
-				Computed: true,
-			},
-
-			"client_id": defaultClientIDWithValidationSchema,
-
-			"comment": {
-				Type:     schema.TypeString,
-				Optional: true,
-				ForceNew: true,
-			},
-
-			"regex_id": {
-				Type:     schema.TypeInt,
-				Required: true,
-				ForceNew: true,
-			},
-
-			"action": defaultResourceRuleActionSchema,
-
-			"point": {
-				Type:     schema.TypeList,
-				Required: true,
-				ForceNew: true,
-				Elem: &schema.Schema{
-					Type: schema.TypeList,
-					Elem: &schema.Schema{
-						Type: schema.TypeString,
-					},
-				},
-			},
-		},
+		Schema: lo.Assign(fields, commonResourceRuleFields),
 	}
 }
 
 func resourceWallarmIgnoreRegexCreate(d *schema.ResourceData, m interface{}) error {
 	client := m.(wallarm.API)
 	clientID := retrieveClientID(d)
-	comment := d.Get("comment").(string)
+	fields := getCommonResourceRuleFieldsDTOFromResourceData(d)
 	regexID := d.Get("regex_id").(int)
 
 	ps := d.Get("point").([]interface{})
@@ -95,8 +72,12 @@ func resourceWallarmIgnoreRegexCreate(d *schema.ResourceData, m interface{}) err
 		Action:              &action,
 		Point:               points,
 		RegexID:             regexID,
-		Comment:             comment,
+		Comment:             fields.Comment,
 		VariativityDisabled: true,
+		Set:                 fields.Set,
+		Active:              fields.Active,
+		Title:               fields.Title,
+		Mitigation:          fields.Mitigation,
 	}
 
 	actionResp, err := client.HintCreate(vp)

@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/samber/lo"
 	"github.com/wallarm/wallarm-go"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -13,144 +14,112 @@ import (
 )
 
 func resourceWallarmCredentialStuffingPoint() *schema.Resource {
-	return &schema.Resource{
-		Create: resourceWallarmCredentialStuffingPointCreate,
-		Read:   resourceWallarmCredentialStuffingPointRead,
-		Delete: resourceWallarmCredentialStuffingPointDelete,
-		Importer: &schema.ResourceImporter{
-			State: resourceWallarmCredentialStuffingPointImport,
+	fields := map[string]*schema.Schema{
+		"point": {
+			Type:     schema.TypeList,
+			Required: true,
+			ForceNew: true,
+			Elem: &schema.Schema{
+				Type: schema.TypeList,
+				Elem: &schema.Schema{Type: schema.TypeString},
+			},
 		},
-		Schema: map[string]*schema.Schema{
-			"rule_id": {
-				Type:     schema.TypeInt,
-				Computed: true,
+		"login_point": {
+			Type:     schema.TypeList,
+			Required: true,
+			ForceNew: true,
+			Elem: &schema.Schema{
+				Type: schema.TypeList,
+				Elem: &schema.Schema{Type: schema.TypeString},
 			},
-			"action_id": {
-				Type:     schema.TypeInt,
-				Computed: true,
-			},
-			"rule_type": {
-				Type:     schema.TypeString,
-				Computed: true,
-			},
-			"client_id": {
-				Type:         schema.TypeInt,
-				Optional:     true,
-				Computed:     true,
-				Description:  "The Client ID to perform changes",
-				ValidateFunc: validation.IntAtLeast(1),
-			},
-			"comment": {
-				Type:     schema.TypeString,
-				Optional: true,
-				ForceNew: true,
-			},
-			"point": {
-				Type:     schema.TypeList,
-				Required: true,
-				ForceNew: true,
-				Elem: &schema.Schema{
-					Type: schema.TypeList,
-					Elem: &schema.Schema{Type: schema.TypeString},
-				},
-			},
-			"login_point": {
-				Type:     schema.TypeList,
-				Required: true,
-				ForceNew: true,
-				Elem: &schema.Schema{
-					Type: schema.TypeList,
-					Elem: &schema.Schema{Type: schema.TypeString},
-				},
-			},
-			"cred_stuff_type": {
-				Type:         schema.TypeString,
-				Optional:     true,
-				Default:      "default",
-				ForceNew:     true,
-				ValidateFunc: validation.StringInSlice([]string{"custom", "default"}, false),
-			},
-			"action": {
-				Type:     schema.TypeSet,
-				Optional: true,
-				ForceNew: true,
-				Elem: &schema.Resource{
-					Schema: map[string]*schema.Schema{
-						"type": {
-							Type:         schema.TypeString,
-							Optional:     true,
-							ValidateFunc: validation.StringInSlice([]string{"equal", "iequal", "regex", "absent"}, false),
-							ForceNew:     true,
-						},
-						"value": {
-							Type:     schema.TypeString,
-							Optional: true,
-							ForceNew: true,
-							Computed: true,
-						},
-						"point": {
-							Type:     schema.TypeMap,
-							Optional: true,
-							ForceNew: true,
-							Elem: &schema.Resource{
-								Schema: map[string]*schema.Schema{
-									"header": {
-										Type:     schema.TypeList,
-										Optional: true,
-										ForceNew: true,
-										Elem:     &schema.Schema{Type: schema.TypeString},
-									},
-									"method": {
-										Type:     schema.TypeString,
-										Optional: true,
-										ForceNew: true,
-										ValidateFunc: validation.StringInSlice([]string{"GET", "HEAD", "POST",
-											"PUT", "DELETE", "CONNECT", "OPTIONS", "TRACE", "PATCH"}, false),
-									},
-									"path": {
-										Type:         schema.TypeInt,
-										Optional:     true,
-										ForceNew:     true,
-										ValidateFunc: validation.IntBetween(0, 60),
-									},
-									"action_name": {
-										Type:     schema.TypeString,
-										Optional: true,
-										ForceNew: true,
-									},
-									"action_ext": {
-										Type:     schema.TypeString,
-										Optional: true,
-										ForceNew: true,
-									},
-									"query": {
-										Type:     schema.TypeString,
-										Optional: true,
-										ForceNew: true,
-									},
-									"proto": {
-										Type:         schema.TypeString,
-										Optional:     true,
-										ForceNew:     true,
-										ValidateFunc: validation.StringInSlice([]string{"1.0", "1.1", "2.0", "3.0"}, false),
-									},
-									"scheme": {
-										Type:         schema.TypeString,
-										Optional:     true,
-										ForceNew:     true,
-										ValidateFunc: validation.StringInSlice([]string{"http", "https"}, true),
-									},
-									"uri": {
-										Type:     schema.TypeString,
-										Optional: true,
-										ForceNew: true,
-									},
-									"instance": {
-										Type:         schema.TypeInt,
-										Optional:     true,
-										ForceNew:     true,
-										ValidateFunc: validation.IntAtLeast(-1),
-									},
+		},
+		"cred_stuff_type": {
+			Type:         schema.TypeString,
+			Optional:     true,
+			Default:      "default",
+			ForceNew:     true,
+			ValidateFunc: validation.StringInSlice([]string{"custom", "default"}, false),
+		},
+		"action": {
+			Type:     schema.TypeSet,
+			Optional: true,
+			ForceNew: true,
+			Elem: &schema.Resource{
+				Schema: map[string]*schema.Schema{
+					"type": {
+						Type:         schema.TypeString,
+						Optional:     true,
+						ValidateFunc: validation.StringInSlice([]string{"equal", "iequal", "regex", "absent"}, false),
+						ForceNew:     true,
+					},
+					"value": {
+						Type:     schema.TypeString,
+						Optional: true,
+						ForceNew: true,
+						Computed: true,
+					},
+					"point": {
+						Type:     schema.TypeMap,
+						Optional: true,
+						ForceNew: true,
+						Elem: &schema.Resource{
+							Schema: map[string]*schema.Schema{
+								"header": {
+									Type:     schema.TypeList,
+									Optional: true,
+									ForceNew: true,
+									Elem:     &schema.Schema{Type: schema.TypeString},
+								},
+								"method": {
+									Type:     schema.TypeString,
+									Optional: true,
+									ForceNew: true,
+									ValidateFunc: validation.StringInSlice([]string{"GET", "HEAD", "POST",
+										"PUT", "DELETE", "CONNECT", "OPTIONS", "TRACE", "PATCH"}, false),
+								},
+								"path": {
+									Type:         schema.TypeInt,
+									Optional:     true,
+									ForceNew:     true,
+									ValidateFunc: validation.IntBetween(0, 60),
+								},
+								"action_name": {
+									Type:     schema.TypeString,
+									Optional: true,
+									ForceNew: true,
+								},
+								"action_ext": {
+									Type:     schema.TypeString,
+									Optional: true,
+									ForceNew: true,
+								},
+								"query": {
+									Type:     schema.TypeString,
+									Optional: true,
+									ForceNew: true,
+								},
+								"proto": {
+									Type:         schema.TypeString,
+									Optional:     true,
+									ForceNew:     true,
+									ValidateFunc: validation.StringInSlice([]string{"1.0", "1.1", "2.0", "3.0"}, false),
+								},
+								"scheme": {
+									Type:         schema.TypeString,
+									Optional:     true,
+									ForceNew:     true,
+									ValidateFunc: validation.StringInSlice([]string{"http", "https"}, true),
+								},
+								"uri": {
+									Type:     schema.TypeString,
+									Optional: true,
+									ForceNew: true,
+								},
+								"instance": {
+									Type:         schema.TypeInt,
+									Optional:     true,
+									ForceNew:     true,
+									ValidateFunc: validation.IntAtLeast(-1),
 								},
 							},
 						},
@@ -159,12 +128,21 @@ func resourceWallarmCredentialStuffingPoint() *schema.Resource {
 			},
 		},
 	}
+	return &schema.Resource{
+		Create: resourceWallarmCredentialStuffingPointCreate,
+		Read:   resourceWallarmCredentialStuffingPointRead,
+		Delete: resourceWallarmCredentialStuffingPointDelete,
+		Importer: &schema.ResourceImporter{
+			State: resourceWallarmCredentialStuffingPointImport,
+		},
+		Schema: lo.Assign(fields, commonResourceRuleFields),
+	}
 }
 
 func resourceWallarmCredentialStuffingPointCreate(d *schema.ResourceData, m interface{}) error {
 	client := m.(wallarm.API)
 	clientID := retrieveClientID(d)
-	comment := d.Get("comment").(string)
+	fields := getCommonResourceRuleFieldsDTOFromResourceData(d)
 	credStuffType := d.Get("cred_stuff_type").(string)
 
 	iPoint := d.Get("point").([]interface{})
@@ -190,11 +168,15 @@ func resourceWallarmCredentialStuffingPointCreate(d *schema.ResourceData, m inte
 		Clientid:            clientID,
 		Action:              &action,
 		Validated:           false,
-		Comment:             comment,
+		Comment:             fields.Comment,
 		VariativityDisabled: true,
 		Point:               point,
 		LoginPoint:          loginPoint,
 		CredStuffType:       credStuffType,
+		Set:                 fields.Set,
+		Active:              fields.Active,
+		Title:               fields.Title,
+		Mitigation:          fields.Mitigation,
 	})
 	if err != nil {
 		return err

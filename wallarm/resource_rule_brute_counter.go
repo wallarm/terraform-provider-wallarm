@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/samber/lo"
 	"github.com/wallarm/wallarm-go"
 
 	"github.com/google/go-cmp/cmp"
@@ -14,6 +15,14 @@ import (
 
 // nolint:dupl
 func resourceWallarmBruteForceCounter() *schema.Resource {
+	fields := map[string]*schema.Schema{
+		"counter": {
+			Type:     schema.TypeString,
+			Computed: true,
+		},
+
+		"action": defaultResourceRuleActionSchema,
+	}
 	return &schema.Resource{
 		Create: resourceWallarmBruteForceCounterCreate,
 		Read:   resourceWallarmBruteForceCounterRead,
@@ -21,46 +30,14 @@ func resourceWallarmBruteForceCounter() *schema.Resource {
 		Importer: &schema.ResourceImporter{
 			State: resourceWallarmBruteForceCounterImport,
 		},
-
-		Schema: map[string]*schema.Schema{
-
-			"rule_id": {
-				Type:     schema.TypeInt,
-				Computed: true,
-			},
-
-			"action_id": {
-				Type:     schema.TypeInt,
-				Computed: true,
-			},
-
-			"rule_type": {
-				Type:     schema.TypeString,
-				Computed: true,
-			},
-
-			"client_id": defaultClientIDWithValidationSchema,
-
-			"comment": {
-				Type:     schema.TypeString,
-				Optional: true,
-				ForceNew: true,
-			},
-
-			"counter": {
-				Type:     schema.TypeString,
-				Computed: true,
-			},
-
-			"action": defaultResourceRuleActionSchema,
-		},
+		Schema: lo.Assign(fields, commonResourceRuleFields),
 	}
 }
 
 func resourceWallarmBruteForceCounterCreate(d *schema.ResourceData, m interface{}) error {
 	client := m.(wallarm.API)
 	clientID := retrieveClientID(d)
-	comment := d.Get("comment").(string)
+	fields := getCommonResourceRuleFieldsDTOFromResourceData(d)
 	actionsFromState := d.Get("action").(*schema.Set)
 
 	action, err := expandSetToActionDetailsList(actionsFromState)
@@ -72,8 +49,12 @@ func resourceWallarmBruteForceCounterCreate(d *schema.ResourceData, m interface{
 		Clientid:            clientID,
 		Action:              &action,
 		Validated:           false,
-		Comment:             comment,
+		Comment:             fields.Comment,
 		VariativityDisabled: true,
+		Set:                 fields.Set,
+		Active:              fields.Active,
+		Title:               fields.Title,
+		Mitigation:          fields.Mitigation,
 	}
 
 	actionResp, err := client.HintCreate(wm)

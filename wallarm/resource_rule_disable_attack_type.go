@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/samber/lo"
 	"github.com/wallarm/wallarm-go"
 
 	"github.com/google/go-cmp/cmp"
@@ -13,6 +14,27 @@ import (
 )
 
 func resourceWallarmDisableAttackType() *schema.Resource {
+	fields := map[string]*schema.Schema{
+		"attack_type": {
+			Type:     schema.TypeString,
+			Required: true,
+			ForceNew: true,
+			Description: `Possible values: "any", "sqli", "rce", "crlf", "nosqli", "ptrav",
+				"xxe", "ptrav", "xss", "scanner", "redir", "ldapi", "any", "redir", "mass_assignment", "ssrf"`,
+		},
+
+		"action": defaultResourceRuleActionSchema,
+
+		"point": {
+			Type:     schema.TypeList,
+			Required: true,
+			ForceNew: true,
+			Elem: &schema.Schema{
+				Type: schema.TypeList,
+				Elem: &schema.Schema{Type: schema.TypeString},
+			},
+		},
+	}
 	return &schema.Resource{
 		Create: resourceWallarmDisableAttackTypeCreate,
 		Read:   resourceWallarmDisableAttackTypeRead,
@@ -20,59 +42,14 @@ func resourceWallarmDisableAttackType() *schema.Resource {
 		Importer: &schema.ResourceImporter{
 			State: resourceWallarmDisableAttackTypeImport,
 		},
-
-		Schema: map[string]*schema.Schema{
-
-			"rule_id": {
-				Type:     schema.TypeInt,
-				Computed: true,
-			},
-
-			"action_id": {
-				Type:     schema.TypeInt,
-				Computed: true,
-			},
-
-			"rule_type": {
-				Type:     schema.TypeString,
-				Computed: true,
-			},
-
-			"client_id": defaultClientIDWithValidationSchema,
-
-			"comment": {
-				Type:     schema.TypeString,
-				Optional: true,
-				ForceNew: true,
-			},
-
-			"attack_type": {
-				Type:     schema.TypeString,
-				Required: true,
-				ForceNew: true,
-				Description: `Possible values: "any", "sqli", "rce", "crlf", "nosqli", "ptrav",
-				"xxe", "ptrav", "xss", "scanner", "redir", "ldapi", "any", "redir", "mass_assignment", "ssrf"`,
-			},
-
-			"action": defaultResourceRuleActionSchema,
-
-			"point": {
-				Type:     schema.TypeList,
-				Required: true,
-				ForceNew: true,
-				Elem: &schema.Schema{
-					Type: schema.TypeList,
-					Elem: &schema.Schema{Type: schema.TypeString},
-				},
-			},
-		},
+		Schema: lo.Assign(fields, commonResourceRuleFields),
 	}
 }
 
 func resourceWallarmDisableAttackTypeCreate(d *schema.ResourceData, m interface{}) error {
 	client := m.(wallarm.API)
 	clientID := retrieveClientID(d)
-	comment := d.Get("comment").(string)
+	fields := getCommonResourceRuleFieldsDTOFromResourceData(d)
 	attackType := d.Get("attack_type").(string)
 
 	ps := d.Get("point").([]interface{})
@@ -95,9 +72,13 @@ func resourceWallarmDisableAttackTypeCreate(d *schema.ResourceData, m interface{
 		Action:              &action,
 		Point:               points,
 		Validated:           false,
-		Comment:             comment,
+		Comment:             fields.Comment,
 		AttackType:          attackType,
 		VariativityDisabled: true,
+		Set:                 fields.Set,
+		Active:              fields.Active,
+		Title:               fields.Title,
+		Mitigation:          fields.Mitigation,
 	}
 
 	actionResp, err := client.HintCreate(wm)

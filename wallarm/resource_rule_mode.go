@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/samber/lo"
 	"github.com/wallarm/wallarm-go"
 
 	"github.com/google/go-cmp/cmp"
@@ -14,6 +15,16 @@ import (
 )
 
 func resourceWallarmMode() *schema.Resource {
+	fields := map[string]*schema.Schema{
+		"mode": {
+			Type:         schema.TypeString,
+			Required:     true,
+			ValidateFunc: validation.StringInSlice([]string{"default", "off", "monitoring", "block", "safe_blocking"}, false),
+			ForceNew:     true,
+		},
+
+		"action": defaultResourceRuleActionSchema,
+	}
 	return &schema.Resource{
 		Create: resourceWallarmModeCreate,
 		Read:   resourceWallarmModeRead,
@@ -21,41 +32,7 @@ func resourceWallarmMode() *schema.Resource {
 		Importer: &schema.ResourceImporter{
 			State: resourceWallarmModeImport,
 		},
-
-		Schema: map[string]*schema.Schema{
-
-			"rule_id": {
-				Type:     schema.TypeInt,
-				Computed: true,
-			},
-
-			"action_id": {
-				Type:     schema.TypeInt,
-				Computed: true,
-			},
-
-			"rule_type": {
-				Type:     schema.TypeString,
-				Computed: true,
-			},
-
-			"client_id": defaultClientIDWithValidationSchema,
-
-			"comment": {
-				Type:     schema.TypeString,
-				Optional: true,
-				ForceNew: true,
-			},
-
-			"mode": {
-				Type:         schema.TypeString,
-				Required:     true,
-				ValidateFunc: validation.StringInSlice([]string{"default", "off", "monitoring", "block", "safe_blocking"}, false),
-				ForceNew:     true,
-			},
-
-			"action": defaultResourceRuleActionSchema,
-		},
+		Schema: lo.Assign(fields, commonResourceRuleFields),
 	}
 }
 
@@ -71,7 +48,7 @@ func resourceWallarmModeCreate(d *schema.ResourceData, m interface{}) error {
 	}
 	client := m.(wallarm.API)
 	clientID := retrieveClientID(d)
-	comment := d.Get("comment").(string)
+	fields := getCommonResourceRuleFieldsDTOFromResourceData(d)
 	actionsFromState := d.Get("action").(*schema.Set)
 	mode := d.Get("mode").(string)
 
@@ -85,8 +62,12 @@ func resourceWallarmModeCreate(d *schema.ResourceData, m interface{}) error {
 		Action:              &action,
 		Mode:                mode,
 		Validated:           false,
-		Comment:             comment,
+		Comment:             fields.Comment,
 		VariativityDisabled: true,
+		Set:                 fields.Set,
+		Active:              fields.Active,
+		Title:               fields.Title,
+		Mitigation:          fields.Mitigation,
 	}
 
 	actionResp, err := client.HintCreate(wm)

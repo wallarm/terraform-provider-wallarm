@@ -17,17 +17,11 @@ const (
 
 var (
 	defaultClientIDWithValidationSchema = &schema.Schema{
-		Type:        schema.TypeInt,
-		Optional:    true,
-		Computed:    true,
-		Description: "The Client ID to perform changes",
-		ValidateFunc: func(val interface{}, key string) (warns []string, errs []error) {
-			v := val.(int)
-			if v <= 0 {
-				errs = append(errs, fmt.Errorf("%q must be positive, got: %d", key, v))
-			}
-			return
-		},
+		Type:         schema.TypeInt,
+		Optional:     true,
+		Computed:     true,
+		Description:  "The Client ID to perform changes",
+		ValidateFunc: validation.IntAtLeast(1),
 	}
 
 	defaultResourceRuleActionSchema = &schema.Schema{
@@ -257,4 +251,67 @@ var (
 			},
 		},
 	}
+
+	commonResourceRuleFields = map[string]*schema.Schema{
+		"rule_id": {
+			Type:     schema.TypeInt,
+			Computed: true,
+		},
+		"action_id": {
+			Type:     schema.TypeInt,
+			Computed: true,
+		},
+		"rule_type": {
+			Type:     schema.TypeString,
+			Computed: true,
+		},
+		"client_id": defaultClientIDWithValidationSchema,
+		"comment": {
+			Type:     schema.TypeString,
+			Optional: true,
+			ForceNew: true,
+		},
+		"set": {
+			Type:     schema.TypeString,
+			Optional: true,
+		},
+		"active": {
+			Type:    schema.TypeBool,
+			Default: true,
+		},
+		"title": {
+			Type:     schema.TypeString,
+			Optional: true,
+		},
+		"mitigation": {
+			Type:     schema.TypeString,
+			Optional: true,
+		},
+	}
 )
+
+type CommonResourceRuleFieldsDTO struct {
+	Comment    string
+	Set        string
+	Active     bool
+	Title      string
+	Mitigation string
+}
+
+func getCommonResourceRuleFieldsDTOFromResourceData(d *schema.ResourceData) CommonResourceRuleFieldsDTO {
+	if d == nil {
+		return CommonResourceRuleFieldsDTO{}
+	}
+	comment, _ := d.Get("comment").(string)
+	set, _ := d.Get("set").(string)
+	active, _ := d.Get("active").(bool)
+	title, _ := d.Get("title").(string)
+	mitigation, _ := d.Get("mitigation").(string)
+	return CommonResourceRuleFieldsDTO{
+		Comment:    comment,
+		Set:        set,
+		Active:     active,
+		Title:      title,
+		Mitigation: mitigation,
+	}
+}
