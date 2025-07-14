@@ -107,7 +107,7 @@ func resourceWallarmIPListCreate(listType wallarm.IPListType) schema.CreateFunc 
 			}
 			apps = make([]int, len(appResp.Body))
 			for i, app := range appResp.Body {
-				apps[i] = app.ID
+				apps[i] = *app.ID
 			}
 		}
 
@@ -230,7 +230,7 @@ func resourceWallarmIPListRead(listType wallarm.IPListType) schema.ReadFunc {
 			}
 			apps = make([]int, len(appResp.Body))
 			for i, app := range appResp.Body {
-				apps[i] = app.ID
+				apps[i] = *app.ID
 			}
 		}
 

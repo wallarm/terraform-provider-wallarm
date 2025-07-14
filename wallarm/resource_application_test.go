@@ -133,7 +133,7 @@ func testAccCheckWallarmAppResourceExists(n string) resource.TestCheckFunc {
 		}
 
 		for _, app := range appResp.Body {
-			if app.ID == appID || app.Name == name {
+			if app.ID != nil && *app.ID == appID || app.Name == name {
 				return nil
 			}
 		}

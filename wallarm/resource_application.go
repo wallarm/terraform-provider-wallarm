@@ -50,10 +50,9 @@ func resourceWallarmAppCreate(d *schema.ResourceData, m interface{}) error {
 	appID := d.Get("app_id").(int)
 
 	appBody := &wallarm.AppCreate{
-		Name: name,
-		AppFilter: &wallarm.AppFilter{
-			ID:       appID,
-			Clientid: clientID},
+		Name:     name,
+		ID:       &appID,
+		Clientid: clientID,
 	}
 
 	if err := client.AppCreate(appBody); err != nil {
@@ -91,7 +90,7 @@ func resourceWallarmAppRead(d *schema.ResourceData, m interface{}) error {
 	}
 	found := false
 	for _, app := range appResp.Body {
-		if app.ID == appID {
+		if app.ID != nil && *app.ID == appID {
 			found = true
 			d.Set("name", name)
 			d.Set("app_id", app.ID)
@@ -180,7 +179,7 @@ func resourceWallarmAppImport(d *schema.ResourceData, m interface{}) ([]*schema.
 		}
 
 		for _, app := range appResp.Body {
-			if app.ID == appID {
+			if app.ID != nil && *app.ID == appID {
 				d.Set("name", name)
 				d.Set("app_id", app.ID)
 				d.Set("client_id", clientID)
