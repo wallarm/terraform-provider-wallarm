@@ -274,18 +274,23 @@ var (
 		"set": {
 			Type:     schema.TypeString,
 			Optional: true,
+			ForceNew: true,
 		},
 		"active": {
-			Type:    schema.TypeBool,
-			Default: true,
+			Type:     schema.TypeBool,
+			Default:  true,
+			Optional: true,
+			ForceNew: true,
 		},
 		"title": {
 			Type:     schema.TypeString,
 			Optional: true,
+			ForceNew: true,
 		},
 		"mitigation": {
 			Type:     schema.TypeString,
 			Optional: true,
+			ForceNew: true,
 		},
 	}
 )
