@@ -212,6 +212,10 @@ func resourceWallarmCredentialStuffingPointRead(d *schema.ResourceData, m interf
 	d.Set("login_point", rule.LoginPoint)
 	d.Set("rule_type", rule.Type)
 	d.Set("action_id", rule.ActionID)
+	d.Set("active", rule.Active)
+	d.Set("title", rule.Title)
+	d.Set("mitigation", rule.Mitigation)
+	d.Set("set", rule.Set)
 	actionsSet := schema.Set{F: hashResponseActionDetails}
 	for _, a := range rule.Action {
 		acts, err := actionDetailsToMap(a)

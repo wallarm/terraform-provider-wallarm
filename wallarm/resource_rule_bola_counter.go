@@ -123,9 +123,7 @@ func resourceWallarmBolaCounterRead(d *schema.ResourceData, m interface{}) error
 		Action:   action,
 	}
 
-	notFoundRules := make([]int, 0)
-	var updatedRuleID int
-	var updatedCounter string
+	var updatedRule *wallarm.ActionBody
 	for _, rule := range *actionHints.Body {
 		actualRule := &wallarm.ActionBody{
 			ActionID: rule.ActionID,
@@ -134,27 +132,28 @@ func resourceWallarmBolaCounterRead(d *schema.ResourceData, m interface{}) error
 		}
 
 		if ruleID == rule.ID || cmp.Equal(expectedRule, *actualRule) && equalWithoutOrder(action, rule.Action) {
-			updatedRuleID = rule.ID
-			updatedCounter = rule.Counter
+			updatedRule = &rule
 			break
 		}
-
-		notFoundRules = append(notFoundRules, rule.ID)
 	}
 
-	d.Set("rule_id", updatedRuleID)
-	d.Set("counter", updatedCounter)
+	if updatedRule == nil {
+		d.SetId("")
+		return nil
+	}
+
+	d.Set("rule_id", updatedRule.ID)
+	d.Set("counter", updatedRule.Counter)
 	d.Set("client_id", clientID)
+	d.Set("active", updatedRule.Active)
+	d.Set("title", updatedRule.Title)
+	d.Set("mitigation", updatedRule.Mitigation)
+	d.Set("set", updatedRule.Set)
 
 	if actionsSet.Len() != 0 {
 		d.Set("action", &actionsSet)
 	} else {
 		log.Printf("[WARN] action was empty so it either doesn't exist or it is a default branch which has no conditions. Actions: %v", &actionsSet)
-	}
-
-	if updatedRuleID == 0 {
-		log.Printf("[WARN] these rule IDs: %v have been found under the action ID: %d. But it isn't in the Terraform Plan.", notFoundRules, actionID)
-		d.SetId("")
 	}
 
 	return nil
@@ -253,10 +252,6 @@ func resourceWallarmBolaCounterImport(d *schema.ResourceData, m interface{}) ([]
 
 	} else {
 		return nil, fmt.Errorf("invalid id (%q) specified, should be in format \"{clientID}/{actionID}/{ruleID}\"", d.Id())
-	}
-
-	if err := resourceWallarmBolaCounterRead(d, m); err != nil {
-		return nil, err
 	}
 
 	return []*schema.ResourceData{d}, nil

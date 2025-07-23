@@ -290,7 +290,7 @@ var (
 		"mitigation": {
 			Type:     schema.TypeString,
 			Optional: true,
-			ForceNew: true,
+			Computed: true,
 		},
 	}
 )

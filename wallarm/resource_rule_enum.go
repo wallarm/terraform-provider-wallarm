@@ -6,17 +6,16 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/samber/lo"
 	"github.com/wallarm/wallarm-go"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/samber/lo"
 )
 
-func resourceWallarmSensitiveData() *schema.Resource {
+func resourceWallarmEnum() *schema.Resource {
 	fields := map[string]*schema.Schema{
 		"action": defaultResourceRuleActionSchema,
-
 		"point": {
 			Type:     schema.TypeList,
 			Required: true,
@@ -27,19 +26,19 @@ func resourceWallarmSensitiveData() *schema.Resource {
 			},
 		},
 	}
+
 	return &schema.Resource{
-		Create: resourceWallarmSensitiveDataCreate,
-		Read:   resourceWallarmSensitiveDataRead,
-		Delete: resourceWallarmSensitiveDataDelete,
+		Create: resourceWallarmEnumCreate,
+		Read:   resourceWallarmEnumRead,
+		Delete: resourceWallarmEnumDelete,
 		Importer: &schema.ResourceImporter{
-			State: resourceWallarmSensitiveDataImport,
+			State: resourceWallarmEnumImport,
 		},
 		Schema: lo.Assign(fields, commonResourceRuleFields),
 	}
 }
 
-// nolint:dupl
-func resourceWallarmSensitiveDataCreate(d *schema.ResourceData, m interface{}) error {
+func resourceWallarmEnumCreate(d *schema.ResourceData, m interface{}) error {
 	client := m.(wallarm.API)
 	clientID := retrieveClientID(d)
 	fields := getCommonResourceRuleFieldsDTOFromResourceData(d)
@@ -59,7 +58,7 @@ func resourceWallarmSensitiveDataCreate(d *schema.ResourceData, m interface{}) e
 	}
 
 	wm := &wallarm.ActionCreate{
-		Type:                "sensitive_data",
+		Type:                "enum",
 		Clientid:            clientID,
 		Action:              &action,
 		Point:               points,
@@ -74,6 +73,7 @@ func resourceWallarmSensitiveDataCreate(d *schema.ResourceData, m interface{}) e
 
 	actionResp, err := client.HintCreate(wm)
 	if err != nil {
+		d.SetId("")
 		return err
 	}
 
@@ -84,11 +84,10 @@ func resourceWallarmSensitiveDataCreate(d *schema.ResourceData, m interface{}) e
 	resID := fmt.Sprintf("%d/%d/%d", clientID, actionResp.Body.ActionID, actionResp.Body.ID)
 	d.SetId(resID)
 
-	return resourceWallarmSensitiveDataRead(d, m)
+	return resourceWallarmEnumRead(d, m)
 }
 
-// nolint:dupl
-func resourceWallarmSensitiveDataRead(d *schema.ResourceData, m interface{}) error {
+func resourceWallarmEnumRead(d *schema.ResourceData, m interface{}) error {
 	client := m.(wallarm.API)
 	clientID := retrieveClientID(d)
 	actionID := d.Get("action_id").(int)
@@ -126,7 +125,7 @@ func resourceWallarmSensitiveDataRead(d *schema.ResourceData, m interface{}) err
 		Filter: &wallarm.HintFilter{
 			Clientid: []int{clientID},
 			ID:       []int{ruleID},
-			Type:     []string{"sensitive_data"},
+			Type:     []string{"enum"},
 		},
 	}
 	actionHints, err := client.HintRead(hint)
@@ -140,7 +139,7 @@ func resourceWallarmSensitiveDataRead(d *schema.ResourceData, m interface{}) err
 
 	expectedRule := wallarm.ActionBody{
 		ActionID: actionID,
-		Type:     "sensitive_data",
+		Type:     "enum",
 		Point:    points,
 	}
 
@@ -188,17 +187,16 @@ func resourceWallarmSensitiveDataRead(d *schema.ResourceData, m interface{}) err
 	return nil
 }
 
-func resourceWallarmSensitiveDataDelete(d *schema.ResourceData, m interface{}) error {
+func resourceWallarmEnumDelete(d *schema.ResourceData, m interface{}) error {
 	client := m.(wallarm.API)
 	clientID := retrieveClientID(d)
 	actionID := d.Get("action_id").(int)
-	ruleID := d.Get("rule_id").(int)
 
 	rule := &wallarm.ActionRead{
 		Filter: &wallarm.ActionFilter{
-			HintType: []string{"sensitive_data"},
+			HintType: []string{"enum"},
 			Clientid: []int{clientID},
-			ID:       []int{ruleID},
+			ID:       []int{actionID},
 		},
 		Limit:  1000,
 		Offset: 0,
@@ -209,7 +207,7 @@ func resourceWallarmSensitiveDataDelete(d *schema.ResourceData, m interface{}) e
 	}
 
 	if len(respRules.Body) == 1 && respRules.Body[0].Hints == 1 && respRules.Body[0].GroupedHintsCount == 1 {
-		if err := client.RuleDelete(actionID); err != nil {
+		if err = client.RuleDelete(actionID); err != nil {
 			return err
 		}
 	} else {
@@ -221,14 +219,14 @@ func resourceWallarmSensitiveDataDelete(d *schema.ResourceData, m interface{}) e
 			},
 		}
 
-		if err := client.HintDelete(h); err != nil {
+		if err = client.HintDelete(h); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func resourceWallarmSensitiveDataImport(d *schema.ResourceData, m interface{}) ([]*schema.ResourceData, error) {
+func resourceWallarmEnumImport(d *schema.ResourceData, m interface{}) ([]*schema.ResourceData, error) {
 	client := m.(wallarm.API)
 	idAttr := strings.SplitN(d.Id(), "/", 3)
 	if len(idAttr) == 3 {
@@ -246,7 +244,7 @@ func resourceWallarmSensitiveDataImport(d *schema.ResourceData, m interface{}) (
 		}
 		d.Set("action_id", actionID)
 		d.Set("rule_id", ruleID)
-		d.Set("rule_type", "sensitive_data")
+		d.Set("rule_type", "enum")
 
 		hint := &wallarm.HintRead{
 			Limit:     1000,
@@ -256,7 +254,7 @@ func resourceWallarmSensitiveDataImport(d *schema.ResourceData, m interface{}) (
 			Filter: &wallarm.HintFilter{
 				Clientid: []int{clientID},
 				ID:       []int{ruleID},
-				Type:     []string{"sensitive_data"},
+				Type:     []string{"enum"},
 			},
 		}
 		actionHints, err := client.HintRead(hint)
@@ -266,7 +264,7 @@ func resourceWallarmSensitiveDataImport(d *schema.ResourceData, m interface{}) (
 		actionsSet := schema.Set{
 			F: hashResponseActionDetails,
 		}
-		if len((*actionHints.Body)) != 0 && len((*actionHints.Body)[0].Action) != 0 {
+		if len(*actionHints.Body) != 0 && len((*actionHints.Body)[0].Action) != 0 {
 			for _, a := range (*actionHints.Body)[0].Action {
 				acts, err := actionDetailsToMap(a)
 				if err != nil {
@@ -275,7 +273,6 @@ func resourceWallarmSensitiveDataImport(d *schema.ResourceData, m interface{}) (
 				actionsSet.Add(acts)
 			}
 			d.Set("action", &actionsSet)
-
 		}
 
 		pointInterface := (*actionHints.Body)[0].Point

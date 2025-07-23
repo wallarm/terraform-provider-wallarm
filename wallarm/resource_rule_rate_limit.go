@@ -2,7 +2,6 @@ package wallarm
 
 import (
 	"fmt"
-	"log"
 	"strconv"
 	"strings"
 
@@ -170,12 +169,11 @@ func resourceWallarmRateLimitRead(d *schema.ResourceData, m interface{}) error {
 		Action:   action,
 	}
 
-	notFoundRules := make([]int, 0)
-	var updatedRuleID int
+	var updatedRule *wallarm.ActionBody
 	for _, rule := range *actionHints.Body {
 		if ruleID == rule.ID {
-			updatedRuleID = rule.ID
-			continue
+			updatedRule = &rule
+			break
 		}
 
 		actualRule := &wallarm.ActionBody{
@@ -185,21 +183,22 @@ func resourceWallarmRateLimitRead(d *schema.ResourceData, m interface{}) error {
 		}
 
 		if cmp.Equal(expectedRule, *actualRule) && equalWithoutOrder(action, rule.Action) {
-			updatedRuleID = rule.ID
-			continue
+			updatedRule = &rule
+			break
 		}
-
-		notFoundRules = append(notFoundRules, rule.ID)
 	}
 
-	d.Set("rule_id", updatedRuleID)
-
-	d.Set("client_id", clientID)
-
-	if updatedRuleID == 0 {
-		log.Printf("[WARN] these rule IDs: %v have been found under the action ID: %d. But it isn't in the Terraform Plan.", notFoundRules, actionID)
+	if updatedRule == nil {
 		d.SetId("")
+		return nil
 	}
+
+	d.Set("rule_id", updatedRule.ID)
+	d.Set("client_id", clientID)
+	d.Set("active", updatedRule.Active)
+	d.Set("title", updatedRule.Title)
+	d.Set("mitigation", updatedRule.Mitigation)
+	d.Set("set", updatedRule.Set)
 
 	return nil
 }
@@ -287,10 +286,6 @@ func resourceWallarmRateLimitImport(d *schema.ResourceData, m interface{}) ([]*s
 
 	} else {
 		return nil, fmt.Errorf("invalid id (%q) specified, should be in format \"{clientID}/{actionID}/{ruleID}\"", d.Id())
-	}
-
-	if err := resourceWallarmRateLimitRead(d, m); err != nil {
-		return nil, err
 	}
 
 	return []*schema.ResourceData{d}, nil
