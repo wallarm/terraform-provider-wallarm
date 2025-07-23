@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/samber/lo"
+	"github.com/wallarm/terraform-provider-wallarm/wallarm/common"
 	"github.com/wallarm/wallarm-go"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -128,7 +129,7 @@ func resourceWallarmCredentialStuffingModeCreate(d *schema.ResourceData, m inter
 	mode := d.Get("mode").(string)
 
 	actionsFromState := d.Get("action").(*schema.Set)
-	action, err := expandSetToActionDetailsList(actionsFromState)
+	action, err := common.ExpandSetToActionDetailsList(actionsFromState)
 	if err != nil {
 		return err
 	}
