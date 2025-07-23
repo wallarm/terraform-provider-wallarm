@@ -13,6 +13,7 @@ import (
 	"github.com/samber/lo"
 )
 
+// nolint:dupl
 func resourceWallarmBrute() *schema.Resource {
 	fields := map[string]*schema.Schema{
 		"action": defaultResourceRuleActionSchema,
