@@ -12,6 +12,8 @@ import (
 	"strings"
 	"unicode"
 
+	"github.com/pkg/errors"
+	"github.com/wallarm/terraform-provider-wallarm/wallarm/common"
 	"github.com/wallarm/wallarm-go"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/hashcode"
@@ -34,101 +36,6 @@ func expandInterfaceToStringList(list interface{}) []string {
 		vs = append(vs, v.(string))
 	}
 	return vs
-}
-
-func expandSetToActionDetailsList(action *schema.Set) ([]wallarm.ActionDetails, error) {
-	var as []wallarm.ActionDetails
-	for _, actionMap := range action.List() {
-		// Derive maps consecutively from a Set List
-		actionMap := actionMap.(map[string]interface{})
-
-		// Make keys of map sorted to
-		// then iterate over a map in order
-		keys := make([]string, 0, len(actionMap))
-		for k := range actionMap {
-			keys = append(keys, k)
-		}
-		sort.Strings(keys)
-
-		a := wallarm.ActionDetails{}
-		for _, k := range keys {
-			switch k {
-			case "point":
-				point := actionMap[k].(map[string]interface{})
-				for pointKey, pointValue := range point {
-					switch pointKey {
-					case path:
-						// Marshalling of the number leads to float64 even though it was int initially
-						// Therefore, we parse string into float64 to compare structs properly afterwards
-						pointValue, err := strconv.ParseFloat(pointValue.(string), 64)
-						if err != nil {
-							return nil, err
-						}
-						a.Point = []interface{}{pointKey, pointValue}
-					case "action_name", "action_ext", "method",
-						"proto", "scheme", "uri":
-						a.Point = []interface{}{pointKey}
-						// This is required by the API when case is insensitive
-						switch {
-						case actionMap["type"] == iequal:
-							a.Value = strings.ToLower(pointValue.(string))
-						case actionMap["type"] == "absent":
-							a.Value = nil
-						default:
-							a.Value = pointValue.(string)
-						}
-					case "instance":
-						a.Point = []interface{}{pointKey}
-						a.Value = pointValue.(string)
-						a.Type = "equal"
-					case header:
-						// This is required by the API when a header field is specified
-						a.Point = []interface{}{pointKey, strings.ToUpper(pointValue.(string))}
-					case "query":
-						// This is required by the API when case is insensitive
-						if actionMap["type"] == iequal {
-							a.Point = []interface{}{"get", strings.ToLower(pointValue.(string))}
-						} else {
-							a.Point = []interface{}{"get", pointValue.(string)}
-						}
-					default:
-						// This is required by the API when case is insensitive
-						if actionMap["type"] == "iequal" {
-							a.Point = []interface{}{pointKey, strings.ToLower(pointValue.(string))}
-						} else {
-							a.Point = []interface{}{pointKey, pointValue.(string)}
-						}
-					}
-				}
-
-			case "type":
-				// Fill out only when it is presented
-				// Then default values will be omitted in the JSON request body
-				// Otherwise, the API returns 4xx back due to the incorrect schema
-				if actionMap[k].(string) != "" {
-					a.Type = actionMap[k].(string)
-				}
-			case "value":
-				if actionMap[k].(string) != "" {
-					if actionMap["type"] == "iequal" {
-						a.Value = strings.ToLower(actionMap[k].(string))
-					} else {
-						a.Value = actionMap[k].(string)
-					}
-				}
-			}
-		}
-
-		// Check if there is anything to append, ensure it's not a default branch
-		if a.Type != "" {
-			as = append(as, a)
-		}
-	}
-	// Check if this is for a default branch
-	if len(as) == 0 {
-		as = []wallarm.ActionDetails{}
-	}
-	return as, nil
 }
 
 func actionDetailsToMap(actionDetails wallarm.ActionDetails) (map[string]interface{}, error) {
@@ -277,7 +184,7 @@ func alignPointScheme(rulePoint []interface{}) []interface{} {
 		if i == 0 {
 			points = append(points, point)
 		} else {
-			if wallarm.Contains(numericPoints, (rulePoint)[i-1]) {
+			if wallarm.Contains(numericPoints, rulePoint[i-1]) {
 				number := fmt.Sprintf("%d", int(point.(float64)))
 				points = append(points, number)
 			} else {
@@ -520,6 +427,7 @@ func equalWithoutOrder(conditionsA, conditionsB []wallarm.ActionDetails) bool {
 
 	return true
 }
+
 func convertToStringSlice(input []interface{}) []string {
 	result := make([]string, 0, len(input))
 	for _, v := range input {
@@ -570,7 +478,7 @@ func existsAction(d *schema.ResourceData, m interface{}, hintType string) (strin
 	clientID := retrieveClientID(d)
 
 	actionsFromState := d.Get("action").(*schema.Set)
-	action, err := expandSetToActionDetailsList(actionsFromState)
+	action, err := common.ExpandSetToActionDetailsList(actionsFromState)
 	if err != nil {
 		return "", false, err
 	}
@@ -671,7 +579,7 @@ func isNotFoundError(err error) (bool, error) {
 	return matched, nil
 }
 
-func findRule(client wallarm.API, clientID int, ruleID int) (*wallarm.ActionBody, error) {
+func findRule(client wallarm.API, clientID, ruleID int) (*wallarm.ActionBody, error) {
 	resp, err := client.HintRead(&wallarm.HintRead{
 		Limit:   1,
 		OrderBy: "updated_at",
@@ -681,7 +589,7 @@ func findRule(client wallarm.API, clientID int, ruleID int) (*wallarm.ActionBody
 		},
 	})
 	if err != nil {
-		return nil, err
+		return nil, errors.WithMessagef(err, "on client.HintRead, client ID %d, rule ID %d", clientID, ruleID)
 	}
 	if resp == nil || resp.Body == nil || len(*resp.Body) == 0 {
 		return nil, &ruleNotFoundError{clientID: clientID, ruleID: ruleID}

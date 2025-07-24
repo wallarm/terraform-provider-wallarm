@@ -1,3 +1,10 @@
+# v1.8.1 (Jul 24, 2025)
+
+## NOTES:
+
+* Added fields 'set', 'active', 'title', 'mitigation' for all resource_rules
+* Code refactored
+
 # v1.8.0 (April 17, 2025)
 
 ## NOTES:
