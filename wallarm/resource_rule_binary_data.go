@@ -10,9 +10,23 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/samber/lo"
 )
 
 func resourceWallarmBinaryData() *schema.Resource {
+	fields := map[string]*schema.Schema{
+		"action": defaultResourceRuleActionSchema,
+		"point": {
+			Type:     schema.TypeList,
+			Required: true,
+			ForceNew: true,
+			Elem: &schema.Schema{
+				Type: schema.TypeList,
+				Elem: &schema.Schema{Type: schema.TypeString},
+			},
+		},
+	}
+
 	return &schema.Resource{
 		Create: resourceWallarmBinaryDataCreate,
 		Read:   resourceWallarmBinaryDataRead,
@@ -20,51 +34,14 @@ func resourceWallarmBinaryData() *schema.Resource {
 		Importer: &schema.ResourceImporter{
 			State: resourceWallarmBinaryDataImport,
 		},
-
-		Schema: map[string]*schema.Schema{
-
-			"rule_id": {
-				Type:     schema.TypeInt,
-				Computed: true,
-			},
-
-			"action_id": {
-				Type:     schema.TypeInt,
-				Computed: true,
-			},
-
-			"rule_type": {
-				Type:     schema.TypeString,
-				Computed: true,
-			},
-
-			"client_id": defaultClientIDWithValidationSchema,
-
-			"comment": {
-				Type:     schema.TypeString,
-				Optional: true,
-				ForceNew: true,
-			},
-
-			"action": defaultResourceRuleActionSchema,
-
-			"point": {
-				Type:     schema.TypeList,
-				Required: true,
-				ForceNew: true,
-				Elem: &schema.Schema{
-					Type: schema.TypeList,
-					Elem: &schema.Schema{Type: schema.TypeString},
-				},
-			},
-		},
+		Schema: lo.Assign(fields, commonResourceRuleFields),
 	}
 }
 
 func resourceWallarmBinaryDataCreate(d *schema.ResourceData, m interface{}) error {
 	client := m.(wallarm.API)
 	clientID := retrieveClientID(d)
-	comment := d.Get("comment").(string)
+	fields := getCommonResourceRuleFieldsDTOFromResourceData(d)
 
 	ps := d.Get("point").([]interface{})
 	d.Set("point", ps)
@@ -86,8 +63,12 @@ func resourceWallarmBinaryDataCreate(d *schema.ResourceData, m interface{}) erro
 		Action:              &action,
 		Point:               points,
 		Validated:           false,
-		Comment:             comment,
+		Comment:             fields.Comment,
 		VariativityDisabled: true,
+		Set:                 fields.Set,
+		Active:              fields.Active,
+		Title:               fields.Title,
+		Mitigation:          fields.Mitigation,
 	}
 
 	actionResp, err := client.HintCreate(wm)
@@ -156,19 +137,18 @@ func resourceWallarmBinaryDataRead(d *schema.ResourceData, m interface{}) error 
 	// Assign new values to the old struct slice.
 	fillInDefaultValues(&action)
 
+	// стейт в терраформе локально
 	expectedRule := wallarm.ActionBody{
 		ActionID: actionID,
 		Type:     "binary_data",
 		Point:    points,
 	}
 
-	notFoundRules := make([]int, 0)
-	var updatedRuleID int
+	var updatedRule *wallarm.ActionBody
 	for _, rule := range *actionHints.Body {
-
 		if ruleID == rule.ID {
-			updatedRuleID = rule.ID
-			continue
+			updatedRule = &rule
+			break
 		}
 
 		// The response has a different structure so we have to align them
@@ -182,26 +162,27 @@ func resourceWallarmBinaryDataRead(d *schema.ResourceData, m interface{}) error 
 		}
 
 		if cmp.Equal(expectedRule, *actualRule) && equalWithoutOrder(action, rule.Action) {
-			updatedRuleID = rule.ID
-			continue
+			updatedRule = &rule
+			break
 		}
-
-		notFoundRules = append(notFoundRules, rule.ID)
 	}
 
-	d.Set("rule_id", updatedRuleID)
+	if updatedRule == nil {
+		d.SetId("")
+		return nil
+	}
 
+	d.Set("rule_id", updatedRule.ID)
 	d.Set("client_id", clientID)
+	d.Set("active", updatedRule.Active)
+	d.Set("title", updatedRule.Title)
+	d.Set("mitigation", updatedRule.Mitigation)
+	d.Set("set", updatedRule.Set)
 
 	if actionsSet.Len() != 0 {
 		d.Set("action", &actionsSet)
 	} else {
 		log.Printf("[WARN] action was empty so it either doesn't exist or it is a default branch which has no conditions. Actions: %v", &actionsSet)
-	}
-
-	if updatedRuleID == 0 {
-		log.Printf("[WARN] these rule IDs: %v have been found under the action ID: %d. But it isn't in the Terraform Plan.", notFoundRules, actionID)
-		d.SetId("")
 	}
 
 	return nil
@@ -304,10 +285,6 @@ func resourceWallarmBinaryDataImport(d *schema.ResourceData, m interface{}) ([]*
 
 	} else {
 		return nil, fmt.Errorf("invalid id (%q) specified, should be in format \"{clientID}/{actionID}/{ruleID}\"", d.Id())
-	}
-
-	if err := resourceWallarmBinaryDataRead(d, m); err != nil {
-		return nil, err
 	}
 
 	return []*schema.ResourceData{d}, nil

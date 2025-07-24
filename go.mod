@@ -3,11 +3,12 @@ module github.com/wallarm/terraform-provider-wallarm
 go 1.23
 
 require (
-	github.com/google/go-cmp v0.5.4
+	github.com/google/go-cmp v0.6.0
 	github.com/hashicorp/go-cleanhttp v0.5.1
 	github.com/hashicorp/terraform-plugin-sdk v1.16.0
 	github.com/pkg/errors v0.9.1
-	github.com/wallarm/wallarm-go v0.5.6
+	github.com/samber/lo v1.51.0
+	github.com/wallarm/wallarm-go v0.5.8
 )
 
 require (
@@ -73,15 +74,14 @@ require (
 	github.com/zclconf/go-cty v1.2.1 // indirect
 	github.com/zclconf/go-cty-yaml v1.0.1 // indirect
 	go.opencensus.io v0.22.4 // indirect
-	golang.org/x/crypto v0.0.0-20200622213623-75b288015ac9 // indirect
+	golang.org/x/crypto v0.23.0 // indirect
 	golang.org/x/lint v0.0.0-20200302205851-738671d3881b // indirect
-	golang.org/x/mod v0.4.2 // indirect
-	golang.org/x/net v0.0.0-20210726213435-c6fcb2dbf985 // indirect
+	golang.org/x/mod v0.17.0 // indirect
+	golang.org/x/net v0.25.0 // indirect
 	golang.org/x/oauth2 v0.0.0-20200107190931-bf48bf16ab8d // indirect
-	golang.org/x/sys v0.0.0-20210630005230-0f9fa26af87c // indirect
-	golang.org/x/text v0.3.6 // indirect
-	golang.org/x/tools v0.1.5 // indirect
-	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1 // indirect
+	golang.org/x/sys v0.20.0 // indirect
+	golang.org/x/text v0.22.0 // indirect
+	golang.org/x/tools v0.21.1-0.20240508182429-e35e4ccd0d2d // indirect
 	google.golang.org/api v0.29.0 // indirect
 	google.golang.org/appengine v1.6.6 // indirect
 	google.golang.org/genproto v0.0.0-20200711021454-869866162049 // indirect

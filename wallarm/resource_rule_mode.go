@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/samber/lo"
 	"github.com/wallarm/wallarm-go"
 
 	"github.com/google/go-cmp/cmp"
@@ -14,6 +15,16 @@ import (
 )
 
 func resourceWallarmMode() *schema.Resource {
+	fields := map[string]*schema.Schema{
+		"mode": {
+			Type:         schema.TypeString,
+			Required:     true,
+			ValidateFunc: validation.StringInSlice([]string{"default", "off", "monitoring", "block", "safe_blocking"}, false),
+			ForceNew:     true,
+		},
+
+		"action": defaultResourceRuleActionSchema,
+	}
 	return &schema.Resource{
 		Create: resourceWallarmModeCreate,
 		Read:   resourceWallarmModeRead,
@@ -21,41 +32,7 @@ func resourceWallarmMode() *schema.Resource {
 		Importer: &schema.ResourceImporter{
 			State: resourceWallarmModeImport,
 		},
-
-		Schema: map[string]*schema.Schema{
-
-			"rule_id": {
-				Type:     schema.TypeInt,
-				Computed: true,
-			},
-
-			"action_id": {
-				Type:     schema.TypeInt,
-				Computed: true,
-			},
-
-			"rule_type": {
-				Type:     schema.TypeString,
-				Computed: true,
-			},
-
-			"client_id": defaultClientIDWithValidationSchema,
-
-			"comment": {
-				Type:     schema.TypeString,
-				Optional: true,
-				ForceNew: true,
-			},
-
-			"mode": {
-				Type:         schema.TypeString,
-				Required:     true,
-				ValidateFunc: validation.StringInSlice([]string{"default", "off", "monitoring", "block", "safe_blocking"}, false),
-				ForceNew:     true,
-			},
-
-			"action": defaultResourceRuleActionSchema,
-		},
+		Schema: lo.Assign(fields, commonResourceRuleFields),
 	}
 }
 
@@ -71,7 +48,7 @@ func resourceWallarmModeCreate(d *schema.ResourceData, m interface{}) error {
 	}
 	client := m.(wallarm.API)
 	clientID := retrieveClientID(d)
-	comment := d.Get("comment").(string)
+	fields := getCommonResourceRuleFieldsDTOFromResourceData(d)
 	actionsFromState := d.Get("action").(*schema.Set)
 	mode := d.Get("mode").(string)
 
@@ -85,8 +62,12 @@ func resourceWallarmModeCreate(d *schema.ResourceData, m interface{}) error {
 		Action:              &action,
 		Mode:                mode,
 		Validated:           false,
-		Comment:             comment,
+		Comment:             fields.Comment,
 		VariativityDisabled: true,
+		Set:                 fields.Set,
+		Active:              fields.Active,
+		Title:               fields.Title,
+		Mitigation:          fields.Mitigation,
 	}
 
 	actionResp, err := client.HintCreate(wm)
@@ -153,12 +134,11 @@ func resourceWallarmModeRead(d *schema.ResourceData, m interface{}) error {
 		Action:   action,
 	}
 
-	notFoundRules := make([]int, 0)
-	var updatedRuleID int
+	var updatedRule *wallarm.ActionBody
 	for _, rule := range *actionHints.Body {
 		if ruleID == rule.ID {
-			updatedRuleID = rule.ID
-			continue
+			updatedRule = &rule
+			break
 		}
 
 		actualRule := &wallarm.ActionBody{
@@ -168,25 +148,27 @@ func resourceWallarmModeRead(d *schema.ResourceData, m interface{}) error {
 		}
 
 		if cmp.Equal(expectedRule, *actualRule) && equalWithoutOrder(action, rule.Action) {
-			updatedRuleID = rule.ID
-			continue
+			updatedRule = &rule
+			break
 		}
-
-		notFoundRules = append(notFoundRules, rule.ID)
 	}
 
-	d.Set("rule_id", updatedRuleID)
+	if updatedRule == nil {
+		d.SetId("")
+		return nil
+	}
+
+	d.Set("rule_id", updatedRule.ID)
 	d.Set("client_id", clientID)
+	d.Set("active", updatedRule.Active)
+	d.Set("title", updatedRule.Title)
+	d.Set("mitigation", updatedRule.Mitigation)
+	d.Set("set", updatedRule.Set)
 
 	if actionsSet.Len() != 0 {
 		d.Set("action", &actionsSet)
 	} else {
 		log.Printf("[WARN] action was empty so it either doesn't exist or it is a default branch which has no conditions. Actions: %v", &actionsSet)
-	}
-
-	if updatedRuleID == 0 {
-		log.Printf("[WARN] these rule IDs: %v have been found under the action ID: %d. But it isn't in the Terraform Plan.", notFoundRules, actionID)
-		d.SetId("")
 	}
 
 	return nil
@@ -287,10 +269,6 @@ func resourceWallarmModeImport(d *schema.ResourceData, m interface{}) ([]*schema
 
 	} else {
 		return nil, fmt.Errorf("invalid id (%q) specified, should be in format \"{clientID}/{actionID}/{ruleID}/{wallarm-mode}\"", d.Id())
-	}
-
-	if err := resourceWallarmModeRead(d, m); err != nil {
-		return nil, err
 	}
 
 	return []*schema.ResourceData{d}, nil

@@ -2,10 +2,10 @@ package wallarm
 
 import (
 	"fmt"
-	"log"
 	"strconv"
 	"strings"
 
+	"github.com/samber/lo"
 	wallarm "github.com/wallarm/wallarm-go"
 
 	"github.com/google/go-cmp/cmp"
@@ -14,6 +14,55 @@ import (
 )
 
 func resourceWallarmRateLimit() *schema.Resource {
+	fields := map[string]*schema.Schema{
+		"action": defaultResourceLimitActionSchema,
+
+		"point": {
+			Type:     schema.TypeList,
+			Required: true,
+			ForceNew: true,
+			Elem: &schema.Schema{
+				Type: schema.TypeList,
+				Elem: &schema.Schema{Type: schema.TypeString},
+			},
+		},
+
+		"delay": {
+			Type:         schema.TypeInt,
+			ForceNew:     true,
+			Optional:     true,
+			ValidateFunc: validation.IntBetween(0, 1000),
+		},
+
+		"burst": {
+			Type:         schema.TypeInt,
+			ForceNew:     true,
+			Required:     true,
+			ValidateFunc: validation.IntBetween(0, 1000),
+		},
+
+		"rate": {
+			Type:         schema.TypeInt,
+			ForceNew:     true,
+			Required:     true,
+			ValidateFunc: validation.IntBetween(0, 1000),
+		},
+
+		"rsp_status": {
+			Type:         schema.TypeInt,
+			ForceNew:     true,
+			Optional:     true,
+			Default:      0,
+			ValidateFunc: validation.IntBetween(400, 599),
+		},
+
+		"time_unit": {
+			Type:         schema.TypeString,
+			Required:     true,
+			ForceNew:     true,
+			ValidateFunc: validation.StringInSlice([]string{"rps", "rpm"}, false),
+		},
+	}
 	return &schema.Resource{
 		Create: resourceWallarmRateLimitCreate,
 		Read:   resourceWallarmRateLimitRead,
@@ -21,87 +70,14 @@ func resourceWallarmRateLimit() *schema.Resource {
 		Importer: &schema.ResourceImporter{
 			State: resourceWallarmRateLimitImport,
 		},
-
-		Schema: map[string]*schema.Schema{
-
-			"rule_id": {
-				Type:     schema.TypeInt,
-				Computed: true,
-			},
-
-			"action_id": {
-				Type:     schema.TypeInt,
-				Computed: true,
-			},
-
-			"rule_type": {
-				Type:     schema.TypeString,
-				Computed: true,
-			},
-
-			"client_id": defaultClientIDWithValidationSchema,
-
-			"comment": {
-				Type:     schema.TypeString,
-				Optional: true,
-				ForceNew: true,
-			},
-
-			"action": defaultResourceLimitActionSchema,
-
-			"point": {
-				Type:     schema.TypeList,
-				Required: true,
-				ForceNew: true,
-				Elem: &schema.Schema{
-					Type: schema.TypeList,
-					Elem: &schema.Schema{Type: schema.TypeString},
-				},
-			},
-
-			"delay": {
-				Type:         schema.TypeInt,
-				ForceNew:     true,
-				Optional:     true,
-				ValidateFunc: validation.IntBetween(0, 1000),
-			},
-
-			"burst": {
-				Type:         schema.TypeInt,
-				ForceNew:     true,
-				Required:     true,
-				ValidateFunc: validation.IntBetween(0, 1000),
-			},
-
-			"rate": {
-				Type:         schema.TypeInt,
-				ForceNew:     true,
-				Required:     true,
-				ValidateFunc: validation.IntBetween(0, 1000),
-			},
-
-			"rsp_status": {
-				Type:         schema.TypeInt,
-				ForceNew:     true,
-				Optional:     true,
-				Default:      0,
-				ValidateFunc: validation.IntBetween(400, 599),
-			},
-
-			"time_unit": {
-				Type:         schema.TypeString,
-				Required:     true,
-				ForceNew:     true,
-				ValidateFunc: validation.StringInSlice([]string{"rps", "rpm"}, false),
-			},
-		},
+		Schema: lo.Assign(fields, commonResourceRuleFields),
 	}
 }
 
 func resourceWallarmRateLimitCreate(d *schema.ResourceData, m interface{}) error {
 	client := m.(wallarm.API)
 	clientID := retrieveClientID(d)
-	comment := d.Get("comment").(string)
+	fields := getCommonResourceRuleFieldsDTOFromResourceData(d)
 
 	actionsFromState := d.Get("action").(*schema.Set)
 	action, err := expandSetToActionDetailsList(actionsFromState)
@@ -121,17 +97,21 @@ func resourceWallarmRateLimitCreate(d *schema.ResourceData, m interface{}) error
 	timeUnit := d.Get("time_unit").(string)
 
 	actionBody := &wallarm.ActionCreate{
-		Type:      "rate_limit",
-		Clientid:  clientID,
-		Action:    &action,
-		Validated: false,
-		Comment:   comment,
-		Point:     point,
-		Delay:     delay,
-		Burst:     burst,
-		Rate:      rate,
-		RspStatus: rspStatus,
-		TimeUnit:  timeUnit,
+		Type:       "rate_limit",
+		Clientid:   clientID,
+		Action:     &action,
+		Validated:  false,
+		Comment:    fields.Comment,
+		Point:      point,
+		Delay:      delay,
+		Burst:      burst,
+		Rate:       rate,
+		RspStatus:  rspStatus,
+		TimeUnit:   timeUnit,
+		Set:        fields.Set,
+		Active:     fields.Active,
+		Title:      fields.Title,
+		Mitigation: fields.Mitigation,
 	}
 
 	actionResp, err := client.HintCreate(actionBody)
@@ -189,12 +169,11 @@ func resourceWallarmRateLimitRead(d *schema.ResourceData, m interface{}) error {
 		Action:   action,
 	}
 
-	notFoundRules := make([]int, 0)
-	var updatedRuleID int
+	var updatedRule *wallarm.ActionBody
 	for _, rule := range *actionHints.Body {
 		if ruleID == rule.ID {
-			updatedRuleID = rule.ID
-			continue
+			updatedRule = &rule
+			break
 		}
 
 		actualRule := &wallarm.ActionBody{
@@ -204,21 +183,22 @@ func resourceWallarmRateLimitRead(d *schema.ResourceData, m interface{}) error {
 		}
 
 		if cmp.Equal(expectedRule, *actualRule) && equalWithoutOrder(action, rule.Action) {
-			updatedRuleID = rule.ID
-			continue
+			updatedRule = &rule
+			break
 		}
-
-		notFoundRules = append(notFoundRules, rule.ID)
 	}
 
-	d.Set("rule_id", updatedRuleID)
-
-	d.Set("client_id", clientID)
-
-	if updatedRuleID == 0 {
-		log.Printf("[WARN] these rule IDs: %v have been found under the action ID: %d. But it isn't in the Terraform Plan.", notFoundRules, actionID)
+	if updatedRule == nil {
 		d.SetId("")
+		return nil
 	}
+
+	d.Set("rule_id", updatedRule.ID)
+	d.Set("client_id", clientID)
+	d.Set("active", updatedRule.Active)
+	d.Set("title", updatedRule.Title)
+	d.Set("mitigation", updatedRule.Mitigation)
+	d.Set("set", updatedRule.Set)
 
 	return nil
 }
@@ -306,10 +286,6 @@ func resourceWallarmRateLimitImport(d *schema.ResourceData, m interface{}) ([]*s
 
 	} else {
 		return nil, fmt.Errorf("invalid id (%q) specified, should be in format \"{clientID}/{actionID}/{ruleID}\"", d.Id())
-	}
-
-	if err := resourceWallarmRateLimitRead(d, m); err != nil {
-		return nil, err
 	}
 
 	return []*schema.ResourceData{d}, nil

@@ -2,10 +2,10 @@ package wallarm
 
 import (
 	"fmt"
-	"log"
 	"strconv"
 	"strings"
 
+	"github.com/samber/lo"
 	"github.com/wallarm/wallarm-go"
 
 	"github.com/google/go-cmp/cmp"
@@ -14,6 +14,29 @@ import (
 )
 
 func resourceWallarmSetResponseHeader() *schema.Resource {
+	fields := map[string]*schema.Schema{
+		"mode": {
+			Type:         schema.TypeString,
+			Required:     true,
+			ForceNew:     true,
+			ValidateFunc: validation.StringInSlice([]string{"append", "replace"}, false),
+		},
+
+		"name": {
+			Type:     schema.TypeString,
+			Required: true,
+			ForceNew: true,
+		},
+
+		"values": {
+			Type:     schema.TypeList,
+			Required: true,
+			ForceNew: true,
+			Elem:     &schema.Schema{Type: schema.TypeString},
+		},
+
+		"action": defaultResourceRuleActionSchema,
+	}
 	return &schema.Resource{
 		Create: resourceWallarmSetResponseHeaderCreate,
 		Read:   resourceWallarmSetResponseHeaderRead,
@@ -22,61 +45,14 @@ func resourceWallarmSetResponseHeader() *schema.Resource {
 		Importer: &schema.ResourceImporter{
 			State: resourceWallarmSetResponseHeaderImport,
 		},
-
-		Schema: map[string]*schema.Schema{
-
-			"rule_id": {
-				Type:     schema.TypeInt,
-				Computed: true,
-			},
-
-			"action_id": {
-				Type:     schema.TypeInt,
-				Computed: true,
-			},
-
-			"rule_type": {
-				Type:     schema.TypeString,
-				Computed: true,
-			},
-
-			"client_id": defaultClientIDWithValidationSchema,
-
-			"comment": {
-				Type:     schema.TypeString,
-				Optional: true,
-				ForceNew: true,
-			},
-
-			"mode": {
-				Type:         schema.TypeString,
-				Required:     true,
-				ForceNew:     true,
-				ValidateFunc: validation.StringInSlice([]string{"append", "replace"}, false),
-			},
-
-			"name": {
-				Type:     schema.TypeString,
-				Required: true,
-				ForceNew: true,
-			},
-
-			"values": {
-				Type:     schema.TypeList,
-				Required: true,
-				ForceNew: true,
-				Elem:     &schema.Schema{Type: schema.TypeString},
-			},
-
-			"action": defaultResourceRuleActionSchema,
-		},
+		Schema: lo.Assign(fields, commonResourceRuleFields),
 	}
 }
 
 func resourceWallarmSetResponseHeaderCreate(d *schema.ResourceData, m interface{}) error {
 	client := m.(wallarm.API)
 	clientID := retrieveClientID(d)
-	comment := d.Get("comment").(string)
+	fields := getCommonResourceRuleFieldsDTOFromResourceData(d)
 	mode := d.Get("mode").(string)
 	name := d.Get("name").(string)
 	valuesInterface := d.Get("values").([]interface{})
@@ -101,8 +77,12 @@ func resourceWallarmSetResponseHeaderCreate(d *schema.ResourceData, m interface{
 		Name:                name,
 		Values:              values,
 		Validated:           false,
-		Comment:             comment,
+		Comment:             fields.Comment,
 		VariativityDisabled: true,
+		Set:                 fields.Set,
+		Active:              fields.Active,
+		Title:               fields.Title,
+		Mitigation:          fields.Mitigation,
 	}
 	actionResp, err := client.HintCreate(vp)
 
@@ -162,12 +142,11 @@ func resourceWallarmSetResponseHeaderRead(d *schema.ResourceData, m interface{})
 		Values:   values,
 	}
 
-	notFoundRules := make([]int, 0)
-	var updatedRuleID int
+	var updatedRule *wallarm.ActionBody
 	for _, rule := range *actionHints.Body {
 		if ruleID == rule.ID {
-			updatedRuleID = rule.ID
-			continue
+			updatedRule = &rule
+			break
 		}
 
 		actualRule := &wallarm.ActionBody{
@@ -176,20 +155,22 @@ func resourceWallarmSetResponseHeaderRead(d *schema.ResourceData, m interface{})
 		}
 
 		if cmp.Equal(expectedRule, *actualRule) && equalWithoutOrder(action, rule.Action) {
-			updatedRuleID = rule.ID
-			continue
+			updatedRule = &rule
+			break
 		}
-
-		notFoundRules = append(notFoundRules, rule.ID)
 	}
 
-	d.Set("rule_id", updatedRuleID)
-	d.Set("client_id", clientID)
-
-	if updatedRuleID == 0 {
-		log.Printf("[WARN] these rule IDs: %v have been found under the action ID: %d. But it isn't in the Terraform Plan.", notFoundRules, actionID)
+	if updatedRule == nil {
 		d.SetId("")
+		return nil
 	}
+
+	d.Set("rule_id", updatedRule.ID)
+	d.Set("client_id", clientID)
+	d.Set("active", updatedRule.Active)
+	d.Set("title", updatedRule.Title)
+	d.Set("mitigation", updatedRule.Mitigation)
+	d.Set("set", updatedRule.Set)
 
 	return nil
 }
@@ -278,10 +259,6 @@ func resourceWallarmSetResponseHeaderImport(d *schema.ResourceData, m interface{
 
 	} else {
 		return nil, fmt.Errorf("invalid id (%q) specified, should be in format \"{clientID}/{actionID}/{ruleID}\"", d.Id())
-	}
-
-	if err := resourceWallarmSetResponseHeaderRead(d, m); err != nil {
-		return nil, err
 	}
 
 	return []*schema.ResourceData{d}, nil

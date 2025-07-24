@@ -2,10 +2,10 @@ package wallarm
 
 import (
 	"fmt"
-	"log"
 	"strconv"
 	"strings"
 
+	"github.com/samber/lo"
 	"github.com/wallarm/wallarm-go"
 
 	"github.com/google/go-cmp/cmp"
@@ -14,6 +14,33 @@ import (
 )
 
 func resourceWallarmOverlimitResSettings() *schema.Resource {
+	fields := map[string]*schema.Schema{
+		"action": defaultResourceLimitActionSchema,
+
+		"point": {
+			Type:     schema.TypeList,
+			Optional: true,
+			ForceNew: true,
+			Elem: &schema.Schema{
+				Type: schema.TypeList,
+				Elem: &schema.Schema{Type: schema.TypeString},
+			},
+		},
+
+		"overlimit_time": {
+			Type:         schema.TypeInt,
+			ForceNew:     true,
+			Required:     true,
+			ValidateFunc: validation.IntBetween(0, 2_147_483_647),
+		},
+
+		"mode": {
+			Type:         schema.TypeString,
+			Required:     true,
+			ForceNew:     true,
+			ValidateFunc: validation.StringInSlice([]string{"off", "monitoring", "blocking"}, false),
+		},
+	}
 	return &schema.Resource{
 		Create: resourceWallarmOverlimitResSettingsCreate,
 		Read:   resourceWallarmOverlimitResSettingsRead,
@@ -21,65 +48,14 @@ func resourceWallarmOverlimitResSettings() *schema.Resource {
 		Importer: &schema.ResourceImporter{
 			State: resourceWallarmOverlimitResSettingsImport,
 		},
-
-		Schema: map[string]*schema.Schema{
-
-			"rule_id": {
-				Type:     schema.TypeInt,
-				Computed: true,
-			},
-
-			"action_id": {
-				Type:     schema.TypeInt,
-				Computed: true,
-			},
-
-			"rule_type": {
-				Type:     schema.TypeString,
-				Computed: true,
-			},
-
-			"client_id": defaultClientIDWithValidationSchema,
-
-			"comment": {
-				Type:     schema.TypeString,
-				Optional: true,
-				ForceNew: true,
-			},
-
-			"action": defaultResourceLimitActionSchema,
-
-			"point": {
-				Type:     schema.TypeList,
-				Optional: true,
-				ForceNew: true,
-				Elem: &schema.Schema{
-					Type: schema.TypeList,
-					Elem: &schema.Schema{Type: schema.TypeString},
-				},
-			},
-
-			"overlimit_time": {
-				Type:         schema.TypeInt,
-				ForceNew:     true,
-				Required:     true,
-				ValidateFunc: validation.IntBetween(0, 2_147_483_647),
-			},
-
-			"mode": {
-				Type:         schema.TypeString,
-				Required:     true,
-				ForceNew:     true,
-				ValidateFunc: validation.StringInSlice([]string{"off", "monitoring", "blocking"}, false),
-			},
-		},
+		Schema: lo.Assign(fields, commonResourceRuleFields),
 	}
 }
 
 func resourceWallarmOverlimitResSettingsCreate(d *schema.ResourceData, m interface{}) error {
 	client := m.(wallarm.API)
 	clientID := retrieveClientID(d)
-	comment := d.Get("comment").(string)
+	fields := getCommonResourceRuleFieldsDTOFromResourceData(d)
 
 	actionsFromState := d.Get("action").(*schema.Set)
 	action, err := expandSetToActionDetailsList(actionsFromState)
@@ -100,10 +76,14 @@ func resourceWallarmOverlimitResSettingsCreate(d *schema.ResourceData, m interfa
 		Clientid:      clientID,
 		Action:        &action,
 		Validated:     false,
-		Comment:       comment,
+		Comment:       fields.Comment,
 		Point:         point,
 		Mode:          mode,
 		OverlimitTime: overlimitTime,
+		Set:           fields.Set,
+		Active:        fields.Active,
+		Title:         fields.Title,
+		Mitigation:    fields.Mitigation,
 	}
 
 	actionResp, err := client.HintCreate(actionBody)
@@ -161,12 +141,11 @@ func resourceWallarmOverlimitResSettingsRead(d *schema.ResourceData, m interface
 		Action:   action,
 	}
 
-	notFoundRules := make([]int, 0)
-	var updatedRuleID int
+	var updatedRule *wallarm.ActionBody
 	for _, rule := range *actionHints.Body {
 		if ruleID == rule.ID {
-			updatedRuleID = rule.ID
-			continue
+			updatedRule = &rule
+			break
 		}
 
 		actualRule := &wallarm.ActionBody{
@@ -176,21 +155,22 @@ func resourceWallarmOverlimitResSettingsRead(d *schema.ResourceData, m interface
 		}
 
 		if cmp.Equal(expectedRule, *actualRule) && equalWithoutOrder(action, rule.Action) {
-			updatedRuleID = rule.ID
-			continue
+			updatedRule = &rule
+			break
 		}
-
-		notFoundRules = append(notFoundRules, rule.ID)
 	}
 
-	d.Set("rule_id", updatedRuleID)
-
-	d.Set("client_id", clientID)
-
-	if updatedRuleID == 0 {
-		log.Printf("[WARN] these rule IDs: %v have been found under the action ID: %d. But it isn't in the Terraform Plan.", notFoundRules, actionID)
+	if updatedRule == nil {
 		d.SetId("")
+		return nil
 	}
+
+	d.Set("rule_id", updatedRule.ID)
+	d.Set("client_id", clientID)
+	d.Set("active", updatedRule.Active)
+	d.Set("title", updatedRule.Title)
+	d.Set("mitigation", updatedRule.Mitigation)
+	d.Set("set", updatedRule.Set)
 
 	return nil
 }
@@ -272,10 +252,6 @@ func resourceWallarmOverlimitResSettingsImport(d *schema.ResourceData, m interfa
 
 	} else {
 		return nil, fmt.Errorf("invalid id (%q) specified, should be in format \"{clientID}/{actionID}/{ruleID}\"", d.Id())
-	}
-
-	if err := resourceWallarmOverlimitResSettingsRead(d, m); err != nil {
-		return nil, err
 	}
 
 	return []*schema.ResourceData{d}, nil
