@@ -13,7 +13,7 @@ import (
 	"unicode"
 
 	"github.com/pkg/errors"
-	"github.com/wallarm/terraform-provider-wallarm/wallarm/common"
+	"github.com/wallarm/terraform-provider-wallarm/wallarm/common/resource_rule"
 	"github.com/wallarm/wallarm-go"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/hashcode"
@@ -478,7 +478,7 @@ func existsAction(d *schema.ResourceData, m interface{}, hintType string) (strin
 	clientID := retrieveClientID(d)
 
 	actionsFromState := d.Get("action").(*schema.Set)
-	action, err := common.ExpandSetToActionDetailsList(actionsFromState)
+	action, err := resource_rule.ExpandSetToActionDetailsList(actionsFromState)
 	if err != nil {
 		return "", false, err
 	}

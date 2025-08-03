@@ -1,4 +1,4 @@
-package common
+package resource_rule
 
 import (
 	"bytes"
@@ -14,30 +14,27 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/hashcode"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/pkg/errors"
+	"github.com/wallarm/terraform-provider-wallarm/wallarm/common"
+	"github.com/wallarm/terraform-provider-wallarm/wallarm/common/mapper/api_to_tf"
+	"github.com/wallarm/terraform-provider-wallarm/wallarm/common/mapper/tf_to_api"
 	"github.com/wallarm/wallarm-go"
 )
 
-type ReadOption string
-
-const (
-	ReadOptionWithPoint   ReadOption = "with_point"
-	ReadOptionWithAction  ReadOption = "without_action"
-	ReadOptionWithRegexID ReadOption = "with_regex_id"
-	ReadOptionWithMode    ReadOption = "with_mode"
-	ReadOptionWithName    ReadOption = "with_name"
-	ReadOptionWithValues  ReadOption = "with_values"
-)
-
-func ResourceRuleWallarmRead(d *schema.ResourceData, clientID int, cli wallarm.API, opts ...ReadOption) error {
+func ResourceRuleWallarmRead(d *schema.ResourceData, clientID int, cli wallarm.API, opts ...common.ReadOption) error {
 	var (
-		actionID    = d.Get("action_id").(int)
-		ruleID      = d.Get("rule_id").(int)
-		withPoint   = slices.Contains(opts, ReadOptionWithPoint)
-		withAction  = slices.Contains(opts, ReadOptionWithAction)
-		withRegexID = slices.Contains(opts, ReadOptionWithRegexID)
-		withMode    = slices.Contains(opts, ReadOptionWithMode)
-		withName    = slices.Contains(opts, ReadOptionWithName)
-		withValues  = slices.Contains(opts, ReadOptionWithValues)
+		actionID                 = d.Get("action_id").(int)
+		ruleID                   = d.Get("rule_id").(int)
+		withPoint                = slices.Contains(opts, common.ReadOptionWithPoint)
+		withAction               = slices.Contains(opts, common.ReadOptionWithAction)
+		withRegexID              = slices.Contains(opts, common.ReadOptionWithRegexID)
+		withMode                 = slices.Contains(opts, common.ReadOptionWithMode)
+		withName                 = slices.Contains(opts, common.ReadOptionWithName)
+		withValues               = slices.Contains(opts, common.ReadOptionWithValues)
+		withThreshold            = slices.Contains(opts, common.ReadOptionWithThreshold)
+		withReaction             = slices.Contains(opts, common.ReadOptionWithReaction)
+		withEnumeratedParameters = slices.Contains(opts, common.ReadOptionWithEnumeratedParameters)
+		//withArbitraryConditions  = slices.Contains(opts, common.ReadOptionWithArbitraryConditions)
 	)
 
 	actionsFromState := d.Get("action").(*schema.Set)
@@ -95,7 +92,18 @@ func ResourceRuleWallarmRead(d *schema.ResourceData, clientID int, cli wallarm.A
 	if withValues {
 		expectedRule.Values = d.Get("values").([]interface{})
 	}
-
+	if withThreshold {
+		expectedRule.Threshold = tf_to_api.Threshold(d.Get("threshold").([]interface{}))
+	}
+	if withReaction {
+		expectedRule.Reaction = tf_to_api.Reaction(d.Get("reaction").([]interface{}))
+	}
+	if withEnumeratedParameters {
+		expectedRule.EnumeratedParameters = tf_to_api.EnumeratedParameters(d.Get("enumerated_parameters").([]interface{}))
+	}
+	//if withArbitraryConditions {
+	//	expectedRule.ArbitraryConditions = tf_to_api.ArbitraryConditionsReq(d.Get("arbitrary_conditions").([]interface{}))
+	//}
 	var updatedRule *wallarm.ActionBody
 	for _, rule := range *actionHints.Body {
 		if ruleID == rule.ID {
@@ -124,6 +132,12 @@ func ResourceRuleWallarmRead(d *schema.ResourceData, clientID int, cli wallarm.A
 		if withValues {
 			actualRule.Values = rule.Values
 		}
+		if withThreshold {
+			actualRule.Threshold = rule.Threshold
+		}
+		if withEnumeratedParameters {
+			actualRule.EnumeratedParameters = rule.EnumeratedParameters
+		}
 
 		if cmp.Equal(expectedRule, *actualRule) && EqualWithoutOrder(action, rule.Action) {
 			updatedRule = &rule
@@ -142,6 +156,10 @@ func ResourceRuleWallarmRead(d *schema.ResourceData, clientID int, cli wallarm.A
 	d.Set("title", updatedRule.Title)
 	d.Set("mitigation", updatedRule.Mitigation)
 	d.Set("set", updatedRule.Set)
+	d.Set("threshold", api_to_tf.Threshold(updatedRule.Threshold))
+	d.Set("reaction", api_to_tf.Reaction(updatedRule.Reaction))
+	d.Set("enumerated_parameters", api_to_tf.EnumeratedParameters(updatedRule.EnumeratedParameters))
+	d.Set("arbitrary_conditions", api_to_tf.ArbitraryConditions(updatedRule.ArbitraryConditions))
 
 	if actionsSet.Len() != 0 {
 		d.Set("action", &actionsSet)
@@ -150,6 +168,70 @@ func ResourceRuleWallarmRead(d *schema.ResourceData, clientID int, cli wallarm.A
 	}
 
 	return nil
+}
+
+func ResourceRuleWallarmCreate(
+	d *schema.ResourceData,
+	cli wallarm.API,
+	clientID int,
+	ruleType, attackType string,
+	readMethod func(*schema.ResourceData, interface{}) error,
+	opts ...common.CreateOption) error {
+	actionsFromState := d.Get("action").(*schema.Set)
+	action, err := ExpandSetToActionDetailsList(actionsFromState)
+	if err != nil {
+		return errors.WithMessage(err, "on ExpandSetToActionDetailsList")
+	}
+
+	enumeratedParametersFromState := d.Get("enumerated_parameters").([]interface{})
+	enumeratedParameters := tf_to_api.EnumeratedParameters(enumeratedParametersFromState)
+
+	reactionFromState := d.Get("reaction").([]interface{})
+	reaction := tf_to_api.Reaction(reactionFromState)
+
+	thresholdFromState := d.Get("threshold").([]interface{})
+	threshold := tf_to_api.Threshold(thresholdFromState)
+
+	advancedConditionsFromState := d.Get("advanced_conditions").([]interface{})
+	advancedConditions := tf_to_api.AdvancedConditions(advancedConditionsFromState)
+
+	arbitraryConditionsFromState := d.Get("arbitrary_conditions").([]interface{})
+	arbitraryConditions := tf_to_api.ArbitraryConditionsReq(arbitraryConditionsFromState)
+
+	wm := &wallarm.ActionCreate{
+		Type:                 ruleType,
+		Clientid:             clientID,
+		Action:               &action,
+		Validated:            false,
+		Comment:              GetValueWithTypeCastingOrDefault[string](d, "comment"),
+		VariativityDisabled:  true,
+		Set:                  GetValueWithTypeCastingOrDefault[string](d, "set"),
+		Active:               GetValueWithTypeCastingOrDefault[bool](d, "active"),
+		Title:                GetValueWithTypeCastingOrDefault[string](d, "title"),
+		Mitigation:           GetValueWithTypeCastingOrDefault[string](d, "mitigation"),
+		AttackType:           attackType,
+		Reaction:             reaction,
+		Threshold:            threshold,
+		EnumeratedParameters: enumeratedParameters,
+		AdvancedConditions:   advancedConditions,
+		ArbitraryConditions:  arbitraryConditions,
+		Mode:                 GetValueWithTypeCastingOrDefault[string](d, "mode"),
+	}
+
+	actionResp, err := cli.HintCreate(wm)
+	if err != nil {
+		d.SetId("")
+		return err
+	}
+
+	d.Set("rule_id", actionResp.Body.ID)
+	d.Set("action_id", actionResp.Body.ActionID)
+	d.Set("rule_type", actionResp.Body.Type)
+
+	resID := fmt.Sprintf("%d/%d/%d", clientID, actionResp.Body.ActionID, actionResp.Body.ID)
+	d.SetId(resID)
+
+	return readMethod(d, cli)
 }
 
 func ExpandSetToActionDetailsList(action *schema.Set) ([]wallarm.ActionDetails, error) {
@@ -173,7 +255,7 @@ func ExpandSetToActionDetailsList(action *schema.Set) ([]wallarm.ActionDetails, 
 				point := actionMap[k].(map[string]interface{})
 				for pointKey, pointValue := range point {
 					switch pointKey {
-					case path:
+					case common.Path:
 						// Marshalling of the number leads to float64 even though it was int initially
 						// Therefore, we parse string into float64 to compare structs properly afterwards
 						pointValue, err := strconv.ParseFloat(pointValue.(string), 64)
@@ -186,7 +268,7 @@ func ExpandSetToActionDetailsList(action *schema.Set) ([]wallarm.ActionDetails, 
 						a.Point = []interface{}{pointKey}
 						// This is required by the API when case is insensitive
 						switch {
-						case actionMap["type"] == iequal:
+						case actionMap["type"] == common.Iequal:
 							a.Value = strings.ToLower(pointValue.(string))
 						case actionMap["type"] == "absent":
 							a.Value = nil
@@ -197,12 +279,12 @@ func ExpandSetToActionDetailsList(action *schema.Set) ([]wallarm.ActionDetails, 
 						a.Point = []interface{}{pointKey}
 						a.Value = pointValue.(string)
 						a.Type = "equal"
-					case header:
+					case common.Header:
 						// This is required by the API when a header field is specified
 						a.Point = []interface{}{pointKey, strings.ToUpper(pointValue.(string))}
 					case "query":
 						// This is required by the API when case is insensitive
-						if actionMap["type"] == iequal {
+						if actionMap["type"] == common.Iequal {
 							a.Point = []interface{}{"get", strings.ToLower(pointValue.(string))}
 						} else {
 							a.Point = []interface{}{"get", pointValue.(string)}
@@ -312,9 +394,9 @@ func HashResponseActionDetails(v interface{}) int {
 			pointMap["method"] = m["value"].(string)
 			m["point"] = pointMap
 			m["value"] = ""
-		case path:
+		case common.Path:
 			pointMap := make(map[string]string)
-			pointMap[path] = fmt.Sprintf("%d", int(p[1].(float64)))
+			pointMap[common.Path] = fmt.Sprintf("%d", int(p[1].(float64)))
 			m["point"] = pointMap
 		case "instance":
 			pointMap := make(map[string]string)
@@ -352,15 +434,15 @@ func EqualWithoutOrder(conditionsA, conditionsB []wallarm.ActionDetails) bool {
 
 	sort.Slice(conditionsA, func(i, j int) bool {
 		// Преобразуем Point в строку для сравнения
-		pointStrI := strings.Join(convertToStringSlice(conditionsA[i].Point), "/")
-		pointStrJ := strings.Join(convertToStringSlice(conditionsA[j].Point), "/")
+		pointStrI := strings.Join(common.ConvertToStringSlice(conditionsA[i].Point), "/")
+		pointStrJ := strings.Join(common.ConvertToStringSlice(conditionsA[j].Point), "/")
 		return pointStrI < pointStrJ
 	})
 
 	sort.Slice(conditionsB, func(i, j int) bool {
 		// Преобразуем Point в строку для сравнения
-		pointStrI := strings.Join(convertToStringSlice(conditionsB[i].Point), "/")
-		pointStrJ := strings.Join(convertToStringSlice(conditionsB[j].Point), "/")
+		pointStrI := strings.Join(common.ConvertToStringSlice(conditionsB[i].Point), "/")
+		pointStrJ := strings.Join(common.ConvertToStringSlice(conditionsB[j].Point), "/")
 		return pointStrI < pointStrJ
 	})
 
@@ -393,14 +475,6 @@ func AlignPointScheme(rulePoint []interface{}) []interface{} {
 		}
 	}
 	return points
-}
-
-func convertToStringSlice(input []interface{}) []string {
-	result := make([]string, 0, len(input))
-	for _, v := range input {
-		result = append(result, fmt.Sprintf("%v", v))
-	}
-	return result
 }
 
 // compare for action condition
@@ -448,4 +522,36 @@ func pointsFromResource(d *schema.ResourceData) []interface{} {
 		points = append(points, p...)
 	}
 	return points
+}
+
+func RetrieveClientID(d *schema.ResourceData, defaultClientID int) int {
+	if v, ok := d.GetOk("client_id"); ok {
+		return v.(int)
+	}
+	return defaultClientID
+}
+
+func GetValueWithTypeCastingOrDefault[T any](d *schema.ResourceData, name string) T {
+	var defaultValue T
+	resourceValue := d.Get(name)
+	if resourceValue == nil {
+		return defaultValue
+	}
+	v, ok := resourceValue.(T)
+	if !ok {
+		return defaultValue
+	}
+	return v
+}
+
+func GetPointerWithTypeCastingOrDefault[T any](d *schema.ResourceData, name string) *T {
+	resourceValue := d.Get(name)
+	if resourceValue == nil {
+		return nil
+	}
+	v, ok := d.Get(name).(T)
+	if !ok {
+		return nil
+	}
+	return &v
 }

@@ -293,6 +293,160 @@ var (
 			Computed: true,
 		},
 	}
+
+	thresholdSchema = &schema.Schema{
+		Type:     schema.TypeList,
+		MaxItems: 1,
+		Required: true,
+		ForceNew: true,
+		Elem: &schema.Resource{
+			Schema: map[string]*schema.Schema{
+				"period": {
+					Type:     schema.TypeInt,
+					Required: true,
+				},
+				"count": {
+					Type:     schema.TypeInt,
+					Required: true,
+				},
+			},
+		},
+	}
+
+	reactionSchema = &schema.Schema{
+		Type:     schema.TypeList,
+		MaxItems: 1,
+		Required: true,
+		ForceNew: true,
+		Elem: &schema.Resource{
+			Schema: map[string]*schema.Schema{
+				"block_by_session": {
+					Type:     schema.TypeInt,
+					Optional: true,
+				},
+				"block_by_ip": {
+					Type:     schema.TypeInt,
+					Optional: true,
+				},
+				"graylist_by_ip": {
+					Type:     schema.TypeInt,
+					Optional: true,
+				},
+			},
+		},
+	}
+
+	enumeratedParametersSchema = &schema.Schema{
+		Type:     schema.TypeList,
+		MaxItems: 1,
+		Required: true,
+		ForceNew: true,
+		Elem: &schema.Resource{
+			Schema: map[string]*schema.Schema{
+				"mode": {
+					Type:         schema.TypeString,
+					Required:     true,
+					ValidateFunc: validation.StringInSlice([]string{"regexp", "exact"}, false),
+				},
+				"points": {
+					Type:     schema.TypeList,
+					MaxItems: 1,
+					Optional: true,
+					Elem: &schema.Resource{
+						Schema: map[string]*schema.Schema{
+							"point": {
+								Type:     schema.TypeList,
+								Required: true,
+								ForceNew: true,
+								Elem: &schema.Schema{
+									Type: schema.TypeList,
+									Elem: &schema.Schema{Type: schema.TypeString},
+								},
+							},
+							"sensitive": {
+								Type:     schema.TypeBool,
+								Default:  false,
+								Optional: true,
+							},
+						},
+					},
+				},
+				"name_regexps": {
+					Type:     schema.TypeList,
+					Optional: true,
+					Elem:     &schema.Schema{Type: schema.TypeString},
+				},
+				"value_regexps": {
+					Type:     schema.TypeList,
+					Optional: true,
+					Elem:     &schema.Schema{Type: schema.TypeString},
+				},
+				"additional_parameters": {
+					Type:     schema.TypeBool,
+					Optional: true,
+					Default:  false,
+				},
+				"plain_parameters": {
+					Type:     schema.TypeBool,
+					Optional: true,
+					Default:  false,
+				},
+			},
+		},
+	}
+
+	advancedConditionsSchema = &schema.Schema{
+		Type:     schema.TypeList,
+		Optional: true,
+		ForceNew: true,
+		Elem: &schema.Resource{
+			Schema: map[string]*schema.Schema{
+				"field": {
+					Type:         schema.TypeString,
+					Required:     true,
+					ValidateFunc: validation.StringInSlice([]string{"proxy_type", "datacenter", "country", "ip", "method", "user_agent", "domain", "uri", "status_code", "request_time", "request_size", "response_size", "attack_type", "blocked"}, false),
+				},
+				"value": {
+					Type:     schema.TypeList,
+					Elem:     &schema.Schema{Type: schema.TypeString},
+					Required: true,
+				},
+				"operator": {
+					Type:         schema.TypeString,
+					Required:     true,
+					ValidateFunc: validation.StringInSlice([]string{"eq", "ne", "imatch", "notimatch", "match", "notmatch", "lt", "gt", "le", "ge"}, false),
+				},
+			},
+		},
+	}
+
+	arbitraryConditionsSchema = &schema.Schema{
+		Type:     schema.TypeList,
+		Optional: true,
+		ForceNew: true,
+		Elem: &schema.Resource{
+			Schema: map[string]*schema.Schema{
+				"point": {
+					Type:     schema.TypeList,
+					Required: true,
+					Elem: &schema.Schema{
+						Type: schema.TypeList,
+						Elem: &schema.Schema{Type: schema.TypeString},
+					},
+				},
+				"value": {
+					Type:     schema.TypeList,
+					Elem:     &schema.Schema{Type: schema.TypeString},
+					Required: true,
+				},
+				"operator": {
+					Type:         schema.TypeString,
+					Required:     true,
+					ValidateFunc: validation.StringInSlice([]string{"eq", "ne", "imatch", "notimatch", "match", "notmatch", "lt", "gt", "le", "ge"}, false),
+				},
+			},
+		},
+	}
 )
 
 type CommonResourceRuleFieldsDTO struct {

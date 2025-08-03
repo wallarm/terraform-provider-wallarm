@@ -7,6 +7,7 @@ import (
 
 	"github.com/samber/lo"
 	"github.com/wallarm/terraform-provider-wallarm/wallarm/common"
+	"github.com/wallarm/terraform-provider-wallarm/wallarm/common/resource_rule"
 	"github.com/wallarm/wallarm-go"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -41,7 +42,7 @@ func resourceWallarmBolaCounterCreate(d *schema.ResourceData, m interface{}) err
 	fields := getCommonResourceRuleFieldsDTOFromResourceData(d)
 	actionsFromState := d.Get("action").(*schema.Set)
 
-	action, err := common.ExpandSetToActionDetailsList(actionsFromState)
+	action, err := resource_rule.ExpandSetToActionDetailsList(actionsFromState)
 	if err != nil {
 		return err
 	}
@@ -74,7 +75,7 @@ func resourceWallarmBolaCounterCreate(d *schema.ResourceData, m interface{}) err
 }
 
 func resourceWallarmBolaCounterRead(d *schema.ResourceData, m interface{}) error {
-	return common.ResourceRuleWallarmRead(d, retrieveClientID(d), m.(wallarm.API), common.ReadOptionWithAction)
+	return resource_rule.ResourceRuleWallarmRead(d, retrieveClientID(d), m.(wallarm.API), common.ReadOptionWithAction)
 }
 
 func resourceWallarmBolaCounterDelete(d *schema.ResourceData, m interface{}) error {

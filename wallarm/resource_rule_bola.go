@@ -5,7 +5,9 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 	"github.com/wallarm/terraform-provider-wallarm/wallarm/common"
+	"github.com/wallarm/terraform-provider-wallarm/wallarm/common/resource_rule"
 	"github.com/wallarm/wallarm-go"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -15,17 +17,20 @@ import (
 // nolint:dupl
 func resourceWallarmBola() *schema.Resource {
 	fields := map[string]*schema.Schema{
-		"action": defaultResourceRuleActionSchema,
-		"point": {
-			Type:     schema.TypeList,
-			Required: true,
-			ForceNew: true,
-			Elem: &schema.Schema{
-				Type: schema.TypeList,
-				Elem: &schema.Schema{Type: schema.TypeString},
-			},
+		"action":    defaultResourceRuleActionSchema,
+		"threshold": thresholdSchema,
+		"reaction":  reactionSchema,
+		"mode": {
+			Type:         schema.TypeString,
+			Required:     true,
+			ValidateFunc: validation.StringInSlice([]string{"monitoring", "block"}, false),
+			ForceNew:     true,
 		},
+		"enumerated_parameters": enumeratedParametersSchema,
+		"advanced_conditions":   advancedConditionsSchema,
+		"arbitrary_conditions":  arbitraryConditionsSchema,
 	}
+	sh := lo.Assign(fields, commonResourceRuleFields)
 
 	return &schema.Resource{
 		Create: resourceWallarmBolaCreate,
@@ -34,61 +39,24 @@ func resourceWallarmBola() *schema.Resource {
 		Importer: &schema.ResourceImporter{
 			State: resourceWallarmBolaImport,
 		},
-		Schema: lo.Assign(fields, commonResourceRuleFields),
+		Schema: sh,
 	}
 }
 
 func resourceWallarmBolaCreate(d *schema.ResourceData, m interface{}) error {
-	client := m.(wallarm.API)
-	clientID := retrieveClientID(d)
-	fields := getCommonResourceRuleFieldsDTOFromResourceData(d)
-
-	ps := d.Get("point").([]interface{})
-	d.Set("point", ps)
-
-	points, err := expandPointsToTwoDimensionalArray(ps)
-	if err != nil {
-		return err
-	}
-
-	actionsFromState := d.Get("action").(*schema.Set)
-	action, err := common.ExpandSetToActionDetailsList(actionsFromState)
-	if err != nil {
-		return err
-	}
-
-	wm := &wallarm.ActionCreate{
-		Type:                "bola",
-		Clientid:            clientID,
-		Action:              &action,
-		Point:               points,
-		Validated:           false,
-		Comment:             fields.Comment,
-		VariativityDisabled: true,
-		Set:                 fields.Set,
-		Active:              fields.Active,
-		Title:               fields.Title,
-		Mitigation:          fields.Mitigation,
-	}
-
-	actionResp, err := client.HintCreate(wm)
-	if err != nil {
-		d.SetId("")
-		return err
-	}
-
-	d.Set("rule_id", actionResp.Body.ID)
-	d.Set("action_id", actionResp.Body.ActionID)
-	d.Set("rule_type", actionResp.Body.Type)
-
-	resID := fmt.Sprintf("%d/%d/%d", clientID, actionResp.Body.ActionID, actionResp.Body.ID)
-	d.SetId(resID)
-
-	return resourceWallarmBolaRead(d, m)
+	return resource_rule.ResourceRuleWallarmCreate(d, m.(wallarm.API), retrieveClientID(d),
+		"bola", "bola", resourceWallarmBolaRead)
 }
 
 func resourceWallarmBolaRead(d *schema.ResourceData, m interface{}) error {
-	return common.ResourceRuleWallarmRead(d, retrieveClientID(d), m.(wallarm.API), common.ReadOptionWithPoint)
+	return resource_rule.ResourceRuleWallarmRead(d, retrieveClientID(d), m.(wallarm.API),
+		common.ReadOptionWithMode,
+		common.ReadOptionWithAction,
+		common.ReadOptionWithThreshold,
+		common.ReadOptionWithReaction,
+		common.ReadOptionWithEnumeratedParameters,
+		common.ReadOptionWithArbitraryConditions,
+	)
 }
 
 func resourceWallarmBolaDelete(d *schema.ResourceData, m interface{}) error {

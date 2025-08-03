@@ -7,6 +7,7 @@ import (
 
 	"github.com/samber/lo"
 	"github.com/wallarm/terraform-provider-wallarm/wallarm/common"
+	"github.com/wallarm/terraform-provider-wallarm/wallarm/common/resource_rule"
 	"github.com/wallarm/wallarm-go"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -68,7 +69,7 @@ func resourceWallarmParserStateCreate(d *schema.ResourceData, m interface{}) err
 	}
 
 	actionsFromState := d.Get("action").(*schema.Set)
-	action, err := common.ExpandSetToActionDetailsList(actionsFromState)
+	action, err := resource_rule.ExpandSetToActionDetailsList(actionsFromState)
 	if err != nil {
 		return err
 	}
@@ -105,7 +106,7 @@ func resourceWallarmParserStateCreate(d *schema.ResourceData, m interface{}) err
 }
 
 func resourceWallarmParserStateRead(d *schema.ResourceData, m interface{}) error {
-	return common.ResourceRuleWallarmRead(d, retrieveClientID(d), m.(wallarm.API), common.ReadOptionWithPoint)
+	return resource_rule.ResourceRuleWallarmRead(d, retrieveClientID(d), m.(wallarm.API), common.ReadOptionWithPoint)
 }
 
 func resourceWallarmParserStateDelete(d *schema.ResourceData, m interface{}) error {
