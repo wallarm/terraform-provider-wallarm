@@ -1,4 +1,4 @@
-package resource_rule
+package resourcerule
 
 import (
 	"bytes"
@@ -16,7 +16,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/pkg/errors"
 	"github.com/wallarm/terraform-provider-wallarm/wallarm/common"
-	"github.com/wallarm/terraform-provider-wallarm/wallarm/common/mapper/api_to_tf"
+	"github.com/wallarm/terraform-provider-wallarm/wallarm/common/mapper/apitotf"
 	"github.com/wallarm/terraform-provider-wallarm/wallarm/common/mapper/tf_to_api"
 	"github.com/wallarm/wallarm-go"
 )
@@ -34,7 +34,7 @@ func ResourceRuleWallarmRead(d *schema.ResourceData, clientID int, cli wallarm.A
 		withThreshold            = slices.Contains(opts, common.ReadOptionWithThreshold)
 		withReaction             = slices.Contains(opts, common.ReadOptionWithReaction)
 		withEnumeratedParameters = slices.Contains(opts, common.ReadOptionWithEnumeratedParameters)
-		//withArbitraryConditions  = slices.Contains(opts, common.ReadOptionWithArbitraryConditions)
+		// withArbitraryConditions  = slices.Contains(opts, common.ReadOptionWithArbitraryConditions)
 	)
 
 	actionsFromState := d.Get("action").(*schema.Set)
@@ -101,9 +101,9 @@ func ResourceRuleWallarmRead(d *schema.ResourceData, clientID int, cli wallarm.A
 	if withEnumeratedParameters {
 		expectedRule.EnumeratedParameters = tf_to_api.EnumeratedParameters(d.Get("enumerated_parameters").([]interface{}))
 	}
-	//if withArbitraryConditions {
+	// if withArbitraryConditions {
 	//	expectedRule.ArbitraryConditions = tf_to_api.ArbitraryConditionsReq(d.Get("arbitrary_conditions").([]interface{}))
-	//}
+	// }
 	var updatedRule *wallarm.ActionBody
 	for _, rule := range *actionHints.Body {
 		if ruleID == rule.ID {
@@ -156,10 +156,10 @@ func ResourceRuleWallarmRead(d *schema.ResourceData, clientID int, cli wallarm.A
 	d.Set("title", updatedRule.Title)
 	d.Set("mitigation", updatedRule.Mitigation)
 	d.Set("set", updatedRule.Set)
-	d.Set("threshold", api_to_tf.Threshold(updatedRule.Threshold))
-	d.Set("reaction", api_to_tf.Reaction(updatedRule.Reaction))
-	d.Set("enumerated_parameters", api_to_tf.EnumeratedParameters(updatedRule.EnumeratedParameters))
-	d.Set("arbitrary_conditions", api_to_tf.ArbitraryConditions(updatedRule.ArbitraryConditions))
+	d.Set("threshold", apitotf.Threshold(updatedRule.Threshold))
+	d.Set("reaction", apitotf.Reaction(updatedRule.Reaction))
+	d.Set("enumerated_parameters", apitotf.EnumeratedParameters(updatedRule.EnumeratedParameters))
+	d.Set("arbitrary_conditions", apitotf.ArbitraryConditions(updatedRule.ArbitraryConditions))
 
 	if actionsSet.Len() != 0 {
 		d.Set("action", &actionsSet)
@@ -170,6 +170,7 @@ func ResourceRuleWallarmRead(d *schema.ResourceData, clientID int, cli wallarm.A
 	return nil
 }
 
+// nolint
 func ResourceRuleWallarmCreate(
 	d *schema.ResourceData,
 	cli wallarm.API,

@@ -31,6 +31,7 @@ func mapEnumeratedParameterRegexpToAPI(enumeratedParameter map[string]interface{
 	}
 }
 
+// nolint
 func mapEnumeratedParameterExactToAPI(enumeratedParameter map[string]interface{}) *wallarm.EnumeratedParameters {
 	return nil
 	//return &wallarm.EnumeratedParameters{
@@ -113,6 +114,7 @@ func ArbitraryConditionsReq(arbitraryConditions []interface{}) []wallarm.Arbitra
 	return response
 }
 
+// nolint
 func mapPointToAPI(point []interface{}) wallarm.TwoDimensionalSlice {
 	response := make(wallarm.TwoDimensionalSlice, 0, len(point))
 	if len(point) == 0 {
@@ -121,9 +123,7 @@ func mapPointToAPI(point []interface{}) wallarm.TwoDimensionalSlice {
 
 	for _, p1 := range point {
 		p1ToResp := make([]interface{}, 0, len(p1.([]interface{})))
-		for _, p2 := range p1.([]interface{}) {
-			p1ToResp = append(p1ToResp, p2)
-		}
+		p1ToResp = append(p1ToResp, p1.([]interface{})...)
 		response = append(response, p1ToResp)
 	}
 

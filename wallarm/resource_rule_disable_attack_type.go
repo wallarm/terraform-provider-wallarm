@@ -7,7 +7,7 @@ import (
 
 	"github.com/samber/lo"
 	"github.com/wallarm/terraform-provider-wallarm/wallarm/common"
-	"github.com/wallarm/terraform-provider-wallarm/wallarm/common/resource_rule"
+	"github.com/wallarm/terraform-provider-wallarm/wallarm/common/resourcerule"
 	"github.com/wallarm/wallarm-go"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -61,7 +61,7 @@ func resourceWallarmDisableAttackTypeCreate(d *schema.ResourceData, m interface{
 	}
 
 	actionsFromState := d.Get("action").(*schema.Set)
-	action, err := resource_rule.ExpandSetToActionDetailsList(actionsFromState)
+	action, err := resourcerule.ExpandSetToActionDetailsList(actionsFromState)
 	if err != nil {
 		return err
 	}
@@ -97,7 +97,7 @@ func resourceWallarmDisableAttackTypeCreate(d *schema.ResourceData, m interface{
 }
 
 func resourceWallarmDisableAttackTypeRead(d *schema.ResourceData, m interface{}) error {
-	return resource_rule.ResourceRuleWallarmRead(d, retrieveClientID(d), m.(wallarm.API), common.ReadOptionWithPoint)
+	return resourcerule.ResourceRuleWallarmRead(d, retrieveClientID(d), m.(wallarm.API), common.ReadOptionWithPoint)
 }
 
 func resourceWallarmDisableAttackTypeDelete(d *schema.ResourceData, m interface{}) error {

@@ -1,4 +1,4 @@
-package api_to_tf
+package apitotf
 
 import (
 	"github.com/wallarm/wallarm-go"

@@ -7,7 +7,7 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 	"github.com/wallarm/terraform-provider-wallarm/wallarm/common"
-	"github.com/wallarm/terraform-provider-wallarm/wallarm/common/resource_rule"
+	"github.com/wallarm/terraform-provider-wallarm/wallarm/common/resourcerule"
 	"github.com/wallarm/wallarm-go"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -44,12 +44,12 @@ func resourceWallarmBola() *schema.Resource {
 }
 
 func resourceWallarmBolaCreate(d *schema.ResourceData, m interface{}) error {
-	return resource_rule.ResourceRuleWallarmCreate(d, m.(wallarm.API), retrieveClientID(d),
+	return resourcerule.ResourceRuleWallarmCreate(d, m.(wallarm.API), retrieveClientID(d),
 		"bola", "bola", resourceWallarmBolaRead)
 }
 
 func resourceWallarmBolaRead(d *schema.ResourceData, m interface{}) error {
-	return resource_rule.ResourceRuleWallarmRead(d, retrieveClientID(d), m.(wallarm.API),
+	return resourcerule.ResourceRuleWallarmRead(d, retrieveClientID(d), m.(wallarm.API),
 		common.ReadOptionWithMode,
 		common.ReadOptionWithAction,
 		common.ReadOptionWithThreshold,
