@@ -17,7 +17,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/wallarm/terraform-provider-wallarm/wallarm/common"
 	"github.com/wallarm/terraform-provider-wallarm/wallarm/common/mapper/apitotf"
-	"github.com/wallarm/terraform-provider-wallarm/wallarm/common/mapper/tf_to_api"
+	"github.com/wallarm/terraform-provider-wallarm/wallarm/common/mapper/tftoapi"
 	"github.com/wallarm/wallarm-go"
 )
 
@@ -93,13 +93,13 @@ func ResourceRuleWallarmRead(d *schema.ResourceData, clientID int, cli wallarm.A
 		expectedRule.Values = d.Get("values").([]interface{})
 	}
 	if withThreshold {
-		expectedRule.Threshold = tf_to_api.Threshold(d.Get("threshold").([]interface{}))
+		expectedRule.Threshold = tftoapi.Threshold(d.Get("threshold").([]interface{}))
 	}
 	if withReaction {
-		expectedRule.Reaction = tf_to_api.Reaction(d.Get("reaction").([]interface{}))
+		expectedRule.Reaction = tftoapi.Reaction(d.Get("reaction").([]interface{}))
 	}
 	if withEnumeratedParameters {
-		expectedRule.EnumeratedParameters = tf_to_api.EnumeratedParameters(d.Get("enumerated_parameters").([]interface{}))
+		expectedRule.EnumeratedParameters = tftoapi.EnumeratedParameters(d.Get("enumerated_parameters").([]interface{}))
 	}
 	// if withArbitraryConditions {
 	//	expectedRule.ArbitraryConditions = tf_to_api.ArbitraryConditionsReq(d.Get("arbitrary_conditions").([]interface{}))
@@ -185,19 +185,19 @@ func ResourceRuleWallarmCreate(
 	}
 
 	enumeratedParametersFromState := d.Get("enumerated_parameters").([]interface{})
-	enumeratedParameters := tf_to_api.EnumeratedParameters(enumeratedParametersFromState)
+	enumeratedParameters := tftoapi.EnumeratedParameters(enumeratedParametersFromState)
 
 	reactionFromState := d.Get("reaction").([]interface{})
-	reaction := tf_to_api.Reaction(reactionFromState)
+	reaction := tftoapi.Reaction(reactionFromState)
 
 	thresholdFromState := d.Get("threshold").([]interface{})
-	threshold := tf_to_api.Threshold(thresholdFromState)
+	threshold := tftoapi.Threshold(thresholdFromState)
 
 	advancedConditionsFromState := d.Get("advanced_conditions").([]interface{})
-	advancedConditions := tf_to_api.AdvancedConditions(advancedConditionsFromState)
+	advancedConditions := tftoapi.AdvancedConditions(advancedConditionsFromState)
 
 	arbitraryConditionsFromState := d.Get("arbitrary_conditions").([]interface{})
-	arbitraryConditions := tf_to_api.ArbitraryConditionsReq(arbitraryConditionsFromState)
+	arbitraryConditions := tftoapi.ArbitraryConditionsReq(arbitraryConditionsFromState)
 
 	wm := &wallarm.ActionCreate{
 		Type:                 ruleType,

@@ -1,4 +1,4 @@
-package tf_to_api
+package tftoapi
 
 import (
 	"github.com/wallarm/terraform-provider-wallarm/wallarm/common"
