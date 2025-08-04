@@ -21,6 +21,7 @@ import (
 	"github.com/wallarm/wallarm-go"
 )
 
+// nolint
 func ResourceRuleWallarmRead(d *schema.ResourceData, clientID int, cli wallarm.API, opts ...common.ReadOption) error {
 	var (
 		actionID                 = d.Get("action_id").(int)
