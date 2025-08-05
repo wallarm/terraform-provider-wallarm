@@ -170,6 +170,8 @@ func ResourceRuleWallarmRead(d *schema.ResourceData, clientID int, cli wallarm.A
 	}
 
 	log.Println("hihihi3 found in API, no errors")
+	log.Println("hihihi3 point", d.Get("point"))
+	log.Println("hihihi3 action", d.Get("action"))
 	return nil
 }
 
