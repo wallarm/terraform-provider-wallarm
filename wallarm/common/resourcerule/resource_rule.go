@@ -152,7 +152,9 @@ func ResourceRuleWallarmRead(d *schema.ResourceData, clientID int, cli wallarm.A
 		return nil
 	}
 
-	d.Set("point", AlignPointScheme(updatedRule.Point))
+	if err = d.Set("point", AlignPointScheme2(updatedRule.Point)); err != nil {
+		log.Println("hihihi3 point set error", err)
+	}
 	d.Set("rule_id", updatedRule.ID)
 	d.Set("client_id", clientID)
 	d.Set("active", updatedRule.Active)
@@ -483,6 +485,29 @@ func AlignPointScheme(rulePoint []interface{}) []interface{} {
 		}
 	}
 	return points
+}
+
+func AlignPointScheme2(rulePoint []interface{}) []interface{} {
+	// Check by comparing the defined struct.
+	// This is needed when a new rule was overwritten by the old one, but API responds with rule ID
+	// which will be immediately removed as duplicate in favor of the first once we post it.
+	numericPoints := []string{"path", "array", "grpc", "json_array", "xml_comment",
+		"xml_dtd_entity", "xml_pi", "xml_tag_array"}
+	var points []interface{}
+	for i, point := range rulePoint {
+		if i == 0 {
+			points = append(points, point)
+		} else {
+			if wallarm.Contains(numericPoints, rulePoint[i-1]) {
+				number := fmt.Sprintf("%d", int(point.(float64)))
+				points = append(points, number)
+			} else {
+				points = append(points, point)
+			}
+		}
+	}
+
+	return []interface{}{points}
 }
 
 // compare for action condition
