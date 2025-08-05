@@ -6,12 +6,10 @@ import (
 	"fmt"
 	"log"
 	"reflect"
-	"slices"
 	"sort"
 	"strconv"
 	"strings"
 
-	"github.com/google/go-cmp/cmp"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/hashcode"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/pkg/errors"
@@ -24,17 +22,17 @@ import (
 // nolint
 func ResourceRuleWallarmRead(d *schema.ResourceData, clientID int, cli wallarm.API, opts ...common.ReadOption) error {
 	var (
-		actionID                 = d.Get("action_id").(int)
-		ruleID                   = d.Get("rule_id").(int)
-		withPoint                = slices.Contains(opts, common.ReadOptionWithPoint)
-		withAction               = slices.Contains(opts, common.ReadOptionWithAction)
-		withRegexID              = slices.Contains(opts, common.ReadOptionWithRegexID)
-		withMode                 = slices.Contains(opts, common.ReadOptionWithMode)
-		withName                 = slices.Contains(opts, common.ReadOptionWithName)
-		withValues               = slices.Contains(opts, common.ReadOptionWithValues)
-		withThreshold            = slices.Contains(opts, common.ReadOptionWithThreshold)
-		withReaction             = slices.Contains(opts, common.ReadOptionWithReaction)
-		withEnumeratedParameters = slices.Contains(opts, common.ReadOptionWithEnumeratedParameters)
+		//actionID                 = d.Get("action_id").(int)
+		ruleID = d.Get("rule_id").(int)
+		//withPoint                = slices.Contains(opts, common.ReadOptionWithPoint)
+		//withAction               = slices.Contains(opts, common.ReadOptionWithAction)
+		//withRegexID              = slices.Contains(opts, common.ReadOptionWithRegexID)
+		//withMode                 = slices.Contains(opts, common.ReadOptionWithMode)
+		//withName                 = slices.Contains(opts, common.ReadOptionWithName)
+		//withValues               = slices.Contains(opts, common.ReadOptionWithValues)
+		//withThreshold            = slices.Contains(opts, common.ReadOptionWithThreshold)
+		//withReaction             = slices.Contains(opts, common.ReadOptionWithReaction)
+		//withEnumeratedParameters = slices.Contains(opts, common.ReadOptionWithEnumeratedParameters)
 		// withArbitraryConditions  = slices.Contains(opts, common.ReadOptionWithArbitraryConditions)
 	)
 
@@ -74,34 +72,34 @@ func ResourceRuleWallarmRead(d *schema.ResourceData, clientID int, cli wallarm.A
 	// Assign new values to the old struct slice.
 	FillInDefaultValues(&action)
 
-	expectedRule := wallarm.ActionBody{ActionID: actionID}
-	if withPoint {
-		expectedRule.Point = pointsFromResource(d)
-	}
-	if withAction {
-		expectedRule.Action = action
-	}
-	if withRegexID {
-		expectedRule.RegexID = d.Get("regex_id").(int)
-	}
-	if withMode {
-		expectedRule.Mode = d.Get("mode").(string)
-	}
-	if withName {
-		expectedRule.Name = d.Get("name").(string)
-	}
-	if withValues {
-		expectedRule.Values = d.Get("values").([]interface{})
-	}
-	if withThreshold {
-		expectedRule.Threshold = tftoapi.Threshold(d.Get("threshold").([]interface{}))
-	}
-	if withReaction {
-		expectedRule.Reaction = tftoapi.Reaction(d.Get("reaction").([]interface{}))
-	}
-	if withEnumeratedParameters {
-		expectedRule.EnumeratedParameters = tftoapi.EnumeratedParameters(d.Get("enumerated_parameters").([]interface{}))
-	}
+	//expectedRule := wallarm.ActionBody{ActionID: actionID}
+	//if withPoint {
+	//	expectedRule.Point = pointsFromResource(d)
+	//}
+	//if withAction {
+	//	expectedRule.Action = action
+	//}
+	//if withRegexID {
+	//	expectedRule.RegexID = d.Get("regex_id").(int)
+	//}
+	//if withMode {
+	//	expectedRule.Mode = d.Get("mode").(string)
+	//}
+	//if withName {
+	//	expectedRule.Name = d.Get("name").(string)
+	//}
+	//if withValues {
+	//	expectedRule.Values = d.Get("values").([]interface{})
+	//}
+	//if withThreshold {
+	//	expectedRule.Threshold = tftoapi.Threshold(d.Get("threshold").([]interface{}))
+	//}
+	//if withReaction {
+	//	expectedRule.Reaction = tftoapi.Reaction(d.Get("reaction").([]interface{}))
+	//}
+	//if withEnumeratedParameters {
+	//	expectedRule.EnumeratedParameters = tftoapi.EnumeratedParameters(d.Get("enumerated_parameters").([]interface{}))
+	//}
 	// if withArbitraryConditions {
 	//	expectedRule.ArbitraryConditions = tf_to_api.ArbitraryConditionsReq(d.Get("arbitrary_conditions").([]interface{}))
 	// }
@@ -112,38 +110,38 @@ func ResourceRuleWallarmRead(d *schema.ResourceData, clientID int, cli wallarm.A
 			break
 		}
 
-		actualRule := &wallarm.ActionBody{ActionID: rule.ActionID}
-		if withPoint {
-			// The response has a different structure so we have to align them
-			// to uniform view then to compare.
-			actualRule.Point = AlignPointScheme(rule.Point)
-		}
-		if withAction {
-			actualRule.Action = action
-		}
-		if withRegexID {
-			actualRule.RegexID = rule.RegexID
-		}
-		if withMode {
-			actualRule.Mode = rule.Mode
-		}
-		if withName {
-			actualRule.Name = rule.Name
-		}
-		if withValues {
-			actualRule.Values = rule.Values
-		}
-		if withThreshold {
-			actualRule.Threshold = rule.Threshold
-		}
-		if withEnumeratedParameters {
-			actualRule.EnumeratedParameters = rule.EnumeratedParameters
-		}
-
-		if cmp.Equal(expectedRule, *actualRule) && EqualWithoutOrder(action, rule.Action) {
-			updatedRule = &rule
-			break
-		}
+		//actualRule := &wallarm.ActionBody{ActionID: rule.ActionID}
+		//if withPoint {
+		//	// The response has a different structure so we have to align them
+		//	// to uniform view then to compare.
+		//	actualRule.Point = AlignPointScheme(rule.Point)
+		//}
+		//if withAction {
+		//	actualRule.Action = action
+		//}
+		//if withRegexID {
+		//	actualRule.RegexID = rule.RegexID
+		//}
+		//if withMode {
+		//	actualRule.Mode = rule.Mode
+		//}
+		//if withName {
+		//	actualRule.Name = rule.Name
+		//}
+		//if withValues {
+		//	actualRule.Values = rule.Values
+		//}
+		//if withThreshold {
+		//	actualRule.Threshold = rule.Threshold
+		//}
+		//if withEnumeratedParameters {
+		//	actualRule.EnumeratedParameters = rule.EnumeratedParameters
+		//}
+		//
+		//if cmp.Equal(expectedRule, *actualRule) && EqualWithoutOrder(action, rule.Action) {
+		//	updatedRule = &rule
+		//	break
+		//}
 	}
 
 	if updatedRule == nil {
@@ -151,6 +149,7 @@ func ResourceRuleWallarmRead(d *schema.ResourceData, clientID int, cli wallarm.A
 		return nil
 	}
 
+	d.Set("point", AlignPointScheme(updatedRule.Point))
 	d.Set("rule_id", updatedRule.ID)
 	d.Set("client_id", clientID)
 	d.Set("active", updatedRule.Active)
