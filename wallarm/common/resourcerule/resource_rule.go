@@ -36,22 +36,22 @@ func ResourceRuleWallarmRead(d *schema.ResourceData, clientID int, cli wallarm.A
 		// withArbitraryConditions  = slices.Contains(opts, common.ReadOptionWithArbitraryConditions)
 	)
 
-	actionsFromState := d.Get("action").(*schema.Set)
-	action, err := ExpandSetToActionDetailsList(actionsFromState)
-	if err != nil {
-		return err
-	}
-
-	actsSlice := make([]interface{}, 0, len(action))
-	for _, a := range action {
-		acts, err := ActionDetailsToMap(a)
-		if err != nil {
-			return err
-		}
-		actsSlice = append(actsSlice, acts)
-	}
-
-	actionsSet := schema.NewSet(HashResponseActionDetails, actsSlice)
+	//actionsFromState := d.Get("action").(*schema.Set)
+	//action, err := ExpandSetToActionDetailsList(actionsFromState)
+	//if err != nil {
+	//	return err
+	//}
+	//
+	//actsSlice := make([]interface{}, 0, len(action))
+	//for _, a := range action {
+	//	acts, err := ActionDetailsToMap(a)
+	//	if err != nil {
+	//		return err
+	//	}
+	//	actsSlice = append(actsSlice, acts)
+	//}
+	//
+	//actionsSet := schema.NewSet(HashResponseActionDetails, actsSlice)
 
 	hint := &wallarm.HintRead{
 		Limit:     1000,
@@ -69,9 +69,9 @@ func ResourceRuleWallarmRead(d *schema.ResourceData, clientID int, cli wallarm.A
 		return err
 	}
 
-	// This is mandatory to fill in the default values in order to compare them deeply.
-	// Assign new values to the old struct slice.
-	FillInDefaultValues(&action)
+	//// This is mandatory to fill in the default values in order to compare them deeply.
+	//// Assign new values to the old struct slice.
+	//FillInDefaultValues(&action)
 
 	//expectedRule := wallarm.ActionBody{ActionID: actionID}
 	//if withPoint {
@@ -152,9 +152,7 @@ func ResourceRuleWallarmRead(d *schema.ResourceData, clientID int, cli wallarm.A
 		return nil
 	}
 
-	if err = d.Set("point", AlignPointScheme2(updatedRule.Point)); err != nil {
-		log.Println("hihihi3 point set error", err)
-	}
+	d.Set("point", wrapPointElements(updatedRule.Point))
 	d.Set("rule_id", updatedRule.ID)
 	d.Set("client_id", clientID)
 	d.Set("active", updatedRule.Active)
@@ -166,11 +164,16 @@ func ResourceRuleWallarmRead(d *schema.ResourceData, clientID int, cli wallarm.A
 	d.Set("enumerated_parameters", apitotf.EnumeratedParameters(updatedRule.EnumeratedParameters))
 	d.Set("arbitrary_conditions", apitotf.ArbitraryConditions(updatedRule.ArbitraryConditions))
 
-	if actionsSet.Len() != 0 {
-		d.Set("action", &actionsSet)
-	} else {
-		log.Printf("[WARN] action was empty so it either doesn't exist or it is a default branch which has no conditions. Actions: %v", &actionsSet)
+	actionsSet := schema.Set{F: hashResponseActionDetails}
+	for _, a := range updatedRule.Action {
+		acts, err := actionDetailsToMap(a)
+		if err != nil {
+			log.Println("hihihi4 on actionDetailsToMap", err)
+		} else {
+			actionsSet.Add(acts)
+		}
 	}
+	d.Set("action", &actionsSet)
 
 	log.Println("hihihi3 found in API, no errors")
 
@@ -587,4 +590,116 @@ func GetPointerWithTypeCastingOrDefault[T any](d *schema.ResourceData, name stri
 		return nil
 	}
 	return &v
+}
+
+func wrapPointElements(input []interface{}) [][]string {
+	var result [][]string // This will store the final result as a 2D slice of strings
+	i := 0
+
+	for i < len(input) {
+		switch input[i] {
+		case "json_array", "xml_pi", "hash", "array", "viewstate_array", "viewstate_pair",
+			"viewstate_triplet", "viewstate_dict", "header", "xml_dtd_entity",
+			"xml_tag_array", "xml_tag", "xml_attr", "xml_comment", "grpc", "protobuf",
+			"json_obj", "json", "jwt", "multipart", "get", "content_disp", "form_urlencoded",
+			"path", "cookie", "response_header", "viewstate_sparse_array":
+			// Check if there is a next element to include
+			if i+1 < len(input) {
+				// Convert both elements to strings and wrap them in a slice of strings
+				result = append(result, []string{
+					fmt.Sprintf("%v", input[i]),
+					fmt.Sprintf("%v", input[i+1]),
+				})
+				i++ // Skip the next element as it's already included
+			} else {
+				// If no next element, still wrap the special case string alone
+				result = append(result, []string{fmt.Sprintf("%v", input[i])})
+			}
+		default:
+			// For regular elements, convert to string and wrap it in a slice of strings
+			result = append(result, []string{fmt.Sprintf("%v", input[i])})
+		}
+		i++ // Move to the next element
+	}
+
+	return result
+}
+
+func hashResponseActionDetails(v interface{}) int {
+	var buf bytes.Buffer
+	m := v.(map[string]interface{})
+	var p []interface{}
+	buf.WriteString(fmt.Sprintf("%s-", m["type"].(string)))
+	buf.WriteString(fmt.Sprintf("%s-", m["value"].(string)))
+	if val, ok := m["point"]; ok {
+		p = val.([]interface{})
+		switch p[0].(string) {
+		case "action_name":
+			pointMap := make(map[string]string)
+			pointMap["action_name"] = m["value"].(string)
+			m["point"] = pointMap
+			m["value"] = ""
+		case "action_ext":
+			pointMap := make(map[string]string)
+			pointMap["action_ext"] = m["value"].(string)
+			m["point"] = pointMap
+			m["value"] = ""
+		case "scheme":
+			pointMap := make(map[string]string)
+			pointMap["scheme"] = m["value"].(string)
+			m["point"] = pointMap
+			m["value"] = ""
+		case "uri":
+			pointMap := make(map[string]string)
+			pointMap["uri"] = m["value"].(string)
+			m["point"] = pointMap
+			m["value"] = ""
+		case "proto":
+			pointMap := make(map[string]string)
+			pointMap["proto"] = m["value"].(string)
+			m["point"] = pointMap
+			m["value"] = ""
+		case "method":
+			pointMap := make(map[string]string)
+			pointMap["method"] = m["value"].(string)
+			m["point"] = pointMap
+			m["value"] = ""
+		case common.Path:
+			pointMap := make(map[string]string)
+			pointMap[common.Path] = fmt.Sprintf("%d", int(p[1].(float64)))
+			m["point"] = pointMap
+		case "instance":
+			pointMap := make(map[string]string)
+			pointMap["instance"] = m["value"].(string)
+			m["point"] = pointMap
+			m["value"] = ""
+			m["type"] = ""
+		case "header":
+			pointMap := make(map[string]string)
+			pointMap["header"] = p[1].(string)
+			m["point"] = pointMap
+		case "get":
+			pointMap := make(map[string]string)
+			pointMap["query"] = p[1].(string)
+			m["point"] = pointMap
+		}
+
+		buf.WriteString(fmt.Sprintf("%v-", m["point"]))
+	}
+	return hashcode.String(buf.String()) // nolint:staticcheck
+}
+
+func actionDetailsToMap(actionDetails wallarm.ActionDetails) (map[string]interface{}, error) {
+	jsonActions, err := json.Marshal(actionDetails)
+	if err != nil {
+		return nil, err
+	}
+	var mapActions map[string]interface{}
+	if err = json.Unmarshal(jsonActions, &mapActions); err != nil {
+		return nil, err
+	}
+	if _, ok := mapActions["value"]; !ok {
+		mapActions["value"] = ""
+	}
+	return mapActions, nil
 }
