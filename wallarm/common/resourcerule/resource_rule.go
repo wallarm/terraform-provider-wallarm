@@ -65,6 +65,7 @@ func ResourceRuleWallarmRead(d *schema.ResourceData, clientID int, cli wallarm.A
 	}
 	actionHints, err := cli.HintRead(hint)
 	if err != nil {
+		log.Println("hihihi1", err)
 		return err
 	}
 
@@ -145,6 +146,7 @@ func ResourceRuleWallarmRead(d *schema.ResourceData, clientID int, cli wallarm.A
 	}
 
 	if updatedRule == nil {
+		log.Println("hihihi2 not found in API")
 		d.SetId("")
 		return nil
 	}
@@ -167,6 +169,7 @@ func ResourceRuleWallarmRead(d *schema.ResourceData, clientID int, cli wallarm.A
 		log.Printf("[WARN] action was empty so it either doesn't exist or it is a default branch which has no conditions. Actions: %v", &actionsSet)
 	}
 
+	log.Println("hihihi3 found in API, no errors")
 	return nil
 }
 
