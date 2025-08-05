@@ -108,6 +108,7 @@ func ResourceRuleWallarmRead(d *schema.ResourceData, clientID int, cli wallarm.A
 	for _, rule := range *actionHints.Body {
 		if ruleID == rule.ID {
 			updatedRule = &rule
+			log.Println("hihihi3 point from api", updatedRule.Point)
 			break
 		}
 
@@ -170,6 +171,7 @@ func ResourceRuleWallarmRead(d *schema.ResourceData, clientID int, cli wallarm.A
 	}
 
 	log.Println("hihihi3 found in API, no errors")
+
 	log.Println("hihihi3 point", d.Get("point"))
 	log.Println("hihihi3 action", d.Get("action"))
 	return nil
