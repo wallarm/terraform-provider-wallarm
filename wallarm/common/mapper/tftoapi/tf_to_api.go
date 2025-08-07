@@ -79,11 +79,11 @@ func Threshold(threshold []interface{}) *wallarm.Threshold {
 }
 
 func AdvancedConditions(advancedConditions []interface{}) []wallarm.AdvancedCondition {
-	response := make([]wallarm.AdvancedCondition, 0, len(advancedConditions))
 	if len(advancedConditions) == 0 {
-		return response
+		return nil
 	}
 
+	response := make([]wallarm.AdvancedCondition, 0, len(advancedConditions))
 	for _, advancedCondition := range advancedConditions {
 		advancedConditionObj := advancedCondition.(map[string]interface{})
 		response = append(response, wallarm.AdvancedCondition{
@@ -97,11 +97,11 @@ func AdvancedConditions(advancedConditions []interface{}) []wallarm.AdvancedCond
 }
 
 func ArbitraryConditionsReq(arbitraryConditions []interface{}) []wallarm.ArbitraryConditionReq {
-	response := make([]wallarm.ArbitraryConditionReq, 0, len(arbitraryConditions))
 	if len(arbitraryConditions) == 0 {
-		return response
+		return nil
 	}
 
+	response := make([]wallarm.ArbitraryConditionReq, 0, len(arbitraryConditions))
 	for _, arbitraryCondition := range arbitraryConditions {
 		arbitraryConditionObj := arbitraryCondition.(map[string]interface{})
 		response = append(response, wallarm.ArbitraryConditionReq{
