@@ -3,6 +3,7 @@ package wallarm
 import (
 	"fmt"
 	"os"
+	"regexp"
 	"strconv"
 	"testing"
 
@@ -27,43 +28,15 @@ func TestAccRuleDirbustCounterCreate(t *testing.T) {
 				Config: testAccRuleDirbustCounterCreate(rnd),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(name, "action.#", "3"),
-					//resource.TestMatchResourceAttr(name, "counter", regexp.MustCompile("^d:.+")),
+					resource.TestMatchResourceAttr(name, "counter", regexp.MustCompile("^d:.+")),
 				),
-				//ExpectNonEmptyPlan: true,
+				ExpectNonEmptyPlan: true,
 			},
 		},
 	})
 }
 
 func testAccRuleDirbustCounterCreate(resourceID string) string {
-	//return `resource "wallarm_rule_dirbust_counter" "dirbust_counter" {
-	//
-	//}
-	//
-	//resource "wallarm_trigger" "dirbust_trigger" {
-	// template_id = "forced_browsing_started"
-	//
-	// filters {
-	//   filter_id = "hint_tag"
-	//   operator = "eq"
-	//   value = [wallarm_rule_dirbust_counter.dirbust_counter.counter]
-	// }
-	//
-	// actions {
-	//   action_id = "mark_as_brute"
-	// }
-	//
-	// actions {
-	//   action_id = "block_ips"
-	//   lock_time = 2592000
-	// }
-	//
-	// threshold = {
-	//   period = 30
-	//   operator = "gt"
-	//   count = 30
-	// }
-	//}`
 	return fmt.Sprintf(`
 resource "wallarm_rule_dirbust_counter" "%[1]s" {
 	comment = "This is a comment for a test case"
