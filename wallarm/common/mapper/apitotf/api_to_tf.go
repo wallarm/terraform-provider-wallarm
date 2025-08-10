@@ -53,6 +53,23 @@ func EnumeratedParameters(enumeratedParameters *wallarm.EnumeratedParameters) []
 
 }
 
+func AdvancedConditions(advancedConditions []wallarm.AdvancedCondition) []interface{} {
+	if advancedConditions == nil {
+		return nil
+	}
+
+	result := make([]interface{}, 0, len(advancedConditions))
+	for _, advancedCondition := range advancedConditions {
+		result = append(result, map[string]interface{}{
+			"field":    advancedCondition.Field,
+			"operator": advancedCondition.Operator,
+			"value":    advancedCondition.Value,
+		})
+	}
+
+	return result
+}
+
 func ArbitraryConditions(arbitraryConditions []wallarm.ArbitraryConditionResp) []interface{} {
 	if arbitraryConditions == nil {
 		return nil
