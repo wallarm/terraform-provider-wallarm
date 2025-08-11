@@ -28,6 +28,13 @@ func resourceWallarmGlobalMode() *schema.Resource {
 				Default:      "default",
 				ValidateFunc: validation.StringInSlice([]string{"default", "monitoring", "block", "safe_blocking", "off"}, false),
 			},
+
+			"rechecker_mode": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Default:      "off",
+				ValidateFunc: validation.StringInSlice([]string{"on", "off"}, false),
+			},
 		},
 	}
 }
@@ -43,18 +50,22 @@ func resourceWallarmGlobalModeCreate(d *schema.ResourceData, m interface{}) erro
 		return err
 	}
 
+	recheckerMode := d.Get("rechecker_mode").(string)
+
 	mode := &wallarm.ClientUpdate{
 		Filter: &wallarm.ClientFilter{
 			ID: clientID,
 		},
-		Fields: &wallarm.ClientFields{},
+		Fields: &wallarm.ClientFields{
+			AttackRecheckerMode: recheckerMode,
+		},
 	}
 	_, err = client.ClientUpdate(mode)
 	if err != nil {
 		return err
 	}
 
-	resID := fmt.Sprintf("%d/%s", clientID, filtrationMode)
+	resID := fmt.Sprintf("%d/%s/%s", clientID, filtrationMode, recheckerMode)
 	d.SetId(resID)
 
 	d.Set("client_id", clientID)
@@ -108,6 +119,10 @@ func resourceWallarmGlobalModeRead(d *schema.ResourceData, m interface{}) error 
 		d.SetId("")
 		return nil
 	}
+
+	recheckerMode := otherModesResp.Body[0].AttackRecheckerMode
+
+	d.Set("rechecker_mode", recheckerMode)
 
 	d.Set("client_id", clientID)
 
