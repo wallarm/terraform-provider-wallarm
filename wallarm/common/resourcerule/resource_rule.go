@@ -135,16 +135,16 @@ func ResourceRuleWallarmCreate(
 	enumeratedParametersFromState := GetValueWithTypeCastingOrDefault[[]interface{}](d, "enumerated_parameters")
 	enumeratedParameters := tftoapi.EnumeratedParameters(enumeratedParametersFromState)
 
-	reactionFromState := d.Get("reaction").([]interface{})
+	reactionFromState := GetValueWithTypeCastingOrDefault[[]interface{}](d, "reaction")
 	reaction := tftoapi.Reaction(reactionFromState)
 
-	thresholdFromState := d.Get("threshold").([]interface{})
+	thresholdFromState := GetValueWithTypeCastingOrDefault[[]interface{}](d, "threshold")
 	threshold := tftoapi.Threshold(thresholdFromState)
 
-	advancedConditionsFromState := d.Get("advanced_conditions").([]interface{})
+	advancedConditionsFromState := GetValueWithTypeCastingOrDefault[[]interface{}](d, "advanced_conditions")
 	advancedConditions := tftoapi.AdvancedConditions(advancedConditionsFromState)
 
-	arbitraryConditionsFromState := d.Get("arbitrary_conditions").([]interface{})
+	arbitraryConditionsFromState := GetValueWithTypeCastingOrDefault[[]interface{}](d, "arbitrary_conditions")
 	arbitraryConditions := tftoapi.ArbitraryConditionsReq(arbitraryConditionsFromState)
 
 	wm := &wallarm.ActionCreate{
@@ -165,6 +165,13 @@ func ResourceRuleWallarmCreate(
 		AdvancedConditions:   advancedConditions,
 		ArbitraryConditions:  arbitraryConditions,
 		Mode:                 GetValueWithTypeCastingOrDefault[string](d, "mode"),
+		MaxDepth:             GetValueWithTypeCastingOrDefault[int](d, "max_depth"),
+		MaxValueSizeKb:       GetValueWithTypeCastingOrDefault[int](d, "max_value_size_kb"),
+		MaxDocSizeKb:         GetValueWithTypeCastingOrDefault[int](d, "max_doc_size_kb"),
+		MaxAliasesSizeKb:     GetValueWithTypeCastingOrDefault[int](d, "max_alias_size_kb"),
+		MaxDocPerBatch:       GetValueWithTypeCastingOrDefault[int](d, "max_doc_per_batch"),
+		Introspection:        GetPointerWithTypeCastingOrDefault[bool](d, "introspection"),
+		DebugEnabled:         GetPointerWithTypeCastingOrDefault[bool](d, "debug_enabled"),
 	}
 
 	actionResp, err := cli.HintCreate(wm)
