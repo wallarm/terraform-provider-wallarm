@@ -57,11 +57,6 @@ func resourceWallarmGlobalModeCreate(d *schema.ResourceData, m interface{}) erro
 		return err
 	}
 
-	scannerMode := d.Get("scanner_mode").(string)
-	if scannerMode == "on" {
-		scannerMode = "classic"
-	}
-
 	recheckerMode := d.Get("rechecker_mode").(string)
 
 	mode := &wallarm.ClientUpdate{
@@ -69,7 +64,6 @@ func resourceWallarmGlobalModeCreate(d *schema.ResourceData, m interface{}) erro
 			ID: clientID,
 		},
 		Fields: &wallarm.ClientFields{
-			ScannerMode:         scannerMode,
 			AttackRecheckerMode: recheckerMode,
 		},
 	}
@@ -78,7 +72,7 @@ func resourceWallarmGlobalModeCreate(d *schema.ResourceData, m interface{}) erro
 		return err
 	}
 
-	resID := fmt.Sprintf("%d/%s/%s/%s", clientID, filtrationMode, scannerMode, recheckerMode)
+	resID := fmt.Sprintf("%d/%s/%s/%s", clientID, filtrationMode, "", recheckerMode)
 	d.SetId(resID)
 
 	d.Set("client_id", clientID)
