@@ -92,15 +92,9 @@ resource "wallarm_rule_bola" "wallarm_rule_bola_advanced_conditions" {
   }
 
   advanced_conditions {
-    field    = "proxy_type"
-    value    = ["ABC"]
+    field    = "status_code"
+    value    = ["400"]
     operator = "eq"
-  }
-
-  advanced_conditions {
-    field    = "datacenter"
-    value    = ["abc"]
-    operator = "ne"
   }
 
 }
@@ -155,7 +149,7 @@ resource "wallarm_rule_bola" "wallarm_rule_bola_arbitrary_conditions" {
 
   arbitrary_conditions {
     point = [["header", "X-LOGIN"]]
-    value    = ["datacenter_value"]
+    value    = ["value"]
     operator = "ne"
   }
 

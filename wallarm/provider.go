@@ -148,6 +148,7 @@ func Provider() terraform.ResourceProvider {
 			"wallarm_rule_bola":                      resourceWallarmBola(),
 			"wallarm_rule_bola_counter":              resourceWallarmBolaCounter(),
 			"wallarm_rule_rate_limit":                resourceWallarmRateLimit(),
+			"wallarm_rule_rate_limit_enum":           resourceWallarmRateLimitEnum(),
 			"wallarm_rule_uploads":                   resourceWallarmUploads(),
 			"wallarm_rules_settings":                 resourceWallarmRulesSettings(),
 			"wallarm_tenant":                         resourceWallarmTenant(),

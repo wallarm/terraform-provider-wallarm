@@ -198,7 +198,7 @@ func ResourceRuleWallarmCreate(
 		return errors.WithMessage(err, "on ExpandSetToActionDetailsList")
 	}
 
-	enumeratedParametersFromState := d.Get("enumerated_parameters").([]interface{})
+	enumeratedParametersFromState := GetValueWithTypeCastingOrDefault[[]interface{}](d, "enumerated_parameters")
 	enumeratedParameters := tftoapi.EnumeratedParameters(enumeratedParametersFromState)
 
 	reactionFromState := d.Get("reaction").([]interface{})

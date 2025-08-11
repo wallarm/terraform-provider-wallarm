@@ -12,9 +12,9 @@ import (
 )
 
 // TODO add enum exact too
-func TestAccRuleEnumRegexp(t *testing.T) {
+func TestAccRuleRateLimitEnumRegexp(t *testing.T) {
 	const config = `
-resource "wallarm_rule_enum" "wallarm_rule_enum_regexp" {
+resource "wallarm_rule_rate_limit_enum" "wallarm_rule_rate_limit_enum_regexp" {
   mode = "block"
   
   action {
@@ -35,34 +35,27 @@ resource "wallarm_rule_enum" "wallarm_rule_enum_regexp" {
     period = 30
   }
 
-  enumerated_parameters {
-    mode                  = "regexp"
-    name_regexps          = ["foo", "bar"]
-    value_regexps         = ["baz"]
-    additional_parameters = false
-    plain_parameters      = false
-  }
 }
 `
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckWallarmRuleEnumDestroy,
+		CheckDestroy: testAccCheckWallarmRuleRateLimitEnumDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: config,
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr("wallarm_rule_enum.wallarm_rule_enum_regexp", "mode", "block"),
-					resource.TestCheckResourceAttr("wallarm_rule_enum.wallarm_rule_enum_regexp", "action.#", "1"),
+					resource.TestCheckResourceAttr("wallarm_rule_rate_limit_enum.wallarm_rule_rate_limit_enum_regexp", "mode", "block"),
+					resource.TestCheckResourceAttr("wallarm_rule_rate_limit_enum.wallarm_rule_rate_limit_enum_regexp", "action.#", "1"),
 				),
 			},
 		},
 	})
 }
 
-func TestAccRuleEnumWithAdvancedConditions(t *testing.T) {
+func TestAccRuleRateLimitEnumWithAdvancedConditions(t *testing.T) {
 	const config = `
-resource "wallarm_rule_enum" "wallarm_rule_enum_advanced_conditions" {
+resource "wallarm_rule_rate_limit_enum" "wallarm_rule_rate_limit_enum_advanced_conditions" {
   mode = "block"
   
   action {
@@ -81,14 +74,6 @@ resource "wallarm_rule_enum" "wallarm_rule_enum_advanced_conditions" {
   threshold {
     count = 5
     period = 30
-  }
-
-  enumerated_parameters {
-    mode                  = "regexp"
-    name_regexps          = ["foo", "bar"]
-    value_regexps         = ["baz"]
-    additional_parameters = false
-    plain_parameters      = false
   }
 
   advanced_conditions {
@@ -102,22 +87,22 @@ resource "wallarm_rule_enum" "wallarm_rule_enum_advanced_conditions" {
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckWallarmRuleEnumDestroy,
+		CheckDestroy: testAccCheckWallarmRuleRateLimitEnumDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: config,
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr("wallarm_rule_enum.wallarm_rule_enum_advanced_conditions", "mode", "block"),
-					resource.TestCheckResourceAttr("wallarm_rule_enum.wallarm_rule_enum_advanced_conditions", "action.#", "1"),
+					resource.TestCheckResourceAttr("wallarm_rule_rate_limit_enum.wallarm_rule_rate_limit_enum_advanced_conditions", "mode", "block"),
+					resource.TestCheckResourceAttr("wallarm_rule_rate_limit_enum.wallarm_rule_rate_limit_enum_advanced_conditions", "action.#", "1"),
 				),
 			},
 		},
 	})
 }
 
-func TestAccRuleEnumWithArbitraryConditions(t *testing.T) {
+func TestAccRuleRateLimitEnumWithArbitraryConditions(t *testing.T) {
 	const config = `
-resource "wallarm_rule_enum" "wallarm_rule_enum_arbitrary_conditions" {
+resource "wallarm_rule_rate_limit_enum" "wallarm_rule_rate_limit_enum_advanced_conditions" {
   mode = "block"
   
   action {
@@ -139,14 +124,6 @@ resource "wallarm_rule_enum" "wallarm_rule_enum_arbitrary_conditions" {
     period = 30
   }
 
-  enumerated_parameters {
-    mode                  = "regexp"
-    name_regexps          = ["foo", "bar"]
-    value_regexps         = ["baz"]
-    additional_parameters = false
-    plain_parameters      = false
-  }
-
   arbitrary_conditions {
     point = [["header", "X-LOGIN"]]
     value    = ["value"]
@@ -163,19 +140,19 @@ resource "wallarm_rule_enum" "wallarm_rule_enum_arbitrary_conditions" {
 			{
 				Config: config,
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr("wallarm_rule_enum.wallarm_rule_enum_arbitrary_conditions", "mode", "block"),
-					resource.TestCheckResourceAttr("wallarm_rule_enum.wallarm_rule_enum_arbitrary_conditions", "action.#", "1"),
+					resource.TestCheckResourceAttr("wallarm_rule_rate_limit_enum.wallarm_rule_rate_limit_enum_advanced_conditions", "mode", "block"),
+					resource.TestCheckResourceAttr("wallarm_rule_rate_limit_enum.wallarm_rule_rate_limit_enum_advanced_conditions", "action.#", "1"),
 				),
 			},
 		},
 	})
 }
 
-func testAccCheckWallarmRuleEnumDestroy(s *terraform.State) error {
+func testAccCheckWallarmRuleRateLimitEnumDestroy(s *terraform.State) error {
 	client := testAccProvider.Meta().(wallarm.API)
 
 	for _, rs := range s.RootModule().Resources {
-		if rs.Type != "wallarm_rule_enum" {
+		if rs.Type != "wallarm_rule_rate_limit_enum" {
 			continue
 		}
 
