@@ -29,13 +29,6 @@ func resourceWallarmGlobalMode() *schema.Resource {
 				ValidateFunc: validation.StringInSlice([]string{"default", "monitoring", "block", "safe_blocking", "off"}, false),
 			},
 
-			"scanner_mode": {
-				Type:         schema.TypeString,
-				Optional:     true,
-				Default:      "on",
-				ValidateFunc: validation.StringInSlice([]string{"on", "off"}, false),
-			},
-
 			"rechecker_mode": {
 				Type:         schema.TypeString,
 				Optional:     true,
@@ -126,13 +119,6 @@ func resourceWallarmGlobalModeRead(d *schema.ResourceData, m interface{}) error 
 		d.SetId("")
 		return nil
 	}
-
-	scannerMode := otherModesResp.Body[0].ScannerMode
-	if scannerMode == "classic" {
-		scannerMode = "on"
-	}
-
-	d.Set("scanner_mode", scannerMode)
 
 	recheckerMode := otherModesResp.Body[0].AttackRecheckerMode
 
