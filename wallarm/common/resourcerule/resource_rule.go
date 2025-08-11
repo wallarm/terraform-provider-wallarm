@@ -21,38 +21,7 @@ import (
 
 // nolint
 func ResourceRuleWallarmRead(d *schema.ResourceData, clientID int, cli wallarm.API, opts ...common.ReadOption) error {
-	var (
-		//actionID                 = d.Get("action_id").(int)
-		ruleID = d.Get("rule_id").(int)
-		//withPoint                = slices.Contains(opts, common.ReadOptionWithPoint)
-		//withAction               = slices.Contains(opts, common.ReadOptionWithAction)
-		//withRegexID              = slices.Contains(opts, common.ReadOptionWithRegexID)
-		//withMode                 = slices.Contains(opts, common.ReadOptionWithMode)
-		//withName                 = slices.Contains(opts, common.ReadOptionWithName)
-		//withValues               = slices.Contains(opts, common.ReadOptionWithValues)
-		//withThreshold            = slices.Contains(opts, common.ReadOptionWithThreshold)
-		//withReaction             = slices.Contains(opts, common.ReadOptionWithReaction)
-		//withEnumeratedParameters = slices.Contains(opts, common.ReadOptionWithEnumeratedParameters)
-		// withArbitraryConditions  = slices.Contains(opts, common.ReadOptionWithArbitraryConditions)
-	)
-
-	//actionsFromState := d.Get("action").(*schema.Set)
-	//action, err := ExpandSetToActionDetailsList(actionsFromState)
-	//if err != nil {
-	//	return err
-	//}
-	//
-	//actsSlice := make([]interface{}, 0, len(action))
-	//for _, a := range action {
-	//	acts, err := ActionDetailsToMap(a)
-	//	if err != nil {
-	//		return err
-	//	}
-	//	actsSlice = append(actsSlice, acts)
-	//}
-	//
-	//actionsSet := schema.NewSet(HashResponseActionDetails, actsSlice)
-
+	var ruleID = d.Get("rule_id").(int)
 	hint := &wallarm.HintRead{
 		Limit:     1000,
 		Offset:    0,
@@ -69,41 +38,6 @@ func ResourceRuleWallarmRead(d *schema.ResourceData, clientID int, cli wallarm.A
 		return err
 	}
 
-	//// This is mandatory to fill in the default values in order to compare them deeply.
-	//// Assign new values to the old struct slice.
-	//FillInDefaultValues(&action)
-
-	//expectedRule := wallarm.ActionBody{ActionID: actionID}
-	//if withPoint {
-	//	expectedRule.Point = pointsFromResource(d)
-	//}
-	//if withAction {
-	//	expectedRule.Action = action
-	//}
-	//if withRegexID {
-	//	expectedRule.RegexID = d.Get("regex_id").(int)
-	//}
-	//if withMode {
-	//	expectedRule.Mode = d.Get("mode").(string)
-	//}
-	//if withName {
-	//	expectedRule.Name = d.Get("name").(string)
-	//}
-	//if withValues {
-	//	expectedRule.Values = d.Get("values").([]interface{})
-	//}
-	//if withThreshold {
-	//	expectedRule.Threshold = tftoapi.Threshold(d.Get("threshold").([]interface{}))
-	//}
-	//if withReaction {
-	//	expectedRule.Reaction = tftoapi.Reaction(d.Get("reaction").([]interface{}))
-	//}
-	//if withEnumeratedParameters {
-	//	expectedRule.EnumeratedParameters = tftoapi.EnumeratedParameters(d.Get("enumerated_parameters").([]interface{}))
-	//}
-	// if withArbitraryConditions {
-	//	expectedRule.ArbitraryConditions = tf_to_api.ArbitraryConditionsReq(d.Get("arbitrary_conditions").([]interface{}))
-	// }
 	var updatedRule *wallarm.ActionBody
 	for _, rule := range *actionHints.Body {
 		if ruleID == rule.ID {
@@ -191,7 +125,7 @@ func ResourceRuleWallarmCreate(
 	clientID int,
 	ruleType, attackType string,
 	readMethod func(*schema.ResourceData, interface{}) error,
-	opts ...common.CreateOption) error {
+) error {
 	actionsFromState := d.Get("action").(*schema.Set)
 	action, err := ExpandSetToActionDetailsList(actionsFromState)
 	if err != nil {

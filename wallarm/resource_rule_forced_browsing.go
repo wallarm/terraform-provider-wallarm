@@ -44,7 +44,7 @@ func resourceWallarmForcedBrowsing() *schema.Resource {
 
 func resourceWallarmForcedBrowsingCreate(d *schema.ResourceData, m interface{}) error {
 	return resourcerule.ResourceRuleWallarmCreate(d, m.(wallarm.API), retrieveClientID(d),
-		"forced_browsing", "dirbust", resourceWallarmBolaRead)
+		"forced_browsing", "dirbust", resourceWallarmForcedBrowsingRead)
 }
 
 func resourceWallarmForcedBrowsingRead(d *schema.ResourceData, m interface{}) error {
