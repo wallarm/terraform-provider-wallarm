@@ -65,7 +65,7 @@ func resourceWallarmGlobalModeCreate(d *schema.ResourceData, m interface{}) erro
 		return err
 	}
 
-	resID := fmt.Sprintf("%d/%s/%s/%s", clientID, filtrationMode, "", recheckerMode)
+	resID := fmt.Sprintf("%d/%s/%s", clientID, filtrationMode, recheckerMode)
 	d.SetId(resID)
 
 	d.Set("client_id", clientID)
