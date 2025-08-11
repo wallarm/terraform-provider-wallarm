@@ -12,9 +12,9 @@ import (
 )
 
 // TODO add enum exact too
-func TestAccRuleRateLimitEnumRegexp(t *testing.T) {
+func TestAccRuleForcedBrowsingRegexp(t *testing.T) {
 	const config = `
-resource "wallarm_rule_rate_limit_enum" "wallarm_rule_rate_limit_enum_regexp" {
+resource "wallarm_rule_forced_browsing" "wallarm_rule_forced_browsing_regexp" {
   mode = "block"
   
   action {
@@ -40,22 +40,22 @@ resource "wallarm_rule_rate_limit_enum" "wallarm_rule_rate_limit_enum_regexp" {
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckWallarmRuleRateLimitEnumDestroy,
+		CheckDestroy: testAccCheckWallarmRuleForcedBrowsingDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: config,
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr("wallarm_rule_rate_limit_enum.wallarm_rule_rate_limit_enum_regexp", "mode", "block"),
-					resource.TestCheckResourceAttr("wallarm_rule_rate_limit_enum.wallarm_rule_rate_limit_enum_regexp", "action.#", "1"),
+					resource.TestCheckResourceAttr("wallarm_rule_forced_browsing.wallarm_rule_forced_browsing_regexp", "mode", "block"),
+					resource.TestCheckResourceAttr("wallarm_rule_forced_browsing.wallarm_rule_forced_browsing_regexp", "action.#", "1"),
 				),
 			},
 		},
 	})
 }
 
-func TestAccRuleRateLimitEnumWithAdvancedConditions(t *testing.T) {
+func TestAccRuleForcedBrowsingWithAdvancedConditions(t *testing.T) {
 	const config = `
-resource "wallarm_rule_rate_limit_enum" "wallarm_rule_rate_limit_enum_advanced_conditions" {
+resource "wallarm_rule_forced_browsing" "wallarm_forced_browsing_advanced_conditions" {
   mode = "block"
   
   action {
@@ -87,22 +87,22 @@ resource "wallarm_rule_rate_limit_enum" "wallarm_rule_rate_limit_enum_advanced_c
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckWallarmRuleRateLimitEnumDestroy,
+		CheckDestroy: testAccCheckWallarmRuleForcedBrowsingDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: config,
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr("wallarm_rule_rate_limit_enum.wallarm_rule_rate_limit_enum_advanced_conditions", "mode", "block"),
-					resource.TestCheckResourceAttr("wallarm_rule_rate_limit_enum.wallarm_rule_rate_limit_enum_advanced_conditions", "action.#", "1"),
+					resource.TestCheckResourceAttr("wallarm_rule_forced_browsing.wallarm_forced_browsing_advanced_conditions", "mode", "block"),
+					resource.TestCheckResourceAttr("wallarm_rule_forced_browsing.wallarm_forced_browsing_advanced_conditions", "action.#", "1"),
 				),
 			},
 		},
 	})
 }
 
-func TestAccRuleRateLimitEnumWithArbitraryConditions(t *testing.T) {
+func TestAccRuleForcedBrowsingWithArbitraryConditions(t *testing.T) {
 	const config = `
-resource "wallarm_rule_rate_limit_enum" "wallarm_rule_rate_limit_enum_advanced_conditions" {
+resource "wallarm_rule_forced_browsing" "wallarm_forced_browsing_arbitrary_conditions" {
   mode = "block"
   
   action {
@@ -135,24 +135,24 @@ resource "wallarm_rule_rate_limit_enum" "wallarm_rule_rate_limit_enum_advanced_c
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckWallarmRuleRateLimitEnumDestroy,
+		CheckDestroy: testAccCheckWallarmRuleForcedBrowsingDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: config,
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr("wallarm_rule_rate_limit_enum.wallarm_rule_rate_limit_enum_advanced_conditions", "mode", "block"),
-					resource.TestCheckResourceAttr("wallarm_rule_rate_limit_enum.wallarm_rule_rate_limit_enum_advanced_conditions", "action.#", "1"),
+					resource.TestCheckResourceAttr("wallarm_rule_forced_browsing.wallarm_forced_browsing_arbitrary_conditions", "mode", "block"),
+					resource.TestCheckResourceAttr("wallarm_rule_forced_browsing.wallarm_forced_browsing_arbitrary_conditions", "action.#", "1"),
 				),
 			},
 		},
 	})
 }
 
-func testAccCheckWallarmRuleRateLimitEnumDestroy(s *terraform.State) error {
+func testAccCheckWallarmRuleForcedBrowsingDestroy(s *terraform.State) error {
 	client := testAccProvider.Meta().(wallarm.API)
 
 	for _, rs := range s.RootModule().Resources {
-		if rs.Type != "wallarm_rule_rate_limit_enum" {
+		if rs.Type != "wallarm_rule_forced_browsing" {
 			continue
 		}
 
