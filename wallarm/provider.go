@@ -159,6 +159,7 @@ func Provider() terraform.ResourceProvider {
 			"wallarm_rule_overlimit_res_settings":    resourceWallarmOverlimitResSettings(),
 			"wallarm_rule_forced_browsing":           resourceWallarmForcedBrowsing(),
 			"wallarm_rule_graphql_detection":         resourceWallarmGraphqlDetection(),
+			"wallarm_rule_file_upload_size_limit":    resourceWallarmFileUploadSizeLimit(),
 		},
 	}
 

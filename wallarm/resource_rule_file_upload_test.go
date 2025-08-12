@@ -10,9 +10,9 @@ import (
 	"github.com/wallarm/wallarm-go"
 )
 
-func TestAccRuleGraphqlDetection(t *testing.T) {
+func TestAccRuleFileUploadSizeLimit(t *testing.T) {
 	const config = `
-resource "wallarm_rule_graphql_detection" "wallarm_rule_graphql_detection_1" {
+resource "wallarm_rule_file_upload_size_limit" "wallarm_rule_file_upload_size_limit_1" {
   mode = "block"
   
   action {
@@ -23,37 +23,32 @@ resource "wallarm_rule_graphql_detection" "wallarm_rule_graphql_detection_1" {
     }
   }
   
-  max_depth = 10
-  max_value_size_kb = 10
-  max_doc_size_kb = 100
-  max_alias_size_kb = 5
-  max_doc_per_batch = 10
-  introspection = true
-  debug_enabled = true
+  size = 1
+  size_unit = "mb"
 
 }
 `
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckWallarmRuleGraphqlDetectionDestroy,
+		CheckDestroy: testAccCheckWallarmRuleFileUploadSizeLimitDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: config,
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr("wallarm_rule_graphql_detection.wallarm_rule_graphql_detection_1", "mode", "block"),
-					resource.TestCheckResourceAttr("wallarm_rule_graphql_detection.wallarm_rule_graphql_detection_1", "action.#", "1"),
+					resource.TestCheckResourceAttr("wallarm_rule_file_upload_size_limit.wallarm_rule_file_upload_size_limit_1", "mode", "block"),
+					resource.TestCheckResourceAttr("wallarm_rule_file_upload_size_limit.wallarm_rule_file_upload_size_limit_1", "action.#", "1"),
 				),
 			},
 		},
 	})
 }
 
-func testAccCheckWallarmRuleGraphqlDetectionDestroy(s *terraform.State) error {
+func testAccCheckWallarmRuleFileUploadSizeLimitDestroy(s *terraform.State) error {
 	client := testAccProvider.Meta().(wallarm.API)
 
 	for _, rs := range s.RootModule().Resources {
-		if rs.Type != "wallarm_rule_graphql_detection" {
+		if rs.Type != "wallarm_rule_file_upload_size_limit" {
 			continue
 		}
 

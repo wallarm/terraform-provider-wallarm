@@ -42,42 +42,8 @@ func ResourceRuleWallarmRead(d *schema.ResourceData, clientID int, cli wallarm.A
 	for _, rule := range *actionHints.Body {
 		if ruleID == rule.ID {
 			updatedRule = &rule
-			log.Println("hihihi3 point from api", updatedRule.Point)
 			break
 		}
-
-		//actualRule := &wallarm.ActionBody{ActionID: rule.ActionID}
-		//if withPoint {
-		//	// The response has a different structure so we have to align them
-		//	// to uniform view then to compare.
-		//	actualRule.Point = AlignPointScheme(rule.Point)
-		//}
-		//if withAction {
-		//	actualRule.Action = action
-		//}
-		//if withRegexID {
-		//	actualRule.RegexID = rule.RegexID
-		//}
-		//if withMode {
-		//	actualRule.Mode = rule.Mode
-		//}
-		//if withName {
-		//	actualRule.Name = rule.Name
-		//}
-		//if withValues {
-		//	actualRule.Values = rule.Values
-		//}
-		//if withThreshold {
-		//	actualRule.Threshold = rule.Threshold
-		//}
-		//if withEnumeratedParameters {
-		//	actualRule.EnumeratedParameters = rule.EnumeratedParameters
-		//}
-		//
-		//if cmp.Equal(expectedRule, *actualRule) && EqualWithoutOrder(action, rule.Action) {
-		//	updatedRule = &rule
-		//	break
-		//}
 	}
 
 	if updatedRule == nil {
@@ -99,6 +65,8 @@ func ResourceRuleWallarmRead(d *schema.ResourceData, clientID int, cli wallarm.A
 	d.Set("advanced_conditions", apitotf.AdvancedConditions(updatedRule.AdvancedConditions))
 	d.Set("arbitrary_conditions", apitotf.ArbitraryConditions(updatedRule.ArbitraryConditions))
 	d.Set("counter", updatedRule.Counter)
+	d.Set("size", updatedRule.Size)
+	d.Set("size_unit", updatedRule.SizeUnit)
 
 	actionsSet := schema.Set{F: hashResponseActionDetails}
 	for _, a := range updatedRule.Action {
@@ -111,10 +79,6 @@ func ResourceRuleWallarmRead(d *schema.ResourceData, clientID int, cli wallarm.A
 	}
 	d.Set("action", &actionsSet)
 
-	log.Println("hihihi3 found in API, no errors")
-
-	log.Println("hihihi3 point", d.Get("point"))
-	log.Println("hihihi3 action", d.Get("action"))
 	return nil
 }
 
@@ -147,10 +111,17 @@ func ResourceRuleWallarmCreate(
 	arbitraryConditionsFromState := GetValueWithTypeCastingOrDefault[[]interface{}](d, "arbitrary_conditions")
 	arbitraryConditions := tftoapi.ArbitraryConditionsReq(arbitraryConditionsFromState)
 
+	pointFromState := GetValueWithTypeCastingOrDefault[[]interface{}](d, "point")
+	points, err := expandPointsToTwoDimensionalArray(pointFromState)
+	if err != nil {
+		return err
+	}
+
 	wm := &wallarm.ActionCreate{
 		Type:                 ruleType,
 		Clientid:             clientID,
 		Action:               &action,
+		Point:                points,
 		Validated:            false,
 		Comment:              GetValueWithTypeCastingOrDefault[string](d, "comment"),
 		VariativityDisabled:  true,
@@ -172,6 +143,8 @@ func ResourceRuleWallarmCreate(
 		MaxDocPerBatch:       GetValueWithTypeCastingOrDefault[int](d, "max_doc_per_batch"),
 		Introspection:        GetPointerWithTypeCastingOrDefault[bool](d, "introspection"),
 		DebugEnabled:         GetPointerWithTypeCastingOrDefault[bool](d, "debug_enabled"),
+		Size:                 GetValueWithTypeCastingOrDefault[int](d, "size"),
+		SizeUnit:             GetValueWithTypeCastingOrDefault[string](d, "size_unit"),
 	}
 
 	actionResp, err := cli.HintCreate(wm)
@@ -645,4 +618,30 @@ func actionDetailsToMap(actionDetails wallarm.ActionDetails) (map[string]interfa
 		mapActions["value"] = ""
 	}
 	return mapActions, nil
+}
+
+func expandPointsToTwoDimensionalArray(ps []interface{}) (wallarm.TwoDimensionalSlice, error) {
+	if len(ps) == 0 {
+		return nil, nil
+	}
+	points := make(wallarm.TwoDimensionalSlice, len(ps))
+	for i, point := range ps {
+		pointSlice := point.([]interface{})
+		switch pointSlice[0] {
+		case "path", "array", "grpc", "json_array", "xml_comment",
+			"xml_dtd_entity", "xml_pi", "xml_tag_array":
+			// Align to the []string{} schema, float is used since marshalling considers numbers as float64
+			if len(pointSlice) > 1 {
+				number, err := strconv.ParseFloat(pointSlice[1].(string), 64)
+				if err != nil {
+					return nil, err
+				}
+				pointSlice[1] = number
+				points[i] = pointSlice
+			}
+		default:
+			points[i] = pointSlice
+		}
+	}
+	return points, nil
 }
