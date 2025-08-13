@@ -61,6 +61,7 @@ func ResourceRuleWallarmRead(d *schema.ResourceData, clientID int, cli wallarm.A
 	d.Set("set", updatedRule.Set)
 	d.Set("threshold", apitotf.Threshold(updatedRule.Threshold))
 	d.Set("reaction", apitotf.Reaction(updatedRule.Reaction))
+	d.Set("mode", updatedRule.Mode)
 	d.Set("enumerated_parameters", apitotf.EnumeratedParameters(updatedRule.EnumeratedParameters))
 	d.Set("advanced_conditions", apitotf.AdvancedConditions(updatedRule.AdvancedConditions))
 	d.Set("arbitrary_conditions", apitotf.ArbitraryConditions(updatedRule.ArbitraryConditions))
