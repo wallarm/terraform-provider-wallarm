@@ -102,7 +102,7 @@ resource "wallarm_rule_rate_limit_enum" "wallarm_rule_rate_limit_enum_advanced_c
 
 func TestAccRuleRateLimitEnumWithArbitraryConditions(t *testing.T) {
 	const config = `
-resource "wallarm_rule_rate_limit_enum" "wallarm_rule_rate_limit_enum_advanced_conditions" {
+resource "wallarm_rule_rate_limit_enum" "wallarm_rule_rate_limit_enum_arbitrary_conditions" {
   mode = "block"
   
   action {
@@ -140,8 +140,8 @@ resource "wallarm_rule_rate_limit_enum" "wallarm_rule_rate_limit_enum_advanced_c
 			{
 				Config: config,
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr("wallarm_rule_rate_limit_enum.wallarm_rule_rate_limit_enum_advanced_conditions", "mode", "block"),
-					resource.TestCheckResourceAttr("wallarm_rule_rate_limit_enum.wallarm_rule_rate_limit_enum_advanced_conditions", "action.#", "1"),
+					resource.TestCheckResourceAttr("wallarm_rule_rate_limit_enum.wallarm_rule_rate_limit_enum_arbitrary_conditions", "mode", "block"),
+					resource.TestCheckResourceAttr("wallarm_rule_rate_limit_enum.wallarm_rule_rate_limit_enum_arbitrary_conditions", "action.#", "1"),
 				),
 			},
 		},
