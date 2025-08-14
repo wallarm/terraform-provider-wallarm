@@ -1,3 +1,10 @@
+# v1.8.2 (Jul 24, 2025)
+
+## NOTES:
+
+* Added new rules
+* Code refactored
+
 # v1.8.1 (Jul 24, 2025)
 
 ## NOTES:
