@@ -96,7 +96,7 @@ func resourceWallarmRateLimitEnumDelete(d *schema.ResourceData, m interface{}) e
 	return nil
 }
 
-func resourceWallarmRateLimitEnumImport(d *schema.ResourceData, m interface{}) ([]*schema.ResourceData, error) {
+func resourceWallarmRateLimitEnumImport(d *schema.ResourceData, _ interface{}) ([]*schema.ResourceData, error) {
 	idAttr := strings.SplitN(d.Id(), "/", 3)
 	if len(idAttr) == 3 {
 		clientID, err := strconv.Atoi(idAttr[0])

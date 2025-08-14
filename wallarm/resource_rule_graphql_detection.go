@@ -120,7 +120,7 @@ func resourceWallarmGraphqlDetectionDelete(d *schema.ResourceData, m interface{}
 	return nil
 }
 
-func resourceWallarmGraphqlDetectionImport(d *schema.ResourceData, m interface{}) ([]*schema.ResourceData, error) {
+func resourceWallarmGraphqlDetectionImport(d *schema.ResourceData, _ interface{}) ([]*schema.ResourceData, error) {
 	idAttr := strings.SplitN(d.Id(), "/", 3)
 	if len(idAttr) == 3 {
 		clientID, err := strconv.Atoi(idAttr[0])
