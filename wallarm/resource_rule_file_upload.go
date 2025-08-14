@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
-	"github.com/wallarm/terraform-provider-wallarm/wallarm/common"
 	"github.com/wallarm/terraform-provider-wallarm/wallarm/common/resourcerule"
 	"github.com/wallarm/wallarm-go"
 
@@ -15,58 +14,66 @@ import (
 )
 
 // nolint:dupl
-func resourceWallarmBrute() *schema.Resource {
+func resourceWallarmFileUploadSizeLimit() *schema.Resource {
 	fields := map[string]*schema.Schema{
-		"action":    defaultResourceRuleActionSchema,
-		"threshold": thresholdSchema,
-		"reaction":  reactionSchema,
+		"action": defaultResourceRuleActionSchema,
+		"point": {
+			Type:     schema.TypeList,
+			Optional: true,
+			ForceNew: true,
+			Elem: &schema.Schema{
+				Type: schema.TypeList,
+				Elem: &schema.Schema{Type: schema.TypeString},
+			},
+		},
 		"mode": {
 			Type:         schema.TypeString,
 			Required:     true,
-			ValidateFunc: validation.StringInSlice([]string{"monitoring", "block"}, false),
+			ValidateFunc: validation.StringInSlice([]string{"monitoring", "block", "off", "default"}, false),
 			ForceNew:     true,
 		},
-		"enumerated_parameters": enumeratedParametersSchema,
-		"advanced_conditions":   advancedConditionsSchema,
-		"arbitrary_conditions":  arbitraryConditionsSchema,
+		"size": {
+			Type:     schema.TypeInt,
+			Optional: true,
+			ForceNew: true,
+		},
+		"size_unit": {
+			Type:         schema.TypeString,
+			Required:     true,
+			ValidateFunc: validation.StringInSlice([]string{"b", "kb", "mb", "gb", "tb"}, false),
+			ForceNew:     true,
+		},
 	}
 	sh := lo.Assign(fields, commonResourceRuleFields)
 
 	return &schema.Resource{
-		Create: resourceWallarmBruteCreate,
-		Read:   resourceWallarmBruteRead,
-		Delete: resourceWallarmBruteDelete,
+		Create: resourceWallarmFileUploadSizeLimitCreate,
+		Read:   resourceWallarmFileUploadSizeLimitRead,
+		Delete: resourceWallarmFileUploadSizeLimitDelete,
 		Importer: &schema.ResourceImporter{
-			State: resourceWallarmBruteImport,
+			State: resourceWallarmFileUploadSizeLimitImport,
 		},
 		Schema: sh,
 	}
 }
 
-func resourceWallarmBruteCreate(d *schema.ResourceData, m interface{}) error {
+func resourceWallarmFileUploadSizeLimitCreate(d *schema.ResourceData, m interface{}) error {
 	return resourcerule.ResourceRuleWallarmCreate(d, m.(wallarm.API), retrieveClientID(d),
-		"brute", "brute", resourceWallarmBruteRead)
+		"file_upload_size_limit", "", resourceWallarmFileUploadSizeLimitRead)
 }
 
-func resourceWallarmBruteRead(d *schema.ResourceData, m interface{}) error {
-	return resourcerule.ResourceRuleWallarmRead(d, retrieveClientID(d), m.(wallarm.API),
-		common.ReadOptionWithMode,
-		common.ReadOptionWithAction,
-		common.ReadOptionWithThreshold,
-		common.ReadOptionWithReaction,
-		common.ReadOptionWithEnumeratedParameters,
-		common.ReadOptionWithArbitraryConditions,
-	)
+func resourceWallarmFileUploadSizeLimitRead(d *schema.ResourceData, m interface{}) error {
+	return resourcerule.ResourceRuleWallarmRead(d, retrieveClientID(d), m.(wallarm.API))
 }
 
-func resourceWallarmBruteDelete(d *schema.ResourceData, m interface{}) error {
+func resourceWallarmFileUploadSizeLimitDelete(d *schema.ResourceData, m interface{}) error {
 	client := m.(wallarm.API)
 	clientID := retrieveClientID(d)
 	actionID := d.Get("action_id").(int)
 
 	rule := &wallarm.ActionRead{
 		Filter: &wallarm.ActionFilter{
-			HintType: []string{"brute"},
+			HintType: []string{"file_upload_size_limit"},
 			Clientid: []int{clientID},
 			ID:       []int{actionID},
 		},
@@ -98,7 +105,7 @@ func resourceWallarmBruteDelete(d *schema.ResourceData, m interface{}) error {
 	return nil
 }
 
-func resourceWallarmBruteImport(d *schema.ResourceData, _ interface{}) ([]*schema.ResourceData, error) {
+func resourceWallarmFileUploadSizeLimitImport(d *schema.ResourceData, _ interface{}) ([]*schema.ResourceData, error) {
 	idAttr := strings.SplitN(d.Id(), "/", 3)
 	if len(idAttr) == 3 {
 		clientID, err := strconv.Atoi(idAttr[0])
@@ -115,7 +122,7 @@ func resourceWallarmBruteImport(d *schema.ResourceData, _ interface{}) ([]*schem
 		}
 		d.Set("action_id", actionID)
 		d.Set("rule_id", ruleID)
-		d.Set("rule_type", "brute")
+		d.Set("rule_type", "file_upload_size_limit")
 
 		existingID := fmt.Sprintf("%d/%d/%d", clientID, actionID, ruleID)
 		d.SetId(existingID)

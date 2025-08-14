@@ -293,6 +293,175 @@ var (
 			Computed: true,
 		},
 	}
+
+	thresholdSchema = &schema.Schema{
+		Type:     schema.TypeList,
+		MaxItems: 1,
+		Required: true,
+		ForceNew: true,
+		Elem: &schema.Resource{
+			Schema: map[string]*schema.Schema{
+				"period": {
+					Type:     schema.TypeInt,
+					Required: true,
+				},
+				"count": {
+					Type:     schema.TypeInt,
+					Required: true,
+				},
+			},
+		},
+	}
+
+	reactionSchema = &schema.Schema{
+		Type:     schema.TypeList,
+		MaxItems: 1,
+		Required: true,
+		ForceNew: true,
+		Elem: &schema.Resource{
+			Schema: map[string]*schema.Schema{
+				"block_by_session": {
+					Type:     schema.TypeInt,
+					Optional: true,
+					ForceNew: true,
+				},
+				"block_by_ip": {
+					Type:     schema.TypeInt,
+					Optional: true,
+					ForceNew: true,
+				},
+				"graylist_by_ip": {
+					Type:     schema.TypeInt,
+					Optional: true,
+					ForceNew: true,
+				},
+			},
+		},
+	}
+
+	enumeratedParametersSchema = &schema.Schema{
+		Type:     schema.TypeList,
+		MaxItems: 1,
+		Required: true,
+		ForceNew: true,
+		Elem: &schema.Resource{
+			Schema: map[string]*schema.Schema{
+				"mode": {
+					Type:         schema.TypeString,
+					Required:     true,
+					ForceNew:     true,
+					ValidateFunc: validation.StringInSlice([]string{"regexp", "exact"}, false),
+				},
+				"points": {
+					Type:     schema.TypeList,
+					MaxItems: 1,
+					Optional: true,
+					Elem: &schema.Resource{
+						Schema: map[string]*schema.Schema{
+							"point": {
+								Type:     schema.TypeList,
+								Required: true,
+								ForceNew: true,
+								Elem: &schema.Schema{
+									Type: schema.TypeList,
+									Elem: &schema.Schema{Type: schema.TypeString},
+								},
+							},
+							"sensitive": {
+								Type:     schema.TypeBool,
+								Default:  false,
+								Optional: true,
+								ForceNew: true,
+							},
+						},
+					},
+				},
+				"name_regexps": {
+					Type:     schema.TypeList,
+					Optional: true,
+					Elem:     &schema.Schema{Type: schema.TypeString},
+					ForceNew: true,
+				},
+				"value_regexps": {
+					Type:     schema.TypeList,
+					Optional: true,
+					Elem:     &schema.Schema{Type: schema.TypeString},
+					ForceNew: true,
+				},
+				"additional_parameters": {
+					Type:     schema.TypeBool,
+					Optional: true,
+					Default:  false,
+					ForceNew: true,
+				},
+				"plain_parameters": {
+					Type:     schema.TypeBool,
+					Optional: true,
+					Default:  false,
+					ForceNew: true,
+				},
+			},
+		},
+	}
+
+	advancedConditionsSchema = &schema.Schema{
+		Type:     schema.TypeList,
+		Optional: true,
+		ForceNew: true,
+		Elem: &schema.Resource{
+			Schema: map[string]*schema.Schema{
+				"field": {
+					Type:         schema.TypeString,
+					Required:     true,
+					ValidateFunc: validation.StringInSlice([]string{"ip", "method", "user_agent", "domain", "uri", "status_code", "request_time", "request_size", "response_size", "attack_type", "blocked"}, false),
+					ForceNew:     true,
+				},
+				"value": {
+					Type:     schema.TypeList,
+					Elem:     &schema.Schema{Type: schema.TypeString},
+					Required: true,
+					ForceNew: true,
+				},
+				"operator": {
+					Type:         schema.TypeString,
+					Required:     true,
+					ValidateFunc: validation.StringInSlice([]string{"eq", "ne", "imatch", "notimatch", "match", "notmatch", "lt", "gt", "le", "ge"}, false),
+					ForceNew:     true,
+				},
+			},
+		},
+	}
+
+	arbitraryConditionsSchema = &schema.Schema{
+		Type:     schema.TypeList,
+		Optional: true,
+		ForceNew: true,
+		Elem: &schema.Resource{
+			Schema: map[string]*schema.Schema{
+				"point": {
+					Type:     schema.TypeList,
+					Required: true,
+					Elem: &schema.Schema{
+						Type: schema.TypeList,
+						Elem: &schema.Schema{Type: schema.TypeString},
+					},
+					ForceNew: true,
+				},
+				"value": {
+					Type:     schema.TypeList,
+					Elem:     &schema.Schema{Type: schema.TypeString},
+					Required: true,
+					ForceNew: true,
+				},
+				"operator": {
+					Type:         schema.TypeString,
+					Required:     true,
+					ValidateFunc: validation.StringInSlice([]string{"eq", "ne", "imatch", "notimatch", "match", "notmatch", "lt", "gt", "le", "ge"}, false),
+					ForceNew:     true,
+				},
+			},
+		},
+	}
 )
 
 type CommonResourceRuleFieldsDTO struct {

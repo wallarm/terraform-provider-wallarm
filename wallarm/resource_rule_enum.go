@@ -2,13 +2,14 @@ package wallarm
 
 import (
 	"fmt"
-	"log"
 	"strconv"
 	"strings"
 
+	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+	"github.com/wallarm/terraform-provider-wallarm/wallarm/common"
+	"github.com/wallarm/terraform-provider-wallarm/wallarm/common/resourcerule"
 	"github.com/wallarm/wallarm-go"
 
-	"github.com/google/go-cmp/cmp"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/samber/lo"
 )
@@ -16,17 +17,20 @@ import (
 // nolint:dupl
 func resourceWallarmEnum() *schema.Resource {
 	fields := map[string]*schema.Schema{
-		"action": defaultResourceRuleActionSchema,
-		"point": {
-			Type:     schema.TypeList,
-			Required: true,
-			ForceNew: true,
-			Elem: &schema.Schema{
-				Type: schema.TypeList,
-				Elem: &schema.Schema{Type: schema.TypeString},
-			},
+		"action":    defaultResourceRuleActionSchema,
+		"threshold": thresholdSchema,
+		"reaction":  reactionSchema,
+		"mode": {
+			Type:         schema.TypeString,
+			Required:     true,
+			ValidateFunc: validation.StringInSlice([]string{"monitoring", "block"}, false),
+			ForceNew:     true,
 		},
+		"enumerated_parameters": enumeratedParametersSchema,
+		"advanced_conditions":   advancedConditionsSchema,
+		"arbitrary_conditions":  arbitraryConditionsSchema,
 	}
+	sh := lo.Assign(fields, commonResourceRuleFields)
 
 	return &schema.Resource{
 		Create: resourceWallarmEnumCreate,
@@ -35,157 +39,24 @@ func resourceWallarmEnum() *schema.Resource {
 		Importer: &schema.ResourceImporter{
 			State: resourceWallarmEnumImport,
 		},
-		Schema: lo.Assign(fields, commonResourceRuleFields),
+		Schema: sh,
 	}
 }
 
 func resourceWallarmEnumCreate(d *schema.ResourceData, m interface{}) error {
-	client := m.(wallarm.API)
-	clientID := retrieveClientID(d)
-	fields := getCommonResourceRuleFieldsDTOFromResourceData(d)
-
-	ps := d.Get("point").([]interface{})
-	d.Set("point", ps)
-
-	points, err := expandPointsToTwoDimensionalArray(ps)
-	if err != nil {
-		return err
-	}
-
-	actionsFromState := d.Get("action").(*schema.Set)
-	action, err := expandSetToActionDetailsList(actionsFromState)
-	if err != nil {
-		return err
-	}
-
-	wm := &wallarm.ActionCreate{
-		Type:                "enum",
-		Clientid:            clientID,
-		Action:              &action,
-		Point:               points,
-		Validated:           false,
-		Comment:             fields.Comment,
-		VariativityDisabled: true,
-		Set:                 fields.Set,
-		Active:              fields.Active,
-		Title:               fields.Title,
-		Mitigation:          fields.Mitigation,
-	}
-
-	actionResp, err := client.HintCreate(wm)
-	if err != nil {
-		d.SetId("")
-		return err
-	}
-
-	d.Set("rule_id", actionResp.Body.ID)
-	d.Set("action_id", actionResp.Body.ActionID)
-	d.Set("rule_type", actionResp.Body.Type)
-
-	resID := fmt.Sprintf("%d/%d/%d", clientID, actionResp.Body.ActionID, actionResp.Body.ID)
-	d.SetId(resID)
-
-	return resourceWallarmEnumRead(d, m)
+	return resourcerule.ResourceRuleWallarmCreate(d, m.(wallarm.API), retrieveClientID(d),
+		"enum", "enum", resourceWallarmEnumRead)
 }
 
 func resourceWallarmEnumRead(d *schema.ResourceData, m interface{}) error {
-	client := m.(wallarm.API)
-	clientID := retrieveClientID(d)
-	actionID := d.Get("action_id").(int)
-	ruleID := d.Get("rule_id").(int)
-
-	ps := d.Get("point").([]interface{})
-	var points []interface{}
-	for _, point := range ps {
-		p := point.([]interface{})
-		points = append(points, p...)
-	}
-
-	actionsFromState := d.Get("action").(*schema.Set)
-	action, err := expandSetToActionDetailsList(actionsFromState)
-	if err != nil {
-		return err
-	}
-
-	actsSlice := make([]interface{}, 0, len(action))
-	for _, a := range action {
-		acts, err := actionDetailsToMap(a)
-		if err != nil {
-			return err
-		}
-		actsSlice = append(actsSlice, acts)
-	}
-
-	actionsSet := schema.NewSet(hashResponseActionDetails, actsSlice)
-
-	hint := &wallarm.HintRead{
-		Limit:     1000,
-		Offset:    0,
-		OrderBy:   "updated_at",
-		OrderDesc: true,
-		Filter: &wallarm.HintFilter{
-			Clientid: []int{clientID},
-			ID:       []int{ruleID},
-			Type:     []string{"enum"},
-		},
-	}
-	actionHints, err := client.HintRead(hint)
-	if err != nil {
-		return err
-	}
-
-	// This is mandatory to fill in the default values in order to compare them deeply.
-	// Assign new values to the old struct slice.
-	fillInDefaultValues(&action)
-
-	expectedRule := wallarm.ActionBody{
-		ActionID: actionID,
-		Type:     "enum",
-		Point:    points,
-	}
-
-	var updatedRule *wallarm.ActionBody
-	for _, rule := range *actionHints.Body {
-		if ruleID == rule.ID {
-			updatedRule = &rule
-			break
-		}
-
-		// The response has a different structure so we have to align them
-		// to uniform view then to compare.
-		alignedPoints := alignPointScheme(rule.Point)
-
-		actualRule := &wallarm.ActionBody{
-			ActionID: rule.ActionID,
-			Type:     rule.Type,
-			Point:    alignedPoints,
-		}
-
-		if cmp.Equal(expectedRule, *actualRule) && equalWithoutOrder(action, rule.Action) {
-			updatedRule = &rule
-			break
-		}
-	}
-
-	if updatedRule == nil {
-		d.SetId("")
-		return nil
-	}
-
-	d.Set("rule_id", updatedRule.ID)
-	d.Set("client_id", clientID)
-	d.Set("active", updatedRule.Active)
-	d.Set("title", updatedRule.Title)
-	d.Set("mitigation", updatedRule.Mitigation)
-	d.Set("set", updatedRule.Set)
-
-	if actionsSet.Len() != 0 {
-		d.Set("action", &actionsSet)
-	} else {
-		log.Printf("[WARN] action was empty so it either doesn't exist or it is a default branch which has no conditions. Actions: %v", &actionsSet)
-	}
-
-	return nil
+	return resourcerule.ResourceRuleWallarmRead(d, retrieveClientID(d), m.(wallarm.API),
+		common.ReadOptionWithMode,
+		common.ReadOptionWithAction,
+		common.ReadOptionWithThreshold,
+		common.ReadOptionWithReaction,
+		common.ReadOptionWithEnumeratedParameters,
+		common.ReadOptionWithArbitraryConditions,
+	)
 }
 
 func resourceWallarmEnumDelete(d *schema.ResourceData, m interface{}) error {
@@ -227,8 +98,7 @@ func resourceWallarmEnumDelete(d *schema.ResourceData, m interface{}) error {
 	return nil
 }
 
-func resourceWallarmEnumImport(d *schema.ResourceData, m interface{}) ([]*schema.ResourceData, error) {
-	client := m.(wallarm.API)
+func resourceWallarmEnumImport(d *schema.ResourceData, _ interface{}) ([]*schema.ResourceData, error) {
 	idAttr := strings.SplitN(d.Id(), "/", 3)
 	if len(idAttr) == 3 {
 		clientID, err := strconv.Atoi(idAttr[0])
@@ -246,39 +116,6 @@ func resourceWallarmEnumImport(d *schema.ResourceData, m interface{}) ([]*schema
 		d.Set("action_id", actionID)
 		d.Set("rule_id", ruleID)
 		d.Set("rule_type", "enum")
-
-		hint := &wallarm.HintRead{
-			Limit:     1000,
-			Offset:    0,
-			OrderBy:   "updated_at",
-			OrderDesc: true,
-			Filter: &wallarm.HintFilter{
-				Clientid: []int{clientID},
-				ID:       []int{ruleID},
-				Type:     []string{"enum"},
-			},
-		}
-		actionHints, err := client.HintRead(hint)
-		if err != nil {
-			return nil, err
-		}
-		actionsSet := schema.Set{
-			F: hashResponseActionDetails,
-		}
-		if len(*actionHints.Body) != 0 && len((*actionHints.Body)[0].Action) != 0 {
-			for _, a := range (*actionHints.Body)[0].Action {
-				acts, err := actionDetailsToMap(a)
-				if err != nil {
-					return nil, err
-				}
-				actionsSet.Add(acts)
-			}
-			d.Set("action", &actionsSet)
-		}
-
-		pointInterface := (*actionHints.Body)[0].Point
-		point := wrapPointElements(pointInterface)
-		d.Set("point", point)
 
 		existingID := fmt.Sprintf("%d/%d/%d", clientID, actionID, ruleID)
 		d.SetId(existingID)

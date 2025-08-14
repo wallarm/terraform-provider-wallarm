@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/samber/lo"
+	"github.com/wallarm/terraform-provider-wallarm/wallarm/common/resourcerule"
 	"github.com/wallarm/wallarm-go"
 
 	"github.com/google/go-cmp/cmp"
@@ -85,7 +86,7 @@ func resourceWallarmRegexCreate(d *schema.ResourceData, m interface{}) error {
 	}
 
 	actionsFromState := d.Get("action").(*schema.Set)
-	action, err := expandSetToActionDetailsList(actionsFromState)
+	action, err := resourcerule.ExpandSetToActionDetailsList(actionsFromState)
 	if err != nil {
 		return err
 	}
@@ -151,7 +152,7 @@ func resourceWallarmRegexRead(d *schema.ResourceData, m interface{}) error {
 	}
 
 	actionsFromState := d.Get("action").(*schema.Set)
-	action, err := expandSetToActionDetailsList(actionsFromState)
+	action, err := resourcerule.ExpandSetToActionDetailsList(actionsFromState)
 	if err != nil {
 		return err
 	}

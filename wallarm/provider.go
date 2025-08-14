@@ -148,6 +148,7 @@ func Provider() terraform.ResourceProvider {
 			"wallarm_rule_bola":                      resourceWallarmBola(),
 			"wallarm_rule_bola_counter":              resourceWallarmBolaCounter(),
 			"wallarm_rule_rate_limit":                resourceWallarmRateLimit(),
+			"wallarm_rule_rate_limit_enum":           resourceWallarmRateLimitEnum(),
 			"wallarm_rule_uploads":                   resourceWallarmUploads(),
 			"wallarm_rules_settings":                 resourceWallarmRulesSettings(),
 			"wallarm_tenant":                         resourceWallarmTenant(),
@@ -156,6 +157,9 @@ func Provider() terraform.ResourceProvider {
 			"wallarm_rule_credential_stuffing_point": resourceWallarmCredentialStuffingPoint(),
 			"wallarm_rule_credential_stuffing_mode":  resourceWallarmCredentialStuffingMode(),
 			"wallarm_rule_overlimit_res_settings":    resourceWallarmOverlimitResSettings(),
+			"wallarm_rule_forced_browsing":           resourceWallarmForcedBrowsing(),
+			"wallarm_rule_graphql_detection":         resourceWallarmGraphqlDetection(),
+			"wallarm_rule_file_upload_size_limit":    resourceWallarmFileUploadSizeLimit(),
 		},
 	}
 

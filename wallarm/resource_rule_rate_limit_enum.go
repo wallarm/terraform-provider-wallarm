@@ -15,7 +15,7 @@ import (
 )
 
 // nolint:dupl
-func resourceWallarmBrute() *schema.Resource {
+func resourceWallarmRateLimitEnum() *schema.Resource {
 	fields := map[string]*schema.Schema{
 		"action":    defaultResourceRuleActionSchema,
 		"threshold": thresholdSchema,
@@ -26,47 +26,45 @@ func resourceWallarmBrute() *schema.Resource {
 			ValidateFunc: validation.StringInSlice([]string{"monitoring", "block"}, false),
 			ForceNew:     true,
 		},
-		"enumerated_parameters": enumeratedParametersSchema,
-		"advanced_conditions":   advancedConditionsSchema,
-		"arbitrary_conditions":  arbitraryConditionsSchema,
+		"advanced_conditions":  advancedConditionsSchema,
+		"arbitrary_conditions": arbitraryConditionsSchema,
 	}
 	sh := lo.Assign(fields, commonResourceRuleFields)
 
 	return &schema.Resource{
-		Create: resourceWallarmBruteCreate,
-		Read:   resourceWallarmBruteRead,
-		Delete: resourceWallarmBruteDelete,
+		Create: resourceWallarmRateLimitEnumCreate,
+		Read:   resourceWallarmRateLimitEnumRead,
+		Delete: resourceWallarmRateLimitEnumDelete,
 		Importer: &schema.ResourceImporter{
-			State: resourceWallarmBruteImport,
+			State: resourceWallarmRateLimitEnumImport,
 		},
 		Schema: sh,
 	}
 }
 
-func resourceWallarmBruteCreate(d *schema.ResourceData, m interface{}) error {
+func resourceWallarmRateLimitEnumCreate(d *schema.ResourceData, m interface{}) error {
 	return resourcerule.ResourceRuleWallarmCreate(d, m.(wallarm.API), retrieveClientID(d),
-		"brute", "brute", resourceWallarmBruteRead)
+		"rate_limit_enum", "rate_limit", resourceWallarmRateLimitEnumRead)
 }
 
-func resourceWallarmBruteRead(d *schema.ResourceData, m interface{}) error {
+func resourceWallarmRateLimitEnumRead(d *schema.ResourceData, m interface{}) error {
 	return resourcerule.ResourceRuleWallarmRead(d, retrieveClientID(d), m.(wallarm.API),
 		common.ReadOptionWithMode,
 		common.ReadOptionWithAction,
 		common.ReadOptionWithThreshold,
 		common.ReadOptionWithReaction,
-		common.ReadOptionWithEnumeratedParameters,
 		common.ReadOptionWithArbitraryConditions,
 	)
 }
 
-func resourceWallarmBruteDelete(d *schema.ResourceData, m interface{}) error {
+func resourceWallarmRateLimitEnumDelete(d *schema.ResourceData, m interface{}) error {
 	client := m.(wallarm.API)
 	clientID := retrieveClientID(d)
 	actionID := d.Get("action_id").(int)
 
 	rule := &wallarm.ActionRead{
 		Filter: &wallarm.ActionFilter{
-			HintType: []string{"brute"},
+			HintType: []string{"rate_limit_enum"},
 			Clientid: []int{clientID},
 			ID:       []int{actionID},
 		},
@@ -98,7 +96,7 @@ func resourceWallarmBruteDelete(d *schema.ResourceData, m interface{}) error {
 	return nil
 }
 
-func resourceWallarmBruteImport(d *schema.ResourceData, _ interface{}) ([]*schema.ResourceData, error) {
+func resourceWallarmRateLimitEnumImport(d *schema.ResourceData, _ interface{}) ([]*schema.ResourceData, error) {
 	idAttr := strings.SplitN(d.Id(), "/", 3)
 	if len(idAttr) == 3 {
 		clientID, err := strconv.Atoi(idAttr[0])
@@ -115,7 +113,7 @@ func resourceWallarmBruteImport(d *schema.ResourceData, _ interface{}) ([]*schem
 		}
 		d.Set("action_id", actionID)
 		d.Set("rule_id", ruleID)
-		d.Set("rule_type", "brute")
+		d.Set("rule_type", "rate_limit_enum")
 
 		existingID := fmt.Sprintf("%d/%d/%d", clientID, actionID, ruleID)
 		d.SetId(existingID)

@@ -15,7 +15,7 @@ import (
 )
 
 // nolint:dupl
-func resourceWallarmBrute() *schema.Resource {
+func resourceWallarmForcedBrowsing() *schema.Resource {
 	fields := map[string]*schema.Schema{
 		"action":    defaultResourceRuleActionSchema,
 		"threshold": thresholdSchema,
@@ -26,29 +26,28 @@ func resourceWallarmBrute() *schema.Resource {
 			ValidateFunc: validation.StringInSlice([]string{"monitoring", "block"}, false),
 			ForceNew:     true,
 		},
-		"enumerated_parameters": enumeratedParametersSchema,
-		"advanced_conditions":   advancedConditionsSchema,
-		"arbitrary_conditions":  arbitraryConditionsSchema,
+		"advanced_conditions":  advancedConditionsSchema,
+		"arbitrary_conditions": arbitraryConditionsSchema,
 	}
 	sh := lo.Assign(fields, commonResourceRuleFields)
 
 	return &schema.Resource{
-		Create: resourceWallarmBruteCreate,
-		Read:   resourceWallarmBruteRead,
-		Delete: resourceWallarmBruteDelete,
+		Create: resourceWallarmForcedBrowsingCreate,
+		Read:   resourceWallarmForcedBrowsingRead,
+		Delete: resourceWallarmForcedBrowsingDelete,
 		Importer: &schema.ResourceImporter{
-			State: resourceWallarmBruteImport,
+			State: resourceWallarmForcedBrowsingImport,
 		},
 		Schema: sh,
 	}
 }
 
-func resourceWallarmBruteCreate(d *schema.ResourceData, m interface{}) error {
+func resourceWallarmForcedBrowsingCreate(d *schema.ResourceData, m interface{}) error {
 	return resourcerule.ResourceRuleWallarmCreate(d, m.(wallarm.API), retrieveClientID(d),
-		"brute", "brute", resourceWallarmBruteRead)
+		"forced_browsing", "dirbust", resourceWallarmForcedBrowsingRead)
 }
 
-func resourceWallarmBruteRead(d *schema.ResourceData, m interface{}) error {
+func resourceWallarmForcedBrowsingRead(d *schema.ResourceData, m interface{}) error {
 	return resourcerule.ResourceRuleWallarmRead(d, retrieveClientID(d), m.(wallarm.API),
 		common.ReadOptionWithMode,
 		common.ReadOptionWithAction,
@@ -59,14 +58,14 @@ func resourceWallarmBruteRead(d *schema.ResourceData, m interface{}) error {
 	)
 }
 
-func resourceWallarmBruteDelete(d *schema.ResourceData, m interface{}) error {
+func resourceWallarmForcedBrowsingDelete(d *schema.ResourceData, m interface{}) error {
 	client := m.(wallarm.API)
 	clientID := retrieveClientID(d)
 	actionID := d.Get("action_id").(int)
 
 	rule := &wallarm.ActionRead{
 		Filter: &wallarm.ActionFilter{
-			HintType: []string{"brute"},
+			HintType: []string{"forced_browsing"},
 			Clientid: []int{clientID},
 			ID:       []int{actionID},
 		},
@@ -98,7 +97,7 @@ func resourceWallarmBruteDelete(d *schema.ResourceData, m interface{}) error {
 	return nil
 }
 
-func resourceWallarmBruteImport(d *schema.ResourceData, _ interface{}) ([]*schema.ResourceData, error) {
+func resourceWallarmForcedBrowsingImport(d *schema.ResourceData, _ interface{}) ([]*schema.ResourceData, error) {
 	idAttr := strings.SplitN(d.Id(), "/", 3)
 	if len(idAttr) == 3 {
 		clientID, err := strconv.Atoi(idAttr[0])
@@ -115,7 +114,7 @@ func resourceWallarmBruteImport(d *schema.ResourceData, _ interface{}) ([]*schem
 		}
 		d.Set("action_id", actionID)
 		d.Set("rule_id", ruleID)
-		d.Set("rule_type", "brute")
+		d.Set("rule_type", "bola")
 
 		existingID := fmt.Sprintf("%d/%d/%d", clientID, actionID, ruleID)
 		d.SetId(existingID)

@@ -2,14 +2,14 @@ package wallarm
 
 import (
 	"fmt"
-	"log"
 	"strconv"
 	"strings"
 
 	"github.com/samber/lo"
+	"github.com/wallarm/terraform-provider-wallarm/wallarm/common"
+	"github.com/wallarm/terraform-provider-wallarm/wallarm/common/resourcerule"
 	"github.com/wallarm/wallarm-go"
 
-	"github.com/google/go-cmp/cmp"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
@@ -42,7 +42,7 @@ func resourceWallarmBolaCounterCreate(d *schema.ResourceData, m interface{}) err
 	fields := getCommonResourceRuleFieldsDTOFromResourceData(d)
 	actionsFromState := d.Get("action").(*schema.Set)
 
-	action, err := expandSetToActionDetailsList(actionsFromState)
+	action, err := resourcerule.ExpandSetToActionDetailsList(actionsFromState)
 	if err != nil {
 		return err
 	}
@@ -75,88 +75,7 @@ func resourceWallarmBolaCounterCreate(d *schema.ResourceData, m interface{}) err
 }
 
 func resourceWallarmBolaCounterRead(d *schema.ResourceData, m interface{}) error {
-	client := m.(wallarm.API)
-	clientID := retrieveClientID(d)
-	actionID := d.Get("action_id").(int)
-	ruleID := d.Get("rule_id").(int)
-	actionsFromState := d.Get("action").(*schema.Set)
-
-	action, err := expandSetToActionDetailsList(actionsFromState)
-	if err != nil {
-		return err
-	}
-
-	actsSlice := make([]interface{}, 0, len(action))
-	for _, a := range action {
-		acts, err := actionDetailsToMap(a)
-		if err != nil {
-			return err
-		}
-		actsSlice = append(actsSlice, acts)
-	}
-
-	actionsSet := schema.NewSet(hashResponseActionDetails, actsSlice)
-
-	hint := &wallarm.HintRead{
-		Limit:     1000,
-		Offset:    0,
-		OrderBy:   "updated_at",
-		OrderDesc: true,
-		Filter: &wallarm.HintFilter{
-			Clientid: []int{clientID},
-			ID:       []int{ruleID},
-			Type:     []string{"bola_counter"},
-		},
-	}
-	actionHints, err := client.HintRead(hint)
-	if err != nil {
-		return err
-	}
-
-	// This is mandatory to fill in the default values in order to compare them deeply.
-	// Assign new values to the old struct slice.
-	fillInDefaultValues(&action)
-
-	expectedRule := wallarm.ActionBody{
-		ActionID: actionID,
-		Type:     "bola_counter",
-		Action:   action,
-	}
-
-	var updatedRule *wallarm.ActionBody
-	for _, rule := range *actionHints.Body {
-		actualRule := &wallarm.ActionBody{
-			ActionID: rule.ActionID,
-			Type:     rule.Type,
-			Action:   rule.Action,
-		}
-
-		if ruleID == rule.ID || cmp.Equal(expectedRule, *actualRule) && equalWithoutOrder(action, rule.Action) {
-			updatedRule = &rule
-			break
-		}
-	}
-
-	if updatedRule == nil {
-		d.SetId("")
-		return nil
-	}
-
-	d.Set("rule_id", updatedRule.ID)
-	d.Set("counter", updatedRule.Counter)
-	d.Set("client_id", clientID)
-	d.Set("active", updatedRule.Active)
-	d.Set("title", updatedRule.Title)
-	d.Set("mitigation", updatedRule.Mitigation)
-	d.Set("set", updatedRule.Set)
-
-	if actionsSet.Len() != 0 {
-		d.Set("action", &actionsSet)
-	} else {
-		log.Printf("[WARN] action was empty so it either doesn't exist or it is a default branch which has no conditions. Actions: %v", &actionsSet)
-	}
-
-	return nil
+	return resourcerule.ResourceRuleWallarmRead(d, retrieveClientID(d), m.(wallarm.API), common.ReadOptionWithAction)
 }
 
 func resourceWallarmBolaCounterDelete(d *schema.ResourceData, m interface{}) error {

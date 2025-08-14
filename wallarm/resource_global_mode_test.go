@@ -27,7 +27,6 @@ func TestAccWallarmGlobalMode_FiltrationSafeBlocking(t *testing.T) {
 
 func TestAccWallarmGlobalMode_ScannerOff(t *testing.T) {
 	rnd := generateRandomResourceName(5)
-	name := "wallarm_global_mode." + rnd
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:  func() { testAccPreCheck(t) },
@@ -35,9 +34,7 @@ func TestAccWallarmGlobalMode_ScannerOff(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testWallarmGlobalModeScannerConfig(rnd, "off"),
-				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr(name, "scanner_mode", "off"),
-				),
+				Check:  resource.ComposeTestCheckFunc(),
 			},
 		},
 	})
@@ -73,7 +70,6 @@ func TestAccWallarmGlobalMode_FiltrationBlock_ScannerOff_RechkeckerOn(t *testing
 				Config: testWallarmGlobalModeFullConfig(rnd, "block", "off", "on"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(name, "filtration_mode", "block"),
-					resource.TestCheckResourceAttr(name, "scanner_mode", "off"),
 					resource.TestCheckResourceAttr(name, "rechecker_mode", "on"),
 				),
 			},
@@ -93,7 +89,6 @@ func TestAccWallarmGlobalMode_FiltrationDefault_ScannerOn_RecheckerOff(t *testin
 				Config: testWallarmGlobalModeFullConfig(rnd, "default", "on", "off"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(name, "filtration_mode", "default"),
-					resource.TestCheckResourceAttr(name, "scanner_mode", "on"),
 					resource.TestCheckResourceAttr(name, "rechecker_mode", "off"),
 				),
 			},
@@ -111,7 +106,6 @@ resource "wallarm_global_mode" "%[1]s" {
 func testWallarmGlobalModeScannerConfig(resourceID, scannerMode string) string {
 	return fmt.Sprintf(`
 resource "wallarm_global_mode" "%[1]s" {
-  scanner_mode = "%[2]s"
 }`, resourceID, scannerMode)
 }
 
@@ -126,7 +120,6 @@ func testWallarmGlobalModeFullConfig(resourceID, filtrationMode, scannerMode, re
 	return fmt.Sprintf(`
 resource "wallarm_global_mode" "%[1]s" {
   filtration_mode = "%[2]s"
-  scanner_mode = "%[3]s"
   rechecker_mode = "%[4]s"
 }`, resourceID, filtrationMode, scannerMode, recheckerMode)
 }
