@@ -3,6 +3,7 @@ package wallarm
 import (
 	"log"
 
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/wallarm/wallarm-go"
 
 	"github.com/pkg/errors"
@@ -32,4 +33,16 @@ func (c *Config) Client() (wallarm.API, error) {
 
 	log.Printf("[INFO] Wallarm Client configured")
 	return client, nil
+}
+
+func GetValueWithTypeCastingOrOverridedDefault[T any](d *schema.ResourceData, name string, overridedDefaultValue T) T {
+	resourceValue := d.Get(name)
+	if resourceValue == nil {
+		return overridedDefaultValue
+	}
+	v, ok := resourceValue.(T)
+	if !ok {
+		return overridedDefaultValue
+	}
+	return v
 }
