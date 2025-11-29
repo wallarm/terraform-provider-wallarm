@@ -208,6 +208,7 @@ func dataSourceWallarmSecurityIssuesRead(d *schema.ResourceData, m interface{}) 
 		Limit:     GetValueWithTypeCastingOrOverridedDefault[int](d, "limit", 1000),
 		Offset:    GetValueWithTypeCastingOrOverridedDefault[int](d, "offset", 0),
 		Unlimited: GetValueWithTypeCastingOrOverridedDefault[bool](d, "unlimited", false),
+		Filter:    &wallarm.GetSecurityIssuesFilter{},
 	}
 
 	resp, err := client.GetSecurityIssuesRead(req)
