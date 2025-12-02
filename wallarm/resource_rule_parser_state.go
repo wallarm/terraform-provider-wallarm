@@ -149,7 +149,6 @@ func resourceWallarmParserStateDelete(d *schema.ResourceData, m interface{}) err
 }
 
 func resourceWallarmParserStateImport(d *schema.ResourceData, m interface{}) ([]*schema.ResourceData, error) {
-	client := m.(wallarm.API)
 	idAttr := strings.SplitN(d.Id(), "/", 3)
 	if len(idAttr) == 3 {
 		clientID, err := strconv.Atoi(idAttr[0])
@@ -168,51 +167,11 @@ func resourceWallarmParserStateImport(d *schema.ResourceData, m interface{}) ([]
 		d.Set("rule_id", ruleID)
 		d.Set("rule_type", "parser_state")
 
-		hint := &wallarm.HintRead{
-			Limit:     1000,
-			Offset:    0,
-			OrderBy:   "updated_at",
-			OrderDesc: true,
-			Filter: &wallarm.HintFilter{
-				Clientid: []int{clientID},
-				ID:       []int{ruleID},
-				Type:     []string{"parser_state"},
-			},
-		}
-		actionHints, err := client.HintRead(hint)
-		if err != nil {
-			return nil, err
-		}
-		actionsSet := schema.Set{
-			F: hashResponseActionDetails,
-		}
-		if len((*actionHints.Body)) != 0 && len((*actionHints.Body)[0].Action) != 0 {
-			for _, a := range (*actionHints.Body)[0].Action {
-				acts, err := actionDetailsToMap(a)
-				if err != nil {
-					return nil, err
-				}
-				actionsSet.Add(acts)
-			}
-			d.Set("action", &actionsSet)
-
-		}
-
-		pointInterface := (*actionHints.Body)[0].Point
-		point := wrapPointElements(pointInterface)
-		d.Set("point", point)
-		d.Set("parser", (*actionHints.Body)[0].Parser)
-		d.Set("state", (*actionHints.Body)[0].State)
-
 		existingID := fmt.Sprintf("%d/%d/%d", clientID, actionID, ruleID)
 		d.SetId(existingID)
 
 	} else {
 		return nil, fmt.Errorf("invalid id (%q) specified, should be in format \"{clientID}/{actionID}/{ruleID}\"", d.Id())
-	}
-
-	if err := resourceWallarmParserStateRead(d, m); err != nil {
-		return nil, err
 	}
 
 	return []*schema.ResourceData{d}, nil

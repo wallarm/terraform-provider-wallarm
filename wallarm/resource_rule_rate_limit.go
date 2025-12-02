@@ -157,7 +157,6 @@ func resourceWallarmRateLimitDelete(d *schema.ResourceData, m interface{}) error
 }
 
 func resourceWallarmRateLimitImport(d *schema.ResourceData, m interface{}) ([]*schema.ResourceData, error) {
-	client := m.(wallarm.API)
 	idAttr := strings.SplitN(d.Id(), "/", 3)
 	if len(idAttr) == 3 {
 		clientID, err := strconv.Atoi(idAttr[0])
@@ -175,45 +174,6 @@ func resourceWallarmRateLimitImport(d *schema.ResourceData, m interface{}) ([]*s
 		d.Set("action_id", actionID)
 		d.Set("rule_id", ruleID)
 		d.Set("rule_type", "rate_limit")
-
-		hint := &wallarm.HintRead{
-			Limit:     1000,
-			Offset:    0,
-			OrderBy:   "updated_at",
-			OrderDesc: true,
-			Filter: &wallarm.HintFilter{
-				Clientid: []int{clientID},
-				ID:       []int{ruleID},
-				Type:     []string{"rate_limit"},
-			},
-		}
-		actionHints, err := client.HintRead(hint)
-		if err != nil {
-			return nil, err
-		}
-		actionsSet := schema.Set{
-			F: hashResponseActionDetails,
-		}
-		if len(*actionHints.Body) != 0 && len((*actionHints.Body)[0].Action) != 0 {
-			for _, a := range (*actionHints.Body)[0].Action {
-				acts, err := actionDetailsToMap(a)
-				if err != nil {
-					return nil, err
-				}
-				actionsSet.Add(acts)
-			}
-			d.Set("action", &actionsSet)
-
-		}
-		pointInterface := (*actionHints.Body)[0].Point
-		point := wrapPointElements(pointInterface)
-		d.Set("point", point)
-		d.Set("delay", (*actionHints.Body)[0].Delay)
-		d.Set("rate", (*actionHints.Body)[0].Rate)
-		d.Set("burst", (*actionHints.Body)[0].Burst)
-		d.Set("rsp_status", (*actionHints.Body)[0].RspStatus)
-		d.Set("time_unit", (*actionHints.Body)[0].TimeUnit)
-		d.Set("suffix", (*actionHints.Body)[0].Suffix)
 
 		existingID := fmt.Sprintf("%d/%d/%d", clientID, actionID, ruleID)
 		d.SetId(existingID)

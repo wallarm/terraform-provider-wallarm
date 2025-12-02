@@ -129,7 +129,6 @@ func resourceWallarmOverlimitResSettingsDelete(d *schema.ResourceData, m interfa
 }
 
 func resourceWallarmOverlimitResSettingsImport(d *schema.ResourceData, m interface{}) ([]*schema.ResourceData, error) {
-	client := m.(wallarm.API)
 	idAttr := strings.SplitN(d.Id(), "/", 3)
 	if len(idAttr) == 3 {
 		clientID, err := strconv.Atoi(idAttr[0])
@@ -147,39 +146,6 @@ func resourceWallarmOverlimitResSettingsImport(d *schema.ResourceData, m interfa
 		d.Set("action_id", actionID)
 		d.Set("rule_id", ruleID)
 		d.Set("rule_type", "overlimit_res_settings")
-
-		hint := &wallarm.HintRead{
-			Limit:     1000,
-			Offset:    0,
-			OrderBy:   "updated_at",
-			OrderDesc: true,
-			Filter: &wallarm.HintFilter{
-				Clientid: []int{clientID},
-				ID:       []int{ruleID},
-				Type:     []string{"overlimit_res_settings"},
-			},
-		}
-		actionHints, err := client.HintRead(hint)
-		if err != nil {
-			return nil, err
-		}
-		actionsSet := schema.Set{
-			F: hashResponseActionDetails,
-		}
-		if len((*actionHints.Body)) != 0 && len((*actionHints.Body)[0].Action) != 0 {
-			for _, a := range (*actionHints.Body)[0].Action {
-				acts, err := actionDetailsToMap(a)
-				if err != nil {
-					return nil, err
-				}
-				actionsSet.Add(acts)
-			}
-			d.Set("action", &actionsSet)
-
-		}
-
-		d.Set("mode", (*actionHints.Body)[0].Mode)
-		d.Set("overlimit_time", (*actionHints.Body)[0].OverlimitTime)
 
 		existingID := fmt.Sprintf("%d/%d/%d", clientID, actionID, ruleID)
 		d.SetId(existingID)

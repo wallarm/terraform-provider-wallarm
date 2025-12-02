@@ -129,7 +129,6 @@ func resourceWallarmModeDelete(d *schema.ResourceData, m interface{}) error {
 }
 
 func resourceWallarmModeImport(d *schema.ResourceData, m interface{}) ([]*schema.ResourceData, error) {
-	client := m.(wallarm.API)
 	idAttr := strings.SplitN(d.Id(), "/", 4)
 	if len(idAttr) == 4 {
 		clientID, err := strconv.Atoi(idAttr[0])
@@ -147,37 +146,7 @@ func resourceWallarmModeImport(d *schema.ResourceData, m interface{}) ([]*schema
 		mode := idAttr[3]
 		d.Set("action_id", actionID)
 		d.Set("rule_id", ruleID)
-		d.Set("mode", mode)
-		d.Set("rule_type", "wallarm_mode")
-
-		hint := &wallarm.HintRead{
-			Limit:     1000,
-			Offset:    0,
-			OrderBy:   "updated_at",
-			OrderDesc: true,
-			Filter: &wallarm.HintFilter{
-				Clientid: []int{clientID},
-				ID:       []int{ruleID},
-				Type:     []string{"wallarm_mode"},
-			},
-		}
-		actionHints, err := client.HintRead(hint)
-		if err != nil {
-			return nil, err
-		}
-		actionsSet := schema.Set{
-			F: hashResponseActionDetails,
-		}
-		if len((*actionHints.Body)) != 0 && len((*actionHints.Body)[0].Action) != 0 {
-			for _, a := range (*actionHints.Body)[0].Action {
-				acts, err := actionDetailsToMap(a)
-				if err != nil {
-					return nil, err
-				}
-				actionsSet.Add(acts)
-			}
-			d.Set("action", &actionsSet)
-		}
+		d.Set("rule_type", "sensitive_data")
 
 		existingID := fmt.Sprintf("%d/%d/%d/%s", clientID, actionID, ruleID, mode)
 		d.SetId(existingID)

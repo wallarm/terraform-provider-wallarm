@@ -263,7 +263,6 @@ func resourceWallarmRegexDelete(d *schema.ResourceData, m interface{}) error {
 }
 
 func resourceWallarmRegexImport(d *schema.ResourceData, m interface{}) ([]*schema.ResourceData, error) {
-	client := m.(wallarm.API)
 	idAttr := strings.SplitN(d.Id(), "/", 4)
 	if len(idAttr) == 4 {
 		clientID, err := strconv.Atoi(idAttr[0])
@@ -281,49 +280,7 @@ func resourceWallarmRegexImport(d *schema.ResourceData, m interface{}) ([]*schem
 		hintType := idAttr[3]
 		d.Set("action_id", actionID)
 		d.Set("rule_id", ruleID)
-		d.Set("rule_type", hintType)
-
-		hint := &wallarm.HintRead{
-			Limit:     1000,
-			Offset:    0,
-			OrderBy:   "updated_at",
-			OrderDesc: true,
-			Filter: &wallarm.HintFilter{
-				Clientid: []int{clientID},
-				ID:       []int{ruleID},
-				Type:     []string{hintType},
-			},
-		}
-		actionHints, err := client.HintRead(hint)
-		if err != nil {
-			return nil, err
-		}
-		actionsSet := schema.Set{
-			F: hashResponseActionDetails,
-		}
-		if len(*actionHints.Body) != 0 && len((*actionHints.Body)[0].Action) != 0 {
-			for _, a := range (*actionHints.Body)[0].Action {
-				acts, err := actionDetailsToMap(a)
-				if err != nil {
-					return nil, err
-				}
-				actionsSet.Add(acts)
-			}
-			d.Set("action", &actionsSet)
-			d.Set("regex_id", (*actionHints.Body)[0].RegexID)
-			d.Set("regex", (*actionHints.Body)[0].Regex)
-			d.Set("attack_type", (*actionHints.Body)[0].AttackType)
-
-			pointInterface := (*actionHints.Body)[0].Point
-			point := wrapPointElements(pointInterface)
-			d.Set("point", point)
-		}
-
-		if hintType == "experimental_regex" {
-			d.Set("experimental", true)
-		} else {
-			d.Set("experimental", false)
-		}
+		d.Set("rule_type", "rate_limit")
 
 		existingID := fmt.Sprintf("%d/%d/%d/%s", clientID, actionID, ruleID, hintType)
 		d.SetId(existingID)
