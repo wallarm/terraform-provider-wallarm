@@ -75,6 +75,17 @@ func ResourceRuleWallarmRead(d *schema.ResourceData, clientID int, cli wallarm.A
 	d.Set("max_alias_size_kb", updatedRule.MaxAliasesSizeKb)
 	d.Set("max_doc_per_batch", updatedRule.MaxDocPerBatch)
 	d.Set("attack_type", updatedRule.AttackType)
+	d.Set("file_type", updatedRule.FileType)
+	d.Set("name", updatedRule.Name)
+	d.Set("burst", updatedRule.Burst)
+	d.Set("delay", updatedRule.Delay)
+	d.Set("rate", updatedRule.Rate)
+	d.Set("rsp_status", updatedRule.RspStatus)
+	d.Set("time_unit", updatedRule.TimeUnit)
+	d.Set("parser", updatedRule.Parser)
+	d.Set("state", updatedRule.State)
+	d.Set("overlimit_time", updatedRule.OverlimitTime)
+	d.Set("values", updatedRule.Values)
 
 	actionsSet := schema.Set{F: hashResponseActionDetails}
 	for _, a := range updatedRule.Action {
