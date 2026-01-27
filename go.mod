@@ -8,7 +8,7 @@ require (
 	github.com/hashicorp/terraform-plugin-sdk v1.16.0
 	github.com/pkg/errors v0.9.1
 	github.com/samber/lo v1.51.0
-	github.com/wallarm/wallarm-go v0.6.2
+	github.com/wallarm/wallarm-go v0.6.3-0.20260127131932-3f4dca8391db
 )
 
 require (

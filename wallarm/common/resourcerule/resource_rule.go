@@ -91,15 +91,10 @@ func ResourceRuleWallarmRead(d *schema.ResourceData, clientID int, cli wallarm.A
 	d.Set("parser", updatedRule.Parser)
 	d.Set("state", updatedRule.State)
 	d.Set("overlimit_time", updatedRule.OverlimitTime)
-	tflog.Debug(context.Background(), "DEBUGGG values", map[string]interface{}{
-		"values": updatedRule.Values,
-	})
-	tflog.Debug(context.Background(), "DEBUGGG values prepared", map[string]interface{}{
-		"values": apitotf.SliceAnyToSliceString(updatedRule.Values),
-	})
 	d.Set("values", apitotf.SliceAnyToSliceString(updatedRule.Values))
 	d.Set("regex", updatedRule.Regex)
 	d.Set("regex_id", updatedRule.RegexID)
+	d.Set("variativity_disabled", updatedRule.VariativityDisabled)
 
 	actionsSet := schema.Set{F: hashResponseActionDetails}
 	for _, a := range updatedRule.Action {
