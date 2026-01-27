@@ -286,6 +286,11 @@ func resourceWallarmRegexImport(d *schema.ResourceData, _ interface{}) ([]*schem
 		existingID := fmt.Sprintf("%d/%d/%d/%s", clientID, actionID, ruleID, hintType)
 		d.SetId(existingID)
 
+		if hintType == "experimental_regex" {
+			d.Set("experimental", true)
+		} else {
+			d.Set("experimental", false)
+		}
 	} else {
 		return nil, fmt.Errorf("invalid id (%q) specified, should be in format \"{clientID}/{actionID}/{ruleID}/{regex/experimental_regex}\"", d.Id())
 	}
