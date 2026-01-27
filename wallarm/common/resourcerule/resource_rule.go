@@ -2,13 +2,14 @@ package resourcerule
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
-	"log"
 	"sort"
 	"strconv"
 	"strings"
 
+	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/hashcode"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/pkg/errors"
@@ -83,8 +84,12 @@ func ResourceRuleWallarmRead(d *schema.ResourceData, clientID int, cli wallarm.A
 	d.Set("parser", updatedRule.Parser)
 	d.Set("state", updatedRule.State)
 	d.Set("overlimit_time", updatedRule.OverlimitTime)
-	log.Println("DEBUGGG values", updatedRule.Values)
-	log.Println("DEBUGGG values prepared", apitotf.SliceAnyToSliceString(updatedRule.Values))
+	tflog.Debug(context.Background(), "DEBUGGG values", map[string]interface{}{
+		"values": updatedRule.Values,
+	})
+	tflog.Debug(context.Background(), "DEBUGGG values prepared", map[string]interface{}{
+		"values": apitotf.SliceAnyToSliceString(updatedRule.Values),
+	})
 	d.Set("values", apitotf.SliceAnyToSliceString(updatedRule.Values))
 	d.Set("regex", updatedRule.Regex)
 	d.Set("regex_id", updatedRule.RegexID)
