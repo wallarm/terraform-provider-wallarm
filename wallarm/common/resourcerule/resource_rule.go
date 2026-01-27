@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"sort"
 	"strconv"
 	"strings"
@@ -34,18 +35,24 @@ func ResourceRuleWallarmRead(d *schema.ResourceData, clientID int, cli wallarm.A
 	}
 	actionHints, err := cli.HintRead(hint)
 	if err != nil {
+		log.Println("DEBUGGG on cli.HintRead", err)
+		tflog.Debug(context.Background(), "DEBUGGG on cli.HintRead", map[string]interface{}{"error": err})
 		return err
 	}
 
 	var updatedRule *wallarm.ActionBody
 	for _, rule := range *actionHints.Body {
 		if ruleID == rule.ID {
+			log.Println("DEBUGGG founded rule", rule)
+			tflog.Debug(context.Background(), "DEBUGGG founded rule", map[string]interface{}{"rule": rule})
 			updatedRule = &rule
 			break
 		}
 	}
 
 	if updatedRule == nil {
+		log.Println("DEBUGGG not found rule")
+		tflog.Debug(context.Background(), "DEBUGGG not found rule")
 		d.SetId("")
 		return nil
 	}
