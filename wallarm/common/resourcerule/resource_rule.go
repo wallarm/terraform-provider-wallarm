@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"log"
 	"sort"
 	"strconv"
 	"strings"
@@ -82,6 +83,8 @@ func ResourceRuleWallarmRead(d *schema.ResourceData, clientID int, cli wallarm.A
 	d.Set("parser", updatedRule.Parser)
 	d.Set("state", updatedRule.State)
 	d.Set("overlimit_time", updatedRule.OverlimitTime)
+	log.Println("DEBUGGG values", updatedRule.Values)
+	log.Println("DEBUGGG values prepared", apitotf.SliceAnyToSliceString(updatedRule.Values))
 	d.Set("values", apitotf.SliceAnyToSliceString(updatedRule.Values))
 	d.Set("regex", updatedRule.Regex)
 	d.Set("regex_id", updatedRule.RegexID)
