@@ -123,6 +123,7 @@ func resourceWallarmRegexCreate(d *schema.ResourceData, m interface{}) error {
 }
 
 func resourceWallarmRegexRead(d *schema.ResourceData, m interface{}) error {
+	return resourcerule.ResourceRuleWallarmRead(d, retrieveClientID(d), m.(wallarm.API))
 	client := m.(wallarm.API)
 	clientID := retrieveClientID(d)
 	actionID := d.Get("action_id").(int)
@@ -262,7 +263,7 @@ func resourceWallarmRegexDelete(d *schema.ResourceData, m interface{}) error {
 	return nil
 }
 
-func resourceWallarmRegexImport(d *schema.ResourceData, m interface{}) ([]*schema.ResourceData, error) {
+func resourceWallarmRegexImport(d *schema.ResourceData, _ interface{}) ([]*schema.ResourceData, error) {
 	idAttr := strings.SplitN(d.Id(), "/", 4)
 	if len(idAttr) == 4 {
 		clientID, err := strconv.Atoi(idAttr[0])

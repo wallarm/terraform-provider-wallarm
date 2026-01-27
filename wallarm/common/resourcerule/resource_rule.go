@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"log"
 	"sort"
 	"strconv"
 	"strings"
@@ -33,7 +32,6 @@ func ResourceRuleWallarmRead(d *schema.ResourceData, clientID int, cli wallarm.A
 	}
 	actionHints, err := cli.HintRead(hint)
 	if err != nil {
-		log.Println("hihihi1", err)
 		return err
 	}
 
@@ -46,7 +44,6 @@ func ResourceRuleWallarmRead(d *schema.ResourceData, clientID int, cli wallarm.A
 	}
 
 	if updatedRule == nil {
-		log.Println("hihihi2 not found in API")
 		d.SetId("")
 		return nil
 	}
@@ -86,12 +83,13 @@ func ResourceRuleWallarmRead(d *schema.ResourceData, clientID int, cli wallarm.A
 	d.Set("state", updatedRule.State)
 	d.Set("overlimit_time", updatedRule.OverlimitTime)
 	d.Set("values", updatedRule.Values)
+	d.Set("regex", updatedRule.Regex)
+	d.Set("regex_id", updatedRule.RegexID)
 
 	actionsSet := schema.Set{F: hashResponseActionDetails}
 	for _, a := range updatedRule.Action {
 		acts, err := actionDetailsToMap(a)
 		if err != nil {
-			log.Println("hihihi4 on actionDetailsToMap", err)
 		} else {
 			actionsSet.Add(acts)
 		}
