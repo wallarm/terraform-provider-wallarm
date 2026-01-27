@@ -86,3 +86,17 @@ func ArbitraryConditions(arbitraryConditions []wallarm.ArbitraryConditionResp) [
 
 	return result
 }
+
+func SliceAnyToSliceString(in []any) []string {
+	if in == nil {
+		return nil
+	}
+
+	result := make([]string, 0, len(in))
+	for _, el := range in {
+		elStr, _ := el.(string)
+		result = append(result, elStr)
+	}
+
+	return result
+}
