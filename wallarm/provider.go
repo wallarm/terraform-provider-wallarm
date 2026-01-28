@@ -155,7 +155,6 @@ func Provider() terraform.ResourceProvider {
 			"wallarm_api_spec":                       resourceWallarmAPISpec(),
 			"wallarm_rule_credential_stuffing_regex": resourceWallarmCredentialStuffingRegex(),
 			"wallarm_rule_credential_stuffing_point": resourceWallarmCredentialStuffingPoint(),
-			"wallarm_rule_credential_stuffing_mode":  resourceWallarmCredentialStuffingMode(),
 			"wallarm_rule_overlimit_res_settings":    resourceWallarmOverlimitResSettings(),
 			"wallarm_rule_forced_browsing":           resourceWallarmForcedBrowsing(),
 			"wallarm_rule_graphql_detection":         resourceWallarmGraphqlDetection(),
