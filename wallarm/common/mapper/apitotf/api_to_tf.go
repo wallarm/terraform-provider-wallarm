@@ -1,6 +1,8 @@
 package apitotf
 
 import (
+	"fmt"
+
 	"github.com/wallarm/wallarm-go"
 )
 
@@ -82,6 +84,19 @@ func ArbitraryConditions(arbitraryConditions []wallarm.ArbitraryConditionResp) [
 			"operator": arbitraryCondition.Operator,
 			"value":    arbitraryCondition.Value,
 		})
+	}
+
+	return result
+}
+
+func SliceAnyToSliceString(in []any) []string {
+	if in == nil {
+		return nil
+	}
+
+	result := make([]string, 0, len(in))
+	for _, el := range in {
+		result = append(result, fmt.Sprintf("%s", el))
 	}
 
 	return result

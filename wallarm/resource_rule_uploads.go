@@ -141,8 +141,7 @@ func resourceWallarmUploadsDelete(d *schema.ResourceData, m interface{}) error {
 }
 
 // nolint:dupl
-func resourceWallarmUploadsImport(d *schema.ResourceData, m interface{}) ([]*schema.ResourceData, error) {
-	client := m.(wallarm.API)
+func resourceWallarmUploadsImport(d *schema.ResourceData, _ interface{}) ([]*schema.ResourceData, error) {
 	idAttr := strings.SplitN(d.Id(), "/", 3)
 	if len(idAttr) == 3 {
 		clientID, err := strconv.Atoi(idAttr[0])
@@ -160,39 +159,6 @@ func resourceWallarmUploadsImport(d *schema.ResourceData, m interface{}) ([]*sch
 		d.Set("action_id", actionID)
 		d.Set("rule_id", ruleID)
 		d.Set("rule_type", "uploads")
-
-		hint := &wallarm.HintRead{
-			Limit:     1000,
-			Offset:    0,
-			OrderBy:   "updated_at",
-			OrderDesc: true,
-			Filter: &wallarm.HintFilter{
-				Clientid: []int{clientID},
-				ID:       []int{ruleID},
-				Type:     []string{"uploads"},
-			},
-		}
-		actionHints, err := client.HintRead(hint)
-		if err != nil {
-			return nil, err
-		}
-		actionsSet := schema.Set{
-			F: hashResponseActionDetails,
-		}
-		if len((*actionHints.Body)) != 0 && len((*actionHints.Body)[0].Action) != 0 {
-			for _, a := range (*actionHints.Body)[0].Action {
-				acts, err := actionDetailsToMap(a)
-				if err != nil {
-					return nil, err
-				}
-				actionsSet.Add(acts)
-			}
-			d.Set("action", &actionsSet)
-			d.Set("file_type", (*actionHints.Body)[0].FileType)
-			pointInterface := (*actionHints.Body)[0].Point
-			point := wrapPointElements(pointInterface)
-			d.Set("point", point)
-		}
 
 		existingID := fmt.Sprintf("%d/%d/%d", clientID, actionID, ruleID)
 		d.SetId(existingID)

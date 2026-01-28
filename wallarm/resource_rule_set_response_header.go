@@ -30,7 +30,7 @@ func resourceWallarmSetResponseHeader() *schema.Resource {
 		},
 
 		"values": {
-			Type:     schema.TypeList,
+			Type:     schema.TypeSet,
 			Required: true,
 			ForceNew: true,
 			Elem:     &schema.Schema{Type: schema.TypeString},
@@ -56,7 +56,7 @@ func resourceWallarmSetResponseHeaderCreate(d *schema.ResourceData, m interface{
 	fields := getCommonResourceRuleFieldsDTOFromResourceData(d)
 	mode := d.Get("mode").(string)
 	name := d.Get("name").(string)
-	valuesInterface := d.Get("values").([]interface{})
+	valuesInterface := d.Get("values").(*schema.Set).List()
 
 	values := make([]string, 0, len(valuesInterface))
 	for _, item := range valuesInterface {
@@ -131,8 +131,7 @@ func resourceWallarmSetResponseHeaderUpdate(d *schema.ResourceData, m interface{
 	return resourceWallarmSetResponseHeaderCreate(d, m)
 }
 
-func resourceWallarmSetResponseHeaderImport(d *schema.ResourceData, m interface{}) ([]*schema.ResourceData, error) {
-	client := m.(wallarm.API)
+func resourceWallarmSetResponseHeaderImport(d *schema.ResourceData, _ interface{}) ([]*schema.ResourceData, error) {
 	idAttr := strings.SplitN(d.Id(), "/", 3)
 	if len(idAttr) == 3 {
 		clientID, err := strconv.Atoi(idAttr[0])
@@ -150,39 +149,6 @@ func resourceWallarmSetResponseHeaderImport(d *schema.ResourceData, m interface{
 		d.Set("action_id", actionID)
 		d.Set("rule_id", ruleID)
 		d.Set("rule_type", "set_response_header")
-
-		hint := &wallarm.HintRead{
-			Limit:     1000,
-			Offset:    0,
-			OrderBy:   "updated_at",
-			OrderDesc: true,
-			Filter: &wallarm.HintFilter{
-				Clientid: []int{clientID},
-				ID:       []int{ruleID},
-				Type:     []string{"set_response_header"},
-			},
-		}
-		actionHints, err := client.HintRead(hint)
-		if err != nil {
-			return nil, err
-		}
-		actionsSet := schema.Set{
-			F: hashResponseActionDetails,
-		}
-		if len(*actionHints.Body) != 0 && len((*actionHints.Body)[0].Action) != 0 {
-			for _, a := range (*actionHints.Body)[0].Action {
-				acts, err := actionDetailsToMap(a)
-				if err != nil {
-					return nil, err
-				}
-				actionsSet.Add(acts)
-			}
-			d.Set("action", &actionsSet)
-		}
-
-		d.Set("mode", (*actionHints.Body)[0].Mode)
-		d.Set("name", (*actionHints.Body)[0].Name)
-		d.Set("values", (*actionHints.Body)[0].Values)
 
 		existingID := fmt.Sprintf("%d/%d/%d", clientID, actionID, ruleID)
 		d.SetId(existingID)

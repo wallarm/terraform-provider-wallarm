@@ -173,28 +173,6 @@ func wrapPointElements(input []interface{}) [][]string {
 	return result
 }
 
-func alignPointScheme(rulePoint []interface{}) []interface{} {
-	// Check by comparing the defined struct.
-	// This is needed when a new rule was overwritten by the old one, but API responds with rule ID
-	// which will be immediately removed as duplicate in favor of the first once we post it.
-	numericPoints := []string{"path", "array", "grpc", "json_array", "xml_comment",
-		"xml_dtd_entity", "xml_pi", "xml_tag_array"}
-	var points []interface{}
-	for i, point := range rulePoint {
-		if i == 0 {
-			points = append(points, point)
-		} else {
-			if wallarm.Contains(numericPoints, rulePoint[i-1]) {
-				number := fmt.Sprintf("%d", int(point.(float64)))
-				points = append(points, number)
-			} else {
-				points = append(points, point)
-			}
-		}
-	}
-	return points
-}
-
 func interfaceToString(i interface{}) string {
 	r, _ := i.(string)
 	return r
@@ -379,17 +357,6 @@ func expandWallarmEventToIntEvents(d interface{}, resourceType string) *[]wallar
 		events = append(events, e)
 	}
 	return &events
-}
-
-func fillInDefaultValues(action *[]wallarm.ActionDetails) {
-	acts := make([]wallarm.ActionDetails, 0, len(*action))
-	for _, a := range *action {
-		if a.Type == "absent" {
-			a.Value = nil
-		}
-		acts = append(acts, a)
-	}
-	*action = acts
 }
 
 // equalWithoutOrder tells whether a and b contain
