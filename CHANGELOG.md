@@ -1,3 +1,10 @@
+# v1.8.3 (Jan 28, 2025)
+
+## NOTES:
+
+* Resource rules import refactored
+* Go mod updated 1.23 -> 1.24
+
 # v1.8.2 (Jul 24, 2025)
 
 ## NOTES:
