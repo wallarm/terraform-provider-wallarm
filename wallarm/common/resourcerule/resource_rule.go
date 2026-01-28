@@ -91,7 +91,17 @@ func ResourceRuleWallarmRead(d *schema.ResourceData, clientID int, cli wallarm.A
 	d.Set("parser", updatedRule.Parser)
 	d.Set("state", updatedRule.State)
 	d.Set("overlimit_time", updatedRule.OverlimitTime)
-	log.Println("DEBUGGG values", updatedRule.Values)
+	log.Printf(
+		"DEBUGGG values from API:  type=%T value=%#v\n",
+		updatedRule.Values,
+		updatedRule.Values,
+	)
+
+	log.Printf(
+		"DEBUGGG values from state: type=%T value=%#v\n",
+		d.Get("values"),
+		d.Get("values"),
+	)
 	values := make([]interface{}, 0, len(updatedRule.Values))
 	for _, v := range updatedRule.Values {
 		values = append(values, v)
