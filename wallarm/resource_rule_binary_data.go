@@ -151,7 +151,6 @@ func resourceWallarmBinaryDataImport(d *schema.ResourceData, _ interface{}) ([]*
 
 		existingID := fmt.Sprintf("%d/%d/%d", clientID, actionID, ruleID)
 		d.SetId(existingID)
-		d.Set("variativity_disabled", true)
 	} else {
 		return nil, fmt.Errorf("invalid id (%q) specified, should be in format \"{clientID}/{actionID}/{ruleID}\"", d.Id())
 	}

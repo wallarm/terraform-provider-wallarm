@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"log"
 	"sort"
 	"strconv"
 	"strings"
@@ -83,38 +82,7 @@ func ResourceRuleWallarmRead(d *schema.ResourceData, clientID int, cli wallarm.A
 	d.Set("parser", updatedRule.Parser)
 	d.Set("state", updatedRule.State)
 	d.Set("overlimit_time", updatedRule.OverlimitTime)
-	//log.Printf(
-	//	"DEBUGGG values from API:  type=%T value=%#v\n",
-	//	updatedRule.Values,
-	//	updatedRule.Values,
-	//)
-	//for i, v := range updatedRule.Values {
-	//	log.Printf(
-	//		"DEBUGGG value %d from API:  type=%T value=%#v\n",
-	//		i+1,
-	//		v,
-	//		v,
-	//	)
-	//}
-	//log.Printf(
-	//	"DEBUGGG values from state: type=%T value=%#v\n",
-	//	d.Get("values"),
-	//	d.Get("values"),
-	//)
-	//for i, v := range d.Get("values").([]interface{}) {
-	//	log.Printf(
-	//		"DEBUGGG value %d from state:  type=%T value=%#v\n",
-	//		i+1,
-	//		v,
-	//		v,
-	//	)
-	//}
-
-	if err = d.Set("values", updatedRule.Values); err != nil {
-		log.Println("DEBUGGG d.Set values", map[string]any{
-			"error": err,
-		})
-	}
+	d.Set("values", updatedRule.Values)
 	d.Set("regex", updatedRule.Regex)
 	d.Set("regex_id", updatedRule.RegexID)
 	d.Set("variativity_disabled", updatedRule.VariativityDisabled)
