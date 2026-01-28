@@ -56,7 +56,7 @@ func resourceWallarmSetResponseHeaderCreate(d *schema.ResourceData, m interface{
 	fields := getCommonResourceRuleFieldsDTOFromResourceData(d)
 	mode := d.Get("mode").(string)
 	name := d.Get("name").(string)
-	valuesInterface := d.Get("values").([]interface{})
+	valuesInterface := d.Get("values").(*schema.Set).List()
 
 	values := make([]string, 0, len(valuesInterface))
 	for _, item := range valuesInterface {
