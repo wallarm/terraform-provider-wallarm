@@ -128,7 +128,7 @@ func resourceWallarmModeDelete(d *schema.ResourceData, m interface{}) error {
 	return nil
 }
 
-func resourceWallarmModeImport(d *schema.ResourceData, m interface{}) ([]*schema.ResourceData, error) {
+func resourceWallarmModeImport(d *schema.ResourceData, _ interface{}) ([]*schema.ResourceData, error) {
 	idAttr := strings.SplitN(d.Id(), "/", 4)
 	if len(idAttr) == 4 {
 		clientID, err := strconv.Atoi(idAttr[0])
