@@ -2,7 +2,6 @@ package resourcerule
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -10,7 +9,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/hashcode"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/pkg/errors"
@@ -35,24 +33,18 @@ func ResourceRuleWallarmRead(d *schema.ResourceData, clientID int, cli wallarm.A
 	}
 	actionHints, err := cli.HintRead(hint)
 	if err != nil {
-		log.Println("DEBUGGG on cli.HintRead", err)
-		tflog.Debug(context.Background(), "DEBUGGG on cli.HintRead", map[string]interface{}{"error": err})
 		return err
 	}
 
 	var updatedRule *wallarm.ActionBody
 	for _, rule := range *actionHints.Body {
 		if ruleID == rule.ID {
-			log.Println("DEBUGGG founded rule", rule)
-			tflog.Debug(context.Background(), "DEBUGGG founded rule", map[string]interface{}{"rule": rule})
 			updatedRule = &rule
 			break
 		}
 	}
 
 	if updatedRule == nil {
-		log.Println("DEBUGGG not found rule")
-		tflog.Debug(context.Background(), "DEBUGGG not found rule")
 		d.SetId("")
 		return nil
 	}
@@ -96,12 +88,28 @@ func ResourceRuleWallarmRead(d *schema.ResourceData, clientID int, cli wallarm.A
 		updatedRule.Values,
 		updatedRule.Values,
 	)
-
+	for i, v := range updatedRule.Values {
+		log.Printf(
+			"DEBUGGG value %d from API:  type=%T value=%#v\n",
+			i+1,
+			v,
+			v,
+		)
+	}
 	log.Printf(
 		"DEBUGGG values from state: type=%T value=%#v\n",
 		d.Get("values"),
 		d.Get("values"),
 	)
+	for i, v := range d.Get("values").([]interface{}) {
+		log.Printf(
+			"DEBUGGG value %d from state:  type=%T value=%#v\n",
+			i+1,
+			v,
+			v,
+		)
+	}
+
 	values := make([]interface{}, 0, len(updatedRule.Values))
 	for _, v := range updatedRule.Values {
 		values = append(values, v)
