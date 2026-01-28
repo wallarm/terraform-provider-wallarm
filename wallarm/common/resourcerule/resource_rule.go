@@ -92,10 +92,11 @@ func ResourceRuleWallarmRead(d *schema.ResourceData, clientID int, cli wallarm.A
 	d.Set("state", updatedRule.State)
 	d.Set("overlimit_time", updatedRule.OverlimitTime)
 	log.Println("DEBUGGG values", updatedRule.Values)
-	tflog.Debug(context.Background(), "DEBUGGG values prepared", map[string]any{
-		"values": apitotf.SliceAnyToSliceString(updatedRule.Values),
-	})
-	if err = d.Set("values", apitotf.SliceAnyToSliceString(updatedRule.Values)); err != nil {
+	values := make([]interface{}, 0, len(updatedRule.Values))
+	for _, v := range updatedRule.Values {
+		values = append(values, v)
+	}
+	if err = d.Set("values", values); err != nil {
 		log.Println("DEBUGGG d.Set values", map[string]any{
 			"error": err,
 		})
