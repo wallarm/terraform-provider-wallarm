@@ -110,11 +110,7 @@ func ResourceRuleWallarmRead(d *schema.ResourceData, clientID int, cli wallarm.A
 		)
 	}
 
-	values := make([]interface{}, 0, len(updatedRule.Values))
-	for _, v := range updatedRule.Values {
-		values = append(values, v)
-	}
-	if err = d.Set("values", values); err != nil {
+	if err = d.Set("values", updatedRule.Values); err != nil {
 		log.Println("DEBUGGG d.Set values", map[string]any{
 			"error": err,
 		})
