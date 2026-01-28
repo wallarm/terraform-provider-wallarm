@@ -1,3 +1,9 @@
+# v1.8.4 (Jan 28, 2025)
+
+## NOTES:
+
+* Resource rule cred stuff is removed
+
 # v1.8.3 (Jan 28, 2025)
 
 ## NOTES:
