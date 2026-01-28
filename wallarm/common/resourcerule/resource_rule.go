@@ -110,7 +110,7 @@ func ResourceRuleWallarmRead(d *schema.ResourceData, clientID int, cli wallarm.A
 		)
 	}
 
-	if err = d.Set("values", apitotf.SliceAnyToSliceString(updatedRule.Values)); err != nil {
+	if err = d.Set("values", updatedRule.Values); err != nil {
 		log.Println("DEBUGGG d.Set values", map[string]any{
 			"error": err,
 		})
