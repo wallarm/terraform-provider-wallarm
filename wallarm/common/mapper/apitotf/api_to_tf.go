@@ -1,6 +1,8 @@
 package apitotf
 
 import (
+	"fmt"
+
 	"github.com/wallarm/wallarm-go"
 )
 
@@ -94,8 +96,7 @@ func SliceAnyToSliceString(in []any) []string {
 
 	result := make([]string, 0, len(in))
 	for _, el := range in {
-		elStr, _ := el.(string)
-		result = append(result, elStr)
+		result = append(result, fmt.Sprintf("%s", el))
 	}
 
 	return result
