@@ -31,13 +31,30 @@ func mapEnumeratedParameterRegexpToAPI(enumeratedParameter map[string]interface{
 	}
 }
 
-// nolint
 func mapEnumeratedParameterExactToAPI(enumeratedParameter map[string]interface{}) *wallarm.EnumeratedParameters {
-	return nil
-	//return &wallarm.EnumeratedParameters{
-	//	Mode:                 "exact",
-	//	Points:
-	//}
+	result := &wallarm.EnumeratedParameters{
+		Mode: "exact",
+	}
+
+	pointsList, ok := enumeratedParameter["points"].([]interface{})
+	if !ok || len(pointsList) == 0 {
+		return result
+	}
+
+	pointsObj, ok := pointsList[0].(map[string]interface{})
+	if !ok {
+		return result
+	}
+
+	point, _ := pointsObj["point"].([]interface{})
+	sensitive, _ := pointsObj["sensitive"].(bool)
+
+	result.Points = &wallarm.Points{
+		Point:     mapPointToAPI(point),
+		Sensitive: sensitive,
+	}
+
+	return result
 }
 
 func Reaction(reaction []interface{}) *wallarm.Reaction {

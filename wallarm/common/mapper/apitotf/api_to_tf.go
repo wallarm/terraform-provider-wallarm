@@ -43,7 +43,7 @@ func EnumeratedParameters(enumeratedParameters *wallarm.EnumeratedParameters) []
 	}
 	switch enumeratedParameters.Mode {
 	case "exact":
-		// TODO
+		result["points"] = mapPointsToTF(enumeratedParameters.Points)
 	default:
 		result["name_regexps"] = enumeratedParameters.NameRegexps
 		result["value_regexps"] = enumeratedParameters.ValueRegexp
@@ -52,7 +52,24 @@ func EnumeratedParameters(enumeratedParameters *wallarm.EnumeratedParameters) []
 	}
 
 	return []interface{}{result}
+}
 
+func mapPointsToTF(points *wallarm.Points) []interface{} {
+	if points == nil {
+		return nil
+	}
+
+	point := make([]interface{}, 0, len(points.Point))
+	for _, p := range points.Point {
+		point = append(point, p)
+	}
+
+	return []interface{}{
+		map[string]interface{}{
+			"point":     point,
+			"sensitive": points.Sensitive,
+		},
+	}
 }
 
 func AdvancedConditions(advancedConditions []wallarm.AdvancedCondition) []interface{} {
