@@ -1,6 +1,7 @@
 package tftoapi
 
 import (
+	"github.com/samber/lo"
 	"github.com/wallarm/terraform-provider-wallarm/wallarm/common"
 	"github.com/wallarm/wallarm-go"
 )
@@ -26,8 +27,8 @@ func mapEnumeratedParameterRegexpToAPI(enumeratedParameter map[string]interface{
 		Mode:                 "regexp",
 		NameRegexps:          common.ConvertToStringSlice(enumeratedParameter["name_regexps"].([]interface{})),
 		ValueRegexp:          common.ConvertToStringSlice(enumeratedParameter["value_regexps"].([]interface{})),
-		PlainParameters:      enumeratedParameter["plain_parameters"].(bool),
-		AdditionalParameters: enumeratedParameter["additional_parameters"].(bool),
+		PlainParameters:      lo.ToPtr(enumeratedParameter["plain_parameters"].(bool)),
+		AdditionalParameters: lo.ToPtr(enumeratedParameter["additional_parameters"].(bool)),
 	}
 }
 
