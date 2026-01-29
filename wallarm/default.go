@@ -361,10 +361,7 @@ var (
 								Type:     schema.TypeList,
 								Required: true,
 								ForceNew: true,
-								Elem: &schema.Schema{
-									Type: schema.TypeList,
-									Elem: &schema.Schema{Type: schema.TypeString},
-								},
+								Elem:     &schema.Schema{Type: schema.TypeString},
 							},
 							"sensitive": {
 								Type:     schema.TypeBool,

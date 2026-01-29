@@ -301,8 +301,8 @@ github.com/ulikunitz/xz v0.5.7/go.mod h1:nbz6k7qbPmH4IRqmfOplQw/tblSgqTqBwxkY0oW
 github.com/vmihailenco/msgpack v3.3.3+incompatible/go.mod h1:fy3FlTQTDXWkZ7Bh6AcGMlsjHatGryHQYUTf1ShIgkk=
 github.com/vmihailenco/msgpack v4.0.1+incompatible h1:RMF1enSPeKTlXrXdOcqjFUElywVZjjC6pqse21bKbEU=
 github.com/vmihailenco/msgpack v4.0.1+incompatible/go.mod h1:fy3FlTQTDXWkZ7Bh6AcGMlsjHatGryHQYUTf1ShIgkk=
-github.com/wallarm/wallarm-go v0.6.3-0.20260129121329-449113c6ffd8 h1:9yp5E31JWr/Nn70pPHvpJfss5wYrP+x7P++rrOrJb6E=
-github.com/wallarm/wallarm-go v0.6.3-0.20260129121329-449113c6ffd8/go.mod h1:KQxO+EBaGpIgOqBoByKW4KNMEJFgkxR64FSiA4U/52I=
+github.com/wallarm/wallarm-go v0.6.3-0.20260129122943-927a8ac0dfcf h1:zvtZBqQHaNPn2wK2Ts+PnfkZjuH2yh4txKboFsz5lCw=
+github.com/wallarm/wallarm-go v0.6.3-0.20260129122943-927a8ac0dfcf/go.mod h1:KQxO+EBaGpIgOqBoByKW4KNMEJFgkxR64FSiA4U/52I=
 github.com/xanzy/ssh-agent v0.2.1 h1:TCbipTQL2JiiCprBWx9frJ2eJlCYT00NmctrHxVAr70=
 github.com/xanzy/ssh-agent v0.2.1/go.mod h1:mLlQY/MoOhWBj+gOGMQkOeiEvkx+8pJSI+0Bx9h2kr4=
 github.com/yuin/goldmark v1.1.25/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=

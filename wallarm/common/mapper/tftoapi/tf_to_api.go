@@ -53,7 +53,7 @@ func mapEnumeratedParameterExactToAPI(enumeratedParameter map[string]interface{}
 		sensitive, _ := pointsObj["sensitive"].(bool)
 
 		points = append(points, &wallarm.Points{
-			Point:     mapPointToAPI(point),
+			Point:     point,
 			Sensitive: sensitive,
 		})
 	}

@@ -37,8 +37,12 @@ resource "wallarm_rule_enum" "wallarm_rule_enum_exact" {
   enumerated_parameters {
     mode = "exact"
     points {
-      point     = [["get", "id"], ["get", "name"]]
+      point     = ["header", "REFERER"]
       sensitive = false
+    }
+    points {
+      point     = ["get", "id"]
+      sensitive = true
     }
   }
 }
