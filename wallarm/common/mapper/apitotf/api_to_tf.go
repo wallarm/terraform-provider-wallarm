@@ -69,9 +69,7 @@ func mapPointsToTF(points []*wallarm.Points) []interface{} {
 			continue
 		}
 		point := make([]interface{}, 0, len(pts.Point))
-		for _, p := range pts.Point {
-			point = append(point, p)
-		}
+		point = append(point, pts.Point...)
 		result = append(result, map[string]interface{}{
 			"point":     point,
 			"sensitive": pts.Sensitive,
