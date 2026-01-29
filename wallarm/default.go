@@ -354,7 +354,6 @@ var (
 				},
 				"points": {
 					Type:     schema.TypeList,
-					MaxItems: 1,
 					Optional: true,
 					Elem: &schema.Resource{
 						Schema: map[string]*schema.Schema{
@@ -362,10 +361,7 @@ var (
 								Type:     schema.TypeList,
 								Required: true,
 								ForceNew: true,
-								Elem: &schema.Schema{
-									Type: schema.TypeList,
-									Elem: &schema.Schema{Type: schema.TypeString},
-								},
+								Elem:     &schema.Schema{Type: schema.TypeString},
 							},
 							"sensitive": {
 								Type:     schema.TypeBool,

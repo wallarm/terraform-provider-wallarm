@@ -11,7 +11,60 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/terraform"
 )
 
-// TODO add enum exact too
+func TestAccRuleEnumExact(t *testing.T) {
+	const config = `
+resource "wallarm_rule_enum" "wallarm_rule_enum_exact" {
+  mode = "block"
+
+  action {
+    type = "iequal"
+    value = "wenum-exact.wallarm.com"
+    point = {
+      header = "HOST"
+    }
+  }
+
+  reaction {
+    block_by_session = 3000
+    block_by_ip = 4000
+  }
+
+  threshold {
+    count = 5
+    period = 30
+  }
+
+  enumerated_parameters {
+    mode = "exact"
+    points {
+      point     = ["header", "REFERER"]
+      sensitive = false
+    }
+    points {
+      point     = ["get", "id"]
+      sensitive = true
+    }
+  }
+}
+`
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckWallarmRuleEnumDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: config,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("wallarm_rule_enum.wallarm_rule_enum_exact", "mode", "block"),
+					resource.TestCheckResourceAttr("wallarm_rule_enum.wallarm_rule_enum_exact", "action.#", "1"),
+					resource.TestCheckResourceAttr("wallarm_rule_enum.wallarm_rule_enum_exact", "enumerated_parameters.0.mode", "exact"),
+					resource.TestCheckResourceAttr("wallarm_rule_enum.wallarm_rule_enum_exact", "enumerated_parameters.0.points.0.sensitive", "false"),
+				),
+			},
+		},
+	})
+}
+
 func TestAccRuleEnumRegexp(t *testing.T) {
 	const config = `
 resource "wallarm_rule_enum" "wallarm_rule_enum_regexp" {

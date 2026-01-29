@@ -1,6 +1,7 @@
 package tftoapi
 
 import (
+	"github.com/samber/lo"
 	"github.com/wallarm/terraform-provider-wallarm/wallarm/common"
 	"github.com/wallarm/wallarm-go"
 )
@@ -26,18 +27,39 @@ func mapEnumeratedParameterRegexpToAPI(enumeratedParameter map[string]interface{
 		Mode:                 "regexp",
 		NameRegexps:          common.ConvertToStringSlice(enumeratedParameter["name_regexps"].([]interface{})),
 		ValueRegexp:          common.ConvertToStringSlice(enumeratedParameter["value_regexps"].([]interface{})),
-		PlainParameters:      enumeratedParameter["plain_parameters"].(bool),
-		AdditionalParameters: enumeratedParameter["additional_parameters"].(bool),
+		PlainParameters:      lo.ToPtr(enumeratedParameter["plain_parameters"].(bool)),
+		AdditionalParameters: lo.ToPtr(enumeratedParameter["additional_parameters"].(bool)),
 	}
 }
 
-// nolint
 func mapEnumeratedParameterExactToAPI(enumeratedParameter map[string]interface{}) *wallarm.EnumeratedParameters {
-	return nil
-	//return &wallarm.EnumeratedParameters{
-	//	Mode:                 "exact",
-	//	Points:
-	//}
+	result := &wallarm.EnumeratedParameters{
+		Mode: "exact",
+	}
+
+	pointsList, ok := enumeratedParameter["points"].([]interface{})
+	if !ok || len(pointsList) == 0 {
+		return result
+	}
+
+	points := make([]*wallarm.Points, 0, len(pointsList))
+	for _, item := range pointsList {
+		pointsObj, ok := item.(map[string]interface{})
+		if !ok {
+			continue
+		}
+
+		point, _ := pointsObj["point"].([]interface{})
+		sensitive, _ := pointsObj["sensitive"].(bool)
+
+		points = append(points, &wallarm.Points{
+			Point:     point,
+			Sensitive: sensitive,
+		})
+	}
+
+	result.Points = points
+	return result
 }
 
 func Reaction(reaction []interface{}) *wallarm.Reaction {
