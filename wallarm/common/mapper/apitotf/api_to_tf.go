@@ -47,29 +47,38 @@ func EnumeratedParameters(enumeratedParameters *wallarm.EnumeratedParameters) []
 	default:
 		result["name_regexps"] = enumeratedParameters.NameRegexps
 		result["value_regexps"] = enumeratedParameters.ValueRegexp
-		result["plain_parameters"] = enumeratedParameters.PlainParameters
-		result["additional_parameters"] = enumeratedParameters.AdditionalParameters
+		if enumeratedParameters.PlainParameters != nil {
+			result["plain_parameters"] = *enumeratedParameters.PlainParameters
+		}
+		if enumeratedParameters.AdditionalParameters != nil {
+			result["additional_parameters"] = *enumeratedParameters.AdditionalParameters
+		}
 	}
 
 	return []interface{}{result}
 }
 
-func mapPointsToTF(points *wallarm.Points) []interface{} {
-	if points == nil {
+func mapPointsToTF(points []*wallarm.Points) []interface{} {
+	if len(points) == 0 {
 		return nil
 	}
 
-	point := make([]interface{}, 0, len(points.Point))
-	for _, p := range points.Point {
-		point = append(point, p)
+	result := make([]interface{}, 0, len(points))
+	for _, pts := range points {
+		if pts == nil {
+			continue
+		}
+		point := make([]interface{}, 0, len(pts.Point))
+		for _, p := range pts.Point {
+			point = append(point, p)
+		}
+		result = append(result, map[string]interface{}{
+			"point":     point,
+			"sensitive": pts.Sensitive,
+		})
 	}
 
-	return []interface{}{
-		map[string]interface{}{
-			"point":     point,
-			"sensitive": points.Sensitive,
-		},
-	}
+	return result
 }
 
 func AdvancedConditions(advancedConditions []wallarm.AdvancedCondition) []interface{} {

@@ -42,19 +42,23 @@ func mapEnumeratedParameterExactToAPI(enumeratedParameter map[string]interface{}
 		return result
 	}
 
-	pointsObj, ok := pointsList[0].(map[string]interface{})
-	if !ok {
-		return result
+	points := make([]*wallarm.Points, 0, len(pointsList))
+	for _, item := range pointsList {
+		pointsObj, ok := item.(map[string]interface{})
+		if !ok {
+			continue
+		}
+
+		point, _ := pointsObj["point"].([]interface{})
+		sensitive, _ := pointsObj["sensitive"].(bool)
+
+		points = append(points, &wallarm.Points{
+			Point:     mapPointToAPI(point),
+			Sensitive: sensitive,
+		})
 	}
 
-	point, _ := pointsObj["point"].([]interface{})
-	sensitive, _ := pointsObj["sensitive"].(bool)
-
-	result.Points = &wallarm.Points{
-		Point:     mapPointToAPI(point),
-		Sensitive: sensitive,
-	}
-
+	result.Points = points
 	return result
 }
 
