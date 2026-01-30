@@ -160,7 +160,11 @@ func resourceWallarmBinaryDataImport(d *schema.ResourceData, _ interface{}) ([]*
 	return []*schema.ResourceData{d}, nil
 }
 
-func resourceWallarmBinaryDataUpdate(d *schema.ResourceData, _ interface{}) error {
-	log.Printf("DEBUGGG resourceWallarmBinaryDataUpdate, action_id: %v\n", d.Get("action_id"))
-	return nil
+func resourceWallarmBinaryDataUpdate(d *schema.ResourceData, m interface{}) error {
+	client := m.(wallarm.API)
+	log.Printf("DEBUGGG before update resourceWallarmBinaryDataUpdate, action_id: %v\n", d.Get("action_id"))
+	_, err := client.HintUpdateV3(d.Get("action_id").(int), &wallarm.HintUpdateV3Params{VariativityDisabled: lo.ToPtr(true)})
+	log.Printf("DEBUGGG after update resourceWallarmBinaryDataUpdate, action_id: %v, sucess=%t\n", d.Get("action_id"), err == nil)
+
+	return err
 }
