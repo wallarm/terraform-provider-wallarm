@@ -292,6 +292,12 @@ var (
 			Optional: true,
 			Computed: true,
 		},
+		"variativity_disabled": {
+			Type:     schema.TypeBool,
+			Default:  true,
+			Optional: true,
+			ForceNew: true,
+		},
 	}
 
 	thresholdSchema = &schema.Schema{
