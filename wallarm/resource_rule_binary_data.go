@@ -2,6 +2,7 @@ package wallarm
 
 import (
 	"fmt"
+	"log"
 	"strconv"
 	"strings"
 
@@ -34,6 +35,7 @@ func resourceWallarmBinaryData() *schema.Resource {
 		Importer: &schema.ResourceImporter{
 			State: resourceWallarmBinaryDataImport,
 		},
+		Update: resourceWallarmBinaryDataUpdate,
 		Schema: lo.Assign(fields, commonResourceRuleFields),
 	}
 }
@@ -156,4 +158,9 @@ func resourceWallarmBinaryDataImport(d *schema.ResourceData, _ interface{}) ([]*
 	}
 
 	return []*schema.ResourceData{d}, nil
+}
+
+func resourceWallarmBinaryDataUpdate(d *schema.ResourceData, _ interface{}) error {
+	log.Printf("DEBUGGG resourceWallarmBinaryDataUpdate, action_id: %v\n", d.Get("action_id"))
+	return nil
 }
