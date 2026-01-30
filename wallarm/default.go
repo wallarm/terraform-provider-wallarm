@@ -296,7 +296,6 @@ var (
 			Type:     schema.TypeBool,
 			Default:  true,
 			Optional: true,
-			ForceNew: true,
 		},
 	}
 
