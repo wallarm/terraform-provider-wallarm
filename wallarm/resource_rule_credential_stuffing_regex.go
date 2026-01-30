@@ -130,6 +130,7 @@ func resourceWallarmCredentialStuffingRegex() *schema.Resource {
 	return &schema.Resource{
 		Create: resourceWallarmCredentialStuffingRegexCreate,
 		Read:   resourceWallarmCredentialStuffingRegexRead,
+		Update: resourceWallarmCredentialStuffingRegexUpdate,
 		Delete: resourceWallarmCredentialStuffingRegexDelete,
 		Importer: &schema.ResourceImporter{
 			State: resourceWallarmCredentialStuffingRegexImport,
@@ -236,6 +237,11 @@ func resourceWallarmCredentialStuffingRegexDelete(d *schema.ResourceData, m inte
 		return err
 	}
 
+	return nil
+}
+
+func resourceWallarmCredentialStuffingRegexUpdate(d *schema.ResourceData, _ interface{}) error {
+	log.Printf("[DEBUG] resourceWallarmCredentialStuffingRegexUpdate, action_id: %v\n", d.Get("action_id"))
 	return nil
 }
 

@@ -2,6 +2,7 @@ package wallarm
 
 import (
 	"fmt"
+	"log"
 	"strconv"
 	"strings"
 
@@ -52,6 +53,7 @@ func resourceWallarmRegex() *schema.Resource {
 	return &schema.Resource{
 		Create: resourceWallarmRegexCreate,
 		Read:   resourceWallarmRegexRead,
+		Update: resourceWallarmRegexUpdate,
 		Delete: resourceWallarmRegexDelete,
 		Importer: &schema.ResourceImporter{
 			State: resourceWallarmRegexImport,
@@ -140,6 +142,11 @@ func resourceWallarmRegexDelete(d *schema.ResourceData, m interface{}) error {
 		return err
 	}
 
+	return nil
+}
+
+func resourceWallarmRegexUpdate(d *schema.ResourceData, _ interface{}) error {
+	log.Printf("[DEBUG] resourceWallarmRegexUpdate, action_id: %v\n", d.Get("action_id"))
 	return nil
 }
 

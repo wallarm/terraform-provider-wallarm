@@ -2,6 +2,7 @@ package wallarm
 
 import (
 	"fmt"
+	"log"
 	"strconv"
 	"strings"
 
@@ -45,6 +46,7 @@ func resourceWallarmOverlimitResSettings() *schema.Resource {
 	return &schema.Resource{
 		Create: resourceWallarmOverlimitResSettingsCreate,
 		Read:   resourceWallarmOverlimitResSettingsRead,
+		Update: resourceWallarmOverlimitResSettingsUpdate,
 		Delete: resourceWallarmOverlimitResSettingsDelete,
 		Importer: &schema.ResourceImporter{
 			State: resourceWallarmOverlimitResSettingsImport,
@@ -125,6 +127,11 @@ func resourceWallarmOverlimitResSettingsDelete(d *schema.ResourceData, m interfa
 		return err
 	}
 
+	return nil
+}
+
+func resourceWallarmOverlimitResSettingsUpdate(d *schema.ResourceData, _ interface{}) error {
+	log.Printf("[DEBUG] resourceWallarmOverlimitResSettingsUpdate, action_id: %v\n", d.Get("action_id"))
 	return nil
 }
 

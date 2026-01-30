@@ -2,6 +2,7 @@ package wallarm
 
 import (
 	"fmt"
+	"log"
 	"strconv"
 	"strings"
 
@@ -45,6 +46,7 @@ func resourceWallarmParserState() *schema.Resource {
 	return &schema.Resource{
 		Create: resourceWallarmParserStateCreate,
 		Read:   resourceWallarmParserStateRead,
+		Update: resourceWallarmParserStateUpdate,
 		Delete: resourceWallarmParserStateDelete,
 		Importer: &schema.ResourceImporter{
 			State: resourceWallarmParserStateImport,
@@ -145,6 +147,11 @@ func resourceWallarmParserStateDelete(d *schema.ResourceData, m interface{}) err
 			return err
 		}
 	}
+	return nil
+}
+
+func resourceWallarmParserStateUpdate(d *schema.ResourceData, _ interface{}) error {
+	log.Printf("[DEBUG] resourceWallarmParserStateUpdate, action_id: %v\n", d.Get("action_id"))
 	return nil
 }
 

@@ -2,6 +2,7 @@ package wallarm
 
 import (
 	"fmt"
+	"log"
 	"strconv"
 	"strings"
 
@@ -64,6 +65,7 @@ func resourceWallarmGraphqlDetection() *schema.Resource {
 	return &schema.Resource{
 		Create: resourceWallarmGraphqlDetectionCreate,
 		Read:   resourceWallarmGraphqlDetectionRead,
+		Update: resourceWallarmGraphqlDetectionUpdate,
 		Delete: resourceWallarmGraphqlDetectionDelete,
 		Importer: &schema.ResourceImporter{
 			State: resourceWallarmGraphqlDetectionImport,
@@ -117,6 +119,11 @@ func resourceWallarmGraphqlDetectionDelete(d *schema.ResourceData, m interface{}
 			return err
 		}
 	}
+	return nil
+}
+
+func resourceWallarmGraphqlDetectionUpdate(d *schema.ResourceData, _ interface{}) error {
+	log.Printf("[DEBUG] resourceWallarmGraphqlDetectionUpdate, action_id: %v\n", d.Get("action_id"))
 	return nil
 }
 

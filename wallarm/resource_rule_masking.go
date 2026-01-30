@@ -2,6 +2,7 @@ package wallarm
 
 import (
 	"fmt"
+	"log"
 	"strconv"
 	"strings"
 
@@ -30,6 +31,7 @@ func resourceWallarmSensitiveData() *schema.Resource {
 	return &schema.Resource{
 		Create: resourceWallarmSensitiveDataCreate,
 		Read:   resourceWallarmSensitiveDataRead,
+		Update: resourceWallarmSensitiveDataUpdate,
 		Delete: resourceWallarmSensitiveDataDelete,
 		Importer: &schema.ResourceImporter{
 			State: resourceWallarmSensitiveDataImport,
@@ -129,6 +131,11 @@ func resourceWallarmSensitiveDataDelete(d *schema.ResourceData, m interface{}) e
 			return err
 		}
 	}
+	return nil
+}
+
+func resourceWallarmSensitiveDataUpdate(d *schema.ResourceData, _ interface{}) error {
+	log.Printf("[DEBUG] resourceWallarmSensitiveDataUpdate, action_id: %v\n", d.Get("action_id"))
 	return nil
 }
 

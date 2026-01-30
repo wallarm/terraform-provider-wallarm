@@ -2,6 +2,7 @@ package wallarm
 
 import (
 	"fmt"
+	"log"
 	"strconv"
 	"strings"
 
@@ -49,6 +50,7 @@ func resourceWallarmFileUploadSizeLimit() *schema.Resource {
 	return &schema.Resource{
 		Create: resourceWallarmFileUploadSizeLimitCreate,
 		Read:   resourceWallarmFileUploadSizeLimitRead,
+		Update: resourceWallarmFileUploadSizeLimitUpdate,
 		Delete: resourceWallarmFileUploadSizeLimitDelete,
 		Importer: &schema.ResourceImporter{
 			State: resourceWallarmFileUploadSizeLimitImport,
@@ -102,6 +104,11 @@ func resourceWallarmFileUploadSizeLimitDelete(d *schema.ResourceData, m interfac
 			return err
 		}
 	}
+	return nil
+}
+
+func resourceWallarmFileUploadSizeLimitUpdate(d *schema.ResourceData, _ interface{}) error {
+	log.Printf("[DEBUG] resourceWallarmFileUploadSizeLimitUpdate, action_id: %v\n", d.Get("action_id"))
 	return nil
 }
 

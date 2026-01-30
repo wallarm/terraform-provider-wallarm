@@ -2,6 +2,7 @@ package wallarm
 
 import (
 	"fmt"
+	"log"
 	"strconv"
 	"strings"
 
@@ -67,6 +68,7 @@ func resourceWallarmRateLimit() *schema.Resource {
 	return &schema.Resource{
 		Create: resourceWallarmRateLimitCreate,
 		Read:   resourceWallarmRateLimitRead,
+		Update: resourceWallarmRateLimitUpdate,
 		Delete: resourceWallarmRateLimitDelete,
 		Importer: &schema.ResourceImporter{
 			State: resourceWallarmRateLimitImport,
@@ -153,6 +155,11 @@ func resourceWallarmRateLimitDelete(d *schema.ResourceData, m interface{}) error
 		return err
 	}
 
+	return nil
+}
+
+func resourceWallarmRateLimitUpdate(d *schema.ResourceData, _ interface{}) error {
+	log.Printf("[DEBUG] resourceWallarmRateLimitUpdate, action_id: %v\n", d.Get("action_id"))
 	return nil
 }
 

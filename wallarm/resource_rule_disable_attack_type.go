@@ -2,6 +2,7 @@ package wallarm
 
 import (
 	"fmt"
+	"log"
 	"strconv"
 	"strings"
 
@@ -38,6 +39,7 @@ func resourceWallarmDisableAttackType() *schema.Resource {
 	return &schema.Resource{
 		Create: resourceWallarmDisableAttackTypeCreate,
 		Read:   resourceWallarmDisableAttackTypeRead,
+		Update: resourceWallarmDisableAttackTypeUpdate,
 		Delete: resourceWallarmDisableAttackTypeDelete,
 		Importer: &schema.ResourceImporter{
 			State: resourceWallarmDisableAttackTypeImport,
@@ -136,6 +138,11 @@ func resourceWallarmDisableAttackTypeDelete(d *schema.ResourceData, m interface{
 			return err
 		}
 	}
+	return nil
+}
+
+func resourceWallarmDisableAttackTypeUpdate(d *schema.ResourceData, _ interface{}) error {
+	log.Printf("[DEBUG] resourceWallarmDisableAttackTypeUpdate, action_id: %v\n", d.Get("action_id"))
 	return nil
 }
 

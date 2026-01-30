@@ -2,6 +2,7 @@ package wallarm
 
 import (
 	"fmt"
+	"log"
 	"strconv"
 	"strings"
 
@@ -35,6 +36,7 @@ func resourceWallarmEnum() *schema.Resource {
 	return &schema.Resource{
 		Create: resourceWallarmEnumCreate,
 		Read:   resourceWallarmEnumRead,
+		Update: resourceWallarmEnumUpdate,
 		Delete: resourceWallarmEnumDelete,
 		Importer: &schema.ResourceImporter{
 			State: resourceWallarmEnumImport,
@@ -95,6 +97,11 @@ func resourceWallarmEnumDelete(d *schema.ResourceData, m interface{}) error {
 			return err
 		}
 	}
+	return nil
+}
+
+func resourceWallarmEnumUpdate(d *schema.ResourceData, _ interface{}) error {
+	log.Printf("[DEBUG] resourceWallarmEnumUpdate, action_id: %v\n", d.Get("action_id"))
 	return nil
 }
 

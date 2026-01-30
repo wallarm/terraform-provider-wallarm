@@ -2,6 +2,7 @@ package wallarm
 
 import (
 	"fmt"
+	"log"
 	"strconv"
 	"strings"
 
@@ -34,6 +35,7 @@ func resourceWallarmForcedBrowsing() *schema.Resource {
 	return &schema.Resource{
 		Create: resourceWallarmForcedBrowsingCreate,
 		Read:   resourceWallarmForcedBrowsingRead,
+		Update: resourceWallarmForcedBrowsingUpdate,
 		Delete: resourceWallarmForcedBrowsingDelete,
 		Importer: &schema.ResourceImporter{
 			State: resourceWallarmForcedBrowsingImport,
@@ -94,6 +96,11 @@ func resourceWallarmForcedBrowsingDelete(d *schema.ResourceData, m interface{}) 
 			return err
 		}
 	}
+	return nil
+}
+
+func resourceWallarmForcedBrowsingUpdate(d *schema.ResourceData, _ interface{}) error {
+	log.Printf("[DEBUG] resourceWallarmForcedBrowsingUpdate, action_id: %v\n", d.Get("action_id"))
 	return nil
 }
 

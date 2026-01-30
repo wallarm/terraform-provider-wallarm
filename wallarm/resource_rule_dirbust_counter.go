@@ -2,6 +2,7 @@ package wallarm
 
 import (
 	"fmt"
+	"log"
 	"strconv"
 	"strings"
 
@@ -26,6 +27,7 @@ func resourceWallarmDirbustCounter() *schema.Resource {
 	return &schema.Resource{
 		Create: resourceWallarmDirbustCounterCreate,
 		Read:   resourceWallarmDirbustCounterRead,
+		Update: resourceWallarmDirbustCounterUpdate,
 		Delete: resourceWallarmDirbustCounterDelete,
 		Importer: &schema.ResourceImporter{
 			State: resourceWallarmDirbustCounterImport,
@@ -113,6 +115,11 @@ func resourceWallarmDirbustCounterDelete(d *schema.ResourceData, m interface{}) 
 		}
 	}
 
+	return nil
+}
+
+func resourceWallarmDirbustCounterUpdate(d *schema.ResourceData, _ interface{}) error {
+	log.Printf("[DEBUG] resourceWallarmDirbustCounterUpdate, action_id: %v\n", d.Get("action_id"))
 	return nil
 }
 

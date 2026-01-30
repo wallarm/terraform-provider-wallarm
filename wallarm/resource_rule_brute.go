@@ -2,6 +2,7 @@ package wallarm
 
 import (
 	"fmt"
+	"log"
 	"strconv"
 	"strings"
 
@@ -35,6 +36,7 @@ func resourceWallarmBrute() *schema.Resource {
 	return &schema.Resource{
 		Create: resourceWallarmBruteCreate,
 		Read:   resourceWallarmBruteRead,
+		Update: resourceWallarmBruteUpdate,
 		Delete: resourceWallarmBruteDelete,
 		Importer: &schema.ResourceImporter{
 			State: resourceWallarmBruteImport,
@@ -95,6 +97,11 @@ func resourceWallarmBruteDelete(d *schema.ResourceData, m interface{}) error {
 			return err
 		}
 	}
+	return nil
+}
+
+func resourceWallarmBruteUpdate(d *schema.ResourceData, _ interface{}) error {
+	log.Printf("[DEBUG] resourceWallarmBruteUpdate, action_id: %v\n", d.Get("action_id"))
 	return nil
 }
 

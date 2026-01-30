@@ -2,6 +2,7 @@ package wallarm
 
 import (
 	"fmt"
+	"log"
 	"strconv"
 	"strings"
 
@@ -30,6 +31,7 @@ func resourceWallarmVariativeValues() *schema.Resource {
 	return &schema.Resource{
 		Create: resourceWallarmVariativeValuesCreate,
 		Read:   resourceWallarmVariativeValuesRead,
+		Update: resourceWallarmVariativeValuesUpdate,
 		Delete: resourceWallarmVariativeValuesDelete,
 		Importer: &schema.ResourceImporter{
 			State: resourceWallarmVariativeValuesImport,
@@ -127,6 +129,11 @@ func resourceWallarmVariativeValuesDelete(d *schema.ResourceData, m interface{})
 			return err
 		}
 	}
+	return nil
+}
+
+func resourceWallarmVariativeValuesUpdate(d *schema.ResourceData, _ interface{}) error {
+	log.Printf("[DEBUG] resourceWallarmVariativeValuesUpdate, action_id: %v\n", d.Get("action_id"))
 	return nil
 }
 

@@ -132,6 +132,7 @@ func resourceWallarmCredentialStuffingPoint() *schema.Resource {
 	return &schema.Resource{
 		Create: resourceWallarmCredentialStuffingPointCreate,
 		Read:   resourceWallarmCredentialStuffingPointRead,
+		Update: resourceWallarmCredentialStuffingPointUpdate,
 		Delete: resourceWallarmCredentialStuffingPointDelete,
 		Importer: &schema.ResourceImporter{
 			State: resourceWallarmCredentialStuffingPointImport,
@@ -245,6 +246,11 @@ func resourceWallarmCredentialStuffingPointDelete(d *schema.ResourceData, m inte
 		return err
 	}
 
+	return nil
+}
+
+func resourceWallarmCredentialStuffingPointUpdate(d *schema.ResourceData, _ interface{}) error {
+	log.Printf("[DEBUG] resourceWallarmCredentialStuffingPointUpdate, rule_id: %v\n", d.Get("rule_id"))
 	return nil
 }
 
