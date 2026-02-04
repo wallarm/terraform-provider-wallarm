@@ -249,9 +249,10 @@ func resourceWallarmCredentialStuffingPointDelete(d *schema.ResourceData, m inte
 	return nil
 }
 
-func resourceWallarmCredentialStuffingPointUpdate(d *schema.ResourceData, _ interface{}) error {
-	log.Printf("[DEBUG] resourceWallarmCredentialStuffingPointUpdate, rule_id: %v\n", d.Get("rule_id"))
-	return nil
+func resourceWallarmCredentialStuffingPointUpdate(d *schema.ResourceData, m interface{}) error {
+	client := m.(wallarm.API)
+	_, err := client.HintUpdateV3(d.Get("rule_id").(int), &wallarm.HintUpdateV3Params{VariativityDisabled: lo.ToPtr(true)})
+	return err
 }
 
 func resourceWallarmCredentialStuffingPointImport(d *schema.ResourceData, m interface{}) ([]*schema.ResourceData, error) {

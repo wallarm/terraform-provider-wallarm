@@ -2,7 +2,6 @@ package wallarm
 
 import (
 	"fmt"
-	"log"
 	"strconv"
 	"strings"
 
@@ -158,9 +157,10 @@ func resourceWallarmRateLimitDelete(d *schema.ResourceData, m interface{}) error
 	return nil
 }
 
-func resourceWallarmRateLimitUpdate(d *schema.ResourceData, _ interface{}) error {
-	log.Printf("[DEBUG] resourceWallarmRateLimitUpdate, action_id: %v\n", d.Get("action_id"))
-	return nil
+func resourceWallarmRateLimitUpdate(d *schema.ResourceData, m interface{}) error {
+	client := m.(wallarm.API)
+	_, err := client.HintUpdateV3(d.Get("rule_id").(int), &wallarm.HintUpdateV3Params{VariativityDisabled: lo.ToPtr(true)})
+	return err
 }
 
 func resourceWallarmRateLimitImport(d *schema.ResourceData, _ interface{}) ([]*schema.ResourceData, error) {

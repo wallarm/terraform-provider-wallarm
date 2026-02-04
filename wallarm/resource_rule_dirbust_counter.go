@@ -2,7 +2,6 @@ package wallarm
 
 import (
 	"fmt"
-	"log"
 	"strconv"
 	"strings"
 
@@ -118,9 +117,10 @@ func resourceWallarmDirbustCounterDelete(d *schema.ResourceData, m interface{}) 
 	return nil
 }
 
-func resourceWallarmDirbustCounterUpdate(d *schema.ResourceData, _ interface{}) error {
-	log.Printf("[DEBUG] resourceWallarmDirbustCounterUpdate, action_id: %v\n", d.Get("action_id"))
-	return nil
+func resourceWallarmDirbustCounterUpdate(d *schema.ResourceData, m interface{}) error {
+	client := m.(wallarm.API)
+	_, err := client.HintUpdateV3(d.Get("rule_id").(int), &wallarm.HintUpdateV3Params{VariativityDisabled: lo.ToPtr(true)})
+	return err
 }
 
 func resourceWallarmDirbustCounterImport(d *schema.ResourceData, _ interface{}) ([]*schema.ResourceData, error) {

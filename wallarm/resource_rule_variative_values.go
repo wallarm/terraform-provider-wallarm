@@ -2,7 +2,6 @@ package wallarm
 
 import (
 	"fmt"
-	"log"
 	"strconv"
 	"strings"
 
@@ -132,9 +131,10 @@ func resourceWallarmVariativeValuesDelete(d *schema.ResourceData, m interface{})
 	return nil
 }
 
-func resourceWallarmVariativeValuesUpdate(d *schema.ResourceData, _ interface{}) error {
-	log.Printf("[DEBUG] resourceWallarmVariativeValuesUpdate, action_id: %v\n", d.Get("action_id"))
-	return nil
+func resourceWallarmVariativeValuesUpdate(d *schema.ResourceData, m interface{}) error {
+	client := m.(wallarm.API)
+	_, err := client.HintUpdateV3(d.Get("rule_id").(int), &wallarm.HintUpdateV3Params{VariativityDisabled: lo.ToPtr(true)})
+	return err
 }
 
 func resourceWallarmVariativeValuesImport(d *schema.ResourceData, _ interface{}) ([]*schema.ResourceData, error) {
