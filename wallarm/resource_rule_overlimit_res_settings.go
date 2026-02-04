@@ -74,18 +74,19 @@ func resourceWallarmOverlimitResSettingsCreate(d *schema.ResourceData, m interfa
 	mode := d.Get("mode").(string)
 
 	actionBody := &wallarm.ActionCreate{
-		Type:          "overlimit_res_settings",
-		Clientid:      clientID,
-		Action:        &action,
-		Validated:     false,
-		Comment:       fields.Comment,
-		Point:         point,
-		Mode:          mode,
-		OverlimitTime: overlimitTime,
-		Set:           fields.Set,
-		Active:        fields.Active,
-		Title:         fields.Title,
-		Mitigation:    fields.Mitigation,
+		Type:                "overlimit_res_settings",
+		Clientid:            clientID,
+		Action:              &action,
+		Validated:           false,
+		VariativityDisabled: true,
+		Comment:             fields.Comment,
+		Point:               point,
+		Mode:                mode,
+		OverlimitTime:       overlimitTime,
+		Set:                 fields.Set,
+		Active:              fields.Active,
+		Title:               fields.Title,
+		Mitigation:          fields.Mitigation,
 	}
 
 	actionResp, err := client.HintCreate(actionBody)
