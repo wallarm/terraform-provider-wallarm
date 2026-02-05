@@ -120,7 +120,12 @@ func resourceWallarmBolaCounterDelete(d *schema.ResourceData, m interface{}) err
 
 func resourceWallarmBolaCounterUpdate(d *schema.ResourceData, m interface{}) error {
 	client := m.(wallarm.API)
-	_, err := client.HintUpdateV3(d.Get("rule_id").(int), &wallarm.HintUpdateV3Params{VariativityDisabled: lo.ToPtr(true)})
+	variativityDisabled, _ := d.Get("variativity_disabled").(bool)
+	comment, _ := d.Get("comment").(string)
+	_, err := client.HintUpdateV3(d.Get("rule_id").(int), &wallarm.HintUpdateV3Params{
+		VariativityDisabled: lo.ToPtr(variativityDisabled),
+		Comment:             lo.ToPtr(comment),
+	})
 	return err
 }
 
