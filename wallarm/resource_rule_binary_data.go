@@ -161,6 +161,8 @@ func resourceWallarmBinaryDataImport(d *schema.ResourceData, _ interface{}) ([]*
 
 func resourceWallarmBinaryDataUpdate(d *schema.ResourceData, m interface{}) error {
 	client := m.(wallarm.API)
-	_, err := client.HintUpdateV3(d.Get("rule_id").(int), &wallarm.HintUpdateV3Params{VariativityDisabled: lo.ToPtr(true)})
+	variativityDisabled, _ := d.Get("variativity_disabled").(bool)
+	_, err := client.HintUpdateV3(d.Get("rule_id").(int), &wallarm.HintUpdateV3Params{
+		VariativityDisabled: lo.ToPtr(variativityDisabled)})
 	return err
 }
