@@ -268,8 +268,8 @@ var (
 		"client_id": defaultClientIDWithValidationSchema,
 		"comment": {
 			Type:     schema.TypeString,
+			Default:  "Managed by Terraform",
 			Optional: true,
-			ForceNew: true,
 		},
 		"set": {
 			Type:     schema.TypeString,
@@ -291,6 +291,11 @@ var (
 			Type:     schema.TypeString,
 			Optional: true,
 			Computed: true,
+		},
+		"variativity_disabled": {
+			Type:     schema.TypeBool,
+			Default:  true,
+			Optional: true,
 		},
 	}
 

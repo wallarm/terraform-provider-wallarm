@@ -28,6 +28,7 @@ func resourceWallarmMode() *schema.Resource {
 	return &schema.Resource{
 		Create: resourceWallarmModeCreate,
 		Read:   resourceWallarmModeRead,
+		Update: resourceWallarmModeUpdate,
 		Delete: resourceWallarmModeDelete,
 		Importer: &schema.ResourceImporter{
 			State: resourceWallarmModeImport,
@@ -126,6 +127,17 @@ func resourceWallarmModeDelete(d *schema.ResourceData, m interface{}) error {
 	}
 
 	return nil
+}
+
+func resourceWallarmModeUpdate(d *schema.ResourceData, m interface{}) error {
+	client := m.(wallarm.API)
+	variativityDisabled, _ := d.Get("variativity_disabled").(bool)
+	comment, _ := d.Get("comment").(string)
+	_, err := client.HintUpdateV3(d.Get("rule_id").(int), &wallarm.HintUpdateV3Params{
+		VariativityDisabled: lo.ToPtr(variativityDisabled),
+		Comment:             lo.ToPtr(comment),
+	})
+	return err
 }
 
 func resourceWallarmModeImport(d *schema.ResourceData, _ interface{}) ([]*schema.ResourceData, error) {

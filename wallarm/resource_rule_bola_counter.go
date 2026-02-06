@@ -27,6 +27,7 @@ func resourceWallarmBolaCounter() *schema.Resource {
 	return &schema.Resource{
 		Create: resourceWallarmBolaCounterCreate,
 		Read:   resourceWallarmBolaCounterRead,
+		Update: resourceWallarmBolaCounterUpdate,
 		Delete: resourceWallarmBolaCounterDelete,
 		Importer: &schema.ResourceImporter{
 			State: resourceWallarmBolaCounterImport,
@@ -115,6 +116,17 @@ func resourceWallarmBolaCounterDelete(d *schema.ResourceData, m interface{}) err
 	}
 
 	return nil
+}
+
+func resourceWallarmBolaCounterUpdate(d *schema.ResourceData, m interface{}) error {
+	client := m.(wallarm.API)
+	variativityDisabled, _ := d.Get("variativity_disabled").(bool)
+	comment, _ := d.Get("comment").(string)
+	_, err := client.HintUpdateV3(d.Get("rule_id").(int), &wallarm.HintUpdateV3Params{
+		VariativityDisabled: lo.ToPtr(variativityDisabled),
+		Comment:             lo.ToPtr(comment),
+	})
+	return err
 }
 
 func resourceWallarmBolaCounterImport(d *schema.ResourceData, _ interface{}) ([]*schema.ResourceData, error) {

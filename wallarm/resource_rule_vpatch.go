@@ -240,10 +240,14 @@ func resourceWallarmVpatchDelete(d *schema.ResourceData, m interface{}) error {
 }
 
 func resourceWallarmVpatchUpdate(d *schema.ResourceData, m interface{}) error {
-	if err := resourceWallarmVpatchDelete(d, m); err != nil {
-		return err
-	}
-	return resourceWallarmVpatchCreate(d, m)
+	client := m.(wallarm.API)
+	variativityDisabled, _ := d.Get("variativity_disabled").(bool)
+	comment, _ := d.Get("comment").(string)
+	_, err := client.HintUpdateV3(d.Get("rule_id").(int), &wallarm.HintUpdateV3Params{
+		VariativityDisabled: lo.ToPtr(variativityDisabled),
+		Comment:             lo.ToPtr(comment),
+	})
+	return err
 }
 
 // nolint:dupl

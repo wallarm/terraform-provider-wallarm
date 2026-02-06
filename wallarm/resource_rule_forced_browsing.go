@@ -34,6 +34,7 @@ func resourceWallarmForcedBrowsing() *schema.Resource {
 	return &schema.Resource{
 		Create: resourceWallarmForcedBrowsingCreate,
 		Read:   resourceWallarmForcedBrowsingRead,
+		Update: resourceWallarmForcedBrowsingUpdate,
 		Delete: resourceWallarmForcedBrowsingDelete,
 		Importer: &schema.ResourceImporter{
 			State: resourceWallarmForcedBrowsingImport,
@@ -95,6 +96,17 @@ func resourceWallarmForcedBrowsingDelete(d *schema.ResourceData, m interface{}) 
 		}
 	}
 	return nil
+}
+
+func resourceWallarmForcedBrowsingUpdate(d *schema.ResourceData, m interface{}) error {
+	client := m.(wallarm.API)
+	variativityDisabled, _ := d.Get("variativity_disabled").(bool)
+	comment, _ := d.Get("comment").(string)
+	_, err := client.HintUpdateV3(d.Get("rule_id").(int), &wallarm.HintUpdateV3Params{
+		VariativityDisabled: lo.ToPtr(variativityDisabled),
+		Comment:             lo.ToPtr(comment),
+	})
+	return err
 }
 
 func resourceWallarmForcedBrowsingImport(d *schema.ResourceData, _ interface{}) ([]*schema.ResourceData, error) {

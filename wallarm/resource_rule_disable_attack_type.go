@@ -38,6 +38,7 @@ func resourceWallarmDisableAttackType() *schema.Resource {
 	return &schema.Resource{
 		Create: resourceWallarmDisableAttackTypeCreate,
 		Read:   resourceWallarmDisableAttackTypeRead,
+		Update: resourceWallarmDisableAttackTypeUpdate,
 		Delete: resourceWallarmDisableAttackTypeDelete,
 		Importer: &schema.ResourceImporter{
 			State: resourceWallarmDisableAttackTypeImport,
@@ -137,6 +138,17 @@ func resourceWallarmDisableAttackTypeDelete(d *schema.ResourceData, m interface{
 		}
 	}
 	return nil
+}
+
+func resourceWallarmDisableAttackTypeUpdate(d *schema.ResourceData, m interface{}) error {
+	client := m.(wallarm.API)
+	variativityDisabled, _ := d.Get("variativity_disabled").(bool)
+	comment, _ := d.Get("comment").(string)
+	_, err := client.HintUpdateV3(d.Get("rule_id").(int), &wallarm.HintUpdateV3Params{
+		VariativityDisabled: lo.ToPtr(variativityDisabled),
+		Comment:             lo.ToPtr(comment),
+	})
+	return err
 }
 
 // nolint:dupl

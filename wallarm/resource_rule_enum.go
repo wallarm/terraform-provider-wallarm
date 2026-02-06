@@ -35,6 +35,7 @@ func resourceWallarmEnum() *schema.Resource {
 	return &schema.Resource{
 		Create: resourceWallarmEnumCreate,
 		Read:   resourceWallarmEnumRead,
+		Update: resourceWallarmEnumUpdate,
 		Delete: resourceWallarmEnumDelete,
 		Importer: &schema.ResourceImporter{
 			State: resourceWallarmEnumImport,
@@ -96,6 +97,17 @@ func resourceWallarmEnumDelete(d *schema.ResourceData, m interface{}) error {
 		}
 	}
 	return nil
+}
+
+func resourceWallarmEnumUpdate(d *schema.ResourceData, m interface{}) error {
+	client := m.(wallarm.API)
+	variativityDisabled, _ := d.Get("variativity_disabled").(bool)
+	comment, _ := d.Get("comment").(string)
+	_, err := client.HintUpdateV3(d.Get("rule_id").(int), &wallarm.HintUpdateV3Params{
+		VariativityDisabled: lo.ToPtr(variativityDisabled),
+		Comment:             lo.ToPtr(comment),
+	})
+	return err
 }
 
 func resourceWallarmEnumImport(d *schema.ResourceData, _ interface{}) ([]*schema.ResourceData, error) {

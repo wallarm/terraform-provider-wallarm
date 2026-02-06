@@ -26,6 +26,7 @@ func resourceWallarmDirbustCounter() *schema.Resource {
 	return &schema.Resource{
 		Create: resourceWallarmDirbustCounterCreate,
 		Read:   resourceWallarmDirbustCounterRead,
+		Update: resourceWallarmDirbustCounterUpdate,
 		Delete: resourceWallarmDirbustCounterDelete,
 		Importer: &schema.ResourceImporter{
 			State: resourceWallarmDirbustCounterImport,
@@ -114,6 +115,17 @@ func resourceWallarmDirbustCounterDelete(d *schema.ResourceData, m interface{}) 
 	}
 
 	return nil
+}
+
+func resourceWallarmDirbustCounterUpdate(d *schema.ResourceData, m interface{}) error {
+	client := m.(wallarm.API)
+	variativityDisabled, _ := d.Get("variativity_disabled").(bool)
+	comment, _ := d.Get("comment").(string)
+	_, err := client.HintUpdateV3(d.Get("rule_id").(int), &wallarm.HintUpdateV3Params{
+		VariativityDisabled: lo.ToPtr(variativityDisabled),
+		Comment:             lo.ToPtr(comment),
+	})
+	return err
 }
 
 func resourceWallarmDirbustCounterImport(d *schema.ResourceData, _ interface{}) ([]*schema.ResourceData, error) {

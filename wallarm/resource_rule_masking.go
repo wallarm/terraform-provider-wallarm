@@ -30,6 +30,7 @@ func resourceWallarmSensitiveData() *schema.Resource {
 	return &schema.Resource{
 		Create: resourceWallarmSensitiveDataCreate,
 		Read:   resourceWallarmSensitiveDataRead,
+		Update: resourceWallarmSensitiveDataUpdate,
 		Delete: resourceWallarmSensitiveDataDelete,
 		Importer: &schema.ResourceImporter{
 			State: resourceWallarmSensitiveDataImport,
@@ -130,6 +131,17 @@ func resourceWallarmSensitiveDataDelete(d *schema.ResourceData, m interface{}) e
 		}
 	}
 	return nil
+}
+
+func resourceWallarmSensitiveDataUpdate(d *schema.ResourceData, m interface{}) error {
+	client := m.(wallarm.API)
+	variativityDisabled, _ := d.Get("variativity_disabled").(bool)
+	comment, _ := d.Get("comment").(string)
+	_, err := client.HintUpdateV3(d.Get("rule_id").(int), &wallarm.HintUpdateV3Params{
+		VariativityDisabled: lo.ToPtr(variativityDisabled),
+		Comment:             lo.ToPtr(comment),
+	})
+	return err
 }
 
 func resourceWallarmSensitiveDataImport(d *schema.ResourceData, _ interface{}) ([]*schema.ResourceData, error) {

@@ -67,6 +67,7 @@ func resourceWallarmRateLimit() *schema.Resource {
 	return &schema.Resource{
 		Create: resourceWallarmRateLimitCreate,
 		Read:   resourceWallarmRateLimitRead,
+		Update: resourceWallarmRateLimitUpdate,
 		Delete: resourceWallarmRateLimitDelete,
 		Importer: &schema.ResourceImporter{
 			State: resourceWallarmRateLimitImport,
@@ -154,6 +155,17 @@ func resourceWallarmRateLimitDelete(d *schema.ResourceData, m interface{}) error
 	}
 
 	return nil
+}
+
+func resourceWallarmRateLimitUpdate(d *schema.ResourceData, m interface{}) error {
+	client := m.(wallarm.API)
+	variativityDisabled, _ := d.Get("variativity_disabled").(bool)
+	comment, _ := d.Get("comment").(string)
+	_, err := client.HintUpdateV3(d.Get("rule_id").(int), &wallarm.HintUpdateV3Params{
+		VariativityDisabled: lo.ToPtr(variativityDisabled),
+		Comment:             lo.ToPtr(comment),
+	})
+	return err
 }
 
 func resourceWallarmRateLimitImport(d *schema.ResourceData, _ interface{}) ([]*schema.ResourceData, error) {

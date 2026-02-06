@@ -45,6 +45,7 @@ func resourceWallarmOverlimitResSettings() *schema.Resource {
 	return &schema.Resource{
 		Create: resourceWallarmOverlimitResSettingsCreate,
 		Read:   resourceWallarmOverlimitResSettingsRead,
+		Update: resourceWallarmOverlimitResSettingsUpdate,
 		Delete: resourceWallarmOverlimitResSettingsDelete,
 		Importer: &schema.ResourceImporter{
 			State: resourceWallarmOverlimitResSettingsImport,
@@ -73,18 +74,19 @@ func resourceWallarmOverlimitResSettingsCreate(d *schema.ResourceData, m interfa
 	mode := d.Get("mode").(string)
 
 	actionBody := &wallarm.ActionCreate{
-		Type:          "overlimit_res_settings",
-		Clientid:      clientID,
-		Action:        &action,
-		Validated:     false,
-		Comment:       fields.Comment,
-		Point:         point,
-		Mode:          mode,
-		OverlimitTime: overlimitTime,
-		Set:           fields.Set,
-		Active:        fields.Active,
-		Title:         fields.Title,
-		Mitigation:    fields.Mitigation,
+		Type:                "overlimit_res_settings",
+		Clientid:            clientID,
+		Action:              &action,
+		Validated:           false,
+		VariativityDisabled: true,
+		Comment:             fields.Comment,
+		Point:               point,
+		Mode:                mode,
+		OverlimitTime:       overlimitTime,
+		Set:                 fields.Set,
+		Active:              fields.Active,
+		Title:               fields.Title,
+		Mitigation:          fields.Mitigation,
 	}
 
 	actionResp, err := client.HintCreate(actionBody)
@@ -126,6 +128,17 @@ func resourceWallarmOverlimitResSettingsDelete(d *schema.ResourceData, m interfa
 	}
 
 	return nil
+}
+
+func resourceWallarmOverlimitResSettingsUpdate(d *schema.ResourceData, m interface{}) error {
+	client := m.(wallarm.API)
+	variativityDisabled, _ := d.Get("variativity_disabled").(bool)
+	comment, _ := d.Get("comment").(string)
+	_, err := client.HintUpdateV3(d.Get("rule_id").(int), &wallarm.HintUpdateV3Params{
+		VariativityDisabled: lo.ToPtr(variativityDisabled),
+		Comment:             lo.ToPtr(comment),
+	})
+	return err
 }
 
 func resourceWallarmOverlimitResSettingsImport(d *schema.ResourceData, _ interface{}) ([]*schema.ResourceData, error) {

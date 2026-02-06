@@ -49,6 +49,7 @@ func resourceWallarmFileUploadSizeLimit() *schema.Resource {
 	return &schema.Resource{
 		Create: resourceWallarmFileUploadSizeLimitCreate,
 		Read:   resourceWallarmFileUploadSizeLimitRead,
+		Update: resourceWallarmFileUploadSizeLimitUpdate,
 		Delete: resourceWallarmFileUploadSizeLimitDelete,
 		Importer: &schema.ResourceImporter{
 			State: resourceWallarmFileUploadSizeLimitImport,
@@ -103,6 +104,17 @@ func resourceWallarmFileUploadSizeLimitDelete(d *schema.ResourceData, m interfac
 		}
 	}
 	return nil
+}
+
+func resourceWallarmFileUploadSizeLimitUpdate(d *schema.ResourceData, m interface{}) error {
+	client := m.(wallarm.API)
+	variativityDisabled, _ := d.Get("variativity_disabled").(bool)
+	comment, _ := d.Get("comment").(string)
+	_, err := client.HintUpdateV3(d.Get("rule_id").(int), &wallarm.HintUpdateV3Params{
+		VariativityDisabled: lo.ToPtr(variativityDisabled),
+		Comment:             lo.ToPtr(comment),
+	})
+	return err
 }
 
 func resourceWallarmFileUploadSizeLimitImport(d *schema.ResourceData, _ interface{}) ([]*schema.ResourceData, error) {

@@ -26,6 +26,7 @@ func resourceWallarmBruteForceCounter() *schema.Resource {
 	return &schema.Resource{
 		Create: resourceWallarmBruteForceCounterCreate,
 		Read:   resourceWallarmBruteForceCounterRead,
+		Update: resourceWallarmBruteForceCounterUpdate,
 		Delete: resourceWallarmBruteForceCounterDelete,
 		Importer: &schema.ResourceImporter{
 			State: resourceWallarmBruteForceCounterImport,
@@ -113,6 +114,17 @@ func resourceWallarmBruteForceCounterDelete(d *schema.ResourceData, m interface{
 	}
 
 	return nil
+}
+
+func resourceWallarmBruteForceCounterUpdate(d *schema.ResourceData, m interface{}) error {
+	client := m.(wallarm.API)
+	variativityDisabled, _ := d.Get("variativity_disabled").(bool)
+	comment, _ := d.Get("comment").(string)
+	_, err := client.HintUpdateV3(d.Get("rule_id").(int), &wallarm.HintUpdateV3Params{
+		VariativityDisabled: lo.ToPtr(variativityDisabled),
+		Comment:             lo.ToPtr(comment),
+	})
+	return err
 }
 
 func resourceWallarmBruteForceCounterImport(d *schema.ResourceData, _ interface{}) ([]*schema.ResourceData, error) {
