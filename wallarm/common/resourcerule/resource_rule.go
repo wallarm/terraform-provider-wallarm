@@ -86,6 +86,7 @@ func ResourceRuleWallarmRead(d *schema.ResourceData, clientID int, cli wallarm.A
 	d.Set("regex", updatedRule.Regex)
 	d.Set("regex_id", updatedRule.RegexID)
 	d.Set("variativity_disabled", updatedRule.VariativityDisabled)
+	d.Set("comment", updatedRule.Comment)
 
 	actionsSet := schema.Set{F: hashResponseActionDetails}
 	for _, a := range updatedRule.Action {
