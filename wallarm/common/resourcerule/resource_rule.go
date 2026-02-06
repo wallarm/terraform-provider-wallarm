@@ -313,7 +313,8 @@ func wrapPointElements(input []interface{}) [][]string {
 			"viewstate_triplet", "viewstate_dict", "header", "xml_dtd_entity",
 			"xml_tag_array", "xml_tag", "xml_attr", "xml_comment", "grpc", "protobuf",
 			"json_obj", "json", "jwt", "multipart", "get", "content_disp", "form_urlencoded",
-			"path", "cookie", "response_header", "viewstate_sparse_array":
+			"path", "cookie", "response_header", "viewstate_sparse_array",
+			"gql_fragment", "gql_mutation", "gql_query", "gql_subscription":
 			// Check if there is a next element to include
 			if i+1 < len(input) {
 				// Convert both elements to strings and wrap them in a slice of strings
