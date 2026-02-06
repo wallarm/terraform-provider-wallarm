@@ -125,10 +125,14 @@ func resourceWallarmSetResponseHeaderDelete(d *schema.ResourceData, m interface{
 }
 
 func resourceWallarmSetResponseHeaderUpdate(d *schema.ResourceData, m interface{}) error {
-	if err := resourceWallarmSetResponseHeaderDelete(d, m); err != nil {
-		return err
-	}
-	return resourceWallarmSetResponseHeaderCreate(d, m)
+	client := m.(wallarm.API)
+	variativityDisabled, _ := d.Get("variativity_disabled").(bool)
+	comment, _ := d.Get("comment").(string)
+	_, err := client.HintUpdateV3(d.Get("rule_id").(int), &wallarm.HintUpdateV3Params{
+		VariativityDisabled: lo.ToPtr(variativityDisabled),
+		Comment:             lo.ToPtr(comment),
+	})
+	return err
 }
 
 func resourceWallarmSetResponseHeaderImport(d *schema.ResourceData, _ interface{}) ([]*schema.ResourceData, error) {
