@@ -1,10 +1,17 @@
-# v1.8.4 (Jan 28, 2025)
+# v1.8.5 (Feb 06, 2026)
+
+## NOTES:
+
+* Add updating comment and variativity_disabled
+* Patch wrapPointElements -> support gql params
+
+# v1.8.4 (Jan 28, 2026)
 
 ## NOTES:
 
 * Resource rule cred stuff is removed
 
-# v1.8.3 (Jan 28, 2025)
+# v1.8.3 (Jan 28, 2026)
 
 ## NOTES:
 
