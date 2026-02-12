@@ -72,6 +72,7 @@ func ResourceRuleWallarmRead(d *schema.ResourceData, clientID int, cli wallarm.A
 	d.Set("max_alias_size_kb", updatedRule.MaxAliasesSizeKb)
 	d.Set("max_doc_per_batch", updatedRule.MaxDocPerBatch)
 	d.Set("attack_type", updatedRule.AttackType)
+	d.Set("stamp", updatedRule.Stamp)
 	d.Set("file_type", updatedRule.FileType)
 	d.Set("name", updatedRule.Name)
 	d.Set("burst", updatedRule.Burst)
