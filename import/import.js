@@ -18,6 +18,7 @@ const wallarmRules = JSON.parse(data).body;
 
 const WLRM_TF_RULE_TYPE = {
   disable_attack_type: 'wallarm_rule_disable_attack_type',
+  disable_stamp: 'wallarm_rule_disable_stamp',
   parser_state: 'wallarm_rule_parser_state',
   disable_regex: 'wallarm_rule_ignore_regex',
   regex: 'wallarm_rule_regex',

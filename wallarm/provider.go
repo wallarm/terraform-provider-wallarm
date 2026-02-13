@@ -133,6 +133,7 @@ func Provider() terraform.ResourceProvider {
 			"wallarm_rule_binary_data":               resourceWallarmBinaryData(),
 			"wallarm_rule_enum":                      resourceWallarmEnum(),
 			"wallarm_rule_disable_attack_type":       resourceWallarmDisableAttackType(),
+			"wallarm_rule_disable_stamp":             resourceWallarmDisableStamp(),
 			"wallarm_rule_variative_keys":            resourceWallarmVariativeKeys(),
 			"wallarm_rule_variative_values":          resourceWallarmVariativeValues(),
 			"wallarm_rule_vpatch":                    resourceWallarmVpatch(),

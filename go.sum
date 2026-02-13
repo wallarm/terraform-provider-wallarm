@@ -303,6 +303,10 @@ github.com/vmihailenco/msgpack v4.0.1+incompatible h1:RMF1enSPeKTlXrXdOcqjFUElyw
 github.com/vmihailenco/msgpack v4.0.1+incompatible/go.mod h1:fy3FlTQTDXWkZ7Bh6AcGMlsjHatGryHQYUTf1ShIgkk=
 github.com/wallarm/wallarm-go v0.6.4-0.20260206110003-3543aa912e4a h1:L+dYJ4i3mhB5LhJFstSJvLti3G/vhjlEioJ15DkLmVA=
 github.com/wallarm/wallarm-go v0.6.4-0.20260206110003-3543aa912e4a/go.mod h1:yqZcNkOdSXL7K0CXRDJ3WyjyjDOHyk41iAv9fXsFP8o=
+github.com/wallarm/wallarm-go v0.6.4 h1:UmUsHXC0VpkgS9mLfKO04XQjqrfjFKMjr0yoKrxA1TA=
+github.com/wallarm/wallarm-go v0.6.4/go.mod h1:yqZcNkOdSXL7K0CXRDJ3WyjyjDOHyk41iAv9fXsFP8o=
+github.com/wallarm/wallarm-go v0.6.5 h1:39rGDmsT6EoNkNlPFhCa3FNla0iggpNk2HCvC0XIMmA=
+github.com/wallarm/wallarm-go v0.6.5/go.mod h1:yqZcNkOdSXL7K0CXRDJ3WyjyjDOHyk41iAv9fXsFP8o=
 github.com/xanzy/ssh-agent v0.2.1 h1:TCbipTQL2JiiCprBWx9frJ2eJlCYT00NmctrHxVAr70=
 github.com/xanzy/ssh-agent v0.2.1/go.mod h1:mLlQY/MoOhWBj+gOGMQkOeiEvkx+8pJSI+0Bx9h2kr4=
 github.com/yuin/goldmark v1.1.25/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=

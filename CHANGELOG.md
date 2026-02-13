@@ -1,3 +1,9 @@
+# v1.8.6 (Feb 12, 2026)
+
+## NOTES:
+
+* Added new resource `wallarm_rule_disable_stamp`
+
 # v1.8.5 (Feb 06, 2026)
 
 ## NOTES:
