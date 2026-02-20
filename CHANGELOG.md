@@ -1,3 +1,10 @@
+# v1.8.7 (Unreleased)
+
+## NOTES:
+
+* Added new resource `wallarm_rule_false_positive` for stamp-based false positive suppression. Given a `request_id` from the Wallarm Console, the resource looks up the hit, extracts detected stamps and points, and creates one `disable_stamp` rule per unique (point × stamp) pair. Requires a Global Admin (Extended) API token.
+* Added new data source `wallarm_rules` to list all rules (hints) for a client, with optional filtering by rule type.
+
 # v1.8.6 (Feb 12, 2026)
 
 ## NOTES:
