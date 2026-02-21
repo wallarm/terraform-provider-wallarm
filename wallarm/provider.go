@@ -106,6 +106,7 @@ func Provider() terraform.ResourceProvider {
 		DataSourcesMap: map[string]*schema.Resource{
 			"wallarm_node":            dataSourceWallarmNode(),
 			"wallarm_security_issues": dataSourceWallarmSecurityIssues(),
+			"wallarm_rules":           dataSourceWallarmRules(),
 		},
 
 		ResourcesMap: map[string]*schema.Resource{
@@ -160,6 +161,7 @@ func Provider() terraform.ResourceProvider {
 			"wallarm_rule_forced_browsing":           resourceWallarmForcedBrowsing(),
 			"wallarm_rule_graphql_detection":         resourceWallarmGraphqlDetection(),
 			"wallarm_rule_file_upload_size_limit":    resourceWallarmFileUploadSizeLimit(),
+			"wallarm_rule_false_positive":            resourceWallarmFalsePositive(),
 		},
 	}
 
@@ -206,11 +208,17 @@ func providerConfigure(d *schema.ResourceData, terraformVersion string) (interfa
 		}
 	}
 
+	resolvedAPIURL := apiURL
 	if v, ok := d.GetOk("api_host"); ok {
+		resolvedAPIURL = v.(string)
 		options = append(options, wallarm.UsingBaseURL(v.(string)))
 	}
 	options = append(options, wallarm.Headers(authHeaders))
 	config.Options = options
+
+	APIURL = resolvedAPIURL
+	APIHeaders = authHeaders.Clone()
+	HTTPClient = c
 
 	client, err := config.Client()
 	if err != nil {

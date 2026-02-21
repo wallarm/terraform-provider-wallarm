@@ -2,6 +2,7 @@ package wallarm
 
 import (
 	"log"
+	"net/http"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/wallarm/wallarm-go"
@@ -17,6 +18,15 @@ var (
 	// ClientID of the Provider User communicating with
 	// the Wallarm Cloud
 	ClientID int
+
+	// APIURL is the base URL of the Wallarm API (set during provider configuration).
+	APIURL string
+
+	// APIHeaders contains the authentication headers for direct HTTP calls.
+	APIHeaders http.Header
+
+	// HTTPClient is the HTTP client used for direct API calls.
+	HTTPClient *http.Client
 )
 
 // Config specifies client related parameters used within calls.
