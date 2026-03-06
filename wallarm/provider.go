@@ -101,11 +101,21 @@ func Provider() terraform.ResourceProvider {
 				DefaultFunc: schema.EnvDefaultFunc("WALLARM_IGNORE_EXISTING_RESOURCES", false),
 				Description: "Whether ignore or raise an exception when a resource exists.",
 			},
+
+			"hint_prefetch": {
+				Type:        schema.TypeBool,
+				Optional:    true,
+				DefaultFunc: schema.EnvDefaultFunc("WALLARM_HINT_PREFETCH", true),
+				Description: "Enable bulk prefetching of hints during plan/refresh to reduce API calls. " +
+					"When enabled, the first rule read triggers a bulk fetch of all hints for the client, " +
+					"and subsequent reads are served from an in-memory cache. Defaults to true.",
+			},
 		},
 
 		DataSourcesMap: map[string]*schema.Resource{
 			"wallarm_node":            dataSourceWallarmNode(),
 			"wallarm_security_issues": dataSourceWallarmSecurityIssues(),
+			"wallarm_hits":            dataSourceWallarmHits(),
 		},
 
 		ResourcesMap: map[string]*schema.Resource{
@@ -226,6 +236,12 @@ func providerConfigure(d *schema.ResourceData, terraformVersion string) (interfa
 		}
 
 		ClientID = u.Body.Clientid
+	}
+
+	// Wrap with caching layer if hint_prefetch is enabled (default: true)
+	if d.Get("hint_prefetch").(bool) {
+		log.Printf("[INFO] Wallarm hint prefetch enabled — rule reads will use bulk cache")
+		return NewCachedClient(client), err
 	}
 
 	return client, err
