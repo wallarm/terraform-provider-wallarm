@@ -63,18 +63,23 @@ resource "wallarm_integration_webhook" "wh_integration" {
 
   Default: `false`
 * `name` - (optional) integration name.
-* `http_method` - (optional) HTTP method via which requests are to be sent. Can be: `POST`, `PUT`. 
-Default: `POST`
+* `http_method` - (optional) HTTP method via which requests are to be sent. Can be: `POST`, `PUT`.
+
+  Default: `POST`
 * `webhook_url` - (optional) Webhook URL with the schema (https://).
 * `ca_file` - (optional) CA certificate if needed by webhook collector.
 * `ca_verify` - (optional) indicator of the SSL/TLS certificate verification. Can be: `true` or `false`.
-Default: `true`
-* `timeout` - (optional) time in seconds to raise a timeout error whilst connecting to the specified Webhook URL. 
-Default: 15
+
+  Default: `true`
+* `timeout` - (optional) time in seconds to raise a timeout error whilst connecting to the specified Webhook URL.
+
+  Default: 15
 * `open_timeout` - (optional) time in seconds to raise a timeout error while opening a TCP connection to the specified Webhook URL.
-Default: 20
-* `headers` - (optional) HTTP headers required by the Webhook endpoint. For instance, basic authentication can be set. 
-Type: `map`
+
+  Default: 20
+* `headers` - (optional) HTTP headers required by the Webhook endpoint. For instance, basic authentication can be set.
+
+  Type: `map`
 
 ## Event
 
@@ -87,8 +92,9 @@ Type: `map`
   - `scope` - scope changes
 
   Default: `vuln`
-* `active` - (optional) indicator of the event type status. Can be: `true` for active events and `false` for disabled events (notifications are not sent). 
-Default: `true`
+* `active` - (optional) indicator of the event type status. Can be: `true` for active events and `false` for disabled events (notifications are not sent).
+
+  Default: `true`
 
 
 Example:

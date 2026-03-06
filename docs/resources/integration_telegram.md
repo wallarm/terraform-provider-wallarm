@@ -18,7 +18,7 @@ The types of events available to be sent to Telegram:
 ## Example Usage
 
 ```hcl
-# Creates an integration to send notifications to Slack
+# Creates an integration to send notifications to Telegram
 
 resource "wallarm_integration_telegram" "telegram_integration" {
   name = "my_tg_chat_name"
@@ -64,8 +64,9 @@ resource "wallarm_integration_telegram" "telegram_integration" {
   - `scope` - scope changes
 
   Default: `vuln`
-* `active` - (optional) indicator of the event type status. Can be: `true` for active events and `false` for disabled events (notifications are not sent). 
-Default: `true`
+* `active` - (optional) indicator of the event type status. Can be: `true` for active events and `false` for disabled events (notifications are not sent).
+
+  Default: `true`
 
 
 Example:

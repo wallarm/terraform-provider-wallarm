@@ -70,8 +70,9 @@ resource "wallarm_integration_splunk" "splunk_integration" {
   - `scope` - scope changes
 
   Default: `vuln`
-* `active` - (optional) indicator of the event type status. Can be: `true` for active events and `false` for disabled events (notifications are not sent). 
-Default: `true`
+* `active` - (optional) indicator of the event type status. Can be: `true` for active events and `false` for disabled events (notifications are not sent).
+
+  Default: `true`
 
 
 Example:
