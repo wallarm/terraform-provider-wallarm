@@ -168,6 +168,20 @@ func (c *HintCache) trackPassthrough() {
 	c.passthroughs++
 }
 
+// All returns a copy of all cached hints. Returns nil if the cache is not loaded.
+func (c *HintCache) All() []wallarm.ActionBody {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if !c.loaded {
+		return nil
+	}
+	result := make([]wallarm.ActionBody, 0, len(c.hints))
+	for _, h := range c.hints {
+		result = append(result, *h)
+	}
+	return result
+}
+
 // Stats returns a snapshot of the cache's operational statistics.
 func (c *HintCache) Stats() CacheStats {
 	c.mu.Lock()
