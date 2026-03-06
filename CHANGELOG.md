@@ -1,3 +1,11 @@
+# v1.9.0 (Mar 6, 2026)
+
+## NOTES:
+
+* Added new data source `data_source_wallarm_hits.go`
+* Added middleware between API and terraform provider `hint_cache.go`
+* Bug fixes
+
 # v1.8.6 (Feb 12, 2026)
 
 ## NOTES:

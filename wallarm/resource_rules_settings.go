@@ -193,97 +193,143 @@ func updateRulesSettings(d *schema.ResourceData, m interface{}) error {
 
 	params := &wallarm.RuleSettingsParams{}
 
-	if v, ok := d.GetOk("min_lom_format"); ok {
-		value := v.(int)
-		params.MinLomFormat = &value
-	}
+	// Use d.HasChange for the Update path so that setting a bool to false
+	// or an int to 0 actually gets sent to the API. d.GetOk treats zero
+	// values as "not set" and silently skips them.
+	//
+	// For the Create path (d.IsNewResource()), use GetOk since there are
+	// no prior values to compare against — but GetOkExists catches zero values.
 
-	if v, ok := d.GetOk("max_lom_format"); ok {
-		if val, ok := v.(int); ok {
+	if d.IsNewResource() {
+		// Create: send every field the user configured
+		if v, ok := getOkForZeroValues(d, "min_lom_format"); ok {
+			val := v.(int)
+			params.MinLomFormat = &val
+		}
+		if v, ok := getOkForZeroValues(d, "max_lom_format"); ok {
+			val := v.(int)
 			params.MaxLomFormat = &val
 		}
-	}
-
-	if v, ok := d.GetOk("max_lom_size"); ok {
-		if val, ok := v.(int); ok {
+		if v, ok := getOkForZeroValues(d, "max_lom_size"); ok {
+			val := v.(int)
 			params.MaxLomSize = &val
 		}
-	}
-
-	if v, ok := d.GetOk("lom_disabled"); ok {
-		if val, ok := v.(bool); ok {
+		if v, ok := getOkForZeroValues(d, "lom_disabled"); ok {
+			val := v.(bool)
 			params.LomDisabled = &val
 		}
-	}
-
-	if v, ok := d.GetOk("lom_compilation_delay"); ok {
-		if val, ok := v.(int); ok {
+		if v, ok := getOkForZeroValues(d, "lom_compilation_delay"); ok {
+			val := v.(int)
 			params.LomCompilationDelay = &val
 		}
-	}
-
-	if v, ok := d.GetOk("rules_snapshot_enabled"); ok {
-		if val, ok := v.(bool); ok {
+		if v, ok := getOkForZeroValues(d, "rules_snapshot_enabled"); ok {
+			val := v.(bool)
 			params.RulesSnapshotEnabled = &val
 		}
-	}
-
-	if v, ok := d.GetOk("rules_snapshot_max_count"); ok {
-		if val, ok := v.(int); ok {
+		if v, ok := getOkForZeroValues(d, "rules_snapshot_max_count"); ok {
+			val := v.(int)
 			params.RulesSnapshotMaxCount = &val
 		}
-	}
-
-	if v, ok := d.GetOk("rules_manipulation_locked"); ok {
-		if val, ok := v.(bool); ok {
+		if v, ok := getOkForZeroValues(d, "rules_manipulation_locked"); ok {
+			val := v.(bool)
 			params.RulesManipulationLocked = &val
 		}
-	}
-
-	if v, ok := d.GetOk("heavy_lom"); ok {
-		if val, ok := v.(bool); ok {
+		if v, ok := getOkForZeroValues(d, "heavy_lom"); ok {
+			val := v.(bool)
 			params.HeavyLom = &val
 		}
-	}
-
-	if v, ok := d.GetOk("parameters_count_weight"); ok {
-		if val, ok := v.(int); ok {
+		if v, ok := getOkForZeroValues(d, "parameters_count_weight"); ok {
+			val := v.(int)
 			params.ParametersCountWeight = &val
 		}
-	}
-
-	if v, ok := d.GetOk("path_variativity_weight"); ok {
-		if val, ok := v.(int); ok {
+		if v, ok := getOkForZeroValues(d, "path_variativity_weight"); ok {
+			val := v.(int)
 			params.PathVariativityWeight = &val
 		}
-	}
-
-	if v, ok := d.GetOk("pii_weight"); ok {
-		if val, ok := v.(int); ok {
+		if v, ok := getOkForZeroValues(d, "pii_weight"); ok {
+			val := v.(int)
 			params.PiiWeight = &val
 		}
-	}
-
-	if v, ok := d.GetOk("request_content_weight"); ok {
-		if val, ok := v.(int); ok {
+		if v, ok := getOkForZeroValues(d, "request_content_weight"); ok {
+			val := v.(int)
 			params.RequestContentWeight = &val
 		}
-	}
-
-	if v, ok := d.GetOk("open_vulns_weight"); ok {
-		if val, ok := v.(int); ok {
+		if v, ok := getOkForZeroValues(d, "open_vulns_weight"); ok {
+			val := v.(int)
 			params.OpenVulnsWeight = &val
 		}
-	}
-
-	if v, ok := d.GetOk("serialized_data_weight"); ok {
-		if val, ok := v.(int); ok {
+		if v, ok := getOkForZeroValues(d, "serialized_data_weight"); ok {
+			val := v.(int)
 			params.SerializedDataWeight = &val
 		}
-	}
-
-	if v, ok := d.GetOk("risk_score_algo"); ok {
-		if val, ok := v.(string); ok {
+		if v, ok := getOkForZeroValues(d, "risk_score_algo"); ok {
+			val := v.(string)
+			params.RiskScoreAlgo = &val
+		}
+	} else {
+		// Update: send only fields that changed, using d.Get to capture zero values
+		if d.HasChange("min_lom_format") {
+			val := d.Get("min_lom_format").(int)
+			params.MinLomFormat = &val
+		}
+		if d.HasChange("max_lom_format") {
+			val := d.Get("max_lom_format").(int)
+			params.MaxLomFormat = &val
+		}
+		if d.HasChange("max_lom_size") {
+			val := d.Get("max_lom_size").(int)
+			params.MaxLomSize = &val
+		}
+		if d.HasChange("lom_disabled") {
+			val := d.Get("lom_disabled").(bool)
+			params.LomDisabled = &val
+		}
+		if d.HasChange("lom_compilation_delay") {
+			val := d.Get("lom_compilation_delay").(int)
+			params.LomCompilationDelay = &val
+		}
+		if d.HasChange("rules_snapshot_enabled") {
+			val := d.Get("rules_snapshot_enabled").(bool)
+			params.RulesSnapshotEnabled = &val
+		}
+		if d.HasChange("rules_snapshot_max_count") {
+			val := d.Get("rules_snapshot_max_count").(int)
+			params.RulesSnapshotMaxCount = &val
+		}
+		if d.HasChange("rules_manipulation_locked") {
+			val := d.Get("rules_manipulation_locked").(bool)
+			params.RulesManipulationLocked = &val
+		}
+		if d.HasChange("heavy_lom") {
+			val := d.Get("heavy_lom").(bool)
+			params.HeavyLom = &val
+		}
+		if d.HasChange("parameters_count_weight") {
+			val := d.Get("parameters_count_weight").(int)
+			params.ParametersCountWeight = &val
+		}
+		if d.HasChange("path_variativity_weight") {
+			val := d.Get("path_variativity_weight").(int)
+			params.PathVariativityWeight = &val
+		}
+		if d.HasChange("pii_weight") {
+			val := d.Get("pii_weight").(int)
+			params.PiiWeight = &val
+		}
+		if d.HasChange("request_content_weight") {
+			val := d.Get("request_content_weight").(int)
+			params.RequestContentWeight = &val
+		}
+		if d.HasChange("open_vulns_weight") {
+			val := d.Get("open_vulns_weight").(int)
+			params.OpenVulnsWeight = &val
+		}
+		if d.HasChange("serialized_data_weight") {
+			val := d.Get("serialized_data_weight").(int)
+			params.SerializedDataWeight = &val
+		}
+		if d.HasChange("risk_score_algo") {
+			val := d.Get("risk_score_algo").(string)
 			params.RiskScoreAlgo = &val
 		}
 	}
@@ -294,4 +340,12 @@ func updateRulesSettings(d *schema.ResourceData, m interface{}) error {
 	}
 
 	return resourceWallarmRulesSettingsRead(d, m)
+}
+
+// getOkForZeroValues works like d.GetOk but also returns true for zero values
+// (false, 0, "") when the user explicitly configured them. This uses the
+// deprecated GetOkExists which is the only SDK v1 method that handles this correctly.
+func getOkForZeroValues(d *schema.ResourceData, key string) (interface{}, bool) {
+	v, ok := d.GetOkExists(key) //nolint:staticcheck
+	return v, ok
 }

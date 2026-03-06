@@ -20,7 +20,7 @@ func resourceWallarmGraphqlDetection() *schema.Resource {
 		"mode": {
 			Type:         schema.TypeString,
 			Required:     true,
-			ValidateFunc: validation.StringInSlice([]string{"monitoring", "block"}, false),
+			ValidateFunc: validation.StringInSlice([]string{"off", "default", "monitoring", "block"}, false),
 			ForceNew:     true,
 		},
 		"max_depth": {
