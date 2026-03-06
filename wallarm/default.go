@@ -273,6 +273,7 @@ var (
 		},
 		"set": {
 			Type:     schema.TypeString,
+			Computed: true,
 			Optional: true,
 			ForceNew: true,
 		},
@@ -284,6 +285,7 @@ var (
 		},
 		"title": {
 			Type:     schema.TypeString,
+			Computed: true,
 			Optional: true,
 			ForceNew: true,
 		},

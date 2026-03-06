@@ -2,6 +2,7 @@
 .vscode/
 .idea/
 .terraform/
+vendor/
 terraform-provider-wallarm*
 terraform.tfstate*
 *.lock.hcl
