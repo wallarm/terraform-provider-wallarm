@@ -357,7 +357,8 @@ func locationToConditions(location string) []map[string]interface{} {
 	last := parts[len(parts)-1]
 	pathParts := parts[:len(parts)-1]
 
-	var conditions []map[string]interface{}
+	// Pre-allocate: len(pathParts) path conditions + up to 2 from actionNameExtConditions + 1 terminating absent.
+	conditions := make([]map[string]interface{}, 0, len(parts)+2)
 
 	conditions = append(conditions, actionNameExtConditions(last)...)
 
