@@ -26,6 +26,7 @@ resource "wallarm_node" "terraform" {
 
 * `hostname` - (**required**) node name. The value must be unique across other nodes in the account.
 * `client_id` - (optional) ID of the client (tenant). The value is required for [multi-tenant scenarios][2].
+* `partner_mode` - (optional) enables or disables multitenant mode for the node. Can be: `true`, `false`. Default `false`.
 
 ## Attributes Reference
 

@@ -57,8 +57,9 @@ resource "wallarm_integration_opsgenie" "opsgenie_integration" {
   - `vuln` - detected vulnerabilities
 
   Default: `vuln`
-* `active` - (optional) indicator of the event type status. Can be: `true` for active events and `false` for disabled events (notifications are not sent). 
-Default: `true`
+* `active` - (optional) indicator of the event type status. Can be: `true` for active events and `false` for disabled events (notifications are not sent).
+
+  Default: `true`
 
 
 Example:

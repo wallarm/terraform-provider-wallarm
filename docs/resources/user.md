@@ -20,8 +20,7 @@ resource "wallarm_user" "user" {
   email = "testuser+6039@wallarm.com"
   realname = "Terraform Deploy"
   permissions = "deploy"
-  password = "1234ABC!@#"
-  phone = "+1 900 123 45 67"
+  password = "1234aABC!@#"
 }
 ```
 
@@ -31,8 +30,8 @@ resource "wallarm_user" "user" {
 * `realname` - (**required**) the first and last name of the user.
 * `permissions` - (**required**) user role. Can be one of: `admin`, `analyst`, `deploy`, `read_only`, `global_admin`, `global_analyst`, `global_read_only`. Roles description is available in the [Wallarm official documentation](https://docs.wallarm.com/user-guides/settings/users/#user-roles).
 * `password` - (optional) user password. If the value is not specified, it will be generated automatically and returned in the attribute `generated_password`.
-* `phone` - (optional) user phone number.
 * `client_id` - (optional) ID of the client (tenant). The value is required for [multi-tenant scenarios][2].
+* `enabled` - (optional) enabled or disabled acces to the cloud for the user. Can be one of: `true`, `false`.
 
 ## Attributes Reference
 

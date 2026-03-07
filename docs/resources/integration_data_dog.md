@@ -52,8 +52,8 @@ resource "wallarm_integration_data_dog" "data_dog_integration" {
 
   Default: `false`
 * `name` - (optional) integration name.
-* `token` - (required) DataDog token.
-* `region` - (required) DataDog region.
+* `token` - (**required**) DataDog token.
+* `region` - (**required**) DataDog region.
 
 ## Event
 
@@ -66,8 +66,9 @@ resource "wallarm_integration_data_dog" "data_dog_integration" {
   - `scope` - scope changes
 
   Default: `vuln_low`
-* `active` - (optional) indicator of the event type status. Can be: `true` for active events and `false` for disabled events (notifications are not sent). 
-Default: `true`
+* `active` - (optional) indicator of the event type status. Can be: `true` for active events and `false` for disabled events (notifications are not sent).
+
+  Default: `true`
 
 
 Example:

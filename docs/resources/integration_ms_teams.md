@@ -57,8 +57,8 @@ resource "wallarm_integration_ms_teams" "teams_integration" {
 
   Default: `false`
 * `name` - (optional) integration name.
-Default: `POST`
-* `webhook_url` - (required) MS Teams URL with the schema (https://).
+* `webhook_url` - (**required**) MS Teams URL with the schema (https://).
+
 ## Event
 
 `event` are events for integration to monitor. Can be:
@@ -70,8 +70,9 @@ Default: `POST`
   - `scope` - scope changes
 
   Default: `vuln`
-* `active` - (optional) indicator of the event type status. Can be: `true` for active events and `false` for disabled events (notifications are not sent). 
-Default: `true`
+* `active` - (optional) indicator of the event type status. Can be: `true` for active events and `false` for disabled events (notifications are not sent).
+
+  Default: `true`
 
 
 Example:

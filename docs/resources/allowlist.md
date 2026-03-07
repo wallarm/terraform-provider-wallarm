@@ -8,7 +8,7 @@ description: |-
 
 # wallarm_allowlist
 
-Provides the resource to manage [allowlist][1] in the account providing functionality to block all requests originated from allowlisted IP addresses for a desired time either via `RFC3339` or `Minutes` formats.
+Provides the resource to manage [allowlist][1] in the account providing functionality to skip security checks for requests originated from allowlisted IP addresses for a desired time either via `RFC3339` or `Minutes` formats.
 
 ## Example Usage
 
@@ -35,7 +35,7 @@ resource "wallarm_allowlist" "allowlist_date" {
 
 ## Argument Reference
 
-* `ip_range` - (**required**) IP range to be blocked. Can be defined as an array of ranges. Accept:
+* `ip_range` - (**required**) IP range to be allowed. Can be defined as an array of ranges. Accept:
   - distinct IP addresses (e.g. `1.1.1.1`, `2.2.2.2`)
   - subnets (e.g. `1.1.1.1/24`, `2.2.2.2/30`)
 * `time_format` - (**required**) block time format.
