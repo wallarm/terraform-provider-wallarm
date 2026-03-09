@@ -7,6 +7,8 @@ import (
 	"os"
 	"regexp"
 
+	// "runtime/debug"
+
 	"github.com/wallarm/terraform-provider-wallarm/version"
 	"github.com/wallarm/wallarm-go"
 
@@ -14,7 +16,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/logging"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
-	"github.com/hashicorp/terraform-plugin-sdk/httpclient"
 	"github.com/hashicorp/terraform-plugin-sdk/terraform"
 )
 
@@ -192,10 +193,9 @@ func providerConfigure(d *schema.ResourceData, terraformVersion string) (interfa
 	c := cleanhttp.DefaultPooledClient()
 	c.Transport = logging.NewTransport("Wallarm", c.Transport)
 	options = append(options, wallarm.HTTPClient(c))
-
-	tfUserAgent := httpclient.TerraformUserAgent(terraformVersion) // nolint:staticcheck
+	tfUserAgent := fmt.Sprintf("HashiCorp Terraform/%s (+https://www.terraform.io) Terraform Plugin SDK/%s", terraformVersion, version.SDK(1))
 	providerUserAgent := "terraform-provider-wallarm"
-	ua := fmt.Sprintf("%s/%s/%s", tfUserAgent, providerUserAgent, version.ProviderVersion)
+	ua := fmt.Sprintf("%s/%s/%s", tfUserAgent, providerUserAgent, version.Provider())
 	options = append(options, wallarm.UserAgent(ua))
 
 	authHeaders := make(http.Header)

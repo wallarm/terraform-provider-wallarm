@@ -8,9 +8,9 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/hashicorp/terraform-plugin-sdk/helper/hashcode"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/pkg/errors"
+	"github.com/wallarm/terraform-provider-wallarm/hashcode"
 	"github.com/wallarm/terraform-provider-wallarm/wallarm/common"
 	"github.com/wallarm/terraform-provider-wallarm/wallarm/common/mapper/apitotf"
 	"github.com/wallarm/terraform-provider-wallarm/wallarm/common/mapper/tftoapi"
@@ -399,7 +399,7 @@ func hashResponseActionDetails(v interface{}) int {
 
 		buf.WriteString(fmt.Sprintf("%v-", m["point"]))
 	}
-	return hashcode.String(buf.String()) // nolint:staticcheck
+	return hashcode.String(buf.String())
 }
 
 func actionDetailsToMap(actionDetails wallarm.ActionDetails) (map[string]interface{}, error) {

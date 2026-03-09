@@ -2,7 +2,8 @@ TEST?=$$(go list ./...)
 GOFMT_FILES?=$$(find . -name '*.go' |grep -v vendor)
 GOOS?=$$(go env GOOS)
 GOARCH?=$$(go env GOARCH)
-VERSION?=$$(git describe --abbrev=0 --tags)
+# VERSION?=$$(git describe --abbrev=0 --tags)
+VERSION=2.0.0
 TESTTIMEOUT=120m
 
 default: build
