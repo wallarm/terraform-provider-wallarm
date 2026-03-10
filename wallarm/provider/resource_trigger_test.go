@@ -137,7 +137,7 @@ resource "wallarm_integration_email" "test" {
 	emails = ["%[1]s@wallarm.com"]
 
 	event {
-		event_type = "vuln_high"
+		event_type = "system"
 		active = true
 	}
 }
@@ -158,7 +158,7 @@ resource "wallarm_integration_email" "test" {
 	emails = ["%[1]s@wallarm.com"]
 
 	event {
-		event_type = "vuln_high"
+		event_type = "system"
 		active = true
 	}
 }
@@ -185,7 +185,7 @@ resource "wallarm_integration_email" "test" {
 	emails = ["%[1]s@wallarm.com"]
 
 	event {
-		event_type = "vuln_high"
+		event_type = "system"
 		active = true
 	}
 }
@@ -249,7 +249,7 @@ resource "wallarm_integration_email" "%[1]s" {
 	emails = ["%[1]s@wallarm.com"]
 
 	event {
-		event_type = "vuln_high"
+		event_type = "system"
 		active = true
 	}
 }

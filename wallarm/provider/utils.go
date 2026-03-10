@@ -265,19 +265,16 @@ func expandWallarmEventToIntEvents(d interface{}, resourceType string) *[]wallar
 		case "email":
 			defaultEvents = []map[string]interface{}{
 				{
-					"event_type": "vuln_high",
-					"active":     false},
-				{
-					"event_type": "vuln_medium",
-					"active":     false},
-				{
-					"event_type": "vuln_low",
-					"active":     false},
-				{
 					"event_type": "system",
 					"active":     false},
 				{
-					"event_type": "scope",
+					"event_type": "aasm_report",
+					"active":     false},
+				{
+					"event_type": "api_discovery_hourly_changes_report",
+					"active":     false},
+				{
+					"event_type": "api_discovery_daily_changes_report",
 					"active":     false},
 				{
 					"event_type": "report_daily",
@@ -287,6 +284,36 @@ func expandWallarmEventToIntEvents(d interface{}, resourceType string) *[]wallar
 					"active":     false},
 				{
 					"event_type": "report_monthly",
+					"active":     false},
+			}
+		case "data_dog":
+			defaultEvents = []map[string]interface{}{
+				{
+					"event_type": "siem",
+					"active":     false},
+				{
+					"event_type": "rules_and_triggers",
+					"active":     false},
+				{
+					"event_type": "number_of_requests_per_hour",
+					"active":     false},
+				{
+					"event_type": "security_issue_critical",
+					"active":     false},
+				{
+					"event_type": "security_issue_high",
+					"active":     false},
+				{
+					"event_type": "security_issue_medium",
+					"active":     false},
+				{
+					"event_type": "security_issue_low",
+					"active":     false},
+				{
+					"event_type": "security_issue_info",
+					"active":     false},
+				{
+					"event_type": "system",
 					"active":     false},
 			}
 		case "opsgenie":
@@ -352,6 +379,12 @@ func expandWallarmEventToIntEvents(d interface{}, resourceType string) *[]wallar
 		active, ok := m["active"]
 		if ok {
 			e.Active = active.(bool)
+		}
+		if wh, ok := m["with_headers"]; ok {
+			whBool := wh.(bool)
+			if whBool {
+				e.WithHeaders = &whBool
+			}
 		}
 		events = append(events, e)
 	}

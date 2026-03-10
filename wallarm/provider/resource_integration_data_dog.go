@@ -52,9 +52,11 @@ func resourceWallarmDataDog() *schema.Resource {
 			},
 
 			"token": {
-				Type:      schema.TypeString,
-				Required:  true,
-				Sensitive: true,
+				Type:         schema.TypeString,
+				Required:     true,
+				Sensitive:    true,
+				ValidateFunc: validation.StringLenBetween(32, 40),
+				Description:  "DataDog API key.",
 			},
 			"region": {
 				Type:     schema.TypeString,
@@ -64,18 +66,33 @@ func resourceWallarmDataDog() *schema.Resource {
 			"event": {
 				Type:     schema.TypeSet,
 				Optional: true,
-				MaxItems: 6,
+				MaxItems: 9,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"event_type": {
-							Type:         schema.TypeString,
-							Optional:     true,
-							ValidateFunc: validation.StringInSlice([]string{"hit", "vuln_high", "vuln_medium", "vuln_low", "vuln_low", "system", "scope"}, false),
+							Type:     schema.TypeString,
+							Optional: true,
+							ValidateFunc: validation.StringInSlice([]string{
+								"siem",
+								"rules_and_triggers",
+								"number_of_requests_per_hour",
+								"security_issue_critical",
+								"security_issue_high",
+								"security_issue_medium",
+								"security_issue_low",
+								"security_issue_info",
+								"system",
+							}, false),
 						},
 						"active": {
 							Type:     schema.TypeBool,
 							Optional: true,
 							Default:  false,
+						},
+						"with_headers": {
+							Type:        schema.TypeBool,
+							Optional:    true,
+							Description: "Send requests with headers. Only applicable to the 'siem' event type.",
 						},
 					},
 				},
