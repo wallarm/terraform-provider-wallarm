@@ -55,11 +55,6 @@ func resourceWallarmOverlimitResSettingsCreate(d *schema.ResourceData, m interfa
 		return err
 	}
 
-	iPoint := d.Get("point").([]interface{})
-	point, err := expandPointsToTwoDimensionalArray(iPoint)
-	if err != nil {
-		return err
-	}
 	overlimitTime := d.Get("overlimit_time").(int)
 	mode := d.Get("mode").(string)
 
@@ -70,7 +65,6 @@ func resourceWallarmOverlimitResSettingsCreate(d *schema.ResourceData, m interfa
 		Validated:           false,
 		VariativityDisabled: true,
 		Comment:             fields.Comment,
-		Point:               point,
 		Mode:                mode,
 		OverlimitTime:       overlimitTime,
 		Set:                 fields.Set,
@@ -89,10 +83,6 @@ func resourceWallarmOverlimitResSettingsCreate(d *schema.ResourceData, m interfa
 	d.Set("action_id", actionID)
 	d.Set("rule_type", actionResp.Body.Type)
 	d.Set("client_id", clientID)
-	if err := d.Set("point", wrapPointElements(actionResp.Body.Point)); err != nil {
-		return fmt.Errorf("error setting point: %w", err)
-	}
-
 	resID := fmt.Sprintf("%d/%d/%d", clientID, actionID, actionResp.Body.ID)
 	d.SetId(resID)
 

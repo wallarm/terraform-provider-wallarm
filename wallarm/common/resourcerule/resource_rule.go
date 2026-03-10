@@ -19,21 +19,23 @@ import (
 	"github.com/wallarm/wallarm-go"
 )
 
-// setIfExists calls d.Set for the given key, recovering from the panic that
-// SDK v2 raises when the key is not present in the resource schema.
-// In SDK v1 this was silently ignored; in SDK v2 it panics with
-// "Invalid address to set". This helper is needed because
-// ResourceRuleWallarmRead is shared across many resources, each of which
-// defines only a subset of the fields.
+// schemaHasKey checks whether the resource schema includes the given attribute
+// by examining the cty type of the raw state. Returns true if undetermined.
+func schemaHasKey(d *schema.ResourceData, key string) (exists bool) {
+	exists = true // default to true if we can't determine
+	defer func() { recover() }()
+	return d.GetRawState().Type().HasAttribute(key)
+}
+
+// setIfExists calls d.Set for the given key only if the key is present in the
+// resource schema. This is needed because ResourceRuleWallarmRead is shared
+// across many resources, each of which defines only a subset of the fields.
+// In SDK v2 d.Set() logs an [ERROR] and panics (in test mode) for keys not in
+// the schema; checking beforehand avoids both.
 func setIfExists(d *schema.ResourceData, key string, value interface{}) {
-	defer func() {
-		if r := recover(); r != nil {
-			if err, ok := r.(error); ok && strings.Contains(err.Error(), "Invalid address to set") {
-				return
-			}
-			panic(r)
-		}
-	}()
+	if !schemaHasKey(d, key) {
+		return
+	}
 	if err := d.Set(key, value); err != nil {
 		log.Printf("[ERROR] error setting %s: %s", key, err)
 	}

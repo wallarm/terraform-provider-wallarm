@@ -219,7 +219,7 @@ func resourceWallarmTriggerCreate(ctx context.Context, d *schema.ResourceData, m
 				if err = d.Set("client_id", clientID); err != nil {
 					return resource.NonRetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return nil
 			}
 		}
 		return resource.RetryableError(fmt.Errorf("can't find a trigger with ID: %d", triggerID))

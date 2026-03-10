@@ -76,7 +76,7 @@ func ResourceExistsError(regex, name string) *regexp.Regexp {
 		fmt.Sprintf("the resource with the ID "+
 			`"%[1]s"`+" already exists - to be managed via Terraform this resource needs "+
 			"to be imported into the State. Please see the resource documentation for "+
-			`"%[2]s"`+" for more information.", regex, name))
+			`"%[2]s"`+" for more information", regex, name))
 }
 
 // ArgumentMustBePresented returns regexp to be used inside TestStep with ExpectError state.

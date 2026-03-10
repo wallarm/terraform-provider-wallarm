@@ -60,20 +60,21 @@ func resourceWallarmEmail() *schema.Resource {
 
 			"event": {
 				Type:     schema.TypeSet,
-				Optional: true,
-				MaxItems: 8,
+				Required: true,
+				MinItems: 1,
+				MaxItems: 7,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"event_type": {
 							Type:     schema.TypeString,
-							Optional: true,
-							ValidateFunc: validation.StringInSlice([]string{"report_daily", "report_weekly",
-								"report_monthly", "system", "vuln_high", "vuln_medium", "vuln_low", "scope"}, false),
+							Required: true,
+							ValidateFunc: validation.StringInSlice([]string{"system", "aasm_report",
+								"api_discovery_hourly_changes_report", "api_discovery_daily_changes_report", "report_daily", "report_weekly", "report_monthly"}, false),
 						},
 						"active": {
 							Type:     schema.TypeBool,
 							Optional: true,
-							Default:  true,
+							Default:  false,
 						},
 					},
 				},
