@@ -18,6 +18,24 @@ import (
 	"github.com/wallarm/wallarm-go"
 )
 
+// setIfExists calls d.Set for the given key, recovering from the panic that
+// SDK v2 raises when the key is not present in the resource schema.
+// In SDK v1 this was silently ignored; in SDK v2 it panics with
+// "Invalid address to set". This helper is needed because
+// ResourceRuleWallarmRead is shared across many resources, each of which
+// defines only a subset of the fields.
+func setIfExists(d *schema.ResourceData, key string, value interface{}) {
+	defer func() {
+		if r := recover(); r != nil {
+			if msg, ok := r.(string); ok && strings.Contains(msg, "Invalid address to set") {
+				return
+			}
+			panic(r)
+		}
+	}()
+	d.Set(key, value)
+}
+
 // String hashes a string to a unique hashcode.
 //
 // crc32 returns a uint32, but for our use we need
@@ -66,46 +84,51 @@ func ResourceRuleWallarmRead(d *schema.ResourceData, clientID int, cli wallarm.A
 		return nil
 	}
 
-	d.Set("point", wrapPointElements(updatedRule.Point))
+	// Fields from commonResourceRuleFields — always present in every resource
 	d.Set("rule_id", updatedRule.ID)
 	d.Set("client_id", clientID)
 	d.Set("active", updatedRule.Active)
 	d.Set("title", updatedRule.Title)
 	d.Set("mitigation", updatedRule.Mitigation)
 	d.Set("set", updatedRule.Set)
-	d.Set("threshold", apitotf.Threshold(updatedRule.Threshold))
-	d.Set("reaction", apitotf.Reaction(updatedRule.Reaction))
-	d.Set("mode", updatedRule.Mode)
-	d.Set("enumerated_parameters", apitotf.EnumeratedParameters(updatedRule.EnumeratedParameters))
-	d.Set("advanced_conditions", apitotf.AdvancedConditions(updatedRule.AdvancedConditions))
-	d.Set("arbitrary_conditions", apitotf.ArbitraryConditions(updatedRule.ArbitraryConditions))
-	d.Set("counter", updatedRule.Counter)
-	d.Set("size", updatedRule.Size)
-	d.Set("size_unit", updatedRule.SizeUnit)
-	d.Set("debug_enabled", updatedRule.DebugEnabled)
-	d.Set("introspection", updatedRule.Introspection)
-	d.Set("max_depth", updatedRule.MaxDepth)
-	d.Set("max_value_size_kb", updatedRule.MaxValueSizeKb)
-	d.Set("max_doc_size_kb", updatedRule.MaxDocSizeKb)
-	d.Set("max_alias_size_kb", updatedRule.MaxAliasesSizeKb)
-	d.Set("max_doc_per_batch", updatedRule.MaxDocPerBatch)
-	d.Set("attack_type", updatedRule.AttackType)
-	d.Set("stamp", updatedRule.Stamp)
-	d.Set("file_type", updatedRule.FileType)
-	d.Set("name", updatedRule.Name)
-	d.Set("burst", updatedRule.Burst)
-	d.Set("delay", updatedRule.Delay)
-	d.Set("rate", updatedRule.Rate)
-	d.Set("rsp_status", updatedRule.RspStatus)
-	d.Set("time_unit", updatedRule.TimeUnit)
-	d.Set("parser", updatedRule.Parser)
-	d.Set("state", updatedRule.State)
-	d.Set("overlimit_time", updatedRule.OverlimitTime)
-	d.Set("values", updatedRule.Values)
-	d.Set("regex", updatedRule.Regex)
-	d.Set("regex_id", updatedRule.RegexID)
 	d.Set("variativity_disabled", updatedRule.VariativityDisabled)
 	d.Set("comment", updatedRule.Comment)
+
+	// Resource-specific fields — use setIfExists because each resource
+	// only defines a subset of these in its schema. In SDK v2, d.Set
+	// panics for keys not in the schema.
+	setIfExists(d, "point", wrapPointElements(updatedRule.Point))
+	setIfExists(d, "threshold", apitotf.Threshold(updatedRule.Threshold))
+	setIfExists(d, "reaction", apitotf.Reaction(updatedRule.Reaction))
+	setIfExists(d, "mode", updatedRule.Mode)
+	setIfExists(d, "enumerated_parameters", apitotf.EnumeratedParameters(updatedRule.EnumeratedParameters))
+	setIfExists(d, "advanced_conditions", apitotf.AdvancedConditions(updatedRule.AdvancedConditions))
+	setIfExists(d, "arbitrary_conditions", apitotf.ArbitraryConditions(updatedRule.ArbitraryConditions))
+	setIfExists(d, "counter", updatedRule.Counter)
+	setIfExists(d, "size", updatedRule.Size)
+	setIfExists(d, "size_unit", updatedRule.SizeUnit)
+	setIfExists(d, "debug_enabled", updatedRule.DebugEnabled)
+	setIfExists(d, "introspection", updatedRule.Introspection)
+	setIfExists(d, "max_depth", updatedRule.MaxDepth)
+	setIfExists(d, "max_value_size_kb", updatedRule.MaxValueSizeKb)
+	setIfExists(d, "max_doc_size_kb", updatedRule.MaxDocSizeKb)
+	setIfExists(d, "max_alias_size_kb", updatedRule.MaxAliasesSizeKb)
+	setIfExists(d, "max_doc_per_batch", updatedRule.MaxDocPerBatch)
+	setIfExists(d, "attack_type", updatedRule.AttackType)
+	setIfExists(d, "stamp", updatedRule.Stamp)
+	setIfExists(d, "file_type", updatedRule.FileType)
+	setIfExists(d, "name", updatedRule.Name)
+	setIfExists(d, "burst", updatedRule.Burst)
+	setIfExists(d, "delay", updatedRule.Delay)
+	setIfExists(d, "rate", updatedRule.Rate)
+	setIfExists(d, "rsp_status", updatedRule.RspStatus)
+	setIfExists(d, "time_unit", updatedRule.TimeUnit)
+	setIfExists(d, "parser", updatedRule.Parser)
+	setIfExists(d, "state", updatedRule.State)
+	setIfExists(d, "overlimit_time", updatedRule.OverlimitTime)
+	setIfExists(d, "values", updatedRule.Values)
+	setIfExists(d, "regex", updatedRule.Regex)
+	setIfExists(d, "regex_id", updatedRule.RegexID)
 
 	actionsSet := schema.Set{F: hashResponseActionDetails}
 	for _, a := range updatedRule.Action {
@@ -115,7 +138,7 @@ func ResourceRuleWallarmRead(d *schema.ResourceData, clientID int, cli wallarm.A
 			actionsSet.Add(acts)
 		}
 	}
-	d.Set("action", &actionsSet)
+	setIfExists(d, "action", &actionsSet)
 
 	return nil
 }
@@ -220,11 +243,7 @@ func ExpandSetToActionDetailsList(action *schema.Set) ([]wallarm.ActionDetails, 
 		for _, k := range keys {
 			switch k {
 			case "point":
-				pointList := actionMap[k].([]interface{})
-				if len(pointList) == 0 {
-					break
-				}
-				point := pointList[0].(map[string]interface{})
+				point := actionMap[k].(map[string]interface{})
 				for pointKey, pointValue := range point {
 					switch pointKey {
 					case common.Path:
@@ -360,14 +379,6 @@ func wrapPointElements(input []interface{}) [][]string {
 	return result
 }
 
-func wrapPointMapForSchema(pointMap map[string]string) []interface{} {
-	m := make(map[string]interface{}, len(pointMap))
-	for k, v := range pointMap {
-		m[k] = v
-	}
-	return []interface{}{m}
-}
-
 func hashResponseActionDetails(v interface{}) int {
 	var buf bytes.Buffer
 	m := v.(map[string]interface{})
@@ -380,51 +391,51 @@ func hashResponseActionDetails(v interface{}) int {
 		case "action_name":
 			pointMap := make(map[string]string)
 			pointMap["action_name"] = m["value"].(string)
-			m["point"] = wrapPointMapForSchema(pointMap)
+			m["point"] = pointMap
 			m["value"] = ""
 		case "action_ext":
 			pointMap := make(map[string]string)
 			pointMap["action_ext"] = m["value"].(string)
-			m["point"] = wrapPointMapForSchema(pointMap)
+			m["point"] = pointMap
 			m["value"] = ""
 		case "scheme":
 			pointMap := make(map[string]string)
 			pointMap["scheme"] = m["value"].(string)
-			m["point"] = wrapPointMapForSchema(pointMap)
+			m["point"] = pointMap
 			m["value"] = ""
 		case "uri":
 			pointMap := make(map[string]string)
 			pointMap["uri"] = m["value"].(string)
-			m["point"] = wrapPointMapForSchema(pointMap)
+			m["point"] = pointMap
 			m["value"] = ""
 		case "proto":
 			pointMap := make(map[string]string)
 			pointMap["proto"] = m["value"].(string)
-			m["point"] = wrapPointMapForSchema(pointMap)
+			m["point"] = pointMap
 			m["value"] = ""
 		case "method":
 			pointMap := make(map[string]string)
 			pointMap["method"] = m["value"].(string)
-			m["point"] = wrapPointMapForSchema(pointMap)
+			m["point"] = pointMap
 			m["value"] = ""
 		case common.Path:
 			pointMap := make(map[string]string)
 			pointMap[common.Path] = fmt.Sprintf("%d", int(p[1].(float64)))
-			m["point"] = wrapPointMapForSchema(pointMap)
+			m["point"] = pointMap
 		case "instance":
 			pointMap := make(map[string]string)
 			pointMap["instance"] = m["value"].(string)
-			m["point"] = wrapPointMapForSchema(pointMap)
+			m["point"] = pointMap
 			m["value"] = ""
 			m["type"] = ""
 		case "header":
 			pointMap := make(map[string]string)
 			pointMap["header"] = p[1].(string)
-			m["point"] = wrapPointMapForSchema(pointMap)
+			m["point"] = pointMap
 		case "get":
 			pointMap := make(map[string]string)
 			pointMap["query"] = p[1].(string)
-			m["point"] = wrapPointMapForSchema(pointMap)
+			m["point"] = pointMap
 		}
 
 		buf.WriteString(fmt.Sprintf("%v-", m["point"]))

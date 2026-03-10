@@ -221,12 +221,12 @@ func ProviderConfigure(ctx context.Context, d *schema.ResourceData, p *schema.Pr
 		if v, ok := d.GetOk("api_uuid"); ok {
 			authHeaders.Add("X-WallarmAPI-UUID", v.(string))
 		} else {
-			return nil, diag.FromErr(fmt.Errorf("could not parse poll_interval value: %w", wallarm.ErrInvalidCredentials))
+			return nil, diag.FromErr(fmt.Errorf("api_uuid is required when api_token is not set: %w", wallarm.ErrInvalidCredentials))
 		}
 		if v, ok := d.GetOk("api_secret"); ok {
 			authHeaders.Add("X-WallarmAPI-Secret", v.(string))
 		} else {
-			return nil, diag.FromErr(fmt.Errorf("could not parse poll_interval value: %w", wallarm.ErrInvalidCredentials))
+			return nil, diag.FromErr(fmt.Errorf("api_secret is required when api_token is not set: %w", wallarm.ErrInvalidCredentials))
 		}
 	}
 
@@ -238,7 +238,7 @@ func ProviderConfigure(ctx context.Context, d *schema.ResourceData, p *schema.Pr
 
 	client, err := config.Client()
 	if err != nil {
-		return nil, diag.FromErr(fmt.Errorf("could not parse poll_interval value: %w", err))
+		return nil, diag.FromErr(fmt.Errorf("could not create Wallarm client: %w", err))
 	}
 
 	if v, ok := d.GetOk("client_id"); ok {
@@ -246,7 +246,7 @@ func ProviderConfigure(ctx context.Context, d *schema.ResourceData, p *schema.Pr
 	} else {
 		u, err := client.UserDetails()
 		if err != nil {
-			return nil, diag.FromErr(fmt.Errorf("could not parse poll_interval value: %w", err))
+			return nil, diag.FromErr(fmt.Errorf("could not fetch user details: %w", err))
 		}
 
 		ClientID = u.Body.Clientid
@@ -255,7 +255,7 @@ func ProviderConfigure(ctx context.Context, d *schema.ResourceData, p *schema.Pr
 	// Wrap with caching layer if hint_prefetch is enabled (default: true)
 	if d.Get("hint_prefetch").(bool) {
 		log.Printf("[INFO] Wallarm hint prefetch enabled — rule reads will use bulk cache")
-		return NewCachedClient(client), diag.FromErr(fmt.Errorf("could not parse poll_interval value: %w", err))
+		return NewCachedClient(client), nil
 	}
 
 	return client, nil

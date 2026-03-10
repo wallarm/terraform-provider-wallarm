@@ -1,8 +1,6 @@
 package wallarm
 
 import (
-	"fmt"
-
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
@@ -45,94 +43,13 @@ var (
 				},
 
 				"point": {
-					Type:     schema.TypeList,
-					MaxItems: 1,
+					Type:     schema.TypeMap,
 					Optional: true,
 					ForceNew: true,
-					Elem: &schema.Resource{
-						Schema: defaultResourceRuleActionPointElemSchemaMap,
+					Elem: &schema.Schema{
+						Type: schema.TypeString,
 					},
 				},
-			},
-		},
-	}
-
-	defaultResourceRuleActionPointElemSchemaMap = map[string]*schema.Schema{
-		"header": {
-			Type:     schema.TypeList,
-			Optional: true,
-			ForceNew: true,
-			Elem:     &schema.Schema{Type: schema.TypeString},
-		},
-		"method": {
-			Type:     schema.TypeString,
-			Optional: true,
-			ForceNew: true,
-			ValidateFunc: validation.StringInSlice([]string{"GET", "HEAD", "POST",
-				"PUT", "DELETE", "CONNECT", "OPTIONS", "TRACE", "PATCH"}, false),
-		},
-
-		"path": {
-			Type:     schema.TypeInt,
-			Optional: true,
-			ForceNew: true,
-			ValidateFunc: func(val interface{}, key string) (warns []string, errs []error) {
-				v := val.(int)
-				if v < 0 || v > 60 {
-					errs = append(errs, fmt.Errorf("%q must be between 0 and 60 inclusive, got: %d", key, v))
-				}
-				return
-			},
-		},
-
-		"action_name": {
-			Type:     schema.TypeString,
-			Optional: true,
-			ForceNew: true,
-		},
-
-		"action_ext": {
-			Type:     schema.TypeString,
-			Optional: true,
-			ForceNew: true,
-		},
-
-		"query": {
-			Type:     schema.TypeString,
-			Optional: true,
-			ForceNew: true,
-		},
-
-		"proto": {
-			Type:         schema.TypeString,
-			Optional:     true,
-			ForceNew:     true,
-			ValidateFunc: validation.StringInSlice([]string{"1.0", "1.1", "2.0", "3.0"}, false),
-		},
-
-		"scheme": {
-			Type:         schema.TypeString,
-			Optional:     true,
-			ForceNew:     true,
-			ValidateFunc: validation.StringInSlice([]string{"http", "https"}, true),
-		},
-
-		"uri": {
-			Type:     schema.TypeString,
-			Optional: true,
-			ForceNew: true,
-		},
-
-		"instance": {
-			Type:     schema.TypeInt,
-			Optional: true,
-			ForceNew: true,
-			ValidateFunc: func(val interface{}, key string) (warns []string, errs []error) {
-				v := val.(int)
-				if v < -1 {
-					errs = append(errs, fmt.Errorf("%q must be be greater than -1 inclusive, got: %d", key, v))
-				}
-				return
 			},
 		},
 	}

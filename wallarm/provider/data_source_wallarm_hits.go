@@ -302,7 +302,7 @@ func buildActionFromHit(domain, urlPath string, poolID int) []map[string]interfa
 		conditions = append(conditions, map[string]interface{}{
 			"type":  "",
 			"value": "",
-			"point": []interface{}{map[string]interface{}{"instance": strconv.Itoa(poolID)}},
+			"point": map[string]interface{}{"instance": strconv.Itoa(poolID)},
 		})
 	}
 
@@ -311,7 +311,7 @@ func buildActionFromHit(domain, urlPath string, poolID int) []map[string]interfa
 		conditions = append(conditions, map[string]interface{}{
 			"type":  iequal,
 			"value": domain,
-			"point": []interface{}{map[string]interface{}{"header": "HOST"}},
+			"point": map[string]interface{}{"header": "HOST"},
 		})
 	}
 
@@ -328,7 +328,7 @@ func locationToConditions(location string) []map[string]interface{} {
 			{
 				"type":  "equal",
 				"value": location,
-				"point": []interface{}{map[string]interface{}{"uri": location}},
+				"point": map[string]interface{}{"uri": location},
 			},
 		}
 	}
@@ -344,12 +344,12 @@ func locationToConditions(location string) []map[string]interface{} {
 			{
 				"type":  "equal",
 				"value": "",
-				"point": []interface{}{map[string]interface{}{"action_name": ""}},
+				"point": map[string]interface{}{"action_name": ""},
 			},
 			{
 				"type":  "absent",
 				"value": "",
-				"point": []interface{}{map[string]interface{}{"path": "0"}},
+				"point": map[string]interface{}{"path": "0"},
 			},
 		}
 	}
@@ -366,7 +366,7 @@ func locationToConditions(location string) []map[string]interface{} {
 		conditions = append(conditions, map[string]interface{}{
 			"type":  "equal",
 			"value": part,
-			"point": []interface{}{map[string]interface{}{"path": strconv.Itoa(i)}},
+			"point": map[string]interface{}{"path": strconv.Itoa(i)},
 		})
 	}
 
@@ -374,7 +374,7 @@ func locationToConditions(location string) []map[string]interface{} {
 	conditions = append(conditions, map[string]interface{}{
 		"type":  "absent",
 		"value": "",
-		"point": []interface{}{map[string]interface{}{"path": strconv.Itoa(len(pathParts))}},
+		"point": map[string]interface{}{"path": strconv.Itoa(len(pathParts))},
 	})
 
 	return conditions
@@ -390,12 +390,12 @@ func actionNameExtConditions(segment string) []map[string]interface{} {
 			{
 				"type":  "equal",
 				"value": "",
-				"point": []interface{}{map[string]interface{}{"action_name": name}},
+				"point": map[string]interface{}{"action_name": name},
 			},
 			{
 				"type":  "equal",
 				"value": "",
-				"point": []interface{}{map[string]interface{}{"action_ext": ext}},
+				"point": map[string]interface{}{"action_ext": ext},
 			},
 		}
 	}
@@ -404,12 +404,12 @@ func actionNameExtConditions(segment string) []map[string]interface{} {
 		{
 			"type":  "equal",
 			"value": "",
-			"point": []interface{}{map[string]interface{}{"action_name": segment}},
+			"point": map[string]interface{}{"action_name": segment},
 		},
 		{
 			"type":  "absent",
 			"value": "",
-			"point": []interface{}{map[string]interface{}{"action_ext": ""}},
+			"point": map[string]interface{}{"action_ext": ""},
 		},
 	}
 }

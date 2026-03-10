@@ -52,14 +52,6 @@ func actionDetailsToMap(actionDetails wallarm.ActionDetails) (map[string]interfa
 	return mapActions, nil
 }
 
-func wrapPointMapForSchema(pointMap map[string]string) []interface{} {
-	m := make(map[string]interface{}, len(pointMap))
-	for k, v := range pointMap {
-		m[k] = v
-	}
-	return []interface{}{m}
-}
-
 func hashResponseActionDetails(v interface{}) int {
 	var buf bytes.Buffer
 	m := v.(map[string]interface{})
@@ -72,51 +64,51 @@ func hashResponseActionDetails(v interface{}) int {
 		case "action_name":
 			pointMap := make(map[string]string)
 			pointMap["action_name"] = m["value"].(string)
-			m["point"] = wrapPointMapForSchema(pointMap)
+			m["point"] = pointMap
 			m["value"] = ""
 		case "action_ext":
 			pointMap := make(map[string]string)
 			pointMap["action_ext"] = m["value"].(string)
-			m["point"] = wrapPointMapForSchema(pointMap)
+			m["point"] = pointMap
 			m["value"] = ""
 		case "scheme":
 			pointMap := make(map[string]string)
 			pointMap["scheme"] = m["value"].(string)
-			m["point"] = wrapPointMapForSchema(pointMap)
+			m["point"] = pointMap
 			m["value"] = ""
 		case "uri":
 			pointMap := make(map[string]string)
 			pointMap["uri"] = m["value"].(string)
-			m["point"] = wrapPointMapForSchema(pointMap)
+			m["point"] = pointMap
 			m["value"] = ""
 		case "proto":
 			pointMap := make(map[string]string)
 			pointMap["proto"] = m["value"].(string)
-			m["point"] = wrapPointMapForSchema(pointMap)
+			m["point"] = pointMap
 			m["value"] = ""
 		case "method":
 			pointMap := make(map[string]string)
 			pointMap["method"] = m["value"].(string)
-			m["point"] = wrapPointMapForSchema(pointMap)
+			m["point"] = pointMap
 			m["value"] = ""
 		case path:
 			pointMap := make(map[string]string)
 			pointMap[path] = fmt.Sprintf("%d", int(p[1].(float64)))
-			m["point"] = wrapPointMapForSchema(pointMap)
+			m["point"] = pointMap
 		case "instance":
 			pointMap := make(map[string]string)
 			pointMap["instance"] = m["value"].(string)
-			m["point"] = wrapPointMapForSchema(pointMap)
+			m["point"] = pointMap
 			m["value"] = ""
 			m["type"] = ""
 		case "header":
 			pointMap := make(map[string]string)
 			pointMap["header"] = p[1].(string)
-			m["point"] = wrapPointMapForSchema(pointMap)
+			m["point"] = pointMap
 		case "get":
 			pointMap := make(map[string]string)
 			pointMap["query"] = p[1].(string)
-			m["point"] = wrapPointMapForSchema(pointMap)
+			m["point"] = pointMap
 		}
 
 		buf.WriteString(fmt.Sprintf("%v-", m["point"]))
