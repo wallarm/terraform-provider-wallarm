@@ -33,10 +33,13 @@ func resourceWallarmIPList(listType wallarm.IPListType) *schema.Resource {
 				Optional: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 			},
-			"source_type": {
+			"datacenter": {
 				Type:     schema.TypeList,
 				Optional: true,
-				Elem:     &schema.Schema{Type: schema.TypeString},
+				Elem: &schema.Schema{
+					Type:         schema.TypeString,
+					ValidateFunc: validation.StringInSlice([]string{"alibaba", "aws", "azure", "docean", "gce", "hetzner", "huawei", "ibm", "linode", "oracle", "ovh", "plusserver", "rackspace", "tencent"}, false),
+				},
 			},
 			"proxy_type": {
 				Type:     schema.TypeList,
@@ -54,11 +57,11 @@ func resourceWallarmIPList(listType wallarm.IPListType) *schema.Resource {
 			"time_format": {
 				Type:         schema.TypeString,
 				Required:     true,
-				ValidateFunc: validation.StringInSlice([]string{"Minutes", "RFC3339", "Hours", "Days", "Weeks", "Months"}, false),
+				ValidateFunc: validation.StringInSlice([]string{"Minutes", "RFC3339", "Hours", "Days", "Weeks", "Months", "Forever"}, true),
 			},
 			"time": {
 				Type:     schema.TypeString,
-				Required: true,
+				Optional: true,
 			},
 			"reason": {
 				Type:     schema.TypeString,
@@ -99,7 +102,7 @@ func resourceWallarmIPListCreate(listType wallarm.IPListType) schema.CreateConte
 			return diags
 		}
 		if len(rules) == 0 {
-			return diag.FromErr(fmt.Errorf("at least one of ip_range, country, source_type, or proxy_type must be specified"))
+			return diag.FromErr(fmt.Errorf("at least one of ip_range, country, datacenter, or proxy_type must be specified"))
 		}
 
 		var apps []int
@@ -147,7 +150,7 @@ func resourceWallarmIPListRead(listType wallarm.IPListType) schema.ReadContextFu
 		// Build lookup sets for each rule type from the schema.
 		subnetLookup := buildSubnetLookup(d)
 		countryLookup := buildStringLookup(d, "country")
-		sourceLookup := buildStringLookup(d, "source_type")
+		sourceLookup := buildStringLookup(d, "datacenter")
 		proxyLookup := buildStringLookup(d, "proxy_type")
 
 		ipListsFromAPI, err := client.IPListRead(listType, clientID)
@@ -157,7 +160,13 @@ func resourceWallarmIPListRead(listType wallarm.IPListType) schema.ReadContextFu
 
 		addrIDs := make([]interface{}, 0)
 		found := false
+		now := int(time.Now().Unix())
 		for _, ipRule := range ipListsFromAPI {
+			// Skip expired entries — the API may still return them but
+			// they are effectively gone and should be removed from state.
+			if ipRule.ExpiredAt > 0 && ipRule.ExpiredAt < now {
+				continue
+			}
 			switch ipRule.RuleType {
 			case "subnet":
 				for _, val := range ipRule.Values {
@@ -312,8 +321,8 @@ func buildRulesFromSchema(d *schema.ResourceData) ([]wallarm.AccessRuleEntry, di
 		}
 	}
 
-	// datacenter rules from source_type
-	if v, ok := d.GetOk("source_type"); ok {
+	// datacenter rules from datacenter
+	if v, ok := d.GetOk("datacenter"); ok {
 		sources := v.([]interface{})
 		var vals []string
 		for _, s := range sources {
@@ -378,8 +387,12 @@ func buildStringLookup(d *schema.ResourceData, field string) map[string]bool {
 }
 
 func parseExpireTime(d *schema.ResourceData) (int, diag.Diagnostics) {
-	switch d.Get("time_format") {
-	case Minutes:
+	timeFormat := strings.ToLower(d.Get("time_format").(string))
+
+	switch timeFormat {
+	case "forever":
+		return int(time.Now().AddDate(100, 0, 0).Unix()), nil
+	case "minutes":
 		expireTime, err := strconv.Atoi(d.Get("time").(string))
 		if err != nil {
 			return 0, diag.FromErr(fmt.Errorf("cannot parse time to integer. must be the number when `time_format` equals `Minutes`, got %v", err))
@@ -388,7 +401,7 @@ func parseExpireTime(d *schema.ResourceData) (int, diag.Diagnostics) {
 			expireTime = 60045120
 		}
 		return int(time.Now().Add(time.Minute * time.Duration(expireTime)).Unix()), nil
-	case "Hours":
+	case "hours":
 		expireTime, err := strconv.Atoi(d.Get("time").(string))
 		if err != nil {
 			return 0, diag.FromErr(fmt.Errorf("cannot parse time to integer. must be the number when `time_format` equals `Hours`, got %v", err))
@@ -397,7 +410,7 @@ func parseExpireTime(d *schema.ResourceData) (int, diag.Diagnostics) {
 			expireTime = 60045120
 		}
 		return int(time.Now().Add(time.Hour * time.Duration(expireTime)).Unix()), nil
-	case "Days":
+	case "days":
 		expireTime, err := strconv.Atoi(d.Get("time").(string))
 		if err != nil {
 			return 0, diag.FromErr(fmt.Errorf("cannot parse time to integer. must be the number when `time_format` equals `Days`, got %v", err))
@@ -406,7 +419,7 @@ func parseExpireTime(d *schema.ResourceData) (int, diag.Diagnostics) {
 			expireTime = 60045120
 		}
 		return int(time.Now().Add(24 * time.Hour * time.Duration(expireTime)).Unix()), nil
-	case "Weeks":
+	case "weeks":
 		expireTime, err := strconv.Atoi(d.Get("time").(string))
 		if err != nil {
 			return 0, diag.FromErr(fmt.Errorf("cannot parse time to integer. must be the number when `time_format` equals `Weeks`, got %v", err))
@@ -415,7 +428,7 @@ func parseExpireTime(d *schema.ResourceData) (int, diag.Diagnostics) {
 			expireTime = 60045120
 		}
 		return int(time.Now().Add(7 * 24 * time.Hour * time.Duration(expireTime)).Unix()), nil
-	case "Months":
+	case "months":
 		expireTime, err := strconv.Atoi(d.Get("time").(string))
 		if err != nil {
 			return 0, diag.FromErr(fmt.Errorf("cannot parse time to integer. must be the number when `time_format` equals `Months`, got %v", err))
@@ -424,7 +437,7 @@ func parseExpireTime(d *schema.ResourceData) (int, diag.Diagnostics) {
 			expireTime = 60045120
 		}
 		return int(time.Now().AddDate(0, expireTime, 0).Unix()), nil
-	case "RFC3339":
+	case "rfc3339":
 		expireTime, err := time.Parse(time.RFC3339, d.Get("time").(string))
 		if err != nil {
 			return 0, diag.FromErr(fmt.Errorf("cannot parse time to integer. must be the valid RFC3339 time when `time_format` equals `RFC3339`, got %v.\nExample: 2006-01-02T15:04:05+07:00", err))
