@@ -18,8 +18,6 @@ func resourceWallarmOverlimitResSettings() *schema.Resource {
 	fields := map[string]*schema.Schema{
 		"action": defaultResourceRuleActionSchema,
 
-		"point": defaultPointSchema,
-
 		"overlimit_time": {
 			Type:         schema.TypeInt,
 			ForceNew:     true,
