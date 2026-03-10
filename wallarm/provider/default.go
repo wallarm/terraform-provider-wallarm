@@ -14,6 +14,19 @@ const (
 )
 
 var (
+	// defaultPointSchema is the standard required point schema used across rule resources.
+	// The point field is a list of lists of strings, representing a 2D point structure
+	// (e.g., [["get", "query"], ["header", "HOST"]]).
+	defaultPointSchema = &schema.Schema{
+		Type:     schema.TypeList,
+		Required: true,
+		ForceNew: true,
+		Elem: &schema.Schema{
+			Type: schema.TypeList,
+			Elem: &schema.Schema{Type: schema.TypeString},
+		},
+	}
+
 	defaultClientIDWithValidationSchema = &schema.Schema{
 		Type:         schema.TypeInt,
 		Optional:     true,
@@ -243,15 +256,7 @@ var (
 		ForceNew: true,
 		Elem: &schema.Resource{
 			Schema: map[string]*schema.Schema{
-				"point": {
-					Type:     schema.TypeList,
-					Required: true,
-					Elem: &schema.Schema{
-						Type: schema.TypeList,
-						Elem: &schema.Schema{Type: schema.TypeString},
-					},
-					ForceNew: true,
-				},
+				"point": defaultPointSchema,
 				"value": {
 					Type:     schema.TypeList,
 					Elem:     &schema.Schema{Type: schema.TypeString},

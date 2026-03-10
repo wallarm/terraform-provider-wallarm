@@ -25,15 +25,7 @@ func resourceWallarmUploads() *schema.Resource {
 
 		"action": defaultResourceRuleActionSchema,
 
-		"point": {
-			Type:     schema.TypeList,
-			Required: true,
-			ForceNew: true,
-			Elem: &schema.Schema{
-				Type: schema.TypeList,
-				Elem: &schema.Schema{Type: schema.TypeString},
-			},
-		},
+		"point": defaultPointSchema,
 	}
 	return &schema.Resource{
 		Create: resourceWallarmUploadsCreate,

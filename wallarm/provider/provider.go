@@ -126,7 +126,6 @@ func Provider() *schema.Provider {
 			"wallarm_graylist":                       resourceWallarmGraylist(),
 			"wallarm_global_mode":                    resourceWallarmGlobalMode(),
 			"wallarm_node":                           resourceWallarmNode(),
-			"wallarm_scanner":                        resourceWallarmScanner(),
 			"wallarm_application":                    resourceWallarmApp(),
 			"wallarm_integration_email":              resourceWallarmEmail(),
 			"wallarm_integration_opsgenie":           resourceWallarmOpsGenie(),

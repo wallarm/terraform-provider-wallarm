@@ -16,24 +16,8 @@ import (
 
 func resourceWallarmCredentialStuffingPoint() *schema.Resource {
 	fields := map[string]*schema.Schema{
-		"point": {
-			Type:     schema.TypeList,
-			Required: true,
-			ForceNew: true,
-			Elem: &schema.Schema{
-				Type: schema.TypeList,
-				Elem: &schema.Schema{Type: schema.TypeString},
-			},
-		},
-		"login_point": {
-			Type:     schema.TypeList,
-			Required: true,
-			ForceNew: true,
-			Elem: &schema.Schema{
-				Type: schema.TypeList,
-				Elem: &schema.Schema{Type: schema.TypeString},
-			},
-		},
+		"point":       defaultPointSchema,
+		"login_point": defaultPointSchema,
 		"cred_stuff_type": {
 			Type:         schema.TypeString,
 			Optional:     true,

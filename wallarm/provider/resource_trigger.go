@@ -113,32 +113,10 @@ func resourceWallarmTrigger() *schema.Resource {
 			},
 
 			"threshold": {
-				Type:     schema.TypeList,
+				Type:     schema.TypeMap,
 				Optional: true,
-				Elem: &schema.Resource{
-					Schema: map[string]*schema.Schema{
-						"period": {
-							Type:     schema.TypeInt,
-							Required: true,
-						},
-
-						"operator": {
-							Type:         schema.TypeString,
-							Required:     true,
-							ValidateFunc: validation.StringInSlice([]string{"gt"}, false),
-						},
-
-						"count": {
-							Type:     schema.TypeInt,
-							Required: true,
-						},
-						"time_format": {
-							Type:         schema.TypeString,
-							Optional:     true,
-							Default:      "Seconds",
-							ValidateFunc: validation.StringInSlice([]string{"Seconds", "Minutes"}, false),
-						},
-					},
+				Elem: &schema.Schema{
+					Type: schema.TypeString,
 				},
 			},
 

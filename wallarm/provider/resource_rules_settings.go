@@ -197,73 +197,74 @@ func updateRulesSettings(d *schema.ResourceData, m interface{}) error {
 	// or an int to 0 actually gets sent to the API. d.GetOk treats zero
 	// values as "not set" and silently skips them.
 	//
-	// For the Create path (d.IsNewResource()), use GetOk since there are
-	// no prior values to compare against — but GetOkExists catches zero values.
+	// For the Create path (d.IsNewResource()), use isConfigured which checks
+	// d.GetRawConfig() — the SDK v2 replacement for the deprecated GetOkExists.
+	// This correctly detects zero values (false, 0, "") as explicitly configured.
 
 	if d.IsNewResource() {
 		// Create: send every field the user configured
-		if v, ok := getOkForZeroValues(d, "min_lom_format"); ok {
-			val := v.(int)
+		if isConfigured(d, "min_lom_format") {
+			val := d.Get("min_lom_format").(int)
 			params.MinLomFormat = &val
 		}
-		if v, ok := getOkForZeroValues(d, "max_lom_format"); ok {
-			val := v.(int)
+		if isConfigured(d, "max_lom_format") {
+			val := d.Get("max_lom_format").(int)
 			params.MaxLomFormat = &val
 		}
-		if v, ok := getOkForZeroValues(d, "max_lom_size"); ok {
-			val := v.(int)
+		if isConfigured(d, "max_lom_size") {
+			val := d.Get("max_lom_size").(int)
 			params.MaxLomSize = &val
 		}
-		if v, ok := getOkForZeroValues(d, "lom_disabled"); ok {
-			val := v.(bool)
+		if isConfigured(d, "lom_disabled") {
+			val := d.Get("lom_disabled").(bool)
 			params.LomDisabled = &val
 		}
-		if v, ok := getOkForZeroValues(d, "lom_compilation_delay"); ok {
-			val := v.(int)
+		if isConfigured(d, "lom_compilation_delay") {
+			val := d.Get("lom_compilation_delay").(int)
 			params.LomCompilationDelay = &val
 		}
-		if v, ok := getOkForZeroValues(d, "rules_snapshot_enabled"); ok {
-			val := v.(bool)
+		if isConfigured(d, "rules_snapshot_enabled") {
+			val := d.Get("rules_snapshot_enabled").(bool)
 			params.RulesSnapshotEnabled = &val
 		}
-		if v, ok := getOkForZeroValues(d, "rules_snapshot_max_count"); ok {
-			val := v.(int)
+		if isConfigured(d, "rules_snapshot_max_count") {
+			val := d.Get("rules_snapshot_max_count").(int)
 			params.RulesSnapshotMaxCount = &val
 		}
-		if v, ok := getOkForZeroValues(d, "rules_manipulation_locked"); ok {
-			val := v.(bool)
+		if isConfigured(d, "rules_manipulation_locked") {
+			val := d.Get("rules_manipulation_locked").(bool)
 			params.RulesManipulationLocked = &val
 		}
-		if v, ok := getOkForZeroValues(d, "heavy_lom"); ok {
-			val := v.(bool)
+		if isConfigured(d, "heavy_lom") {
+			val := d.Get("heavy_lom").(bool)
 			params.HeavyLom = &val
 		}
-		if v, ok := getOkForZeroValues(d, "parameters_count_weight"); ok {
-			val := v.(int)
+		if isConfigured(d, "parameters_count_weight") {
+			val := d.Get("parameters_count_weight").(int)
 			params.ParametersCountWeight = &val
 		}
-		if v, ok := getOkForZeroValues(d, "path_variativity_weight"); ok {
-			val := v.(int)
+		if isConfigured(d, "path_variativity_weight") {
+			val := d.Get("path_variativity_weight").(int)
 			params.PathVariativityWeight = &val
 		}
-		if v, ok := getOkForZeroValues(d, "pii_weight"); ok {
-			val := v.(int)
+		if isConfigured(d, "pii_weight") {
+			val := d.Get("pii_weight").(int)
 			params.PiiWeight = &val
 		}
-		if v, ok := getOkForZeroValues(d, "request_content_weight"); ok {
-			val := v.(int)
+		if isConfigured(d, "request_content_weight") {
+			val := d.Get("request_content_weight").(int)
 			params.RequestContentWeight = &val
 		}
-		if v, ok := getOkForZeroValues(d, "open_vulns_weight"); ok {
-			val := v.(int)
+		if isConfigured(d, "open_vulns_weight") {
+			val := d.Get("open_vulns_weight").(int)
 			params.OpenVulnsWeight = &val
 		}
-		if v, ok := getOkForZeroValues(d, "serialized_data_weight"); ok {
-			val := v.(int)
+		if isConfigured(d, "serialized_data_weight") {
+			val := d.Get("serialized_data_weight").(int)
 			params.SerializedDataWeight = &val
 		}
-		if v, ok := getOkForZeroValues(d, "risk_score_algo"); ok {
-			val := v.(string)
+		if isConfigured(d, "risk_score_algo") {
+			val := d.Get("risk_score_algo").(string)
 			params.RiskScoreAlgo = &val
 		}
 	} else {
@@ -342,10 +343,16 @@ func updateRulesSettings(d *schema.ResourceData, m interface{}) error {
 	return resourceWallarmRulesSettingsRead(d, m)
 }
 
-// getOkForZeroValues works like d.GetOk but also returns true for zero values
-// (false, 0, "") when the user explicitly configured them. This uses the
-// deprecated GetOkExists which is the only SDK v1 method that handles this correctly.
-func getOkForZeroValues(d *schema.ResourceData, key string) (interface{}, bool) {
-	v, ok := d.GetOkExists(key) //nolint:staticcheck
-	return v, ok
+// isConfigured checks whether the user explicitly set a given key in their
+// Terraform configuration. Unlike d.GetOk, this correctly detects zero values
+// (false, 0, "") as explicitly configured. Uses d.GetRawConfig() which is
+// the SDK v2 replacement for the deprecated GetOkExists.
+func isConfigured(d *schema.ResourceData, key string) bool {
+	raw := d.GetRawConfig()
+	if raw.IsNull() || !raw.IsKnown() {
+		return false
+	}
+	attrs := raw.AsValueMap()
+	v, ok := attrs[key]
+	return ok && !v.IsNull()
 }

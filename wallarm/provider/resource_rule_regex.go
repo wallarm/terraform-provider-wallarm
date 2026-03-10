@@ -32,15 +32,7 @@ func resourceWallarmRegex() *schema.Resource {
 			ForceNew: true,
 		},
 
-		"point": {
-			Type:     schema.TypeList,
-			Required: true,
-			ForceNew: true,
-			Elem: &schema.Schema{
-				Type: schema.TypeList,
-				Elem: &schema.Schema{Type: schema.TypeString},
-			},
-		},
+		"point": defaultPointSchema,
 
 		"experimental": {
 			Type:     schema.TypeBool,

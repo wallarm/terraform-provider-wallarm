@@ -18,15 +18,7 @@ func resourceWallarmRateLimit() *schema.Resource {
 	fields := map[string]*schema.Schema{
 		"action": defaultResourceRuleActionSchema,
 
-		"point": {
-			Type:     schema.TypeList,
-			Required: true,
-			ForceNew: true,
-			Elem: &schema.Schema{
-				Type: schema.TypeList,
-				Elem: &schema.Schema{Type: schema.TypeString},
-			},
-		},
+		"point": defaultPointSchema,
 
 		"delay": {
 			Type:         schema.TypeInt,

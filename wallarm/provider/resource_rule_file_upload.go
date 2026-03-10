@@ -17,15 +17,7 @@ import (
 func resourceWallarmFileUploadSizeLimit() *schema.Resource {
 	fields := map[string]*schema.Schema{
 		"action": defaultResourceRuleActionSchema,
-		"point": {
-			Type:     schema.TypeList,
-			Optional: true,
-			ForceNew: true,
-			Elem: &schema.Schema{
-				Type: schema.TypeList,
-				Elem: &schema.Schema{Type: schema.TypeString},
-			},
-		},
+		"point":  defaultPointSchema,
 		"mode": {
 			Type:         schema.TypeString,
 			Required:     true,
