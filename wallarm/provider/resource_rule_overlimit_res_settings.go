@@ -99,7 +99,9 @@ func resourceWallarmOverlimitResSettingsCreate(d *schema.ResourceData, m interfa
 	d.Set("action_id", actionID)
 	d.Set("rule_type", actionResp.Body.Type)
 	d.Set("client_id", clientID)
-	d.Set("point", actionResp.Body.Point)
+	if err := d.Set("point", wrapPointElements(actionResp.Body.Point)); err != nil {
+		return fmt.Errorf("error setting point: %w", err)
+	}
 
 	resID := fmt.Sprintf("%d/%d/%d", clientID, actionID, actionResp.Body.ID)
 	d.SetId(resID)

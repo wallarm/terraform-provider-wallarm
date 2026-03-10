@@ -54,7 +54,9 @@ func resourceWallarmIgnoreRegexCreate(d *schema.ResourceData, m interface{}) err
 	regexID := d.Get("regex_id").(int)
 
 	ps := d.Get("point").([]interface{})
-	d.Set("point", ps)
+	if err := d.Set("point", ps); err != nil {
+		return fmt.Errorf("error setting point: %w", err)
+	}
 
 	points, err := expandPointsToTwoDimensionalArray(ps)
 	if err != nil {

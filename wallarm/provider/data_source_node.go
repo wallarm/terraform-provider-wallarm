@@ -191,7 +191,9 @@ func dataSourceWallarmNodeRead(d *schema.ResourceData, m interface{}) error {
 		}
 	}
 
-	d.Set("nodes", nodes)
+	if err := d.Set("nodes", nodes); err != nil {
+		return fmt.Errorf("error setting nodes: %w", err)
+	}
 
 	d.SetId(fmt.Sprintf("Nodes_%s", time.Now().UTC().String()))
 	return nil

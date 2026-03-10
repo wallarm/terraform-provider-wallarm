@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"hash/crc32"
+	"log"
 	"sort"
 	"strconv"
 	"strings"
@@ -27,13 +28,15 @@ import (
 func setIfExists(d *schema.ResourceData, key string, value interface{}) {
 	defer func() {
 		if r := recover(); r != nil {
-			if msg, ok := r.(string); ok && strings.Contains(msg, "Invalid address to set") {
+			if err, ok := r.(error); ok && strings.Contains(err.Error(), "Invalid address to set") {
 				return
 			}
 			panic(r)
 		}
 	}()
-	d.Set(key, value)
+	if err := d.Set(key, value); err != nil {
+		log.Printf("[ERROR] error setting %s: %s", key, err)
+	}
 }
 
 // String hashes a string to a unique hashcode.

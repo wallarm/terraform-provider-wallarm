@@ -45,7 +45,9 @@ func resourceWallarmBinaryDataCreate(d *schema.ResourceData, m interface{}) erro
 	fields := getCommonResourceRuleFieldsDTOFromResourceData(d)
 
 	ps := d.Get("point").([]interface{})
-	d.Set("point", ps)
+	if err := d.Set("point", ps); err != nil {
+		return fmt.Errorf("error setting point: %w", err)
+	}
 
 	points, err := expandPointsToTwoDimensionalArray(ps)
 	if err != nil {

@@ -1,6 +1,7 @@
 package wallarm
 
 import (
+	"fmt"
 	"strconv"
 
 	"github.com/wallarm/wallarm-go"
@@ -122,8 +123,12 @@ func resourceWallarmAPISpecRead(d *schema.ResourceData, m interface{}) error {
 	d.Set("regular_file_update", apiSpec.RegularFileUpdate)
 	d.Set("api_detection", apiSpec.ApiDetection)
 	d.Set("client_id", apiSpec.ClientID)
-	d.Set("instances", apiSpec.Instances)
-	d.Set("domains", apiSpec.Domains)
+	if err := d.Set("instances", apiSpec.Instances); err != nil {
+		return fmt.Errorf("error setting instances: %w", err)
+	}
+	if err := d.Set("domains", apiSpec.Domains); err != nil {
+		return fmt.Errorf("error setting domains: %w", err)
+	}
 
 	return nil
 }

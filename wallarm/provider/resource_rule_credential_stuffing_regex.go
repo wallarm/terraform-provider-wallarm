@@ -131,7 +131,9 @@ func resourceWallarmCredentialStuffingRegexRead(d *schema.ResourceData, m interf
 		}
 		actionsSet.Add(acts)
 	}
-	d.Set("action", &actionsSet)
+	if err := d.Set("action", &actionsSet); err != nil {
+		return fmt.Errorf("error setting action: %w", err)
+	}
 
 	return nil
 }

@@ -124,8 +124,12 @@ func resourceWallarmCredentialStuffingPointRead(d *schema.ResourceData, m interf
 	}
 
 	d.Set("cred_stuff_type", rule.CredStuffType)
-	d.Set("point", rule.Point)
-	d.Set("login_point", rule.LoginPoint)
+	if err := d.Set("point", wrapPointElements(rule.Point)); err != nil {
+		return fmt.Errorf("error setting point: %w", err)
+	}
+	if err := d.Set("login_point", wrapPointElements(rule.LoginPoint)); err != nil {
+		return fmt.Errorf("error setting login_point: %w", err)
+	}
 	d.Set("rule_type", rule.Type)
 	d.Set("action_id", rule.ActionID)
 	d.Set("active", rule.Active)
@@ -140,7 +144,9 @@ func resourceWallarmCredentialStuffingPointRead(d *schema.ResourceData, m interf
 		}
 		actionsSet.Add(acts)
 	}
-	d.Set("action", &actionsSet)
+	if err := d.Set("action", &actionsSet); err != nil {
+		return fmt.Errorf("error setting action: %w", err)
+	}
 
 	return nil
 }
@@ -232,15 +238,21 @@ func resourceWallarmCredentialStuffingPointImport(d *schema.ResourceData, m inte
 			}
 			actionsSet.Add(acts)
 		}
-		d.Set("action", &actionsSet)
+		if err := d.Set("action", &actionsSet); err != nil {
+			return nil, fmt.Errorf("error setting action: %w", err)
+		}
 	}
 
 	pointInterface := (*actionHints.Body)[0].Point
 	point := wrapPointElements(pointInterface)
-	d.Set("point", point)
+	if err := d.Set("point", point); err != nil {
+		return nil, fmt.Errorf("error setting point: %w", err)
+	}
 	pointInterface = (*actionHints.Body)[0].LoginPoint
 	point = wrapPointElements(pointInterface)
-	d.Set("login_point", point)
+	if err := d.Set("login_point", point); err != nil {
+		return nil, fmt.Errorf("error setting login_point: %w", err)
+	}
 
 	existingID := fmt.Sprintf("%d/%d/%d", clientID, actionID, ruleID)
 	d.SetId(existingID)

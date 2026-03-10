@@ -83,7 +83,9 @@ func resourceWallarmScannerCreate(d *schema.ResourceData, m interface{}) error {
 		return ImportAsExistsError("wallarm_scanner", existingID)
 	}
 
-	d.Set("resource_id", resources)
+	if err := d.Set("resource_id", resources); err != nil {
+		return fmt.Errorf("error setting resource_id: %w", err)
+	}
 
 	if d.Get("disabled").(bool) {
 		for k, resID := range resources {
@@ -197,7 +199,9 @@ func resourceWallarmScannerUpdate(d *schema.ResourceData, m interface{}) error {
 
 		resourcesID := appendMap(resourcesUpdated, resources)
 
-		d.Set("resource_id", resourcesID)
+		if err := d.Set("resource_id", resourcesID); err != nil {
+			return fmt.Errorf("error setting resource_id: %w", err)
+		}
 
 		if d.HasChange("disabled") {
 			for k, resID := range resourcesID {
