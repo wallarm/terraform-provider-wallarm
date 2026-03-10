@@ -2,7 +2,6 @@ package wallarm
 
 import (
 	"fmt"
-	"strings"
 
 	"github.com/wallarm/wallarm-go"
 
@@ -68,18 +67,33 @@ func resourceWallarmInsightConnect() *schema.Resource {
 			"event": {
 				Type:     schema.TypeSet,
 				Optional: true,
-				MaxItems: 6,
+				MaxItems: 9,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"event_type": {
-							Type:         schema.TypeString,
-							Optional:     true,
-							ValidateFunc: validation.StringInSlice([]string{"hit", "vuln_high", "vuln_medium", "vuln_low", "system", "scope"}, false),
+							Type:     schema.TypeString,
+							Optional: true,
+							ValidateFunc: validation.StringInSlice([]string{
+								"siem",
+								"rules_and_triggers",
+								"number_of_requests_per_hour",
+								"security_issue_critical",
+								"security_issue_high",
+								"security_issue_medium",
+								"security_issue_low",
+								"security_issue_info",
+								"system",
+							}, false),
 						},
 						"active": {
 							Type:     schema.TypeBool,
 							Optional: true,
 							Default:  true,
+						},
+						"with_headers": {
+							Type:        schema.TypeBool,
+							Optional:    true,
+							Description: "Send requests with headers. Only applicable to the 'siem' event type.",
 						},
 					},
 				},
@@ -97,10 +111,10 @@ func resourceWallarmInsightConnectCreate(d *schema.ResourceData, m interface{}) 
 	active := d.Get("active").(bool)
 	events := expandWallarmEventToIntEvents(d.Get("event"), "insight_connect")
 
-	insightBody := wallarm.IntegrationWithAPICreate{
+	insightBody := wallarm.IntegrationCreate{
 		Name:   name,
 		Active: active,
-		Target: &wallarm.IntegrationWithAPITarget{
+		Target: &wallarm.InsightConnectTarget{
 			Token: apiToken,
 			API:   apiURL,
 		},
@@ -109,7 +123,7 @@ func resourceWallarmInsightConnectCreate(d *schema.ResourceData, m interface{}) 
 		Events:   events,
 	}
 
-	createRes, err := client.IntegrationWithAPICreate(&insightBody)
+	createRes, err := client.IntegrationCreate(&insightBody)
 	if err != nil {
 		return err
 	}
@@ -127,10 +141,6 @@ func resourceWallarmInsightConnectRead(d *schema.ResourceData, m interface{}) er
 	clientID := retrieveClientID(d)
 	insight, err := client.IntegrationRead(clientID, d.Get("integration_id").(int))
 	if err != nil {
-		if strings.HasPrefix(err.Error(), "Not found.") {
-			d.SetId("")
-			return nil
-		}
 		return err
 	}
 
@@ -155,26 +165,21 @@ func resourceWallarmInsightConnectUpdate(d *schema.ResourceData, m interface{}) 
 
 	insight, err := client.IntegrationRead(clientID, d.Get("integration_id").(int))
 	if err != nil {
-		if strings.HasPrefix(err.Error(), "Not found.") {
-			d.SetId("")
-			return nil
-		}
 		return err
 	}
 
-	insightBody := wallarm.IntegrationWithAPICreate{
+	insightBody := wallarm.IntegrationCreate{
 		Name:   name,
 		Active: active,
-		Target: &wallarm.IntegrationWithAPITarget{
+		Target: &wallarm.InsightConnectTarget{
 			Token: apiToken,
 			API:   apiURL,
 		},
-		// Clientid: clientID,
 		Type:   "insight_connect",
 		Events: events,
 	}
 
-	updateRes, err := client.IntegrationWithAPIUpdate(&insightBody, insight.ID)
+	updateRes, err := client.IntegrationUpdate(&insightBody, insight.ID)
 	if err != nil {
 		return err
 	}

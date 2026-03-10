@@ -286,7 +286,7 @@ func expandWallarmEventToIntEvents(d interface{}, resourceType string) *[]wallar
 					"event_type": "report_monthly",
 					"active":     false},
 			}
-		case "data_dog":
+		case "data_dog", "insight_connect":
 			defaultEvents = []map[string]interface{}{
 				{
 					"event_type": "siem",

@@ -7,44 +7,38 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 )
 
-var (
-	insightConnectURL = "https://example.com/insight/connect"
-)
-
-func TestAccIntegrationInsightConnectRequiredFields(t *testing.T) {
-	name := "wallarm_integration_insightconnect.test"
-	rndToken := generateRandomUUID()
+func TestAccIntegrationDataDogRequiredFields(t *testing.T) {
+	name := "wallarm_integration_data_dog.test"
+	rndToken := generateRandomUUID() + generateRandomUUID() // 32+ hex chars
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:  func() { testAccPreCheck(t) },
 		Providers: testAccProviders,
 		Steps: []resource.TestStep{
 			{
-				Config: testWallarmIntegrationInsightConnectRequiredOnly(insightConnectURL, rndToken),
+				Config: testWallarmIntegrationDataDogRequiredOnly(rndToken, "US1"),
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr(name, "api_url", insightConnectURL),
-					resource.TestCheckResourceAttr(name, "api_token", rndToken),
+					resource.TestCheckResourceAttr(name, "region", "US1"),
 				),
 			},
 		},
 	})
 }
 
-func TestAccIntegrationInsightConnectFullSettings(t *testing.T) {
-	name := "wallarm_integration_insightconnect.test"
+func TestAccIntegrationDataDogFullSettings(t *testing.T) {
+	name := "wallarm_integration_data_dog.test"
 	rnd := generateRandomResourceName(10)
-	rndToken := generateRandomUUID()
+	rndToken := generateRandomUUID() + generateRandomUUID()
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:  func() { testAccPreCheck(t) },
 		Providers: testAccProviders,
 		Steps: []resource.TestStep{
 			{
-				Config: testWallarmIntegrationInsightConnectFullConfig("tf-test-"+rnd, insightConnectURL, rndToken, "true"),
+				Config: testWallarmIntegrationDataDogFullConfig("tf-test-"+rnd, rndToken, "US1", "true"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(name, "name", "tf-test-"+rnd),
-					resource.TestCheckResourceAttr(name, "api_url", insightConnectURL),
-					resource.TestCheckResourceAttr(name, "api_token", rndToken),
+					resource.TestCheckResourceAttr(name, "region", "US1"),
 					resource.TestCheckResourceAttr(name, "active", "true"),
 					resource.TestCheckResourceAttr(name, "event.#", "9"),
 				),
@@ -53,31 +47,29 @@ func TestAccIntegrationInsightConnectFullSettings(t *testing.T) {
 	})
 }
 
-func TestAccIntegrationInsightConnectCreateThenUpdate(t *testing.T) {
-	name := "wallarm_integration_insightconnect.test"
+func TestAccIntegrationDataDogCreateThenUpdate(t *testing.T) {
+	name := "wallarm_integration_data_dog.test"
 	rnd := generateRandomResourceName(10)
-	rndToken := generateRandomUUID()
+	rndToken := generateRandomUUID() + generateRandomUUID()
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:  func() { testAccPreCheck(t) },
 		Providers: testAccProviders,
 		Steps: []resource.TestStep{
 			{
-				Config: testWallarmIntegrationInsightConnectFullConfig("tf-test-"+rnd, insightConnectURL, rndToken, "true"),
+				Config: testWallarmIntegrationDataDogFullConfig("tf-test-"+rnd, rndToken, "US1", "true"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(name, "name", "tf-test-"+rnd),
-					resource.TestCheckResourceAttr(name, "api_url", insightConnectURL),
-					resource.TestCheckResourceAttr(name, "api_token", rndToken),
+					resource.TestCheckResourceAttr(name, "region", "US1"),
 					resource.TestCheckResourceAttr(name, "active", "true"),
 					resource.TestCheckResourceAttr(name, "event.#", "9"),
 				),
 			},
 			{
-				Config: testWallarmIntegrationInsightConnectFullConfig("tf-updated-"+rnd, insightConnectURL, rndToken, "false"),
+				Config: testWallarmIntegrationDataDogFullConfig("tf-updated-"+rnd, rndToken, "US1", "false"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(name, "name", "tf-updated-"+rnd),
-					resource.TestCheckResourceAttr(name, "api_url", insightConnectURL),
-					resource.TestCheckResourceAttr(name, "api_token", rndToken),
+					resource.TestCheckResourceAttr(name, "region", "US1"),
 					resource.TestCheckResourceAttr(name, "active", "false"),
 					resource.TestCheckResourceAttr(name, "event.#", "9"),
 				),
@@ -86,20 +78,20 @@ func TestAccIntegrationInsightConnectCreateThenUpdate(t *testing.T) {
 	})
 }
 
-func testWallarmIntegrationInsightConnectRequiredOnly(url, token string) string {
+func testWallarmIntegrationDataDogRequiredOnly(token, region string) string {
 	return fmt.Sprintf(`
-resource "wallarm_integration_insightconnect" "test" {
-	api_url = "%[1]s"
-	api_token = "%[2]s"
-}`, url, token)
+resource "wallarm_integration_data_dog" "test" {
+	token = "%[1]s"
+	region = "%[2]s"
+}`, token, region)
 }
 
-func testWallarmIntegrationInsightConnectFullConfig(name, url, token, active string) string {
+func testWallarmIntegrationDataDogFullConfig(name, token, region, active string) string {
 	return fmt.Sprintf(`
-resource "wallarm_integration_insightconnect" "test" {
+resource "wallarm_integration_data_dog" "test" {
 	name = "%[1]s"
-	api_url = "%[2]s"
-	api_token = "%[3]s"
+	token = "%[2]s"
+	region = "%[3]s"
 	active = %[4]s
 
 	event {
@@ -140,5 +132,5 @@ resource "wallarm_integration_insightconnect" "test" {
 		active = true
 	}
 
-}`, name, url, token, active)
+}`, name, token, region, active)
 }
