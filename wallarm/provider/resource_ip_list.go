@@ -25,8 +25,26 @@ func resourceWallarmIPList(listType wallarm.IPListType) *schema.Resource {
 			"client_id": defaultClientIDWithValidationSchema,
 			"ip_range": {
 				Type:     schema.TypeList,
-				Required: true,
+				Optional: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
+			},
+			"country": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+			},
+			"source_type": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+			},
+			"proxy_type": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Elem: &schema.Schema{
+					Type:         schema.TypeString,
+					ValidateFunc: validation.StringInSlice([]string{"MIP", "PUB", "WEB", "SES", "TOR", "VPN"}, false),
+				},
 			},
 			"application": {
 				Type:     schema.TypeList,
@@ -45,14 +63,18 @@ func resourceWallarmIPList(listType wallarm.IPListType) *schema.Resource {
 			"reason": {
 				Type:     schema.TypeString,
 				Optional: true,
-				Default:  "Terraform managed Denylist",
+				Default:  "Terraform managed IP list",
 			},
 			"address_id": {
 				Type:     schema.TypeList,
 				Computed: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
-						"ip_addr": {
+						"rule_type": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"value": {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
@@ -67,27 +89,17 @@ func resourceWallarmIPList(listType wallarm.IPListType) *schema.Resource {
 	}
 }
 
-// CreateContextFunc func(context.Context, *ResourceData, interface{}) diag.Diagnostics
-
 func resourceWallarmIPListCreate(listType wallarm.IPListType) schema.CreateContextFunc {
 	return func(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 		client := m.(wallarm.API)
 		clientID := retrieveClientID(d)
 
-		var ips []string
-		v := d.Get("ip_range")
-		IPRange := v.([]interface{})
-		for _, v := range IPRange {
-			if strings.Contains(v.(string), "/") {
-				subNetwork, err := strconv.Atoi(strings.Split(v.(string), "/")[1])
-				if err != nil {
-					return diag.FromErr(fmt.Errorf("cannot parse subnet to integer. must be the number, got %v", err))
-				}
-				if subNetwork < 20 {
-					return diag.FromErr(fmt.Errorf("subnet must be >= /20, got %v", subNetwork))
-				}
-			}
-			ips = append(ips, v.(string))
+		rules, diags := buildRulesFromSchema(d)
+		if diags != nil {
+			return diags
+		}
+		if len(rules) == 0 {
+			return diag.FromErr(fmt.Errorf("at least one of ip_range, country, source_type, or proxy_type must be specified"))
 		}
 
 		var apps []int
@@ -98,103 +110,27 @@ func resourceWallarmIPListCreate(listType wallarm.IPListType) schema.CreateConte
 				apps[i] = applications[i].(int)
 			}
 		} else {
-			pools := &wallarm.AppRead{
-				Limit:  1000,
-				Offset: 0,
-				Filter: &wallarm.AppReadFilter{
-					Clientid: []int{clientID},
-				},
-			}
-			appResp, err := client.AppRead(pools)
-			if err != nil {
-				return diag.FromErr(err)
-			}
-			apps = make([]int, len(appResp.Body))
-			for i, app := range appResp.Body {
-				apps[i] = *app.ID
-			}
+			apps = []int{0} // 0 means all applications
 		}
 
-		var unixTime int
-		switch d.Get("time_format") {
-		case Minutes:
-			expireTime, err := strconv.Atoi(d.Get("time").(string))
-			if err != nil {
-				return diag.FromErr(fmt.Errorf("cannot parse time to integer. must be the number when `time_format` equals `Minute`, got %v", err))
-			}
-			if expireTime == 0 {
-				expireTime = 60045120
-			}
-			currTime := time.Now()
-			shiftTime := currTime.Add(time.Minute * time.Duration(expireTime))
-			unixTime = int(shiftTime.Unix())
-		case "Hours":
-			expireTime, err := strconv.Atoi(d.Get("time").(string))
-			if err != nil {
-				return diag.FromErr(fmt.Errorf("cannot parse time to integer. must be the number when `time_format` equals `Hours`, got %v", err))
-			}
-			if expireTime == 0 {
-				expireTime = 60045120
-			}
-			currTime := time.Now()
-			shiftTime := currTime.Add(time.Hour * time.Duration(expireTime))
-			unixTime = int(shiftTime.Unix())
-		case "Days":
-			expireTime, err := strconv.Atoi(d.Get("time").(string))
-			if err != nil {
-				return diag.FromErr(fmt.Errorf("cannot parse time to integer. must be the number when `time_format` equals `Days`, got %v", err))
-			}
-			if expireTime == 0 {
-				expireTime = 60045120
-			}
-			currTime := time.Now()
-			shiftTime := currTime.Add(24 * time.Hour * time.Duration(expireTime))
-			unixTime = int(shiftTime.Unix())
-		case "Weeks":
-			expireTime, err := strconv.Atoi(d.Get("time").(string))
-			if err != nil {
-				return diag.FromErr(fmt.Errorf("cannot parse time to integer. must be the number when `time_format` equals `Weeks`, got %v", err))
-			}
-			if expireTime == 0 {
-				expireTime = 60045120
-			}
-			currTime := time.Now()
-			shiftTime := currTime.Add(7 * 24 * time.Hour * time.Duration(expireTime))
-			unixTime = int(shiftTime.Unix())
-		case "Months":
-			expireTime, err := strconv.Atoi(d.Get("time").(string))
-			if err != nil {
-				return diag.FromErr(fmt.Errorf("cannot parse time to integer. must be the number when `time_format` equals `Months`, got %v", err))
-			}
-			if expireTime == 0 {
-				expireTime = 60045120
-			}
-			currTime := time.Now()
-			shiftTime := currTime.AddDate(0, expireTime, 0)
-			unixTime = int(shiftTime.Unix())
-		case "RFC3339":
-			expireTime, err := time.Parse(time.RFC3339, d.Get("time").(string))
-			if err != nil {
-				return diag.FromErr(fmt.Errorf("cannot parse time to integer. must be the valid RFC3339 time when `time_format` equals `RFC3339`, got %v.\nExample: 2006-01-02T15:04:05+07:00", err))
-			}
-			unixTime = int(expireTime.Unix())
+		unixTime, diags := parseExpireTime(d)
+		if diags != nil {
+			return diags
 		}
 
 		reason := d.Get("reason").(string)
 
-		for _, ip := range ips {
-			params := wallarm.IPRuleCreationParams{
-				ExpiredAt: unixTime,
-				List:      listType,
-				Pools:     apps,
-				Reason:    reason,
-				RuleType:  "ip_range",
-				Subnet:    ip,
-			}
+		params := wallarm.AccessRuleCreateRequest{
+			List:           listType,
+			Force:          false,
+			Reason:         reason,
+			ApplicationIDs: apps,
+			ExpiredAt:      unixTime,
+			Rules:          rules,
+		}
 
-			if err := client.IPListCreate(clientID, params); err != nil {
-				return diag.FromErr(err)
-			}
+		if err := client.IPListCreate(clientID, params); err != nil {
+			return diag.FromErr(err)
 		}
 
 		d.SetId(reason)
@@ -207,68 +143,12 @@ func resourceWallarmIPListRead(listType wallarm.IPListType) schema.ReadContextFu
 	return func(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 		client := m.(wallarm.API)
 		clientID := retrieveClientID(d)
-		IPRange := d.Get("ip_range").([]interface{})
-		ips := make([]string, len(IPRange))
-		for i := range IPRange {
-			ips[i] = IPRange[i].(string)
-		}
 
-		var apps []int
-		if v, ok := d.GetOk("application"); ok {
-			applications := v.([]interface{})
-			apps = make([]int, len(applications))
-			for i := range applications {
-				apps[i] = applications[i].(int)
-			}
-		} else {
-			pools := &wallarm.AppRead{
-				Limit:  1000,
-				Offset: 0,
-				Filter: &wallarm.AppReadFilter{
-					Clientid: []int{clientID},
-				},
-			}
-			appResp, err := client.AppRead(pools)
-			if err != nil {
-				return diag.FromErr(err)
-			}
-			apps = make([]int, len(appResp.Body))
-			for i, app := range appResp.Body {
-				apps[i] = *app.ID
-			}
-		}
-
-		var ipListFromTerraform []struct {
-			IP          string
-			Application int
-		}
-
-		for _, ip := range ips {
-			for _, app := range apps {
-				if strings.Contains(ip, "/") {
-					subnet, err := hosts(ip)
-					if err != nil {
-						return diag.FromErr(err)
-					}
-					for _, subnetIP := range subnet {
-						ipListFromTerraform = append(ipListFromTerraform, struct {
-							IP          string
-							Application int
-						}{subnetIP, app})
-					}
-				} else {
-					ipListFromTerraform = append(ipListFromTerraform, struct {
-						IP          string
-						Application int
-					}{ip, app})
-				}
-			}
-		}
-
-		derivedIPaddr := make([]string, len(ipListFromTerraform))
-		for k, b := range ipListFromTerraform {
-			derivedIPaddr[k] = b.IP
-		}
+		// Build lookup sets for each rule type from the schema.
+		subnetLookup := buildSubnetLookup(d)
+		countryLookup := buildStringLookup(d, "country")
+		sourceLookup := buildStringLookup(d, "source_type")
+		proxyLookup := buildStringLookup(d, "proxy_type")
 
 		ipListsFromAPI, err := client.IPListRead(listType, clientID)
 		if err != nil {
@@ -277,13 +157,53 @@ func resourceWallarmIPListRead(listType wallarm.IPListType) schema.ReadContextFu
 
 		addrIDs := make([]interface{}, 0)
 		found := false
-		for _, ipList := range ipListsFromAPI {
-			if wallarm.Contains(derivedIPaddr, strings.Split(ipList.Subnet, "/")[0]) {
-				found = true
-				addrIDs = append(addrIDs, map[string]interface{}{
-					"ip_addr": ipList.Subnet,
-					"ip_id":   ipList.ID,
-				})
+		for _, ipRule := range ipListsFromAPI {
+			switch ipRule.RuleType {
+			case "subnet":
+				for _, val := range ipRule.Values {
+					ipAddr := strings.Split(val, "/")[0]
+					if subnetLookup[ipAddr] {
+						found = true
+						addrIDs = append(addrIDs, map[string]interface{}{
+							"rule_type": "subnet",
+							"value":     val,
+							"ip_id":     ipRule.ID,
+						})
+					}
+				}
+			case "location":
+				for _, val := range ipRule.Values {
+					if countryLookup[val] {
+						found = true
+						addrIDs = append(addrIDs, map[string]interface{}{
+							"rule_type": "location",
+							"value":     val,
+							"ip_id":     ipRule.ID,
+						})
+					}
+				}
+			case "datacenter":
+				for _, val := range ipRule.Values {
+					if sourceLookup[val] {
+						found = true
+						addrIDs = append(addrIDs, map[string]interface{}{
+							"rule_type": "datacenter",
+							"value":     val,
+							"ip_id":     ipRule.ID,
+						})
+					}
+				}
+			case "proxy_type":
+				for _, val := range ipRule.Values {
+					if proxyLookup[val] {
+						found = true
+						addrIDs = append(addrIDs, map[string]interface{}{
+							"rule_type": "proxy_type",
+							"value":     val,
+							"ip_id":     ipRule.ID,
+						})
+					}
+				}
 			}
 		}
 		if !found {
@@ -292,7 +212,7 @@ func resourceWallarmIPListRead(listType wallarm.IPListType) schema.ReadContextFu
 		}
 
 		if err = d.Set("address_id", addrIDs); err != nil {
-			return diag.FromErr(fmt.Errorf("cannot set content for ip_range: %v", err))
+			return diag.FromErr(fmt.Errorf("cannot set content for address_id: %v", err))
 		}
 
 		d.Set("client_id", clientID)
@@ -320,21 +240,198 @@ func resourceWallarmIPListDelete(listType wallarm.IPListType) schema.DeleteConte
 			addrIDs[i] = addrIDInterface[i].(map[string]interface{})
 		}
 
-		var derivedIDs []int
-		for _, id := range addrIDs {
-			derivedIDs = append(derivedIDs, id["ip_id"].(int))
+		// Group IDs by rule_type for the delete request.
+		ruleTypeIDs := make(map[string][]int)
+		for _, entry := range addrIDs {
+			ruleType := entry["rule_type"].(string)
+			id := entry["ip_id"].(int)
+			ruleTypeIDs[ruleType] = append(ruleTypeIDs[ruleType], id)
 		}
 
-		if len(derivedIDs) == 0 {
-			derivedIDs = append(derivedIDs, 0)
+		if len(ruleTypeIDs) == 0 {
+			return nil
 		}
 
-		if err := client.IPListDelete(listType, clientID, derivedIDs); err != nil {
+		var deleteRules []wallarm.AccessRuleDeleteEntry
+		for ruleType, ids := range ruleTypeIDs {
+			deleteRules = append(deleteRules, wallarm.AccessRuleDeleteEntry{
+				RuleType: ruleType,
+				IDs:      ids,
+			})
+		}
+
+		if err := client.IPListDelete(clientID, deleteRules); err != nil {
 			return diag.FromErr(err)
 		}
 
 		return nil
 	}
+}
+
+// buildRulesFromSchema constructs AccessRuleEntry slice from all configured rule type fields.
+func buildRulesFromSchema(d *schema.ResourceData) ([]wallarm.AccessRuleEntry, diag.Diagnostics) {
+	var rules []wallarm.AccessRuleEntry
+
+	// subnet rules from ip_range
+	if v, ok := d.GetOk("ip_range"); ok {
+		ipRange := v.([]interface{})
+		var ips []string
+		for _, v := range ipRange {
+			ip := v.(string)
+			if strings.Contains(ip, "/") {
+				subNetwork, err := strconv.Atoi(strings.Split(ip, "/")[1])
+				if err != nil {
+					return nil, diag.FromErr(fmt.Errorf("cannot parse subnet to integer. must be the number, got %v", err))
+				}
+				if subNetwork < 8 {
+					return nil, diag.FromErr(fmt.Errorf("subnet must be >= /8, got %v", subNetwork))
+				}
+			}
+			ips = append(ips, ip)
+		}
+		if len(ips) > 0 {
+			rules = append(rules, wallarm.AccessRuleEntry{
+				RulesType: "subnet",
+				Values:    ips,
+			})
+		}
+	}
+
+	// location rules from country
+	if v, ok := d.GetOk("country"); ok {
+		countries := v.([]interface{})
+		var vals []string
+		for _, c := range countries {
+			vals = append(vals, c.(string))
+		}
+		if len(vals) > 0 {
+			rules = append(rules, wallarm.AccessRuleEntry{
+				RulesType: "location",
+				Values:    vals,
+			})
+		}
+	}
+
+	// datacenter rules from source_type
+	if v, ok := d.GetOk("source_type"); ok {
+		sources := v.([]interface{})
+		var vals []string
+		for _, s := range sources {
+			vals = append(vals, s.(string))
+		}
+		if len(vals) > 0 {
+			rules = append(rules, wallarm.AccessRuleEntry{
+				RulesType: "datacenter",
+				Values:    vals,
+			})
+		}
+	}
+
+	// proxy_type rules from proxy_type
+	if v, ok := d.GetOk("proxy_type"); ok {
+		proxies := v.([]interface{})
+		var vals []string
+		for _, p := range proxies {
+			vals = append(vals, p.(string))
+		}
+		if len(vals) > 0 {
+			rules = append(rules, wallarm.AccessRuleEntry{
+				RulesType: "proxy_type",
+				Values:    vals,
+			})
+		}
+	}
+
+	return rules, nil
+}
+
+// buildSubnetLookup expands CIDR ranges and builds a set of individual IPs for matching.
+func buildSubnetLookup(d *schema.ResourceData) map[string]bool {
+	lookup := make(map[string]bool)
+	ipRange := d.Get("ip_range").([]interface{})
+	for _, v := range ipRange {
+		ip := v.(string)
+		if strings.Contains(ip, "/") {
+			subnet, err := hosts(ip)
+			if err == nil {
+				for _, s := range subnet {
+					lookup[s] = true
+				}
+			}
+		} else {
+			lookup[ip] = true
+		}
+	}
+	return lookup
+}
+
+// buildStringLookup builds a set from a TypeList string field.
+func buildStringLookup(d *schema.ResourceData, field string) map[string]bool {
+	lookup := make(map[string]bool)
+	if v, ok := d.GetOk(field); ok {
+		items := v.([]interface{})
+		for _, item := range items {
+			lookup[item.(string)] = true
+		}
+	}
+	return lookup
+}
+
+func parseExpireTime(d *schema.ResourceData) (int, diag.Diagnostics) {
+	switch d.Get("time_format") {
+	case Minutes:
+		expireTime, err := strconv.Atoi(d.Get("time").(string))
+		if err != nil {
+			return 0, diag.FromErr(fmt.Errorf("cannot parse time to integer. must be the number when `time_format` equals `Minutes`, got %v", err))
+		}
+		if expireTime == 0 {
+			expireTime = 60045120
+		}
+		return int(time.Now().Add(time.Minute * time.Duration(expireTime)).Unix()), nil
+	case "Hours":
+		expireTime, err := strconv.Atoi(d.Get("time").(string))
+		if err != nil {
+			return 0, diag.FromErr(fmt.Errorf("cannot parse time to integer. must be the number when `time_format` equals `Hours`, got %v", err))
+		}
+		if expireTime == 0 {
+			expireTime = 60045120
+		}
+		return int(time.Now().Add(time.Hour * time.Duration(expireTime)).Unix()), nil
+	case "Days":
+		expireTime, err := strconv.Atoi(d.Get("time").(string))
+		if err != nil {
+			return 0, diag.FromErr(fmt.Errorf("cannot parse time to integer. must be the number when `time_format` equals `Days`, got %v", err))
+		}
+		if expireTime == 0 {
+			expireTime = 60045120
+		}
+		return int(time.Now().Add(24 * time.Hour * time.Duration(expireTime)).Unix()), nil
+	case "Weeks":
+		expireTime, err := strconv.Atoi(d.Get("time").(string))
+		if err != nil {
+			return 0, diag.FromErr(fmt.Errorf("cannot parse time to integer. must be the number when `time_format` equals `Weeks`, got %v", err))
+		}
+		if expireTime == 0 {
+			expireTime = 60045120
+		}
+		return int(time.Now().Add(7 * 24 * time.Hour * time.Duration(expireTime)).Unix()), nil
+	case "Months":
+		expireTime, err := strconv.Atoi(d.Get("time").(string))
+		if err != nil {
+			return 0, diag.FromErr(fmt.Errorf("cannot parse time to integer. must be the number when `time_format` equals `Months`, got %v", err))
+		}
+		if expireTime == 0 {
+			expireTime = 60045120
+		}
+		return int(time.Now().AddDate(0, expireTime, 0).Unix()), nil
+	case "RFC3339":
+		expireTime, err := time.Parse(time.RFC3339, d.Get("time").(string))
+		if err != nil {
+			return 0, diag.FromErr(fmt.Errorf("cannot parse time to integer. must be the valid RFC3339 time when `time_format` equals `RFC3339`, got %v.\nExample: 2006-01-02T15:04:05+07:00", err))
+		}
+		return int(expireTime.Unix()), nil
+	}
+	return 0, diag.FromErr(fmt.Errorf("unsupported time_format"))
 }
 
 // Pull out the raw IP addresses from the Subnet.
