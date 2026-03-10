@@ -13,7 +13,7 @@ terraform {
 #
 # Define provider parameters
 #
-provider "wallarm" {
+provider "" {
   api_token = var.api_token
   api_host = var.api_host
   client_id = 133

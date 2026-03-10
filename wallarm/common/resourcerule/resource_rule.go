@@ -4,18 +4,36 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"hash/crc32"
 	"sort"
 	"strconv"
 	"strings"
 
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/pkg/errors"
-	"github.com/wallarm/terraform-provider-wallarm/hashcode"
+
 	"github.com/wallarm/terraform-provider-wallarm/wallarm/common"
 	"github.com/wallarm/terraform-provider-wallarm/wallarm/common/mapper/apitotf"
 	"github.com/wallarm/terraform-provider-wallarm/wallarm/common/mapper/tftoapi"
 	"github.com/wallarm/wallarm-go"
 )
+
+// String hashes a string to a unique hashcode.
+//
+// crc32 returns a uint32, but for our use we need
+// and non negative integer. Here we cast to an integer
+// and invert it if the result is negative.
+func HashString(s string) int {
+	v := int(crc32.ChecksumIEEE([]byte(s)))
+	if v >= 0 {
+		return v
+	}
+	if -v >= 0 {
+		return -v
+	}
+	// v == MinInt
+	return 0
+}
 
 // nolint
 func ResourceRuleWallarmRead(d *schema.ResourceData, clientID int, cli wallarm.API, opts ...common.ReadOption) error {
@@ -202,7 +220,11 @@ func ExpandSetToActionDetailsList(action *schema.Set) ([]wallarm.ActionDetails, 
 		for _, k := range keys {
 			switch k {
 			case "point":
-				point := actionMap[k].(map[string]interface{})
+				pointList := actionMap[k].([]interface{})
+				if len(pointList) == 0 {
+					break
+				}
+				point := pointList[0].(map[string]interface{})
 				for pointKey, pointValue := range point {
 					switch pointKey {
 					case common.Path:
@@ -338,6 +360,14 @@ func wrapPointElements(input []interface{}) [][]string {
 	return result
 }
 
+func wrapPointMapForSchema(pointMap map[string]string) []interface{} {
+	m := make(map[string]interface{}, len(pointMap))
+	for k, v := range pointMap {
+		m[k] = v
+	}
+	return []interface{}{m}
+}
+
 func hashResponseActionDetails(v interface{}) int {
 	var buf bytes.Buffer
 	m := v.(map[string]interface{})
@@ -350,56 +380,56 @@ func hashResponseActionDetails(v interface{}) int {
 		case "action_name":
 			pointMap := make(map[string]string)
 			pointMap["action_name"] = m["value"].(string)
-			m["point"] = pointMap
+			m["point"] = wrapPointMapForSchema(pointMap)
 			m["value"] = ""
 		case "action_ext":
 			pointMap := make(map[string]string)
 			pointMap["action_ext"] = m["value"].(string)
-			m["point"] = pointMap
+			m["point"] = wrapPointMapForSchema(pointMap)
 			m["value"] = ""
 		case "scheme":
 			pointMap := make(map[string]string)
 			pointMap["scheme"] = m["value"].(string)
-			m["point"] = pointMap
+			m["point"] = wrapPointMapForSchema(pointMap)
 			m["value"] = ""
 		case "uri":
 			pointMap := make(map[string]string)
 			pointMap["uri"] = m["value"].(string)
-			m["point"] = pointMap
+			m["point"] = wrapPointMapForSchema(pointMap)
 			m["value"] = ""
 		case "proto":
 			pointMap := make(map[string]string)
 			pointMap["proto"] = m["value"].(string)
-			m["point"] = pointMap
+			m["point"] = wrapPointMapForSchema(pointMap)
 			m["value"] = ""
 		case "method":
 			pointMap := make(map[string]string)
 			pointMap["method"] = m["value"].(string)
-			m["point"] = pointMap
+			m["point"] = wrapPointMapForSchema(pointMap)
 			m["value"] = ""
 		case common.Path:
 			pointMap := make(map[string]string)
 			pointMap[common.Path] = fmt.Sprintf("%d", int(p[1].(float64)))
-			m["point"] = pointMap
+			m["point"] = wrapPointMapForSchema(pointMap)
 		case "instance":
 			pointMap := make(map[string]string)
 			pointMap["instance"] = m["value"].(string)
-			m["point"] = pointMap
+			m["point"] = wrapPointMapForSchema(pointMap)
 			m["value"] = ""
 			m["type"] = ""
 		case "header":
 			pointMap := make(map[string]string)
 			pointMap["header"] = p[1].(string)
-			m["point"] = pointMap
+			m["point"] = wrapPointMapForSchema(pointMap)
 		case "get":
 			pointMap := make(map[string]string)
 			pointMap["query"] = p[1].(string)
-			m["point"] = pointMap
+			m["point"] = wrapPointMapForSchema(pointMap)
 		}
 
 		buf.WriteString(fmt.Sprintf("%v-", m["point"]))
 	}
-	return hashcode.String(buf.String())
+	return HashString(buf.String())
 }
 
 func actionDetailsToMap(actionDetails wallarm.ActionDetails) (map[string]interface{}, error) {

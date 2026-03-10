@@ -6,6 +6,8 @@ GOARCH?=$$(go env GOARCH)
 VERSION=2.0.0
 TESTTIMEOUT=120m
 
+WALLARM_API_HOST=https://api.wallarm.com
+
 default: build
 
 install: fmtcheck
@@ -28,14 +30,14 @@ init-plugin: build
 
 lint:
 	@echo "Running golangci-lint..."
-	@go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.64.8
+	@go install github.com/golangci/golangci-lint/cmd/golangci-lint
 	@golangci-lint run
 
 test:
 	go test $(TEST) -v -timeout=30s -parallel=4 -race -cover
 
 testacc: fmtcheck
-	TF_ACC=1 go test $(TEST) -v $(TESTARGS) -timeout $(TESTTIMEOUT) -race -cover -ldflags="-X=github.com/wallarm/terraform-provider-wallarm/version.ProviderVersion=acc"
+	TF_ACC=1 go test $(TEST) -v $(TESTARGS) -timeout $(TESTTIMEOUT) -race -cover -ldflags="-X=github.com/local/terraform-provider-wallarm/version.ProviderVersion=acc"
 
 vet:
 	@echo "go vet ."
