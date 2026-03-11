@@ -11,9 +11,9 @@ import (
 
 const (
 	// defaultBulkFetchLimit is the number of hints fetched per API call during bulk loading.
-	defaultBulkFetchLimit = 100
+	defaultBulkFetchLimit = 200
 	// maxBulkFetchPages caps the number of paginated requests to prevent runaway fetches.
-	maxBulkFetchPages = 200
+	maxBulkFetchPages = 500
 )
 
 // CacheStats provides a snapshot of the cache's operational state.
@@ -93,7 +93,7 @@ func (c *HintCache) bulkLoad(clientID int, api wallarm.API) error {
 		resp, err := api.HintRead(&wallarm.HintRead{
 			Limit:     defaultBulkFetchLimit,
 			Offset:    offset,
-			OrderBy:   "updated_at",
+			OrderBy:   "id",
 			OrderDesc: true,
 			Filter: &wallarm.HintFilter{
 				Clientid: []int{clientID},
@@ -222,6 +222,15 @@ func NewCachedClient(api wallarm.API) *CachedClient {
 		API:       api,
 		hintCache: NewHintCache(),
 	}
+}
+
+// AllRules ensures the cache is loaded and returns all cached hints.
+// Used by the wallarm_rules data source to share the same cache as individual rule reads.
+func (c *CachedClient) AllRules(clientID int) ([]wallarm.ActionBody, error) {
+	if err := c.hintCache.ensureLoaded(clientID, c.API); err != nil {
+		return nil, err
+	}
+	return c.hintCache.All(), nil
 }
 
 // HintCacheStats returns the current cache statistics.
