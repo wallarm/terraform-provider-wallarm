@@ -48,7 +48,7 @@ func TestAccRuleVpatchCreate_DefaultBranch(t *testing.T) {
 					resource.TestCheckResourceAttr(name, "attack_type", "crlf"),
 					resource.TestCheckResourceAttr(name, "point.0.0", "get"),
 					resource.TestCheckResourceAttr(name, "point.0.1", "query"),
-					resource.TestCheckNoResourceAttr(name, "action"),
+					resource.TestCheckResourceAttr(name, "action.#", "0"),
 				),
 			},
 		},

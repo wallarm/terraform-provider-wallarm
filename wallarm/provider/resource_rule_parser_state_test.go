@@ -95,7 +95,7 @@ func TestAccRuleParserStateCreate_DefaultBranch(t *testing.T) {
 					resource.TestCheckResourceAttr(name, "point.0.0", "header"),
 					resource.TestCheckResourceAttr(name, "point.0.1", "HOST"),
 					resource.TestCheckResourceAttr(name, "point.1.0", "pollution"),
-					resource.TestCheckNoResourceAttr(name, "action"),
+					resource.TestCheckResourceAttr(name, "action.#", "0"),
 				),
 			},
 		},

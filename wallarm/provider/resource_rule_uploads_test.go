@@ -42,7 +42,7 @@ func TestAccRuleUploadsCreate_IncorrectFileType(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config:      testWallarmRuleUploadsBasicConfig(rnd, "incorrect", "iequal", "uploads.wallarm.com", "HOST", `["post"],["form_urlencoded","query"]`),
-				ExpectError: regexp.MustCompile(`config is invalid: expected file_type to be one of \[docs html images music video\], got incorrect`),
+				ExpectError: regexp.MustCompile(`expected file_type to be one of \["docs" "html" "images" "music" "video"\], got incorrect`),
 			},
 		},
 	})
@@ -93,7 +93,7 @@ func TestAccRuleUploadsCreate_DefaultBranch(t *testing.T) {
 					resource.TestCheckResourceAttr(name, "point.0.0", "header"),
 					resource.TestCheckResourceAttr(name, "point.0.1", "HOST"),
 					resource.TestCheckResourceAttr(name, "point.1.0", "pollution"),
-					resource.TestCheckNoResourceAttr(name, "action"),
+					resource.TestCheckResourceAttr(name, "action.#", "0"),
 				),
 			},
 		},

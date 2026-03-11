@@ -47,7 +47,7 @@ func TestAccRuleWmodeCreate_DefaultBranch(t *testing.T) {
 			{
 				Config: testWallarmRuleWmodeDefaultBranchConfig(rnd, "default"),
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckNoResourceAttr(name, "action"),
+					resource.TestCheckResourceAttr(name, "action.#", "0"),
 				),
 				ExpectError: ResourceExistsError("[0-9]+/[0-9]+/[0-9]+/wallarm_mode", "wallarm_rule_mode"),
 			},
