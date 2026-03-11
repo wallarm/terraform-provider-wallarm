@@ -171,13 +171,14 @@ func resourceWallarmTelegramUpdate(d *schema.ResourceData, m interface{}) error 
 	}
 
 	if d.HasChange("event") {
-		// When events change, send name + events together
-		updateBody := map[string]interface{}{
-			"name":   d.Get("name").(string),
-			"active": d.Get("active").(bool),
-			"events": expandWallarmEventToIntEvents(d.Get("event"), "telegram"),
+		// When events change, API requires the full configuration
+		fullBody := wallarm.IntegrationCreate{
+			Name:   d.Get("name").(string),
+			Active: d.Get("active").(bool),
+			Events: expandWallarmEventToIntEvents(d.Get("event"), "telegram"),
+			Type:   "telegram",
 		}
-		updateRes, err := client.IntegrationPartialUpdate(telegram.ID, updateBody)
+		updateRes, err := client.IntegrationUpdate(&fullBody, telegram.ID)
 		if err != nil {
 			return err
 		}

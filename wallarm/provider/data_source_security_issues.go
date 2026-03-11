@@ -2,7 +2,6 @@ package wallarm
 
 import (
 	"fmt"
-	"time"
 
 	"github.com/wallarm/wallarm-go"
 
@@ -283,7 +282,7 @@ func dataSourceWallarmSecurityIssuesRead(d *schema.ResourceData, m interface{}) 
 		issues = append(issues, issue)
 	}
 
-	d.SetId(fmt.Sprintf("Issues_%s", time.Now().UTC().String()))
+	d.SetId(fmt.Sprintf("issues_%d", req.ClientID))
 
 	if err = d.Set("issues", issues); err != nil {
 		return fmt.Errorf("error setting Issues: %s", err)

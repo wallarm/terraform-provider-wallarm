@@ -2,7 +2,6 @@ package wallarm
 
 import (
 	"fmt"
-	"time"
 
 	"github.com/wallarm/wallarm-go"
 
@@ -195,7 +194,7 @@ func dataSourceWallarmNodeRead(d *schema.ResourceData, m interface{}) error {
 		return fmt.Errorf("error setting nodes: %w", err)
 	}
 
-	d.SetId(fmt.Sprintf("Nodes_%s", time.Now().UTC().String()))
+	d.SetId(fmt.Sprintf("nodes_%d_%s", clientID, filter.Type))
 	return nil
 }
 

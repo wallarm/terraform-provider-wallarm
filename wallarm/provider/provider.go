@@ -35,7 +35,7 @@ func Provider() *schema.Provider {
 				ValidateFunc: validation.IsURLWithHTTPS,
 			},
 			"api_uuid": {
-				Deprecated:   "This field is deprecated. Please use the api_token field instend.",
+				Deprecated:   "This field is deprecated. Please use the api_token field instead.",
 				Type:         schema.TypeString,
 				Optional:     true,
 				DefaultFunc:  schema.EnvDefaultFunc("WALLARM_API_UUID", nil),
@@ -44,7 +44,7 @@ func Provider() *schema.Provider {
 				Sensitive:    true,
 			},
 			"api_secret": {
-				Deprecated:   "This field is deprecated. Please use the api_token field instend.",
+				Deprecated:   "This field is deprecated. Please use the api_token field instead.",
 				Type:         schema.TypeString,
 				Optional:     true,
 				DefaultFunc:  schema.EnvDefaultFunc("WALLARM_API_SECRET", nil),

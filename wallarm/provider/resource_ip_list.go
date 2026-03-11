@@ -2,8 +2,11 @@ package wallarm
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"net"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -24,14 +27,16 @@ func resourceWallarmIPList(listType wallarm.IPListType) *schema.Resource {
 		Schema: map[string]*schema.Schema{
 			"client_id": defaultClientIDWithValidationSchema,
 			"ip_range": {
-				Type:     schema.TypeList,
-				Optional: true,
-				Elem:     &schema.Schema{Type: schema.TypeString},
+				Type:          schema.TypeList,
+				Optional:      true,
+				Elem:          &schema.Schema{Type: schema.TypeString},
+				ConflictsWith: []string{"country", "datacenter", "proxy_type"},
 			},
 			"country": {
-				Type:     schema.TypeList,
-				Optional: true,
-				Elem:     &schema.Schema{Type: schema.TypeString},
+				Type:          schema.TypeList,
+				Optional:      true,
+				Elem:          &schema.Schema{Type: schema.TypeString},
+				ConflictsWith: []string{"ip_range", "datacenter", "proxy_type"},
 			},
 			"datacenter": {
 				Type:     schema.TypeList,
@@ -40,10 +45,12 @@ func resourceWallarmIPList(listType wallarm.IPListType) *schema.Resource {
 					Type:         schema.TypeString,
 					ValidateFunc: validation.StringInSlice([]string{"alibaba", "aws", "azure", "docean", "gce", "hetzner", "huawei", "ibm", "linode", "oracle", "ovh", "plusserver", "rackspace", "tencent"}, false),
 				},
+				ConflictsWith: []string{"ip_range", "country", "proxy_type"},
 			},
 			"proxy_type": {
-				Type:     schema.TypeList,
-				Optional: true,
+				Type:          schema.TypeList,
+				Optional:      true,
+				ConflictsWith: []string{"ip_range", "country", "datacenter"},
 				Elem: &schema.Schema{
 					Type:         schema.TypeString,
 					ValidateFunc: validation.StringInSlice([]string{"MIP", "PUB", "WEB", "SES", "TOR", "VPN"}, false),
@@ -136,7 +143,9 @@ func resourceWallarmIPListCreate(listType wallarm.IPListType) schema.CreateConte
 			return diag.FromErr(err)
 		}
 
-		d.SetId(reason)
+		ruleType := ipListRuleTypes(rules)
+		valuesHash := ipListValuesHash(rules)
+		d.SetId(fmt.Sprintf("%d/%s/%s/%s", clientID, ipListFriendlyType(listType), ruleType, valuesHash))
 
 		return resourceWallarmIPListRead(listType)(ctx, d, m)
 	}
@@ -235,7 +244,13 @@ func resourceWallarmIPListUpdate(listType wallarm.IPListType) schema.UpdateConte
 		if err := resourceWallarmIPListDelete(listType)(ctx, d, m); err != nil {
 			return err
 		}
-		return resourceWallarmIPListCreate(listType)(ctx, d, m)
+		if createErr := resourceWallarmIPListCreate(listType)(ctx, d, m); createErr != nil {
+			return append(createErr, diag.Diagnostic{
+				Severity: diag.Warning,
+				Summary:  "IP list entries were deleted but re-creation failed — manual intervention may be required",
+			})
+		}
+		return nil
 	}
 }
 
@@ -469,4 +484,49 @@ func inc(ip net.IP) {
 			break
 		}
 	}
+}
+
+// ipListFriendlyType maps API list type values to user-facing names for resource IDs.
+func ipListFriendlyType(listType wallarm.IPListType) string {
+	switch listType {
+	case wallarm.DenylistType:
+		return "deny"
+	case wallarm.AllowlistType:
+		return "allow"
+	case wallarm.GraylistType:
+		return "gray"
+	default:
+		return string(listType)
+	}
+}
+
+// ipListRuleTypes returns a comma-separated string of rule types present in the rules slice.
+func ipListRuleTypes(rules []wallarm.AccessRuleEntry) string {
+	// Map API rule type names to user-facing names.
+	friendly := map[string]string{
+		"subnet":     "subnet",
+		"location":   "country",
+		"datacenter": "datacenter",
+		"proxy_type": "proxy",
+	}
+	var types []string
+	for _, r := range rules {
+		if name, ok := friendly[r.RulesType]; ok {
+			types = append(types, name)
+		} else {
+			types = append(types, r.RulesType)
+		}
+	}
+	return strings.Join(types, ",")
+}
+
+// ipListValuesHash returns a short deterministic hash of the rule values for use in resource IDs.
+func ipListValuesHash(rules []wallarm.AccessRuleEntry) string {
+	var all []string
+	for _, r := range rules {
+		all = append(all, r.Values...)
+	}
+	sort.Strings(all)
+	h := sha256.Sum256([]byte(strings.Join(all, ",")))
+	return hex.EncodeToString(h[:4])
 }
