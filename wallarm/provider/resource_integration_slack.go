@@ -63,13 +63,21 @@ func resourceWallarmSlack() *schema.Resource {
 			"event": {
 				Type:     schema.TypeSet,
 				Optional: true,
-				MaxItems: 5,
+				MaxItems: 7,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"event_type": {
-							Type:         schema.TypeString,
-							Optional:     true,
-							ValidateFunc: validation.StringInSlice([]string{"system", "vuln_high", "vuln_medium", "vuln_low", "scope"}, false),
+							Type:     schema.TypeString,
+							Optional: true,
+							ValidateFunc: validation.StringInSlice([]string{
+								"system",
+								"rules_and_triggers",
+								"security_issue_critical",
+								"security_issue_high",
+								"security_issue_medium",
+								"security_issue_low",
+								"security_issue_info",
+							}, false),
 						},
 						"active": {
 							Type:     schema.TypeBool,
@@ -134,14 +142,9 @@ func resourceWallarmSlackRead(d *schema.ResourceData, m interface{}) error {
 	return nil
 }
 
-// nolint:dupl
 func resourceWallarmSlackUpdate(d *schema.ResourceData, m interface{}) error {
 	client := m.(wallarm.API)
 	clientID := retrieveClientID(d)
-	name := d.Get("name").(string)
-	webhookURL := d.Get("webhook_url").(string)
-	active := d.Get("active").(bool)
-	events := expandWallarmEventToIntEvents(d.Get("event"), "slack")
 
 	slack, err := client.IntegrationRead(clientID, d.Get("integration_id").(int))
 	if err != nil {
@@ -152,23 +155,43 @@ func resourceWallarmSlackUpdate(d *schema.ResourceData, m interface{}) error {
 		return err
 	}
 
-	slackBody := wallarm.IntegrationCreate{
-		Name:   name,
-		Active: active,
-		Target: webhookURL,
-		Type:   "slack",
-		Events: events,
+	if d.HasChange("event") {
+		// When events change, API requires the full configuration
+		fullBody := wallarm.IntegrationCreate{
+			Name:   d.Get("name").(string),
+			Active: d.Get("active").(bool),
+			Target: d.Get("webhook_url").(string),
+			Events: expandWallarmEventToIntEvents(d.Get("event"), "slack"),
+			Type:   "slack",
+		}
+		updateRes, err := client.IntegrationUpdate(&fullBody, slack.ID)
+		if err != nil {
+			return err
+		}
+		d.Set("integration_id", updateRes.Body.ID)
+		resID := fmt.Sprintf("%d/%s/%d", clientID, updateRes.Body.Type, updateRes.Body.ID)
+		d.SetId(resID)
+	} else {
+		updateBody := make(map[string]interface{})
+		if d.HasChange("name") {
+			updateBody["name"] = d.Get("name").(string)
+		}
+		if d.HasChange("active") {
+			updateBody["active"] = d.Get("active").(bool)
+		}
+		if d.HasChange("webhook_url") {
+			updateBody["target"] = d.Get("webhook_url").(string)
+		}
+		if len(updateBody) > 0 {
+			updateRes, err := client.IntegrationPartialUpdate(slack.ID, updateBody)
+			if err != nil {
+				return err
+			}
+			d.Set("integration_id", updateRes.Body.ID)
+			resID := fmt.Sprintf("%d/%s/%d", clientID, updateRes.Body.Type, updateRes.Body.ID)
+			d.SetId(resID)
+		}
 	}
-
-	updateRes, err := client.IntegrationUpdate(&slackBody, slack.ID)
-	if err != nil {
-		return err
-	}
-
-	d.Set("integration_id", updateRes.Body.ID)
-
-	resID := fmt.Sprintf("%d/%s/%d", clientID, updateRes.Body.Type, updateRes.Body.ID)
-	d.SetId(resID)
 
 	return resourceWallarmSlackRead(d, m)
 }
