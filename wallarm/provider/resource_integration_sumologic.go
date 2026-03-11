@@ -12,10 +12,11 @@ import (
 
 func resourceWallarmSumologic() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceWallarmSumologicCreate,
-		Read:   resourceWallarmSumologicRead,
-		Update: resourceWallarmSumologicUpdate,
-		Delete: resourceWallarmSumologicDelete,
+		Create:        resourceWallarmSumologicCreate,
+		Read:          resourceWallarmSumologicRead,
+		Update:        resourceWallarmSumologicUpdate,
+		Delete:        resourceWallarmSumologicDelete,
+		CustomizeDiff: validateWithHeadersOnlySiem(),
 
 		Schema: map[string]*schema.Schema{
 			"client_id": defaultClientIDWithValidationSchema,
@@ -62,18 +63,33 @@ func resourceWallarmSumologic() *schema.Resource {
 			"event": {
 				Type:     schema.TypeSet,
 				Optional: true,
-				MaxItems: 6,
+				MaxItems: 9,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"event_type": {
-							Type:         schema.TypeString,
-							Optional:     true,
-							ValidateFunc: validation.StringInSlice([]string{"hit", "vuln_high", "vuln_medium", "vuln_low", "vuln_low", "system", "scope"}, false),
+							Type:     schema.TypeString,
+							Optional: true,
+							ValidateFunc: validation.StringInSlice([]string{
+								"siem",
+								"rules_and_triggers",
+								"number_of_requests_per_hour",
+								"security_issue_critical",
+								"security_issue_high",
+								"security_issue_medium",
+								"security_issue_low",
+								"security_issue_info",
+								"system",
+							}, false),
 						},
 						"active": {
 							Type:     schema.TypeBool,
 							Optional: true,
-							Default:  false,
+							Default:  true,
+						},
+						"with_headers": {
+							Type:        schema.TypeBool,
+							Optional:    true,
+							Description: "Send requests with headers. Only applicable to the 'siem' event type.",
 						},
 					},
 				},
@@ -134,14 +150,9 @@ func resourceWallarmSumologicRead(d *schema.ResourceData, m interface{}) error {
 	return nil
 }
 
-// nolint:dupl
 func resourceWallarmSumologicUpdate(d *schema.ResourceData, m interface{}) error {
 	client := m.(wallarm.API)
 	clientID := retrieveClientID(d)
-	name := d.Get("name").(string)
-	sumologicURL := d.Get("sumologic_url").(string)
-	active := d.Get("active").(bool)
-	events := expandWallarmEventToIntEvents(d.Get("event"), "sumo_logic")
 
 	sumo, err := client.IntegrationRead(clientID, d.Get("integration_id").(int))
 	if err != nil {
@@ -152,23 +163,43 @@ func resourceWallarmSumologicUpdate(d *schema.ResourceData, m interface{}) error
 		return err
 	}
 
-	sumoBody := wallarm.IntegrationCreate{
-		Name:   name,
-		Active: active,
-		Target: sumologicURL,
-		Type:   "sumo_logic",
-		Events: events,
+	if d.HasChange("event") {
+		// When events change, API requires the full configuration
+		fullBody := wallarm.IntegrationCreate{
+			Name:   d.Get("name").(string),
+			Active: d.Get("active").(bool),
+			Target: d.Get("sumologic_url").(string),
+			Events: expandWallarmEventToIntEvents(d.Get("event"), "sumo_logic"),
+			Type:   "sumo_logic",
+		}
+		updateRes, err := client.IntegrationUpdate(&fullBody, sumo.ID)
+		if err != nil {
+			return err
+		}
+		d.Set("integration_id", updateRes.Body.ID)
+		resID := fmt.Sprintf("%d/%s/%d", clientID, updateRes.Body.Type, updateRes.Body.ID)
+		d.SetId(resID)
+	} else {
+		updateBody := make(map[string]interface{})
+		if d.HasChange("name") {
+			updateBody["name"] = d.Get("name").(string)
+		}
+		if d.HasChange("active") {
+			updateBody["active"] = d.Get("active").(bool)
+		}
+		if d.HasChange("sumologic_url") {
+			updateBody["target"] = d.Get("sumologic_url").(string)
+		}
+		if len(updateBody) > 0 {
+			updateRes, err := client.IntegrationPartialUpdate(sumo.ID, updateBody)
+			if err != nil {
+				return err
+			}
+			d.Set("integration_id", updateRes.Body.ID)
+			resID := fmt.Sprintf("%d/%s/%d", clientID, updateRes.Body.Type, updateRes.Body.ID)
+			d.SetId(resID)
+		}
 	}
-
-	updateRes, err := client.IntegrationUpdate(&sumoBody, sumo.ID)
-	if err != nil {
-		return err
-	}
-
-	d.Set("integration_id", updateRes.Body.ID)
-
-	resID := fmt.Sprintf("%d/%s/%d", clientID, updateRes.Body.Type, updateRes.Body.ID)
-	d.SetId(resID)
 
 	return resourceWallarmSumologicRead(d, m)
 }

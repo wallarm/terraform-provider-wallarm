@@ -12,10 +12,11 @@ import (
 
 func resourceWallarmSplunk() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceWallarmSplunkCreate,
-		Read:   resourceWallarmSplunkRead,
-		Update: resourceWallarmSplunkUpdate,
-		Delete: resourceWallarmSplunkDelete,
+		Create:        resourceWallarmSplunkCreate,
+		Read:          resourceWallarmSplunkRead,
+		Update:        resourceWallarmSplunkUpdate,
+		Delete:        resourceWallarmSplunkDelete,
+		CustomizeDiff: validateWithHeadersOnlySiem(),
 
 		Schema: map[string]*schema.Schema{
 			"client_id": defaultClientIDWithValidationSchema,
@@ -69,18 +70,33 @@ func resourceWallarmSplunk() *schema.Resource {
 			"event": {
 				Type:     schema.TypeSet,
 				Optional: true,
-				MaxItems: 6,
+				MaxItems: 9,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"event_type": {
-							Type:         schema.TypeString,
-							Optional:     true,
-							ValidateFunc: validation.StringInSlice([]string{"hit", "vuln_high", "vuln_medium", "vuln_low", "vuln_low", "system", "scope"}, false),
+							Type:     schema.TypeString,
+							Optional: true,
+							ValidateFunc: validation.StringInSlice([]string{
+								"siem",
+								"rules_and_triggers",
+								"number_of_requests_per_hour",
+								"security_issue_critical",
+								"security_issue_high",
+								"security_issue_medium",
+								"security_issue_low",
+								"security_issue_info",
+								"system",
+							}, false),
 						},
 						"active": {
 							Type:     schema.TypeBool,
 							Optional: true,
 							Default:  true,
+						},
+						"with_headers": {
+							Type:        schema.TypeBool,
+							Optional:    true,
+							Description: "Send requests with headers. Only applicable to the 'siem' event type.",
 						},
 					},
 				},
@@ -98,10 +114,10 @@ func resourceWallarmSplunkCreate(d *schema.ResourceData, m interface{}) error {
 	active := d.Get("active").(bool)
 	events := expandWallarmEventToIntEvents(d.Get("event"), "splunk")
 
-	splunkBody := wallarm.IntegrationWithAPICreate{
+	splunkBody := wallarm.IntegrationCreate{
 		Name:   name,
 		Active: active,
-		Target: &wallarm.IntegrationWithAPITarget{
+		Target: &wallarm.IntegrationTokenAPITarget{
 			Token: apiToken,
 			API:   apiURL,
 		},
@@ -110,7 +126,7 @@ func resourceWallarmSplunkCreate(d *schema.ResourceData, m interface{}) error {
 		Events:   events,
 	}
 
-	createRes, err := client.IntegrationWithAPICreate(&splunkBody)
+	createRes, err := client.IntegrationCreate(&splunkBody)
 	if err != nil {
 		return err
 	}
@@ -147,37 +163,55 @@ func resourceWallarmSplunkRead(d *schema.ResourceData, m interface{}) error {
 func resourceWallarmSplunkUpdate(d *schema.ResourceData, m interface{}) error {
 	client := m.(wallarm.API)
 	clientID := retrieveClientID(d)
-	name := d.Get("name").(string)
-	apiURL := d.Get("api_url").(string)
-	apiToken := d.Get("api_token").(string)
-	active := d.Get("active").(bool)
-	events := expandWallarmEventToIntEvents(d.Get("event"), "splunk")
 
 	splunk, err := client.IntegrationRead(clientID, d.Get("integration_id").(int))
 	if err != nil {
 		return err
 	}
 
-	splunkBody := wallarm.IntegrationWithAPICreate{
-		Name:   name,
-		Active: active,
-		Target: &wallarm.IntegrationWithAPITarget{
-			Token: apiToken,
-			API:   apiURL,
-		},
-		Type:   "splunk",
-		Events: events,
+	if d.HasChange("event") {
+		// When events change, API requires the full configuration
+		fullBody := wallarm.IntegrationCreate{
+			Name:   d.Get("name").(string),
+			Active: d.Get("active").(bool),
+			Target: &wallarm.IntegrationTokenAPITarget{
+				Token: d.Get("api_token").(string),
+				API:   d.Get("api_url").(string),
+			},
+			Events: expandWallarmEventToIntEvents(d.Get("event"), "splunk"),
+			Type:   "splunk",
+		}
+		updateRes, err := client.IntegrationUpdate(&fullBody, splunk.ID)
+		if err != nil {
+			return err
+		}
+		d.Set("integration_id", updateRes.Body.ID)
+		resID := fmt.Sprintf("%d/%s/%d", clientID, updateRes.Body.Type, updateRes.Body.ID)
+		d.SetId(resID)
+	} else {
+		updateBody := make(map[string]interface{})
+		if d.HasChange("name") {
+			updateBody["name"] = d.Get("name").(string)
+		}
+		if d.HasChange("active") {
+			updateBody["active"] = d.Get("active").(bool)
+		}
+		if d.HasChange("api_token") || d.HasChange("api_url") {
+			updateBody["target"] = &wallarm.IntegrationTokenAPITarget{
+				Token: d.Get("api_token").(string),
+				API:   d.Get("api_url").(string),
+			}
+		}
+		if len(updateBody) > 0 {
+			updateRes, err := client.IntegrationPartialUpdate(splunk.ID, updateBody)
+			if err != nil {
+				return err
+			}
+			d.Set("integration_id", updateRes.Body.ID)
+			resID := fmt.Sprintf("%d/%s/%d", clientID, updateRes.Body.Type, updateRes.Body.ID)
+			d.SetId(resID)
+		}
 	}
-
-	updateRes, err := client.IntegrationWithAPIUpdate(&splunkBody, splunk.ID)
-	if err != nil {
-		return err
-	}
-
-	d.Set("integration_id", updateRes.Body.ID)
-
-	resID := fmt.Sprintf("%d/%s/%d", clientID, updateRes.Body.Type, updateRes.Body.ID)
-	d.SetId(resID)
 
 	return resourceWallarmSplunkRead(d, m)
 }

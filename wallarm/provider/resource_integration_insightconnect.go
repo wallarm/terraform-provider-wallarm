@@ -11,10 +11,11 @@ import (
 
 func resourceWallarmInsightConnect() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceWallarmInsightConnectCreate,
-		Read:   resourceWallarmInsightConnectRead,
-		Update: resourceWallarmInsightConnectUpdate,
-		Delete: resourceWallarmInsightConnectDelete,
+		Create:        resourceWallarmInsightConnectCreate,
+		Read:          resourceWallarmInsightConnectRead,
+		Update:        resourceWallarmInsightConnectUpdate,
+		Delete:        resourceWallarmInsightConnectDelete,
+		CustomizeDiff: validateWithHeadersOnlySiem(),
 
 		Schema: map[string]*schema.Schema{
 			"client_id": defaultClientIDWithValidationSchema,
@@ -114,7 +115,7 @@ func resourceWallarmInsightConnectCreate(d *schema.ResourceData, m interface{}) 
 	insightBody := wallarm.IntegrationCreate{
 		Name:   name,
 		Active: active,
-		Target: &wallarm.InsightConnectTarget{
+		Target: &wallarm.IntegrationTokenAPITarget{
 			Token: apiToken,
 			API:   apiURL,
 		},
@@ -157,37 +158,55 @@ func resourceWallarmInsightConnectRead(d *schema.ResourceData, m interface{}) er
 func resourceWallarmInsightConnectUpdate(d *schema.ResourceData, m interface{}) error {
 	client := m.(wallarm.API)
 	clientID := retrieveClientID(d)
-	name := d.Get("name").(string)
-	apiURL := d.Get("api_url").(string)
-	apiToken := d.Get("api_token").(string)
-	active := d.Get("active").(bool)
-	events := expandWallarmEventToIntEvents(d.Get("event"), "insight_connect")
 
 	insight, err := client.IntegrationRead(clientID, d.Get("integration_id").(int))
 	if err != nil {
 		return err
 	}
 
-	insightBody := wallarm.IntegrationCreate{
-		Name:   name,
-		Active: active,
-		Target: &wallarm.InsightConnectTarget{
-			Token: apiToken,
-			API:   apiURL,
-		},
-		Type:   "insight_connect",
-		Events: events,
+	if d.HasChange("event") {
+		// When events change, API requires the full configuration
+		fullBody := wallarm.IntegrationCreate{
+			Name:   d.Get("name").(string),
+			Active: d.Get("active").(bool),
+			Target: &wallarm.IntegrationTokenAPITarget{
+				Token: d.Get("api_token").(string),
+				API:   d.Get("api_url").(string),
+			},
+			Events: expandWallarmEventToIntEvents(d.Get("event"), "insight_connect"),
+			Type:   "insight_connect",
+		}
+		updateRes, err := client.IntegrationUpdate(&fullBody, insight.ID)
+		if err != nil {
+			return err
+		}
+		d.Set("integration_id", updateRes.Body.ID)
+		resID := fmt.Sprintf("%d/%s/%d", clientID, updateRes.Body.Type, updateRes.Body.ID)
+		d.SetId(resID)
+	} else {
+		updateBody := make(map[string]interface{})
+		if d.HasChange("name") {
+			updateBody["name"] = d.Get("name").(string)
+		}
+		if d.HasChange("active") {
+			updateBody["active"] = d.Get("active").(bool)
+		}
+		if d.HasChange("api_token") || d.HasChange("api_url") {
+			updateBody["target"] = &wallarm.IntegrationTokenAPITarget{
+				Token: d.Get("api_token").(string),
+				API:   d.Get("api_url").(string),
+			}
+		}
+		if len(updateBody) > 0 {
+			updateRes, err := client.IntegrationPartialUpdate(insight.ID, updateBody)
+			if err != nil {
+				return err
+			}
+			d.Set("integration_id", updateRes.Body.ID)
+			resID := fmt.Sprintf("%d/%s/%d", clientID, updateRes.Body.Type, updateRes.Body.ID)
+			d.SetId(resID)
+		}
 	}
-
-	updateRes, err := client.IntegrationUpdate(&insightBody, insight.ID)
-	if err != nil {
-		return err
-	}
-
-	d.Set("integration_id", updateRes.Body.ID)
-
-	resID := fmt.Sprintf("%d/%s/%d", clientID, updateRes.Body.Type, updateRes.Body.ID)
-	d.SetId(resID)
 
 	return resourceWallarmInsightConnectRead(d, m)
 }

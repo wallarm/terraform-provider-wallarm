@@ -11,10 +11,11 @@ import (
 
 func resourceWallarmDataDog() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceWallarmDataDogCreate,
-		Read:   resourceWallarmDataDogRead,
-		Update: resourceWallarmDataDogUpdate,
-		Delete: resourceWallarmDataDogDelete,
+		Create:        resourceWallarmDataDogCreate,
+		Read:          resourceWallarmDataDogRead,
+		Update:        resourceWallarmDataDogUpdate,
+		Delete:        resourceWallarmDataDogDelete,
+		CustomizeDiff: validateWithHeadersOnlySiem(),
 
 		Schema: map[string]*schema.Schema{
 			"client_id": defaultClientIDWithValidationSchema,
@@ -156,37 +157,55 @@ func resourceWallarmDataDogRead(d *schema.ResourceData, m interface{}) error {
 func resourceWallarmDataDogUpdate(d *schema.ResourceData, m interface{}) error {
 	client := m.(wallarm.API)
 	clientID := retrieveClientID(d)
-	name := d.Get("name").(string)
-	region := d.Get("region").(string)
-	token := d.Get("token").(string)
-	active := d.Get("active").(bool)
-	events := expandWallarmEventToIntEvents(d.Get("event"), "data_dog")
 
 	dd, err := client.IntegrationRead(clientID, d.Get("integration_id").(int))
 	if err != nil {
 		return err
 	}
 
-	ddBody := wallarm.IntegrationCreate{
-		Name:   name,
-		Active: active,
-		Target: &wallarm.DatadogTarget{
-			Token:  token,
-			Region: region,
-		},
-		Type:   "data_dog",
-		Events: events,
+	if d.HasChange("event") {
+		// When events change, API requires the full configuration
+		fullBody := wallarm.IntegrationCreate{
+			Name:   d.Get("name").(string),
+			Active: d.Get("active").(bool),
+			Target: &wallarm.DatadogTarget{
+				Token:  d.Get("token").(string),
+				Region: d.Get("region").(string),
+			},
+			Events: expandWallarmEventToIntEvents(d.Get("event"), "data_dog"),
+			Type:   "data_dog",
+		}
+		updateRes, err := client.IntegrationUpdate(&fullBody, dd.ID)
+		if err != nil {
+			return err
+		}
+		d.Set("integration_id", updateRes.Body.ID)
+		resID := fmt.Sprintf("%d/%s/%d", clientID, updateRes.Body.Type, updateRes.Body.ID)
+		d.SetId(resID)
+	} else {
+		updateBody := make(map[string]interface{})
+		if d.HasChange("name") {
+			updateBody["name"] = d.Get("name").(string)
+		}
+		if d.HasChange("active") {
+			updateBody["active"] = d.Get("active").(bool)
+		}
+		if d.HasChange("token") || d.HasChange("region") {
+			updateBody["target"] = &wallarm.DatadogTarget{
+				Token:  d.Get("token").(string),
+				Region: d.Get("region").(string),
+			}
+		}
+		if len(updateBody) > 0 {
+			updateRes, err := client.IntegrationPartialUpdate(dd.ID, updateBody)
+			if err != nil {
+				return err
+			}
+			d.Set("integration_id", updateRes.Body.ID)
+			resID := fmt.Sprintf("%d/%s/%d", clientID, updateRes.Body.Type, updateRes.Body.ID)
+			d.SetId(resID)
+		}
 	}
-
-	updateRes, err := client.IntegrationUpdate(&ddBody, dd.ID)
-	if err != nil {
-		return err
-	}
-
-	d.Set("integration_id", updateRes.Body.ID)
-
-	resID := fmt.Sprintf("%d/%s/%d", clientID, updateRes.Body.Type, updateRes.Body.ID)
-	d.SetId(resID)
 
 	return resourceWallarmDataDogRead(d, m)
 }

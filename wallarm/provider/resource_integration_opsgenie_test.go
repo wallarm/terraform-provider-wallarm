@@ -14,7 +14,7 @@ var (
 func TestAccIntegrationOpsGenieRequiredFields(t *testing.T) {
 	rnd := generateRandomResourceName(5)
 	name := "wallarm_integration_opsgenie." + rnd
-	rndToken := generateRandomUUID()
+	rndToken := generateRandomResourceName(32)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:  func() { testAccPreCheck(t) },
@@ -34,7 +34,7 @@ func TestAccIntegrationOpsGenieRequiredFields(t *testing.T) {
 func TestAccIntegrationOpsGenieFullSettings(t *testing.T) {
 	rnd := generateRandomResourceName(5)
 	name := "wallarm_integration_opsgenie." + rnd
-	rndToken := generateRandomUUID()
+	rndToken := generateRandomResourceName(32)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:  func() { testAccPreCheck(t) },
@@ -47,7 +47,7 @@ func TestAccIntegrationOpsGenieFullSettings(t *testing.T) {
 					resource.TestCheckResourceAttr(name, "api_url", opsgenieAlertsEndpoint),
 					resource.TestCheckResourceAttr(name, "api_token", rndToken),
 					resource.TestCheckResourceAttr(name, "active", "true"),
-					resource.TestCheckResourceAttr(name, "event.#", "4"),
+					resource.TestCheckResourceAttr(name, "event.#", "7"),
 				),
 			},
 		},
@@ -57,7 +57,7 @@ func TestAccIntegrationOpsGenieFullSettings(t *testing.T) {
 func TestAccIntegrationOpsGenieCreateThenUpdate(t *testing.T) {
 	rnd := generateRandomResourceName(5)
 	name := "wallarm_integration_opsgenie." + rnd
-	rndToken := generateRandomUUID()
+	rndToken := generateRandomResourceName(32)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:  func() { testAccPreCheck(t) },
@@ -70,7 +70,7 @@ func TestAccIntegrationOpsGenieCreateThenUpdate(t *testing.T) {
 					resource.TestCheckResourceAttr(name, "api_url", opsgenieAlertsEndpoint),
 					resource.TestCheckResourceAttr(name, "api_token", rndToken),
 					resource.TestCheckResourceAttr(name, "active", "true"),
-					resource.TestCheckResourceAttr(name, "event.#", "4"),
+					resource.TestCheckResourceAttr(name, "event.#", "7"),
 				),
 			},
 			{
@@ -80,7 +80,7 @@ func TestAccIntegrationOpsGenieCreateThenUpdate(t *testing.T) {
 					resource.TestCheckResourceAttr(name, "api_url", opsgenieAlertsEndpoint),
 					resource.TestCheckResourceAttr(name, "api_token", rndToken),
 					resource.TestCheckResourceAttr(name, "active", "false"),
-					resource.TestCheckResourceAttr(name, "event.#", "4"),
+					resource.TestCheckResourceAttr(name, "event.#", "7"),
 				),
 			},
 		},
@@ -104,19 +104,31 @@ resource "wallarm_integration_opsgenie" "%[1]s" {
 	active = "%[5]s"
 
 	event {
-		event_type = "hit"
+		event_type = "system"
 		active = true
 	}
 	event {
-		event_type = "vuln_high"
+		event_type = "rules_and_triggers"
 		active = "%[5]s"
 	}
 	event {
-		event_type = "vuln_medium"
+		event_type = "security_issue_critical"
 		active = "%[5]s"
 	}
 	event {
-		event_type = "vuln_low"
+		event_type = "security_issue_high"
+		active = "%[5]s"
+	}
+	event {
+		event_type = "security_issue_medium"
+		active = "%[5]s"
+	}
+	event {
+		event_type = "security_issue_low"
+		active = "%[5]s"
+	}
+	event {
+		event_type = "security_issue_info"
 		active = "%[5]s"
 	}
 }`, resourceID, name, url, token, active)

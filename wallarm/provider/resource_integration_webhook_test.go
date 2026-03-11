@@ -45,7 +45,7 @@ func TestAccIntegrationWebhookFullSettings(t *testing.T) {
 					resource.TestCheckResourceAttr(name, "active", "true"),
 					resource.TestCheckResourceAttr(name, "headers.Authorization", "Basic SGkgYXR0ZW50aXZlIFdhbGxhcm0gdXNlcg=="),
 					resource.TestCheckResourceAttr(name, "headers.Content-Type", "application/json"),
-					resource.TestCheckResourceAttr(name, "event.#", "6"),
+					resource.TestCheckResourceAttr(name, "event.#", "9"),
 				),
 			},
 		},
@@ -69,7 +69,7 @@ func TestAccIntegrationWebhookCreateThenUpdate(t *testing.T) {
 					resource.TestCheckResourceAttr(name, "active", "true"),
 					resource.TestCheckResourceAttr(name, "headers.Authorization", "Basic SGkgYXR0ZW50aXZlIFdhbGxhcm0gdXNlcg=="),
 					resource.TestCheckResourceAttr(name, "headers.Content-Type", "application/json"),
-					resource.TestCheckResourceAttr(name, "event.#", "6"),
+					resource.TestCheckResourceAttr(name, "event.#", "9"),
 				),
 			},
 			{
@@ -81,7 +81,7 @@ func TestAccIntegrationWebhookCreateThenUpdate(t *testing.T) {
 					resource.TestCheckResourceAttr(name, "active", "false"),
 					resource.TestCheckResourceAttr(name, "headers.Authorization", "Basic SGkgYXR0ZW50aXZlIFdhbGxhcm0gdXNlcg=="),
 					resource.TestCheckResourceAttr(name, "headers.Content-Type", "application/json"),
-					resource.TestCheckResourceAttr(name, "event.#", "6"),
+					resource.TestCheckResourceAttr(name, "event.#", "9"),
 				),
 			},
 		},
@@ -104,28 +104,41 @@ resource "wallarm_integration_webhook" "%[1]s" {
 	active = %[7]s
 
 	event {
-		event_type = "hit"
+		event_type = "siem"
 		active = true
+		with_headers = true
 	}
 	event {
-		event_type = "vuln_high"
-		active = "%[7]s"
+		event_type = "rules_and_triggers"
+		active = %[7]s
 	}
 	event {
-		event_type = "vuln_medium"
-		active = "%[7]s"
+		event_type = "number_of_requests_per_hour"
+		active = %[7]s
 	}
 	event {
-		event_type = "vuln_low"
-		active = "%[7]s"
+		event_type = "security_issue_critical"
+		active = %[7]s
+	}
+	event {
+		event_type = "security_issue_high"
+		active = %[7]s
+	}
+	event {
+		event_type = "security_issue_medium"
+		active = %[7]s
+	}
+	event {
+		event_type = "security_issue_low"
+		active = %[7]s
+	}
+	event {
+		event_type = "security_issue_info"
+		active = %[7]s
 	}
 	event {
 		event_type = "system"
 		active = true
-	}
-	event {
-		event_type = "scope"
-		active = %[7]s
 	}
 
 	headers = {

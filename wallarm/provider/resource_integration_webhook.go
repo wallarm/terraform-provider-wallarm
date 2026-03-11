@@ -12,10 +12,11 @@ import (
 
 func resourceWallarmWebhook() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceWallarmWebhookCreate,
-		Read:   resourceWallarmWebhookRead,
-		Update: resourceWallarmWebhookUpdate,
-		Delete: resourceWallarmWebhookDelete,
+		Create:        resourceWallarmWebhookCreate,
+		Read:          resourceWallarmWebhookRead,
+		Update:        resourceWallarmWebhookUpdate,
+		Delete:        resourceWallarmWebhookDelete,
+		CustomizeDiff: validateWithHeadersOnlySiem(),
 
 		Schema: map[string]*schema.Schema{
 			"client_id": defaultClientIDWithValidationSchema,
@@ -101,18 +102,33 @@ func resourceWallarmWebhook() *schema.Resource {
 			"event": {
 				Type:     schema.TypeSet,
 				Optional: true,
-				MaxItems: 6,
+				MaxItems: 9,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"event_type": {
-							Type:         schema.TypeString,
-							Optional:     true,
-							ValidateFunc: validation.StringInSlice([]string{"hit", "vuln_high", "vuln_medium", "vuln_low", "vuln_low", "system", "scope"}, false),
+							Type:     schema.TypeString,
+							Optional: true,
+							ValidateFunc: validation.StringInSlice([]string{
+								"siem",
+								"rules_and_triggers",
+								"number_of_requests_per_hour",
+								"security_issue_critical",
+								"security_issue_high",
+								"security_issue_medium",
+								"security_issue_low",
+								"security_issue_info",
+								"system",
+							}, false),
 						},
 						"active": {
 							Type:     schema.TypeBool,
 							Optional: true,
 							Default:  true,
+						},
+						"with_headers": {
+							Type:        schema.TypeBool,
+							Optional:    true,
+							Description: "Send requests with headers. Only applicable to the 'siem' event type.",
 						},
 					},
 				},
@@ -155,6 +171,7 @@ func resourceWallarmWebhookCreate(d *schema.ResourceData, m interface{}) error {
 			CaVerify:    caVerify,
 			Headers:     headers,
 			Format:      format,
+			Subtype:     "web_hooks",
 		},
 		Clientid: clientID,
 		Type:     "web_hooks",
@@ -199,18 +216,6 @@ func resourceWallarmWebhookRead(d *schema.ResourceData, m interface{}) error {
 func resourceWallarmWebhookUpdate(d *schema.ResourceData, m interface{}) error {
 	client := m.(wallarm.API)
 	clientID := retrieveClientID(d)
-	name := d.Get("name").(string)
-	active := d.Get("active").(bool)
-	webhookURL := d.Get("webhook_url").(string)
-	method := d.Get("http_method").(string)
-	caFile := d.Get("ca_file").(string)
-	caVerify := d.Get("ca_verify").(bool)
-	timeout := d.Get("timeout").(int)
-	openTimeout := d.Get("open_timeout").(int)
-	headers := d.Get("headers").(map[string]interface{})
-	format := d.Get("format").(string)
-
-	events := expandWallarmEventToIntEvents(d.Get("event"), "web_hooks")
 
 	webhook, err := client.IntegrationRead(clientID, d.Get("integration_id").(int))
 	if err != nil {
@@ -221,32 +226,63 @@ func resourceWallarmWebhookUpdate(d *schema.ResourceData, m interface{}) error {
 		return err
 	}
 
-	webhookBody := wallarm.IntegrationWithAPICreate{
-		Name:   name,
-		Active: active,
-		Target: &wallarm.IntegrationWithAPITarget{
-			URL:         webhookURL,
-			HTTPMethod:  method,
-			Timeout:     timeout,
-			OpenTimeout: openTimeout,
-			CaFile:      caFile,
-			CaVerify:    caVerify,
-			Headers:     headers,
-			Format:      format,
-		},
-		Type:   "web_hooks",
-		Events: events,
+	if d.HasChange("event") {
+		// When events change, API requires the full configuration
+		fullBody := wallarm.IntegrationWithAPICreate{
+			Name:   d.Get("name").(string),
+			Active: d.Get("active").(bool),
+			Target: &wallarm.IntegrationWithAPITarget{
+				URL:         d.Get("webhook_url").(string),
+				HTTPMethod:  d.Get("http_method").(string),
+				Timeout:     d.Get("timeout").(int),
+				OpenTimeout: d.Get("open_timeout").(int),
+				CaFile:      d.Get("ca_file").(string),
+				CaVerify:    d.Get("ca_verify").(bool),
+				Headers:     d.Get("headers").(map[string]interface{}),
+				Format:      d.Get("format").(string),
+				Subtype:     "web_hooks",
+			},
+			Type:   "web_hooks",
+			Events: expandWallarmEventToIntEvents(d.Get("event"), "web_hooks"),
+		}
+		updateRes, err := client.IntegrationWithAPIUpdate(&fullBody, webhook.ID)
+		if err != nil {
+			return err
+		}
+		d.Set("integration_id", updateRes.Body.ID)
+		resID := fmt.Sprintf("%d/%s/%d", clientID, updateRes.Body.Type, updateRes.Body.ID)
+		d.SetId(resID)
+	} else {
+		updateBody := make(map[string]interface{})
+		if d.HasChange("name") {
+			updateBody["name"] = d.Get("name").(string)
+		}
+		if d.HasChange("active") {
+			updateBody["active"] = d.Get("active").(bool)
+		}
+		if d.HasChanges("webhook_url", "http_method", "ca_file", "ca_verify", "timeout", "open_timeout", "headers", "format") {
+			updateBody["target"] = &wallarm.IntegrationWithAPITarget{
+				URL:         d.Get("webhook_url").(string),
+				HTTPMethod:  d.Get("http_method").(string),
+				Timeout:     d.Get("timeout").(int),
+				OpenTimeout: d.Get("open_timeout").(int),
+				CaFile:      d.Get("ca_file").(string),
+				CaVerify:    d.Get("ca_verify").(bool),
+				Headers:     d.Get("headers").(map[string]interface{}),
+				Format:      d.Get("format").(string),
+				Subtype:     "web_hooks",
+			}
+		}
+		if len(updateBody) > 0 {
+			updateRes, err := client.IntegrationPartialUpdate(webhook.ID, updateBody)
+			if err != nil {
+				return err
+			}
+			d.Set("integration_id", updateRes.Body.ID)
+			resID := fmt.Sprintf("%d/%s/%d", clientID, updateRes.Body.Type, updateRes.Body.ID)
+			d.SetId(resID)
+		}
 	}
-
-	updateRes, err := client.IntegrationWithAPIUpdate(&webhookBody, webhook.ID)
-	if err != nil {
-		return err
-	}
-
-	d.Set("integration_id", updateRes.Body.ID)
-
-	resID := fmt.Sprintf("%d/%s/%d", clientID, updateRes.Body.Type, updateRes.Body.ID)
-	d.SetId(resID)
 
 	return resourceWallarmWebhookRead(d, m)
 }

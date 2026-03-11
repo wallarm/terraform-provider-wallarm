@@ -2,6 +2,7 @@ package wallarm
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"math/rand"
@@ -16,8 +17,31 @@ import (
 	"github.com/wallarm/terraform-provider-wallarm/wallarm/common/resourcerule"
 	"github.com/wallarm/wallarm-go"
 
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/customdiff"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
+
+// validateWithHeadersOnlySiem returns a CustomizeDiffFunc that ensures
+// with_headers is only set to true on events of type "siem".
+func validateWithHeadersOnlySiem() schema.CustomizeDiffFunc {
+	return customdiff.All(
+		func(_ context.Context, d *schema.ResourceDiff, _ interface{}) error {
+			events, ok := d.GetOk("event")
+			if !ok {
+				return nil
+			}
+			for _, e := range events.(*schema.Set).List() {
+				m := e.(map[string]interface{})
+				eventType, _ := m["event_type"].(string)
+				withHeaders, _ := m["with_headers"].(bool)
+				if withHeaders && eventType != "siem" {
+					return fmt.Errorf("with_headers can only be set for the 'siem' event type, got event_type=%q", eventType)
+				}
+			}
+			return nil
+		},
+	)
+}
 
 type ruleNotFoundError struct {
 	clientID int
@@ -286,7 +310,7 @@ func expandWallarmEventToIntEvents(d interface{}, resourceType string) *[]wallar
 					"event_type": "report_monthly",
 					"active":     false},
 			}
-		case "data_dog", "insight_connect":
+		case "data_dog", "insight_connect", "splunk", "sumo_logic", "web_hooks":
 			defaultEvents = []map[string]interface{}{
 				{
 					"event_type": "siem",
@@ -316,40 +340,52 @@ func expandWallarmEventToIntEvents(d interface{}, resourceType string) *[]wallar
 					"event_type": "system",
 					"active":     false},
 			}
-		case "opsgenie":
+		case "opsgenie", "pager_duty":
 			defaultEvents = []map[string]interface{}{
 				{
-					"event_type": "vuln_high",
+					"event_type": "system",
 					"active":     false},
 				{
-					"event_type": "vuln_medium",
+					"event_type": "rules_and_triggers",
 					"active":     false},
 				{
-					"event_type": "vuln_low",
+					"event_type": "security_issue_critical",
 					"active":     false},
 				{
-					"event_type": "siem",
+					"event_type": "security_issue_high",
+					"active":     false},
+				{
+					"event_type": "security_issue_medium",
+					"active":     false},
+				{
+					"event_type": "security_issue_low",
+					"active":     false},
+				{
+					"event_type": "security_issue_info",
 					"active":     false},
 			}
 		default:
 			defaultEvents = []map[string]interface{}{
 				{
-					"event_type": "vuln_high",
-					"active":     false},
-				{
-					"event_type": "vuln_medium",
-					"active":     false},
-				{
-					"event_type": "vuln_low",
-					"active":     false},
-				{
-					"event_type": "siem",
-					"active":     false},
-				{
 					"event_type": "system",
 					"active":     false},
 				{
-					"event_type": "scope",
+					"event_type": "rules_and_triggers",
+					"active":     false},
+				{
+					"event_type": "security_issue_critical",
+					"active":     false},
+				{
+					"event_type": "security_issue_high",
+					"active":     false},
+				{
+					"event_type": "security_issue_medium",
+					"active":     false},
+				{
+					"event_type": "security_issue_low",
+					"active":     false},
+				{
+					"event_type": "security_issue_info",
 					"active":     false},
 			}
 		}
@@ -380,9 +416,10 @@ func expandWallarmEventToIntEvents(d interface{}, resourceType string) *[]wallar
 		if ok {
 			e.Active = active.(bool)
 		}
-		if wh, ok := m["with_headers"]; ok {
-			whBool := wh.(bool)
-			if whBool {
+		// with_headers is only applicable to the siem event type
+		if e.Event == "siem" {
+			if wh, ok := m["with_headers"]; ok {
+				whBool := wh.(bool)
 				e.WithHeaders = &whBool
 			}
 		}

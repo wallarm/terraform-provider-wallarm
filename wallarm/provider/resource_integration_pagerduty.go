@@ -72,9 +72,17 @@ func resourceWallarmPagerDuty() *schema.Resource {
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"event_type": {
-							Type:         schema.TypeString,
-							Optional:     true,
-							ValidateFunc: validation.StringInSlice([]string{"hit", "vuln_high", "vuln_medium", "vuln_low", "vuln_low", "system", "scope"}, false),
+							Type:     schema.TypeString,
+							Optional: true,
+							ValidateFunc: validation.StringInSlice([]string{
+								"system",
+								"rules_and_triggers",
+								"security_issue_critical",
+								"security_issue_high",
+								"security_issue_medium",
+								"security_issue_low",
+								"security_issue_info",
+							}, false),
 						},
 						"active": {
 							Type:     schema.TypeBool,
@@ -140,14 +148,9 @@ func resourceWallarmPagerDutyRead(d *schema.ResourceData, m interface{}) error {
 	return nil
 }
 
-// nolint:dupl
 func resourceWallarmPagerDutyUpdate(d *schema.ResourceData, m interface{}) error {
 	client := m.(wallarm.API)
 	clientID := retrieveClientID(d)
-	name := d.Get("name").(string)
-	integrationKey := d.Get("integration_key").(string)
-	active := d.Get("active").(bool)
-	events := expandWallarmEventToIntEvents(d.Get("event"), "pager_duty")
 
 	pagerDuty, err := client.IntegrationRead(clientID, d.Get("integration_id").(int))
 	if err != nil {
@@ -158,23 +161,43 @@ func resourceWallarmPagerDutyUpdate(d *schema.ResourceData, m interface{}) error
 		return err
 	}
 
-	pagerBody := wallarm.IntegrationCreate{
-		Name:   name,
-		Active: active,
-		Target: integrationKey,
-		Type:   "pager_duty",
-		Events: events,
+	if d.HasChange("event") {
+		// When events change, API requires the full configuration
+		fullBody := wallarm.IntegrationCreate{
+			Name:   d.Get("name").(string),
+			Active: d.Get("active").(bool),
+			Target: d.Get("integration_key").(string),
+			Events: expandWallarmEventToIntEvents(d.Get("event"), "pager_duty"),
+			Type:   "pager_duty",
+		}
+		updateRes, err := client.IntegrationUpdate(&fullBody, pagerDuty.ID)
+		if err != nil {
+			return err
+		}
+		d.Set("integration_id", updateRes.Body.ID)
+		resID := fmt.Sprintf("%d/%s/%d", clientID, updateRes.Body.Type, updateRes.Body.ID)
+		d.SetId(resID)
+	} else {
+		updateBody := make(map[string]interface{})
+		if d.HasChange("name") {
+			updateBody["name"] = d.Get("name").(string)
+		}
+		if d.HasChange("active") {
+			updateBody["active"] = d.Get("active").(bool)
+		}
+		if d.HasChange("integration_key") {
+			updateBody["target"] = d.Get("integration_key").(string)
+		}
+		if len(updateBody) > 0 {
+			updateRes, err := client.IntegrationPartialUpdate(pagerDuty.ID, updateBody)
+			if err != nil {
+				return err
+			}
+			d.Set("integration_id", updateRes.Body.ID)
+			resID := fmt.Sprintf("%d/%s/%d", clientID, updateRes.Body.Type, updateRes.Body.ID)
+			d.SetId(resID)
+		}
 	}
-
-	updateRes, err := client.IntegrationUpdate(&pagerBody, pagerDuty.ID)
-	if err != nil {
-		return err
-	}
-
-	d.Set("integration_id", updateRes.Body.ID)
-
-	resID := fmt.Sprintf("%d/%s/%d", clientID, updateRes.Body.Type, updateRes.Body.ID)
-	d.SetId(resID)
 
 	return resourceWallarmPagerDutyRead(d, m)
 }

@@ -42,7 +42,7 @@ func TestAccIntegrationPagerDutyFullSettings(t *testing.T) {
 					resource.TestCheckResourceAttr(name, "name", "tf-test-"+rnd),
 					resource.TestCheckResourceAttr(name, "integration_key", rndKey),
 					resource.TestCheckResourceAttr(name, "active", "false"),
-					resource.TestCheckResourceAttr(name, "event.#", "6"),
+					resource.TestCheckResourceAttr(name, "event.#", "7"),
 				),
 			},
 		},
@@ -80,7 +80,7 @@ func TestAccIntegrationPagerDutyCreateThenUpdate(t *testing.T) {
 					resource.TestCheckResourceAttr(name, "name", "tf-test-"+rnd),
 					resource.TestCheckResourceAttr(name, "integration_key", rndKey),
 					resource.TestCheckResourceAttr(name, "active", "true"),
-					resource.TestCheckResourceAttr(name, "event.#", "6"),
+					resource.TestCheckResourceAttr(name, "event.#", "7"),
 				),
 			},
 			{
@@ -89,7 +89,7 @@ func TestAccIntegrationPagerDutyCreateThenUpdate(t *testing.T) {
 					resource.TestCheckResourceAttr(name, "name", "tf-updated-"+rnd),
 					resource.TestCheckResourceAttr(name, "integration_key", rndKey),
 					resource.TestCheckResourceAttr(name, "active", "false"),
-					resource.TestCheckResourceAttr(name, "event.#", "6"),
+					resource.TestCheckResourceAttr(name, "event.#", "7"),
 				),
 			},
 		},
@@ -112,26 +112,30 @@ resource "wallarm_integration_pagerduty" "%[1]s" {
 
 	event {
 		event_type = "system"
-		active = %[4]s
+		active = true
 	}
 	event {
-		event_type = "scope"
-		active = %[4]s
-	}
-	event {
-		event_type = "hit"
-		active = %[4]s
-	}
-	event {
-		event_type = "vuln_high"
+		event_type = "rules_and_triggers"
 		active = "%[4]s"
 	}
 	event {
-		event_type = "vuln_medium"
+		event_type = "security_issue_critical"
 		active = "%[4]s"
 	}
 	event {
-		event_type = "vuln_low"
+		event_type = "security_issue_high"
+		active = "%[4]s"
+	}
+	event {
+		event_type = "security_issue_medium"
+		active = "%[4]s"
+	}
+	event {
+		event_type = "security_issue_low"
+		active = "%[4]s"
+	}
+	event {
+		event_type = "security_issue_info"
 		active = "%[4]s"
 	}
 }`, resourceID, name, token, active)

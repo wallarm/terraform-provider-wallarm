@@ -68,18 +68,26 @@ func resourceWallarmOpsGenie() *schema.Resource {
 			"event": {
 				Type:     schema.TypeSet,
 				Optional: true,
-				MaxItems: 4,
+				MaxItems: 7,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"event_type": {
-							Type:         schema.TypeString,
-							Optional:     true,
-							ValidateFunc: validation.StringInSlice([]string{"hit", "vuln_high", "vuln_medium", "vuln_low"}, false),
+							Type:     schema.TypeString,
+							Optional: true,
+							ValidateFunc: validation.StringInSlice([]string{
+								"system",
+								"rules_and_triggers",
+								"security_issue_critical",
+								"security_issue_high",
+								"security_issue_medium",
+								"security_issue_low",
+								"security_issue_info",
+							}, false),
 						},
 						"active": {
 							Type:     schema.TypeBool,
 							Optional: true,
-							Default:  false,
+							Default:  true,
 						},
 					},
 				},
@@ -97,10 +105,10 @@ func resourceWallarmOpsGenieCreate(d *schema.ResourceData, m interface{}) error 
 	active := d.Get("active").(bool)
 	events := expandWallarmEventToIntEvents(d.Get("event"), "opsgenie")
 
-	opsGenieBody := wallarm.IntegrationWithAPICreate{
+	opsGenieBody := wallarm.IntegrationCreate{
 		Name:   name,
 		Active: active,
-		Target: &wallarm.IntegrationWithAPITarget{
+		Target: &wallarm.IntegrationTokenAPITarget{
 			Token: apiToken,
 			API:   apiURL,
 		},
@@ -109,7 +117,7 @@ func resourceWallarmOpsGenieCreate(d *schema.ResourceData, m interface{}) error 
 		Events:   events,
 	}
 
-	createRes, err := client.IntegrationWithAPICreate(&opsGenieBody)
+	createRes, err := client.IntegrationCreate(&opsGenieBody)
 	if err != nil {
 		return err
 	}
@@ -147,11 +155,6 @@ func resourceWallarmOpsGenieRead(d *schema.ResourceData, m interface{}) error {
 func resourceWallarmOpsGenieUpdate(d *schema.ResourceData, m interface{}) error {
 	client := m.(wallarm.API)
 	clientID := retrieveClientID(d)
-	name := d.Get("name").(string)
-	apiURL := d.Get("api_url").(string)
-	apiToken := d.Get("api_token").(string)
-	active := d.Get("active").(bool)
-	events := expandWallarmEventToIntEvents(d.Get("event"), "opsgenie")
 
 	opsgenie, err := client.IntegrationRead(clientID, d.Get("integration_id").(int))
 	if err != nil {
@@ -162,26 +165,49 @@ func resourceWallarmOpsGenieUpdate(d *schema.ResourceData, m interface{}) error 
 		return err
 	}
 
-	opsgenieBody := wallarm.IntegrationWithAPICreate{
-		Name:   name,
-		Active: active,
-		Target: &wallarm.IntegrationWithAPITarget{
-			Token: apiToken,
-			API:   apiURL,
-		},
-		Type:   "opsgenie",
-		Events: events,
+	if d.HasChange("event") {
+		// When events change, API requires the full configuration
+		fullBody := wallarm.IntegrationCreate{
+			Name:   d.Get("name").(string),
+			Active: d.Get("active").(bool),
+			Target: &wallarm.IntegrationTokenAPITarget{
+				Token: d.Get("api_token").(string),
+				API:   d.Get("api_url").(string),
+			},
+			Events: expandWallarmEventToIntEvents(d.Get("event"), "opsgenie"),
+			Type:   "opsgenie",
+		}
+		updateRes, err := client.IntegrationUpdate(&fullBody, opsgenie.ID)
+		if err != nil {
+			return err
+		}
+		d.Set("integration_id", updateRes.Body.ID)
+		resID := fmt.Sprintf("%d/%s/%d", clientID, updateRes.Body.Type, updateRes.Body.ID)
+		d.SetId(resID)
+	} else {
+		updateBody := make(map[string]interface{})
+		if d.HasChange("name") {
+			updateBody["name"] = d.Get("name").(string)
+		}
+		if d.HasChange("active") {
+			updateBody["active"] = d.Get("active").(bool)
+		}
+		if d.HasChange("api_token") || d.HasChange("api_url") {
+			updateBody["target"] = &wallarm.IntegrationTokenAPITarget{
+				Token: d.Get("api_token").(string),
+				API:   d.Get("api_url").(string),
+			}
+		}
+		if len(updateBody) > 0 {
+			updateRes, err := client.IntegrationPartialUpdate(opsgenie.ID, updateBody)
+			if err != nil {
+				return err
+			}
+			d.Set("integration_id", updateRes.Body.ID)
+			resID := fmt.Sprintf("%d/%s/%d", clientID, updateRes.Body.Type, updateRes.Body.ID)
+			d.SetId(resID)
+		}
 	}
-
-	updateRes, err := client.IntegrationWithAPIUpdate(&opsgenieBody, opsgenie.ID)
-	if err != nil {
-		return err
-	}
-
-	d.Set("integration_id", updateRes.Body.ID)
-
-	resID := fmt.Sprintf("%d/%s/%d", clientID, updateRes.Body.Type, updateRes.Body.ID)
-	d.SetId(resID)
 
 	return resourceWallarmOpsGenieRead(d, m)
 }

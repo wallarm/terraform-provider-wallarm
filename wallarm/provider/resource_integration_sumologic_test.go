@@ -39,7 +39,7 @@ func TestAccIntegrationSumologicFullSettings(t *testing.T) {
 					resource.TestCheckResourceAttr(name, "name", "tf-test-"+rnd),
 					resource.TestCheckResourceAttr(name, "sumologic_url", "https://endpoint6.collection.us2.sumologic.com/receiver/v1/http/ZaVnC4dhaV123gN3o--AIj3q8y9GrwxSrAgcOJMvltRVnEIAIyR001VBlDsTYGBpieGxBxyJZA1eFIZcuyJ_ivkjPZ6Ynl8x3kLBJi4arZ479cD8ePJsqA=="),
 					resource.TestCheckResourceAttr(name, "active", "true"),
-					resource.TestCheckResourceAttr(name, "event.#", "6"),
+					resource.TestCheckResourceAttr(name, "event.#", "9"),
 				),
 			},
 		},
@@ -60,7 +60,7 @@ func TestAccIntegrationSumologicCreateThenUpdate(t *testing.T) {
 					resource.TestCheckResourceAttr(name, "name", "tf-test-"+rnd),
 					resource.TestCheckResourceAttr(name, "sumologic_url", "https://endpoint6.collection.us2.sumologic.com/receiver/v1/http/ZaVnC4dhaV123gN3o--AIj3q8y9GrwxSrAgcOJMvltRVnEIAIyR001VBlDsTYGBpieGxBxyJZA1eFIZcuyJ_ivkjPZ6Ynl8x3kLBJi4arZ479cD8ePJsqA=="),
 					resource.TestCheckResourceAttr(name, "active", "true"),
-					resource.TestCheckResourceAttr(name, "event.#", "6"),
+					resource.TestCheckResourceAttr(name, "event.#", "9"),
 				),
 			},
 			{
@@ -69,7 +69,7 @@ func TestAccIntegrationSumologicCreateThenUpdate(t *testing.T) {
 					resource.TestCheckResourceAttr(name, "name", "tf-updated-"+rnd),
 					resource.TestCheckResourceAttr(name, "sumologic_url", "https://endpoint6.collection.us2.sumologic.com/receiver/v1/http/ZaVnC4dhaV123gN3o--AIj3q8y9GrwxSrAgcOJMvltRVnEIAIyR001VBlDsTYGBpieGxBxyJZA1eFIZcuyJ_ivkjPZ6Ynl8x3kLBJi4arZ479cD8ePJsqA=="),
 					resource.TestCheckResourceAttr(name, "active", "false"),
-					resource.TestCheckResourceAttr(name, "event.#", "6"),
+					resource.TestCheckResourceAttr(name, "event.#", "9"),
 				),
 			},
 		},
@@ -91,28 +91,41 @@ resource "wallarm_integration_sumologic" "%[1]s" {
 	active = %[4]s
 
 	event {
+		event_type = "siem"
+		active = true
+		with_headers = true
+	}
+	event {
+		event_type = "rules_and_triggers"
+		active = %[4]s
+	}
+	event {
+		event_type = "number_of_requests_per_hour"
+		active = %[4]s
+	}
+	event {
+		event_type = "security_issue_critical"
+		active = %[4]s
+	}
+	event {
+		event_type = "security_issue_high"
+		active = %[4]s
+	}
+	event {
+		event_type = "security_issue_medium"
+		active = %[4]s
+	}
+	event {
+		event_type = "security_issue_low"
+		active = %[4]s
+	}
+	event {
+		event_type = "security_issue_info"
+		active = %[4]s
+	}
+	event {
 		event_type = "system"
 		active = true
-	}
-	event {
-		event_type = "scope"
-		active = %[4]s
-	}
-	event {
-		event_type = "vuln_high"
-		active = "true"
-	}
-	event {
-		event_type = "vuln_medium"
-		active = "true"
-	}
-	event {
-		event_type = "vuln_low"
-		active = "true"
-	}
-	event {
-		event_type = "hit"
-		active = %[4]s
 	}
 }`, resourceID, name, token, active)
 }

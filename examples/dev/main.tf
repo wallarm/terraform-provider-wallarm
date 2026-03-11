@@ -203,11 +203,11 @@ provider "" {
 #   active = true
 
 #   event {
-#     event_type = "hit"
+#     event_type = "rules_and_triggers"
 #     active = true
 #   }
 #   event {
-#     event_type = "vuln_high"
+#     event_type = "system"
 #     active = true
 #   }
 #   headers = {
