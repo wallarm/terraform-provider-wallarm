@@ -340,6 +340,39 @@ func expandWallarmEventToIntEvents(d interface{}, resourceType string) *[]wallar
 					"event_type": "system",
 					"active":     false},
 			}
+		case "telegram":
+			defaultEvents = []map[string]interface{}{
+				{
+					"event_type": "system",
+					"active":     false},
+				{
+					"event_type": "rules_and_triggers",
+					"active":     false},
+				{
+					"event_type": "security_issue_critical",
+					"active":     false},
+				{
+					"event_type": "security_issue_high",
+					"active":     false},
+				{
+					"event_type": "security_issue_medium",
+					"active":     false},
+				{
+					"event_type": "security_issue_low",
+					"active":     false},
+				{
+					"event_type": "security_issue_info",
+					"active":     false},
+				{
+					"event_type": "report_daily",
+					"active":     false},
+				{
+					"event_type": "report_weekly",
+					"active":     false},
+				{
+					"event_type": "report_monthly",
+					"active":     false},
+			}
 		case "ms_teams", "opsgenie", "pager_duty", "slack":
 			defaultEvents = []map[string]interface{}{
 				{
