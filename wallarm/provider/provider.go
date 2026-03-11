@@ -120,7 +120,6 @@ func Provider() *schema.Provider {
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"wallarm_user":                           resourceWallarmUser(),
-			"wallarm_blacklist":                      resourceWallarmDenylist(), // deprecated & undocumented
 			"wallarm_denylist":                       resourceWallarmDenylist(),
 			"wallarm_allowlist":                      resourceWallarmAllowlist(),
 			"wallarm_graylist":                       resourceWallarmGraylist(),
@@ -143,8 +142,6 @@ func Provider() *schema.Provider {
 			"wallarm_rule_enum":                      resourceWallarmEnum(),
 			"wallarm_rule_disable_attack_type":       resourceWallarmDisableAttackType(),
 			"wallarm_rule_disable_stamp":             resourceWallarmDisableStamp(),
-			"wallarm_rule_variative_keys":            resourceWallarmVariativeKeys(),
-			"wallarm_rule_variative_values":          resourceWallarmVariativeValues(),
 			"wallarm_rule_vpatch":                    resourceWallarmVpatch(),
 			"wallarm_rule_mode":                      resourceWallarmMode(),
 			"wallarm_rule_masking":                   resourceWallarmSensitiveData(),
