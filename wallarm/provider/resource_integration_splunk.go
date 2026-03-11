@@ -166,6 +166,10 @@ func resourceWallarmSplunkUpdate(d *schema.ResourceData, m interface{}) error {
 
 	splunk, err := client.IntegrationRead(clientID, d.Get("integration_id").(int))
 	if err != nil {
+		if strings.HasPrefix(err.Error(), "Not found.") {
+			d.SetId("")
+			return nil
+		}
 		return err
 	}
 

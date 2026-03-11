@@ -616,7 +616,7 @@ provider "" {
 #   }
 
 #   event {
-#     event_type = "vuln_high"
+#     event_type = "system"
 #     active = true
 #   }
 # }

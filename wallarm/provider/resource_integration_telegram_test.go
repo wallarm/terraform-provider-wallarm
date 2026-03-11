@@ -17,9 +17,9 @@ func TestAccIntegrationTelegramRequiredFields(t *testing.T) {
 		Providers: testAccProviders,
 		Steps: []resource.TestStep{
 			{
-				Config: testWallarmIntegrationTelegramRequiredOnly(rnd, "testbot", "ytMxjwmqzIit067MD0vpSw=="),
+				Config: testWallarmIntegrationTelegramRequiredOnly(rnd, "ids13", "ytMxjwmqzIit067MD0vpSw=="),
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr(name, "telegram_username", "testbot"),
+					resource.TestCheckResourceAttr(name, "telegram_username", "ids13"),
 				),
 			},
 		},
@@ -35,10 +35,10 @@ func TestAccIntegrationTelegramFullSettings(t *testing.T) {
 		Providers: testAccProviders,
 		Steps: []resource.TestStep{
 			{
-				Config: testWallarmIntegrationTelegramFullConfig(rnd, "tf-test-"+rnd, "testbot", "ytMxjwmqzIit067MD0vpSw==", "true"),
+				Config: testWallarmIntegrationTelegramFullConfig(rnd, "tf-test-"+rnd, "ids13", "ytMxjwmqzIit067MD0vpSw==", "true"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(name, "name", "tf-test-"+rnd),
-					resource.TestCheckResourceAttr(name, "telegram_username", "testbot"),
+					resource.TestCheckResourceAttr(name, "telegram_username", "ids13"),
 					resource.TestCheckResourceAttr(name, "active", "true"),
 					resource.TestCheckResourceAttr(name, "event.#", "10"),
 				),
@@ -55,8 +55,8 @@ func TestAccIntegrationTelegramIncorrectEvents(t *testing.T) {
 		Providers: testAccProviders,
 		Steps: []resource.TestStep{
 			{
-				Config:      testWallarmIntegrationTelegramIncorrectEvents(rnd, "testbot", "ytMxjwmqzIit067MD0vpSw=="),
-				ExpectError: regexp.MustCompile(`event: attribute supports 10 items maximum, config has [0-9]+ declared`),
+				Config:      testWallarmIntegrationTelegramIncorrectEvents(rnd, "ids13", "ytMxjwmqzIit067MD0vpSw=="),
+				ExpectError: regexp.MustCompile(`expected .* to be one of \[`),
 			},
 		},
 	})
@@ -71,7 +71,7 @@ func TestAccIntegrationTelegramCreateThenUpdate(t *testing.T) {
 		Providers: testAccProviders,
 		Steps: []resource.TestStep{
 			{
-				Config: testWallarmIntegrationTelegramFullConfig(rnd, "tf-test-"+rnd, "testbot", "ytMxjwmqzIit067MD0vpSw==", "true"),
+				Config: testWallarmIntegrationTelegramFullConfig(rnd, "tf-test-"+rnd, "ids13", "ytMxjwmqzIit067MD0vpSw==", "true"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(name, "name", "tf-test-"+rnd),
 					resource.TestCheckResourceAttr(name, "active", "true"),
@@ -79,7 +79,7 @@ func TestAccIntegrationTelegramCreateThenUpdate(t *testing.T) {
 				),
 			},
 			{
-				Config: testWallarmIntegrationTelegramFullConfig(rnd, "tf-updated-"+rnd, "testbot", "ytMxjwmqzIit067MD0vpSw==", "false"),
+				Config: testWallarmIntegrationTelegramFullConfig(rnd, "tf-updated-"+rnd, "ids13", "ytMxjwmqzIit067MD0vpSw==", "false"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(name, "name", "tf-updated-"+rnd),
 					resource.TestCheckResourceAttr(name, "active", "false"),
@@ -157,48 +157,8 @@ resource "wallarm_integration_telegram" "%[1]s" {
 	active            = true
 
 	event {
-		event_type = "system"
+		event_type = "siem"
 		active = true
-	}
-	event {
-		event_type = "rules_and_triggers"
-		active = true
-	}
-	event {
-		event_type = "security_issue_critical"
-		active = true
-	}
-	event {
-		event_type = "security_issue_high"
-		active = true
-	}
-	event {
-		event_type = "security_issue_medium"
-		active = true
-	}
-	event {
-		event_type = "security_issue_low"
-		active = true
-	}
-	event {
-		event_type = "security_issue_info"
-		active = true
-	}
-	event {
-		event_type = "report_daily"
-		active = true
-	}
-	event {
-		event_type = "report_weekly"
-		active = true
-	}
-	event {
-		event_type = "report_monthly"
-		active = true
-	}
-	event {
-		event_type = "system"
-		active = false
 	}
 }`, resourceID, telegramUsername, chatData)
 }

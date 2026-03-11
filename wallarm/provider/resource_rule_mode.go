@@ -158,7 +158,7 @@ func resourceWallarmModeImport(d *schema.ResourceData, _ interface{}) ([]*schema
 		mode := idAttr[3]
 		d.Set("action_id", actionID)
 		d.Set("rule_id", ruleID)
-		d.Set("rule_type", "sensitive_data")
+		d.Set("rule_type", "wallarm_mode")
 
 		existingID := fmt.Sprintf("%d/%d/%d/%s", clientID, actionID, ruleID, mode)
 		d.SetId(existingID)

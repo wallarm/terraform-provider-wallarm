@@ -1,18 +1,10 @@
-resource "wallarm_integration_sumologic" "sumologic_integration" {
-  name = "Terraform SumoLogic Integration"
-  sumologic_url = "http://sumologic.com/changed/once/again"
+resource "wallarm_integration_slack" "slack_integration" {
+  name = "Terraform Slack Integration X"
+  webhook_url = "https://hooks.slack.com/services/T00000000/B00000000/XXXXXXXXXXXXXXXXXXXXXXXX"
+  active = true
 
   event {
-    event_type   = "siem"
-    active       = true
-    with_headers = true
-  }
-  event {
     event_type = "rules_and_triggers"
-    active = true
-  }
-  event {
-    event_type = "number_of_requests_per_hour"
     active = true
   }
   event {

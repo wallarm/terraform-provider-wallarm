@@ -2,6 +2,7 @@ package wallarm
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/wallarm/wallarm-go"
 
@@ -141,6 +142,10 @@ func resourceWallarmDataDogRead(d *schema.ResourceData, m interface{}) error {
 	clientID := retrieveClientID(d)
 	dd, err := client.IntegrationRead(clientID, d.Get("integration_id").(int))
 	if err != nil {
+		if strings.HasPrefix(err.Error(), "Not found.") {
+			d.SetId("")
+			return nil
+		}
 		return err
 	}
 
@@ -160,6 +165,10 @@ func resourceWallarmDataDogUpdate(d *schema.ResourceData, m interface{}) error {
 
 	dd, err := client.IntegrationRead(clientID, d.Get("integration_id").(int))
 	if err != nil {
+		if strings.HasPrefix(err.Error(), "Not found.") {
+			d.SetId("")
+			return nil
+		}
 		return err
 	}
 

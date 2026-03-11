@@ -126,7 +126,7 @@ func resourceWallarmForcedBrowsingImport(d *schema.ResourceData, _ interface{}) 
 		}
 		d.Set("action_id", actionID)
 		d.Set("rule_id", ruleID)
-		d.Set("rule_type", "bola")
+		d.Set("rule_type", "forced_browsing")
 
 		existingID := fmt.Sprintf("%d/%d/%d", clientID, actionID, ruleID)
 		d.SetId(existingID)

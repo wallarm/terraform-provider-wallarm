@@ -2,6 +2,7 @@ package wallarm
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/wallarm/wallarm-go"
 
@@ -142,6 +143,10 @@ func resourceWallarmInsightConnectRead(d *schema.ResourceData, m interface{}) er
 	clientID := retrieveClientID(d)
 	insight, err := client.IntegrationRead(clientID, d.Get("integration_id").(int))
 	if err != nil {
+		if strings.HasPrefix(err.Error(), "Not found.") {
+			d.SetId("")
+			return nil
+		}
 		return err
 	}
 
@@ -161,6 +166,10 @@ func resourceWallarmInsightConnectUpdate(d *schema.ResourceData, m interface{}) 
 
 	insight, err := client.IntegrationRead(clientID, d.Get("integration_id").(int))
 	if err != nil {
+		if strings.HasPrefix(err.Error(), "Not found.") {
+			d.SetId("")
+			return nil
+		}
 		return err
 	}
 

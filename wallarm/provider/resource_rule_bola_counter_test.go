@@ -30,7 +30,6 @@ func TestAccRuleBolaCounterCreate(t *testing.T) {
 					resource.TestCheckResourceAttr(name, "action.#", "3"),
 					resource.TestMatchResourceAttr(name, "counter", regexp.MustCompile("^i:.+")),
 				),
-				ExpectNonEmptyPlan: true,
 			},
 		},
 	})

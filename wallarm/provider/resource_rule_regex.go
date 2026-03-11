@@ -167,7 +167,7 @@ func resourceWallarmRegexImport(d *schema.ResourceData, _ interface{}) ([]*schem
 		hintType := idAttr[3]
 		d.Set("action_id", actionID)
 		d.Set("rule_id", ruleID)
-		d.Set("rule_type", "rate_limit")
+		d.Set("rule_type", hintType)
 
 		existingID := fmt.Sprintf("%d/%d/%d/%s", clientID, actionID, ruleID, hintType)
 		d.SetId(existingID)

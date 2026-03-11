@@ -56,7 +56,7 @@ func TestAccIntegrationSlackIncorrectEvents(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config:      testWallarmIntegrationSlackIncorrectEvents(rnd, "https://hooks.slack.com/services/T00000000/B00000000/XXXXXXXXXXXXXXXXXXXXXXXX"),
-				ExpectError: regexp.MustCompile(`event: attribute supports 7 items maximum, config has [0-9]+ declared`),
+				ExpectError: regexp.MustCompile(`expected .* to be one of \[`),
 			},
 		},
 	})
@@ -141,33 +141,9 @@ func testWallarmIntegrationSlackIncorrectEvents(resourceID, url string) string {
 resource "wallarm_integration_slack" "%[1]s" {
 	webhook_url = "%[2]s"
 	active = true
-	
+
 	event {
-		event_type = "system"
-		active = true
-	}
-	event {
-		event_type = "rules_and_triggers"
-		active = true
-	}
-	event {
-		event_type = "security_issue_critical"
-		active = true
-	}
-	event {
-		event_type = "security_issue_high"
-		active = true
-	}
-	event {
-		event_type = "security_issue_medium"
-		active = true
-	}
-	event {
-		event_type = "security_issue_low"
-		active = true
-	}
-	event {
-		event_type = "security_issue_info"
+		event_type = "siem"
 		active = true
 	}
 }`, resourceID, url)
