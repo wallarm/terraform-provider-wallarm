@@ -86,7 +86,7 @@ func resourceWallarmOverlimitResSettingsCreate(d *schema.ResourceData, m interfa
 	resID := fmt.Sprintf("%d/%d/%d", clientID, actionID, actionResp.Body.ID)
 	d.SetId(resID)
 
-	return nil
+	return resourceWallarmOverlimitResSettingsRead(d, m)
 }
 
 func resourceWallarmOverlimitResSettingsRead(d *schema.ResourceData, m interface{}) error {

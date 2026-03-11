@@ -33,8 +33,8 @@ func resourceWallarmApp() *schema.Resource {
 				ForceNew: true,
 				ValidateFunc: func(val interface{}, key string) (warns []string, errs []error) {
 					v := val.(int)
-					if v < 0 {
-						errs = append(errs, fmt.Errorf("%q must be positive, got: %d", key, v))
+					if v != -1 && v <= 0 {
+						errs = append(errs, fmt.Errorf("%q must be -1 (default application) or a positive integer, got: %d", key, v))
 					}
 					return
 				},
@@ -57,7 +57,7 @@ func resourceWallarmAppCreate(d *schema.ResourceData, m interface{}) error {
 
 	if err := client.AppCreate(appBody); err != nil {
 		if errors.Is(err, wallarm.ErrExistingResource) {
-			existingID := fmt.Sprintf("%d/%s/%d", clientID, name, appID)
+			existingID := fmt.Sprintf("%d/%d", clientID, appID)
 			return ImportAsExistsError("wallarm_application", existingID)
 		}
 		return err
@@ -65,7 +65,7 @@ func resourceWallarmAppCreate(d *schema.ResourceData, m interface{}) error {
 
 	d.Set("app_id", appID)
 
-	resID := fmt.Sprintf("%d/%s/%d", clientID, name, appID)
+	resID := fmt.Sprintf("%d/%d", clientID, appID)
 	d.SetId(resID)
 
 	return resourceWallarmAppRead(d, m)
@@ -74,7 +74,6 @@ func resourceWallarmAppCreate(d *schema.ResourceData, m interface{}) error {
 func resourceWallarmAppRead(d *schema.ResourceData, m interface{}) error {
 	client := m.(wallarm.API)
 	clientID := retrieveClientID(d)
-	name := d.Get("name").(string)
 	appID := d.Get("app_id").(int)
 
 	appRead := &wallarm.AppRead{
@@ -88,18 +87,15 @@ func resourceWallarmAppRead(d *schema.ResourceData, m interface{}) error {
 	if err != nil {
 		return err
 	}
-	found := false
 	for _, app := range appResp.Body {
 		if app.ID != nil && *app.ID == appID {
-			found = true
-			d.Set("name", name)
+			d.Set("name", app.Name)
 			d.Set("app_id", app.ID)
 			d.Set("client_id", clientID)
+			return nil
 		}
 	}
-	if !found {
-		d.SetId("")
-	}
+	d.SetId("")
 	return nil
 }
 
@@ -123,14 +119,9 @@ func resourceWallarmAppUpdate(d *schema.ResourceData, m interface{}) error {
 		if err := client.AppUpdate(appBody); err != nil {
 			return err
 		}
-
-		resID := fmt.Sprintf("%d/%s/%d", clientID, name, appID)
-		d.SetId(resID)
-
-		return resourceWallarmAppRead(d, m)
 	}
-	return resourceWallarmAppCreate(d, m)
 
+	return resourceWallarmAppRead(d, m)
 }
 
 func resourceWallarmAppDelete(d *schema.ResourceData, m interface{}) error {
@@ -153,44 +144,23 @@ func resourceWallarmAppDelete(d *schema.ResourceData, m interface{}) error {
 }
 
 func resourceWallarmAppImport(d *schema.ResourceData, m interface{}) ([]*schema.ResourceData, error) {
-	client := m.(wallarm.API)
-	idAttr := strings.SplitN(d.Id(), "/", 3)
-	if len(idAttr) == 3 {
-		clientID, err := strconv.Atoi(idAttr[0])
-		if err != nil {
-			return nil, err
-		}
-		name := idAttr[1]
-		appID, err := strconv.Atoi(idAttr[2])
-		if err != nil {
-			return nil, err
-		}
-
-		appRead := &wallarm.AppRead{
-			Limit:  1000,
-			Offset: 0,
-			Filter: &wallarm.AppReadFilter{
-				Clientid: []int{clientID},
-			},
-		}
-		appResp, err := client.AppRead(appRead)
-		if err != nil {
-			return nil, err
-		}
-
-		for _, app := range appResp.Body {
-			if app.ID != nil && *app.ID == appID {
-				d.Set("name", name)
-				d.Set("app_id", app.ID)
-				d.Set("client_id", clientID)
-			}
-		}
-
-		existingID := fmt.Sprintf("%d/%s/%d", clientID, name, appID)
-		d.SetId(existingID)
-	} else {
-		return nil, fmt.Errorf("invalid id (%q) specified, should be in format \"{clientID}/{name}/{id}\"", d.Id())
+	idAttr := strings.SplitN(d.Id(), "/", 2)
+	if len(idAttr) != 2 {
+		return nil, fmt.Errorf("invalid id (%q) specified, should be in format \"{clientID}/{appID}\"", d.Id())
 	}
+
+	clientID, err := strconv.Atoi(idAttr[0])
+	if err != nil {
+		return nil, err
+	}
+	appID, err := strconv.Atoi(idAttr[1])
+	if err != nil {
+		return nil, err
+	}
+
+	d.Set("client_id", clientID)
+	d.Set("app_id", appID)
+	d.SetId(fmt.Sprintf("%d/%d", clientID, appID))
 
 	if err := resourceWallarmAppRead(d, m); err != nil {
 		return nil, err

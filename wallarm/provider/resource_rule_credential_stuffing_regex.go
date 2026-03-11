@@ -91,6 +91,7 @@ func resourceWallarmCredentialStuffingRegexCreate(d *schema.ResourceData, m inte
 	resID := fmt.Sprintf("%d/%d/%d", resp.Body.Clientid, resp.Body.ActionID, resp.Body.ID)
 	d.SetId(resID)
 	d.Set("client_id", resp.Body.Clientid)
+	d.Set("action_id", resp.Body.ActionID)
 	d.Set("rule_id", resp.Body.ID)
 
 	return resourceWallarmCredentialStuffingRegexRead(d, m)

@@ -1,7 +1,7 @@
 resource "wallarm_integration_telegram" "telegram_integration" {
   name = "Terraform Telegram Integration"
-  telegram_username = "ids13"
-  chat_data = "ytMxjwmqzIit067MD0vpSw=="
+  telegram_username = "WallarmIntegrationTest"
+  chat_data = "+y86q0LOQ4QG3hK9QgVDfw=="
   active = true
 
   event {

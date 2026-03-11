@@ -125,7 +125,7 @@ func resourceWallarmRateLimitCreate(d *schema.ResourceData, m interface{}) error
 	resID := fmt.Sprintf("%d/%d/%d", clientID, actionID, actionResp.Body.ID)
 	d.SetId(resID)
 
-	return nil
+	return resourceWallarmRateLimitRead(d, m)
 }
 
 func resourceWallarmRateLimitRead(d *schema.ResourceData, m interface{}) error {

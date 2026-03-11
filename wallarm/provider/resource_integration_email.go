@@ -12,7 +12,7 @@ import (
 
 func resourceWallarmEmail() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceWallarmIntegrationCreate,
+		Create: resourceWallarmEmailCreate,
 		Read:   resourceWallarmEmailRead,
 		Update: resourceWallarmEmailUpdate,
 		Delete: resourceWallarmEmailDelete,
@@ -74,7 +74,7 @@ func resourceWallarmEmail() *schema.Resource {
 						"active": {
 							Type:     schema.TypeBool,
 							Optional: true,
-							Default:  false,
+							Default:  true,
 						},
 					},
 				},
@@ -83,7 +83,7 @@ func resourceWallarmEmail() *schema.Resource {
 	}
 }
 
-func resourceWallarmIntegrationCreate(d *schema.ResourceData, m interface{}) error {
+func resourceWallarmEmailCreate(d *schema.ResourceData, m interface{}) error {
 	client := m.(wallarm.API)
 	clientID := retrieveClientID(d)
 	name := d.Get("name").(string)

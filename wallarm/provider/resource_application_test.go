@@ -74,7 +74,7 @@ func TestAccWallarmApp_Existing(t *testing.T) {
 					resource.TestCheckResourceAttr(name, "name", "tf-test-"+rnd),
 					resource.TestCheckResourceAttr(name, "app_id", rndID),
 				),
-				ExpectError: ResourceExistsError("[0-9]+/tf-test-[a-z]+/[0-9]+", "wallarm_application"),
+				ExpectError: ResourceExistsError("[0-9]+/[0-9]+", "wallarm_application"),
 			},
 		},
 	})

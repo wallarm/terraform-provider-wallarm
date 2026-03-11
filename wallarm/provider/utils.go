@@ -3,11 +3,11 @@ package wallarm
 import (
 	"bytes"
 	"context"
+	crand "crypto/rand"
 	"encoding/json"
 	"fmt"
-	"math/rand"
+	"math/big"
 	"reflect"
-	"regexp"
 	"sort"
 	"strconv"
 	"strings"
@@ -234,7 +234,6 @@ func diffStringSlice(a, b []string) []string {
 	return diff
 }
 
-// nolint:gosec
 func passwordGenerate(length int) string {
 	digits := "0123456789"
 	specials := "~=+%^*()_[]{}!@#$?"
@@ -242,16 +241,26 @@ func passwordGenerate(length int) string {
 		"abcdefghijklmnopqrstuvwxyz" +
 		digits + specials
 	buf := make([]byte, length)
-	buf[0] = digits[rand.Intn(len(digits))]
-	buf[1] = specials[rand.Intn(len(specials))]
+	buf[0] = digits[cryptoRandIntn(len(digits))]
+	buf[1] = specials[cryptoRandIntn(len(specials))]
 	for i := 2; i < length; i++ {
-		buf[i] = all[rand.Intn(len(all))]
+		buf[i] = all[cryptoRandIntn(len(all))]
 	}
-	rand.Shuffle(len(buf), func(i, j int) {
+	// Fisher-Yates shuffle using crypto/rand
+	for i := len(buf) - 1; i > 0; i-- {
+		j := cryptoRandIntn(i + 1)
 		buf[i], buf[j] = buf[j], buf[i]
-	})
-	str := string(buf)
-	return str
+	}
+	return string(buf)
+}
+
+func cryptoRandIntn(n int) int {
+	max := big.NewInt(int64(n))
+	v, err := crand.Int(crand.Reader, max)
+	if err != nil {
+		panic(fmt.Sprintf("crypto/rand failed: %v", err))
+	}
+	return int(v.Int64())
 }
 
 func isPasswordValid(s string) bool {
@@ -635,15 +644,6 @@ func existsHint(d *schema.ResourceData, m interface{}, actionID int, hintType st
 // Generally, ID is something like `/6039/4123/93830`
 func ImportAsExistsError(resourceName, id string) error {
 	return fmt.Errorf("the resource with the ID %q already exists - to be managed via Terraform this resource needs to be imported into the State. Please see the resource documentation for %q for more information", id, resourceName)
-}
-
-func isNotFoundError(err error) (bool, error) {
-	matched, matchErr := regexp.MatchString("HTTP Status: 404", err.Error())
-	if matchErr != nil {
-		return false, matchErr
-	}
-
-	return matched, nil
 }
 
 func findRule(client wallarm.API, clientID, ruleID int) (*wallarm.ActionBody, error) {

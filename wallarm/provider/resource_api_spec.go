@@ -1,6 +1,7 @@
 package wallarm
 
 import (
+	"errors"
 	"fmt"
 	"strconv"
 
@@ -110,7 +111,7 @@ func resourceWallarmAPISpecRead(d *schema.ResourceData, m interface{}) error {
 
 	apiSpec, err := client.ApiSpecRead(clientID, apiSpecID)
 	if err != nil {
-		if err.Error() == "Not found" {
+		if errors.Is(err, wallarm.ErrNotFound) {
 			d.SetId("")
 			return nil
 		}

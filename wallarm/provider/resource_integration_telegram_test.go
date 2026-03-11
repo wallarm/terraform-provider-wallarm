@@ -17,9 +17,9 @@ func TestAccIntegrationTelegramRequiredFields(t *testing.T) {
 		Providers: testAccProviders,
 		Steps: []resource.TestStep{
 			{
-				Config: testWallarmIntegrationTelegramRequiredOnly(rnd, "ids13", "ytMxjwmqzIit067MD0vpSw=="),
+				Config: testWallarmIntegrationTelegramRequiredOnly(rnd, "WallarmIntegrationTest", "+y86q0LOQ4QG3hK9QgVDfw=="),
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr(name, "telegram_username", "ids13"),
+					resource.TestCheckResourceAttr(name, "telegram_username", "WallarmIntegrationTest"),
 				),
 			},
 		},
@@ -35,10 +35,10 @@ func TestAccIntegrationTelegramFullSettings(t *testing.T) {
 		Providers: testAccProviders,
 		Steps: []resource.TestStep{
 			{
-				Config: testWallarmIntegrationTelegramFullConfig(rnd, "tf-test-"+rnd, "ids13", "ytMxjwmqzIit067MD0vpSw==", "true"),
+				Config: testWallarmIntegrationTelegramFullConfig(rnd, "tf-test-"+rnd, "WallarmIntegrationTest", "+y86q0LOQ4QG3hK9QgVDfw==", "true"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(name, "name", "tf-test-"+rnd),
-					resource.TestCheckResourceAttr(name, "telegram_username", "ids13"),
+					resource.TestCheckResourceAttr(name, "telegram_username", "WallarmIntegrationTest"),
 					resource.TestCheckResourceAttr(name, "active", "true"),
 					resource.TestCheckResourceAttr(name, "event.#", "10"),
 				),
@@ -55,7 +55,7 @@ func TestAccIntegrationTelegramIncorrectEvents(t *testing.T) {
 		Providers: testAccProviders,
 		Steps: []resource.TestStep{
 			{
-				Config:      testWallarmIntegrationTelegramIncorrectEvents(rnd, "ids13", "ytMxjwmqzIit067MD0vpSw=="),
+				Config:      testWallarmIntegrationTelegramIncorrectEvents(rnd, "WallarmIntegrationTest", "+y86q0LOQ4QG3hK9QgVDfw=="),
 				ExpectError: regexp.MustCompile(`expected .* to be one of \[`),
 			},
 		},
@@ -71,7 +71,7 @@ func TestAccIntegrationTelegramCreateThenUpdate(t *testing.T) {
 		Providers: testAccProviders,
 		Steps: []resource.TestStep{
 			{
-				Config: testWallarmIntegrationTelegramFullConfig(rnd, "tf-test-"+rnd, "ids13", "ytMxjwmqzIit067MD0vpSw==", "true"),
+				Config: testWallarmIntegrationTelegramFullConfig(rnd, "tf-test-"+rnd, "WallarmIntegrationTest", "+y86q0LOQ4QG3hK9QgVDfw==", "true"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(name, "name", "tf-test-"+rnd),
 					resource.TestCheckResourceAttr(name, "active", "true"),
@@ -79,7 +79,7 @@ func TestAccIntegrationTelegramCreateThenUpdate(t *testing.T) {
 				),
 			},
 			{
-				Config: testWallarmIntegrationTelegramFullConfig(rnd, "tf-updated-"+rnd, "ids13", "ytMxjwmqzIit067MD0vpSw==", "false"),
+				Config: testWallarmIntegrationTelegramFullConfig(rnd, "tf-updated-"+rnd, "WallarmIntegrationTest", "+y86q0LOQ4QG3hK9QgVDfw==", "false"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(name, "name", "tf-updated-"+rnd),
 					resource.TestCheckResourceAttr(name, "active", "false"),

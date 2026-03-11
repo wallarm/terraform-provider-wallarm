@@ -3,6 +3,7 @@ package wallarm
 import (
 	"errors"
 	"fmt"
+	"log"
 	"strconv"
 	"strings"
 
@@ -125,13 +126,8 @@ func resourceWallarmNodeDelete(d *schema.ResourceData, m interface{}) error {
 	client := m.(wallarm.API)
 	nodeID := d.Get("node_id").(int)
 	if err := client.NodeDelete(nodeID); err != nil {
-		isNotFoundErr, err2 := isNotFoundError(err)
-		if err2 != nil {
-			return err2
-		}
-
-		if isNotFoundErr {
-			fmt.Print("Resource has already been deleted")
+		if strings.Contains(err.Error(), "HTTP Status: 404") {
+			log.Printf("[WARN] Node %d has already been deleted", nodeID)
 		} else {
 			return err
 		}

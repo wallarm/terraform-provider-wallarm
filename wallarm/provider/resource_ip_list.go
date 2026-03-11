@@ -157,7 +157,7 @@ func resourceWallarmIPListRead(listType wallarm.IPListType) schema.ReadContextFu
 		clientID := retrieveClientID(d)
 
 		// Build lookup sets for each rule type from the schema.
-		subnetLookup := buildSubnetLookup(d)
+		subnetNets, subnetIPs := buildSubnetMatchers(d)
 		countryLookup := buildStringLookup(d, "country")
 		sourceLookup := buildStringLookup(d, "datacenter")
 		proxyLookup := buildStringLookup(d, "proxy_type")
@@ -180,7 +180,7 @@ func resourceWallarmIPListRead(listType wallarm.IPListType) schema.ReadContextFu
 			case "subnet":
 				for _, val := range ipRule.Values {
 					ipAddr := strings.Split(val, "/")[0]
-					if subnetLookup[ipAddr] {
+					if subnetMatch(ipAddr, subnetNets, subnetIPs) {
 						found = true
 						addrIDs = append(addrIDs, map[string]interface{}{
 							"rule_type": "subnet",
@@ -369,24 +369,41 @@ func buildRulesFromSchema(d *schema.ResourceData) ([]wallarm.AccessRuleEntry, di
 	return rules, nil
 }
 
-// buildSubnetLookup expands CIDR ranges and builds a set of individual IPs for matching.
-func buildSubnetLookup(d *schema.ResourceData) map[string]bool {
-	lookup := make(map[string]bool)
+// buildSubnetMatchers parses configured ip_range values into net.IPNet (for CIDRs)
+// and a plain IP set (for single addresses), avoiding memory-expensive CIDR expansion.
+func buildSubnetMatchers(d *schema.ResourceData) ([]*net.IPNet, map[string]bool) {
+	var nets []*net.IPNet
+	ips := make(map[string]bool)
 	ipRange := d.Get("ip_range").([]interface{})
 	for _, v := range ipRange {
-		ip := v.(string)
-		if strings.Contains(ip, "/") {
-			subnet, err := hosts(ip)
+		s := v.(string)
+		if strings.Contains(s, "/") {
+			_, ipNet, err := net.ParseCIDR(s)
 			if err == nil {
-				for _, s := range subnet {
-					lookup[s] = true
-				}
+				nets = append(nets, ipNet)
 			}
 		} else {
-			lookup[ip] = true
+			ips[s] = true
 		}
 	}
-	return lookup
+	return nets, ips
+}
+
+// subnetMatch checks whether ipAddr is contained in any of the configured CIDRs or exact IPs.
+func subnetMatch(ipAddr string, nets []*net.IPNet, ips map[string]bool) bool {
+	if ips[ipAddr] {
+		return true
+	}
+	parsed := net.ParseIP(ipAddr)
+	if parsed == nil {
+		return false
+	}
+	for _, n := range nets {
+		if n.Contains(parsed) {
+			return true
+		}
+	}
+	return false
 }
 
 // buildStringLookup builds a set from a TypeList string field.
@@ -462,29 +479,6 @@ func parseExpireTime(d *schema.ResourceData) (int, diag.Diagnostics) {
 	return 0, diag.FromErr(fmt.Errorf("unsupported time_format"))
 }
 
-// Pull out the raw IP addresses from the Subnet.
-func hosts(cidr string) ([]string, error) {
-	ip, ipnet, err := net.ParseCIDR(cidr)
-	if err != nil {
-		return nil, err
-	}
-
-	var ips []string
-	for ip := ip.Mask(ipnet.Mask); ipnet.Contains(ip); inc(ip) {
-		ips = append(ips, ip.String())
-	}
-
-	return ips, nil
-}
-
-func inc(ip net.IP) {
-	for j := len(ip) - 1; j >= 0; j-- {
-		ip[j]++
-		if ip[j] > 0 {
-			break
-		}
-	}
-}
 
 // ipListFriendlyType maps API list type values to user-facing names for resource IDs.
 func ipListFriendlyType(listType wallarm.IPListType) string {
