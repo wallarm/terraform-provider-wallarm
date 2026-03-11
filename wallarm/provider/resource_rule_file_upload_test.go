@@ -23,6 +23,8 @@ resource "wallarm_rule_file_upload_size_limit" "wallarm_rule_file_upload_size_li
     }
   }
   
+  point = [["header_all"]]
+  
   size = 1
   size_unit = "mb"
 

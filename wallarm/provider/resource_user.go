@@ -45,7 +45,7 @@ func resourceWallarmUser() *schema.Resource {
 			"permissions": {
 				Type:         schema.TypeString,
 				Required:     true,
-				ValidateFunc: validation.StringInSlice([]string{"admin", "analyst", "deploy", "read_only", "global_admin", "global_analyst", "global_read_only"}, false),
+				ValidateFunc: validation.StringInSlice([]string{"admin", "analytic", "auditor", "deploy", "partner_admin", "partner_admin_ext", "partner_analytic", "partner_auditor"}, false),
 			},
 
 			"realname": {
@@ -61,8 +61,9 @@ func resourceWallarmUser() *schema.Resource {
 			},
 
 			"generated_password": {
-				Type:     schema.TypeString,
-				Computed: true,
+				Type:      schema.TypeString,
+				Computed:  true,
+				Sensitive: true,
 			},
 
 			"username": {
@@ -85,19 +86,6 @@ func resourceWallarmUserCreate(d *schema.ResourceData, m interface{}) error {
 	realname := d.Get("realname").(string)
 	permissions := d.Get("permissions").(string)
 	enabled := d.Get("enabled").(bool)
-
-	switch permissions {
-	case "analyst":
-		permissions = "analytic"
-	case "read_only":
-		permissions = "auditor"
-	case "global_read_only":
-		permissions = "partner_auditor"
-	case "global_analyst":
-		permissions = "partner_analytic"
-	case "global_admin":
-		permissions = "partner_admin"
-	}
 
 	var password string
 	if v, ok := d.GetOk("password"); ok {
@@ -130,7 +118,7 @@ func resourceWallarmUserCreate(d *schema.ResourceData, m interface{}) error {
 
 	d.Set("user_id", userID)
 
-	resID := fmt.Sprintf("%d/%s/%d", clientID, realname, userID)
+	resID := fmt.Sprintf("%d/%d", clientID, userID)
 	d.SetId(resID)
 
 	return resourceWallarmUserRead(d, m)
@@ -164,12 +152,13 @@ func resourceWallarmUserRead(d *schema.ResourceData, m interface{}) error {
 	}
 
 	d.Set("realname", res.Body[0].Realname)
-
 	d.Set("username", res.Body[0].Username)
-
 	d.Set("enabled", res.Body[0].Enabled)
-
 	d.Set("client_id", clientID)
+
+	if len(res.Body[0].Permissions) > 0 {
+		d.Set("permissions", res.Body[0].Permissions[0])
+	}
 
 	return nil
 }
@@ -184,37 +173,31 @@ func resourceWallarmUserUpdate(d *schema.ResourceData, m interface{}) error {
 		}
 	} else {
 		client := m.(wallarm.API)
-		clientID := retrieveClientID(d)
-		email := d.Get("email").(string)
-		realname := d.Get("realname").(string)
-		permissions := d.Get("permissions").(string)
-		enabled := d.Get("enabled").(bool)
-		var password string
-		if d.HasChange("password") {
-			if v, ok := d.GetOk("password"); ok {
-				password = v.(string)
-			} else {
-				password = passwordGenerate(10)
-			}
+		userID := d.Get("user_id").(int)
+
+		fields := &wallarm.UserFields{}
+		hasChanges := false
+
+		if d.HasChange("realname") {
+			fields.Realname = d.Get("realname").(string)
+			hasChanges = true
 		}
-		userBody := &wallarm.UserUpdate{
-			UserFilter: &wallarm.UserFilter{
-				Email:    email,
-				Username: email,
-			},
-			UserFields: &wallarm.UserFields{
-				Password:    password,
-				Realname:    realname,
-				Permissions: []string{permissions},
-				Enabled:     enabled,
-				Clientid:    clientID,
-			},
-			Limit: 1000,
-		}
-		if err := client.UserUpdate(userBody); err != nil {
-			return err
+		if d.HasChange("permissions") {
+			fields.Permissions = []string{d.Get("permissions").(string)}
+			hasChanges = true
 		}
 
+		if hasChanges {
+			userBody := &wallarm.UserUpdate{
+				UserFilter: &wallarm.UserFilter{
+					ID: userID,
+				},
+				UserFields: fields,
+			}
+			if err := client.UserUpdate(userBody); err != nil {
+				return err
+			}
+		}
 	}
 
 	return resourceWallarmUserRead(d, m)
@@ -222,10 +205,14 @@ func resourceWallarmUserUpdate(d *schema.ResourceData, m interface{}) error {
 
 func resourceWallarmUserDelete(d *schema.ResourceData, m interface{}) error {
 	client := m.(wallarm.API)
+	clientID := retrieveClientID(d)
 	userID := d.Get("user_id").(int)
 	userBody := &wallarm.UserDelete{
 		Filter: &wallarm.UserFilter{
-			ID: userID}}
+			ID:       userID,
+			Clientid: []int{clientID},
+		},
+	}
 	if err := client.UserDelete(userBody); err != nil {
 		return err
 	}

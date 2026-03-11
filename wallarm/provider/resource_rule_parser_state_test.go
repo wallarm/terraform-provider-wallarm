@@ -43,7 +43,7 @@ func TestAccRuleParserStateCreate_IncorrectState(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config:      testWallarmRuleParserStateBasicConfig(rnd, "base64", "incorrect", "iequal", "parsers.wallarm.com", "HOST", `["post"],["form_urlencoded","query"]`),
-				ExpectError: regexp.MustCompile(`expected state to be one of \[enabled disabled\], got incorrect`),
+				ExpectError: regexp.MustCompile(`expected state to be one of \["enabled" "disabled"\], got incorrect`),
 			},
 		},
 	})
