@@ -104,6 +104,10 @@ func testWallarmIntegrationEmailRequiredOnly(email string) string {
 	return fmt.Sprintf(`
 resource "wallarm_integration_email" "test" {
 	emails = ["%[1]s@wallarm.com", "%[1]s-rnd@wallarm.com"]
+	event {
+		event_type = "system"
+		active = true
+	}
 }`, email)
 }
 

@@ -9,7 +9,7 @@ import (
 
 func TestAccIntegrationDataDogRequiredFields(t *testing.T) {
 	name := "wallarm_integration_data_dog.test"
-	rndToken := generateRandomUUID() // 32+ hex chars
+	rndToken := generateRandomResourceName(32)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:  func() { testAccPreCheck(t) },
@@ -28,7 +28,7 @@ func TestAccIntegrationDataDogRequiredFields(t *testing.T) {
 func TestAccIntegrationDataDogFullSettings(t *testing.T) {
 	name := "wallarm_integration_data_dog.test"
 	rnd := generateRandomResourceName(10)
-	rndToken := generateRandomUUID()
+	rndToken := generateRandomResourceName(32)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:  func() { testAccPreCheck(t) },
@@ -50,7 +50,7 @@ func TestAccIntegrationDataDogFullSettings(t *testing.T) {
 func TestAccIntegrationDataDogCreateThenUpdate(t *testing.T) {
 	name := "wallarm_integration_data_dog.test"
 	rnd := generateRandomResourceName(10)
-	rndToken := generateRandomUUID() + generateRandomUUID()
+	rndToken := generateRandomResourceName(32)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:  func() { testAccPreCheck(t) },

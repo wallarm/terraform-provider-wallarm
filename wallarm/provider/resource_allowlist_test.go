@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"regexp"
 	"testing"
+	"time"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 )
@@ -106,16 +107,17 @@ func TestAccWallarmAllowlistMonths(t *testing.T) {
 func TestAccWallarmAllowlistRFC3339(t *testing.T) {
 	rnd := generateRandomResourceName(10)
 	name := "wallarm_allowlist." + rnd
+	timePlusOneDay := time.Now().AddDate(0, 0, 1).Format(time.RFC3339)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:  func() { testAccPreCheck(t) },
 		Providers: testAccProviders,
 		Steps: []resource.TestStep{
 			{
-				Config: testWallarmAllowlistRFC3339(rnd, "tf-test-"+rnd, "RFC3339", "2026-01-02T15:04:05+07:00"),
+				Config: testWallarmAllowlistRFC3339(rnd, "tf-test-"+rnd, "RFC3339", timePlusOneDay),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(name, "reason", "tf-test-"+rnd),
-					resource.TestCheckResourceAttr(name, "time", "2026-01-02T15:04:05+07:00"),
+					resource.TestCheckResourceAttr(name, "time", timePlusOneDay),
 				),
 			},
 		},
@@ -227,7 +229,7 @@ func TestAccWallarmAllowlistIncorrectSubnet(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config:      testWallarmAllowlistIncorrectSubnet(rnd, "tf-test-"+rnd, "60"),
-				ExpectError: regexp.MustCompile(`subnet must be >= /20, got [0-9]+`),
+				ExpectError: regexp.MustCompile(`subnet must be >= /8, got [0-9]+`),
 			},
 		},
 	})
@@ -236,7 +238,7 @@ func TestAccWallarmAllowlistIncorrectSubnet(t *testing.T) {
 func testWallarmAllowlistIncorrectSubnet(resourceID, reason, time string) string {
 	return fmt.Sprintf(`
 resource "wallarm_allowlist" "%[1]s" {
-	ip_range = ["4.4.4.4/18"]
+	ip_range = ["4.4.4.4/6"]
 	application = [1]
 	reason = "%[2]s"
 	time_format = "Minutes"
