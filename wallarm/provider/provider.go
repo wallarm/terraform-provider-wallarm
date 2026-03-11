@@ -117,6 +117,7 @@ func Provider() *schema.Provider {
 			"wallarm_node":            dataSourceWallarmNode(),
 			"wallarm_security_issues": dataSourceWallarmSecurityIssues(),
 			"wallarm_hits":            dataSourceWallarmHits(),
+			"wallarm_applications":    dataSourceWallarmApplications(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"wallarm_user":                           resourceWallarmUser(),
