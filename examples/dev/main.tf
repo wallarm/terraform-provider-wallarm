@@ -281,25 +281,12 @@ provider "" {
 
 # }
 
-# #
-# # Scanner scope section
-# #
-# resource "wallarm_scanner" "scan" {
-#     element = ["1.1.1.1", "example.com", "2.2.2.2/31"]
-#     disabled = true
-# }
-
-# output "scan_id" {
-#   value = wallarm_scanner.scan.resource_id
-# }
-
 
 # #
 # # Global mode section
 # #
 # resource "wallarm_global_mode" "global_block" {
 #   filtration_mode = "block"
-#   scanner_mode = "off"
 #   rechecker_mode = "on"
 # }
 

@@ -22,12 +22,6 @@ provider "wallarm" {
   client_id = 1111
 }
 
-}
-
-# Adds a domain to the Scanner scope
-resource "wallarm_scanner" "scope" {
-  # ...
-}
 
 # Creates a rule to block the requests
 resource "wallarm_rule_vpatch" "vpatch" {

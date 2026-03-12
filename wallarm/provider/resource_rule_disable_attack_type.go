@@ -20,7 +20,7 @@ func resourceWallarmDisableAttackType() *schema.Resource {
 			Required: true,
 			ForceNew: true,
 			Description: `Possible values: "any", "sqli", "rce", "crlf", "nosqli", "ptrav",
-				"xxe", "ptrav", "xss", "scanner", "redir", "ldapi", "any", "redir", "mass_assignment", "ssrf"`,
+				"xxe", "xss", "scanner", "redir", "ldapi", "mass_assignment", "ssrf"`,
 		},
 
 		"action": defaultResourceRuleActionSchema,

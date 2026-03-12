@@ -20,7 +20,7 @@ func resourceWallarmVpatch() *schema.Resource {
 			Required: true,
 			ForceNew: true,
 			Description: `Possible values: "any", "sqli", "rce", "crlf", "nosqli", "ptrav",
-				"xxe", "ptrav", "xss", "scanner", "redir", "ldapi"`,
+				"xxe", "xss", "scanner", "redir", "ldapi"`,
 		},
 		"action": defaultResourceRuleActionSchema,
 		"point":  defaultPointSchema,

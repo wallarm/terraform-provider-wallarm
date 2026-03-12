@@ -173,7 +173,6 @@ func dataSourceWallarmHitsRead(d *schema.ResourceData, m interface{}) error {
 			SecurityIssueID:   nil,
 			NotExperimental:   true,
 			NotAasmEvent:      true,
-			NotWallarmScanner: true,
 		},
 		Limit:     200,
 		Offset:    0,

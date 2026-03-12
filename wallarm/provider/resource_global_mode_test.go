@@ -25,21 +25,6 @@ func TestAccWallarmGlobalMode_FiltrationSafeBlocking(t *testing.T) {
 	})
 }
 
-func TestAccWallarmGlobalMode_ScannerOff(t *testing.T) {
-	rnd := generateRandomResourceName(5)
-
-	resource.Test(t, resource.TestCase{
-		PreCheck:  func() { testAccPreCheck(t) },
-		Providers: testAccProviders,
-		Steps: []resource.TestStep{
-			{
-				Config: testWallarmGlobalModeScannerConfig(rnd),
-				Check:  resource.ComposeTestCheckFunc(),
-			},
-		},
-	})
-}
-
 func TestAccWallarmGlobalMode_RecheckerOn(t *testing.T) {
 	rnd := generateRandomResourceName(5)
 	name := "wallarm_global_mode." + rnd
@@ -58,7 +43,7 @@ func TestAccWallarmGlobalMode_RecheckerOn(t *testing.T) {
 	})
 }
 
-func TestAccWallarmGlobalMode_FiltrationBlock_ScannerOff_RechkeckerOn(t *testing.T) {
+func TestAccWallarmGlobalMode_FiltrationBlock_RechkeckerOn(t *testing.T) {
 	rnd := generateRandomResourceName(5)
 	name := "wallarm_global_mode." + rnd
 
@@ -77,7 +62,7 @@ func TestAccWallarmGlobalMode_FiltrationBlock_ScannerOff_RechkeckerOn(t *testing
 	})
 }
 
-func TestAccWallarmGlobalMode_FiltrationDefault_ScannerOn_RecheckerOff(t *testing.T) {
+func TestAccWallarmGlobalMode_FiltrationDefault_RecheckerOff(t *testing.T) {
 	rnd := generateRandomResourceName(5)
 	name := "wallarm_global_mode." + rnd
 
@@ -148,12 +133,6 @@ func testWallarmGlobalModeFiltrationConfig(resourceID, filtrationMode string) st
 resource "wallarm_global_mode" "%[1]s" {
   filtration_mode = "%[2]s"
 }`, resourceID, filtrationMode)
-}
-
-func testWallarmGlobalModeScannerConfig(resourceID string) string {
-	return fmt.Sprintf(`
-resource "wallarm_global_mode" "%[1]s" {
-}`, resourceID)
 }
 
 func testWallarmGlobalModeRecheckerConfig(resourceID, recheckerMode string) string {
