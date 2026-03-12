@@ -2,8 +2,7 @@ TEST?=$$(go list ./...)
 GOFMT_FILES?=$$(find . -name '*.go' |grep -v vendor)
 GOOS?=$$(go env GOOS)
 GOARCH?=$$(go env GOARCH)
-# VERSION?=$$(git describe --abbrev=0 --tags)
-VERSION=2.0.0
+VERSION?=$$(git describe --abbrev=0 --tags)
 TESTTIMEOUT=120m
 
 WALLARM_API_HOST=https://api.wallarm.com
@@ -30,7 +29,7 @@ init-plugin: build
 
 lint:
 	@echo "Running golangci-lint..."
-	@go install github.com/golangci/golangci-lint/cmd/golangci-lint
+	@go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
 	@golangci-lint run
 
 test:
