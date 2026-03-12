@@ -96,8 +96,16 @@ func ResourceRuleWallarmRead(d *schema.ResourceData, clientID int, cli wallarm.A
 	d.Set("title", updatedRule.Title)
 	d.Set("mitigation", updatedRule.Mitigation)
 	d.Set("set", updatedRule.Set)
-	d.Set("variativity_disabled", updatedRule.VariativityDisabled)
-	d.Set("comment", updatedRule.Comment)
+	// Override variativity_disabled to true and default empty comments to "Managed by Terraform".
+	// All Terraform-managed rules must have variativity_disabled=true. During import, these
+	// overrides ensure the generated config has the correct values and the first apply updates
+	// the rules in the API via HintUpdateV3.
+	d.Set("variativity_disabled", true)
+	if updatedRule.Comment == "" {
+		d.Set("comment", "Managed by Terraform")
+	} else {
+		d.Set("comment", updatedRule.Comment)
+	}
 
 	// Resource-specific fields — use setIfExists because each resource
 	// only defines a subset of these in its schema. In SDK v2, d.Set

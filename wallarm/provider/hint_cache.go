@@ -3,6 +3,7 @@ package wallarm
 import (
 	"fmt"
 	"log"
+	"sort"
 	"sync"
 	"time"
 
@@ -168,7 +169,8 @@ func (c *HintCache) trackPassthrough() {
 	c.passthroughs++
 }
 
-// All returns a copy of all cached hints. Returns nil if the cache is not loaded.
+// All returns a copy of all cached hints sorted by ID descending (highest first).
+// Returns nil if the cache is not loaded.
 func (c *HintCache) All() []wallarm.ActionBody {
 	c.mu.Lock()
 	defer c.mu.Unlock()
@@ -179,6 +181,9 @@ func (c *HintCache) All() []wallarm.ActionBody {
 	for _, h := range c.hints {
 		result = append(result, *h)
 	}
+	sort.Slice(result, func(i, j int) bool {
+		return result[i].ID > result[j].ID
+	})
 	return result
 }
 
