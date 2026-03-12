@@ -177,7 +177,7 @@ func Provider() *schema.Provider {
 	return provider
 }
 
-func ProviderConfigure(ctx context.Context, d *schema.ResourceData, p *schema.Provider) (interface{}, diag.Diagnostics) {
+func ProviderConfigure(_ context.Context, d *schema.ResourceData, p *schema.Provider) (interface{}, diag.Diagnostics) {
 	retryOpt := wallarm.UsingRetryPolicy(d.Get("retries").(int), d.Get("min_backoff").(int), d.Get("max_backoff").(int))
 	options := []wallarm.Option{retryOpt}
 
@@ -186,7 +186,7 @@ func ProviderConfigure(ctx context.Context, d *schema.ResourceData, p *schema.Pr
 	}
 
 	c := cleanhttp.DefaultPooledClient()
-	c.Transport = logging.NewTransport("Wallarm", c.Transport)
+	c.Transport = logging.NewSubsystemLoggingHTTPTransport("Wallarm", c.Transport)
 	options = append(options, wallarm.HTTPClient(c))
 
 	ua := p.UserAgent("terraform-provider-wallarm", version.ProviderVersion)

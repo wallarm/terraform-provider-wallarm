@@ -181,7 +181,7 @@ func resourceWallarmTenantCreate(d *schema.ResourceData, m interface{}) error {
 	res, err := client.ClientCreate(&params)
 	if err != nil {
 		if errors.Is(err, wallarm.ErrExistingResource) {
-			return ImportAsExistsError("wallarm_tenant", fmt.Sprintf("{clientID}/{uuidPrefix}"))
+			return ImportAsExistsError("wallarm_tenant", "{clientID}/{uuidPrefix}")
 		}
 		return err
 	}

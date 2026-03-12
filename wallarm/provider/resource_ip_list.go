@@ -152,7 +152,7 @@ func resourceWallarmIPListCreate(listType wallarm.IPListType) schema.CreateConte
 }
 
 func resourceWallarmIPListRead(listType wallarm.IPListType) schema.ReadContextFunc {
-	return func(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+	return func(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 		client := m.(wallarm.API)
 		clientID := retrieveClientID(d)
 
@@ -254,8 +254,8 @@ func resourceWallarmIPListUpdate(listType wallarm.IPListType) schema.UpdateConte
 	}
 }
 
-func resourceWallarmIPListDelete(listType wallarm.IPListType) schema.DeleteContextFunc {
-	return func(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceWallarmIPListDelete(_ wallarm.IPListType) schema.DeleteContextFunc {
+	return func(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 		client := m.(wallarm.API)
 		clientID := retrieveClientID(d)
 		addrIDInterface := d.Get("address_id").([]interface{})
@@ -478,7 +478,6 @@ func parseExpireTime(d *schema.ResourceData) (int, diag.Diagnostics) {
 	}
 	return 0, diag.FromErr(fmt.Errorf("unsupported time_format"))
 }
-
 
 // ipListFriendlyType maps API list type values to user-facing names for resource IDs.
 func ipListFriendlyType(listType wallarm.IPListType) string {

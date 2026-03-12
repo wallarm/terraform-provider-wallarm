@@ -53,9 +53,9 @@ func resourceWallarmPagerDuty() *schema.Resource {
 			},
 
 			"integration_key": {
-				Type:      schema.TypeString,
-				Required:  true,
-				Sensitive: true,
+				Type:         schema.TypeString,
+				Required:     true,
+				Sensitive:    true,
 				ValidateFunc: validation.StringLenBetween(32, 32),
 			},
 

@@ -21,6 +21,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
+const eventTypeSIEM = "siem"
+
 // validateWithHeadersOnlySiem returns a CustomizeDiffFunc that ensures
 // with_headers is only set to true on events of type "siem".
 func validateWithHeadersOnlySiem() schema.CustomizeDiffFunc {
@@ -34,7 +36,7 @@ func validateWithHeadersOnlySiem() schema.CustomizeDiffFunc {
 				m := e.(map[string]interface{})
 				eventType, _ := m["event_type"].(string)
 				withHeaders, _ := m["with_headers"].(bool)
-				if withHeaders && eventType != "siem" {
+				if withHeaders && eventType != eventTypeSIEM {
 					return fmt.Errorf("with_headers can only be set for the 'siem' event type, got event_type=%q", eventType)
 				}
 			}
@@ -206,32 +208,11 @@ func interfaceToInt(i interface{}) int {
 	return r
 }
 
-func appendMap(united, b map[string]int) map[string]int {
-	for k, v := range b {
-		united[k] = v
-	}
-	return united
-}
-
 func retrieveClientID(d *schema.ResourceData) int {
 	if v, ok := d.GetOk("client_id"); ok {
 		return v.(int)
 	}
 	return ClientID
-}
-
-func diffStringSlice(a, b []string) []string {
-	mb := make(map[string]struct{}, len(b))
-	for _, x := range b {
-		mb[x] = struct{}{}
-	}
-	var diff []string
-	for _, x := range a {
-		if _, found := mb[x]; !found {
-			diff = append(diff, x)
-		}
-	}
-	return diff
 }
 
 func passwordGenerate(length int) string {
@@ -255,8 +236,8 @@ func passwordGenerate(length int) string {
 }
 
 func cryptoRandIntn(n int) int {
-	max := big.NewInt(int64(n))
-	v, err := crand.Int(crand.Reader, max)
+	maxN := big.NewInt(int64(n))
+	v, err := crand.Int(crand.Reader, maxN)
 	if err != nil {
 		panic(fmt.Sprintf("crypto/rand failed: %v", err))
 	}
@@ -322,7 +303,7 @@ func expandWallarmEventToIntEvents(d interface{}, resourceType string) *[]wallar
 		case "data_dog", "insight_connect", "splunk", "sumo_logic", "web_hooks":
 			defaultEvents = []map[string]interface{}{
 				{
-					"event_type": "siem",
+					"event_type": eventTypeSIEM,
 					"active":     false},
 				{
 					"event_type": "rules_and_triggers",
@@ -448,7 +429,7 @@ func expandWallarmEventToIntEvents(d interface{}, resourceType string) *[]wallar
 		event, ok := m["event_type"]
 		if ok {
 			if event.(string) == "hit" {
-				e.Event = "siem"
+				e.Event = eventTypeSIEM
 			} else {
 				e.Event = event.(string)
 			}
@@ -459,7 +440,7 @@ func expandWallarmEventToIntEvents(d interface{}, resourceType string) *[]wallar
 			e.Active = active.(bool)
 		}
 		// with_headers is only applicable to the siem event type
-		if e.Event == "siem" {
+		if e.Event == eventTypeSIEM {
 			if wh, ok := m["with_headers"]; ok {
 				whBool := wh.(bool)
 				e.WithHeaders = &whBool
@@ -644,25 +625,6 @@ func existsHint(d *schema.ResourceData, m interface{}, actionID int, hintType st
 // Generally, ID is something like `/6039/4123/93830`
 func ImportAsExistsError(resourceName, id string) error {
 	return fmt.Errorf("the resource with the ID %q already exists - to be managed via Terraform this resource needs to be imported into the State. Please see the resource documentation for %q for more information", id, resourceName)
-}
-
-func findRule(client wallarm.API, clientID, ruleID int) (*wallarm.ActionBody, error) {
-	resp, err := client.HintRead(&wallarm.HintRead{
-		Limit:   1,
-		OrderBy: "updated_at",
-		Filter: &wallarm.HintFilter{
-			Clientid: []int{clientID},
-			ID:       []int{ruleID},
-		},
-	})
-	if err != nil {
-		return nil, errors.WithMessagef(err, "on client.HintRead, client ID %d, rule ID %d", clientID, ruleID)
-	}
-	if resp == nil || resp.Body == nil || len(*resp.Body) == 0 {
-		return nil, &ruleNotFoundError{clientID: clientID, ruleID: ruleID}
-	}
-
-	return &(*resp.Body)[0], nil
 }
 
 // findCredentialStuffingRule fetches credential stuffing configs via the v4 API

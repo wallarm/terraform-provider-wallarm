@@ -9,7 +9,7 @@ import (
 	"github.com/wallarm/wallarm-go"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
@@ -205,24 +205,24 @@ func resourceWallarmTriggerCreate(ctx context.Context, d *schema.ResourceData, m
 	resID := fmt.Sprintf("%d/%s/%d", clientID, templateID, triggerID)
 	d.SetId(resID)
 
-	err = resource.RetryContext(ctx, d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+	err = retry.RetryContext(ctx, d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		triggers, err := client.TriggerRead(clientID)
 		if err != nil {
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 
 		for _, t := range triggers.Triggers {
 			if t.ID == triggerID {
 				if err = d.Set("trigger_id", t.ID); err != nil {
-					return resource.NonRetryableError(err)
+					return retry.NonRetryableError(err)
 				}
 				if err = d.Set("client_id", clientID); err != nil {
-					return resource.NonRetryableError(err)
+					return retry.NonRetryableError(err)
 				}
 				return nil
 			}
 		}
-		return resource.RetryableError(fmt.Errorf("can't find a trigger with ID: %d", triggerID))
+		return retry.RetryableError(fmt.Errorf("can't find a trigger with ID: %d", triggerID))
 	})
 	if err != nil {
 		// Handle final error
@@ -231,7 +231,7 @@ func resourceWallarmTriggerCreate(ctx context.Context, d *schema.ResourceData, m
 	return resourceWallarmTriggerRead(ctx, d, m)
 }
 
-func resourceWallarmTriggerRead(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceWallarmTriggerRead(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	client := m.(wallarm.API)
 	clientID := retrieveClientID(d)
 	triggerID := d.Get("trigger_id").(int)
@@ -324,7 +324,7 @@ func resourceWallarmTriggerUpdate(ctx context.Context, d *schema.ResourceData, m
 	return resourceWallarmTriggerRead(ctx, d, m)
 }
 
-func resourceWallarmTriggerDelete(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceWallarmTriggerDelete(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	client := m.(wallarm.API)
 	clientID := retrieveClientID(d)
 	triggerID := d.Get("trigger_id").(int)

@@ -20,11 +20,12 @@ import (
 var testAccProviders map[string]*schema.Provider
 var testAccProvider *schema.Provider
 
-func init() {
+func TestMain(m *testing.M) {
 	testAccProvider = Provider()
 	testAccProviders = map[string]*schema.Provider{
 		"wallarm": testAccProvider,
 	}
+	os.Exit(m.Run())
 }
 
 func TestProvider(t *testing.T) {
@@ -33,7 +34,7 @@ func TestProvider(t *testing.T) {
 	}
 }
 
-func TestProvider_impl(t *testing.T) {
+func TestProvider_impl(_ *testing.T) {
 	var _ *schema.Provider = Provider()
 }
 
