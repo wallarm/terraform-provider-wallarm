@@ -14,9 +14,6 @@ import (
 )
 
 func TestAccRuleDirbustCounterCreate(t *testing.T) {
-	// if os.Getenv("WALLARM_EXTRA_PERMISSIONS") == "" {
-	// 	t.Skip("Skipping not test as it requires WALLARM_EXTRA_PERMISSIONS set")
-	// }
 	rnd := generateRandomResourceName(5)
 	name := "wallarm_rule_dirbust_counter." + rnd
 	resource.Test(t, resource.TestCase{
@@ -30,7 +27,7 @@ func TestAccRuleDirbustCounterCreate(t *testing.T) {
 					resource.TestCheckResourceAttr(name, "action.#", "3"),
 					resource.TestMatchResourceAttr(name, "counter", regexp.MustCompile("^d:.+")),
 				),
-				ExpectNonEmptyPlan: true,
+				ExpectNonEmptyPlan: false,
 			},
 		},
 	})

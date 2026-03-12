@@ -170,38 +170,24 @@ func resourceWallarmTelegramUpdate(d *schema.ResourceData, m interface{}) error 
 		return err
 	}
 
+	updateBody := make(map[string]interface{})
+	if d.HasChange("name") {
+		updateBody["name"] = d.Get("name").(string)
+	}
+	if d.HasChange("active") {
+		updateBody["active"] = d.Get("active").(bool)
+	}
 	if d.HasChange("event") {
-		// When events change, API requires the full configuration
-		fullBody := wallarm.IntegrationCreate{
-			Name:   d.Get("name").(string),
-			Active: d.Get("active").(bool),
-			Events: expandWallarmEventToIntEvents(d.Get("event"), "telegram"),
-			Type:   "telegram",
-		}
-		updateRes, err := client.IntegrationUpdate(&fullBody, telegram.ID)
+		updateBody["events"] = expandWallarmEventToIntEvents(d.Get("event"), "telegram")
+	}
+	if len(updateBody) > 0 {
+		updateRes, err := client.IntegrationPartialUpdate(telegram.ID, updateBody)
 		if err != nil {
 			return err
 		}
 		d.Set("integration_id", updateRes.Body.ID)
 		resID := fmt.Sprintf("%d/%s/%d", clientID, updateRes.Body.Type, updateRes.Body.ID)
 		d.SetId(resID)
-	} else {
-		updateBody := make(map[string]interface{})
-		if d.HasChange("name") {
-			updateBody["name"] = d.Get("name").(string)
-		}
-		if d.HasChange("active") {
-			updateBody["active"] = d.Get("active").(bool)
-		}
-		if len(updateBody) > 0 {
-			updateRes, err := client.IntegrationPartialUpdate(telegram.ID, updateBody)
-			if err != nil {
-				return err
-			}
-			d.Set("integration_id", updateRes.Body.ID)
-			resID := fmt.Sprintf("%d/%s/%d", clientID, updateRes.Body.Type, updateRes.Body.ID)
-			d.SetId(resID)
-		}
 	}
 
 	return resourceWallarmTelegramRead(d, m)

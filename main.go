@@ -4,7 +4,6 @@ import (
 	"flag"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/plugin"
-	// "github.com/wallarm/terraform-provider-wallarm/version"
 	wallarm "github.com/wallarm/terraform-provider-wallarm/wallarm/provider"
 )
 

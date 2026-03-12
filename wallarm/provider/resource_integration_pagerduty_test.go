@@ -59,7 +59,7 @@ func TestAccIntegrationPagerDutyIncorrectKeyLength(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config:      testWallarmIntegrationPagerDutyRequiredOnly(rnd, rndKey),
-				ExpectError: regexp.MustCompile(`length of "[a-z_]+" must be equal to 32, got: [0-9]+`),
+				ExpectError: regexp.MustCompile(`expected length of integration_key to be in the range \(32 - 32\)`),
 			},
 		},
 	})

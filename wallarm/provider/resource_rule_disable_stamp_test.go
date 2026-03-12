@@ -2,6 +2,7 @@ package wallarm
 
 import (
 	"fmt"
+	"os"
 	"strconv"
 	"testing"
 
@@ -12,6 +13,9 @@ import (
 )
 
 func TestAccRuleDisableStampCreate_Basic(t *testing.T) {
+	if os.Getenv("WALLARM_EXTRA_PERMISSIONS") == "" {
+		t.Skip("Skipping not test as it requires WALLARM_EXTRA_PERMISSIONS set")
+	}
 	rnd := generateRandomResourceName(5)
 	name := "wallarm_rule_disable_stamp." + rnd
 	resource.Test(t, resource.TestCase{
@@ -34,6 +38,9 @@ func TestAccRuleDisableStampCreate_Basic(t *testing.T) {
 }
 
 func TestAccRuleDisableStampCreateRecreate(t *testing.T) {
+	if os.Getenv("WALLARM_EXTRA_PERMISSIONS") == "" {
+		t.Skip("Skipping not test as it requires WALLARM_EXTRA_PERMISSIONS set")
+	}
 	rnd := generateRandomResourceName(5)
 	name := "wallarm_rule_disable_stamp." + rnd
 	resource.Test(t, resource.TestCase{
@@ -62,6 +69,9 @@ func TestAccRuleDisableStampCreateRecreate(t *testing.T) {
 }
 
 func TestAccRuleDisableStampCreate_DefaultBranch(t *testing.T) {
+	if os.Getenv("WALLARM_EXTRA_PERMISSIONS") == "" {
+		t.Skip("Skipping not test as it requires WALLARM_EXTRA_PERMISSIONS set")
+	}
 	rnd := generateRandomResourceName(5)
 	name := "wallarm_rule_disable_stamp." + rnd
 	point := `["header","HOST"],["pollution"]`

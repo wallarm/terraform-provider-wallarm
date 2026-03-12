@@ -72,7 +72,7 @@ func TestHintCache_BulkLoadReducesAPICalls(t *testing.T) {
 	mock := &mockHintAPI{hints: hints}
 	cached := NewCachedClient(mock)
 
-	// Read 250 hints individually — should trigger 1 bulk load (3 pages of 100)
+	// Read 250 hints individually — should trigger 1 bulk load (2 pages of 200)
 	// then all reads served from cache.
 	for _, h := range hints {
 		body := &wallarm.HintRead{
@@ -97,11 +97,11 @@ func TestHintCache_BulkLoadReducesAPICalls(t *testing.T) {
 		}
 	}
 
-	// With 250 hints and batch size 100, bulk load should make 3 API calls
-	// (100 + 100 + 50). All 250 individual reads come from cache.
+	// With 250 hints and batch size 200, bulk load should make 2 API calls
+	// (200 + 50). All 250 individual reads come from cache.
 	calls := int(mock.callCount.Load())
-	if calls != 3 {
-		t.Errorf("expected 3 API calls for bulk load, got %d", calls)
+	if calls != 2 {
+		t.Errorf("expected 2 API calls for bulk load, got %d", calls)
 	}
 
 	// Verify stats
@@ -164,10 +164,10 @@ func TestHintCache_ConcurrentReads(t *testing.T) {
 		t.Error(err)
 	}
 
-	// Only the bulk load calls should have been made (2 pages: 100 + 50)
+	// Only the bulk load calls should have been made (1 page of 200 covers all 150)
 	calls := int(mock.callCount.Load())
-	if calls != 2 {
-		t.Errorf("expected 2 API calls for bulk load, got %d", calls)
+	if calls != 1 {
+		t.Errorf("expected 1 API call for bulk load, got %d", calls)
 	}
 }
 

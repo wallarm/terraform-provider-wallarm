@@ -2,6 +2,7 @@ package wallarm
 
 import (
 	"fmt"
+	"os"
 	"strconv"
 	"testing"
 
@@ -11,6 +12,9 @@ import (
 )
 
 func TestAccWallarmTenant(t *testing.T) {
+	if os.Getenv("WALLARM_EXTRA_PERMISSIONS") == "" {
+		t.Skip("Skipping not test as it requires WALLARM_EXTRA_PERMISSIONS set")
+	}
 	rnd := generateRandomResourceName(10)
 	resourceName := "wallarm_tenant." + rnd
 	name := "tf-test-" + rnd

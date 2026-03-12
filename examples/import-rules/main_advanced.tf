@@ -71,6 +71,7 @@ variable "is_importing" {
 
 data "wallarm_rules" "all" {
   client_id = var.client_id
+  type      = var.rule_types
   count     = var.is_importing ? 1 : 0
 }
 
@@ -103,16 +104,12 @@ data "wallarm_rules" "all" {
 #   ]
 # }
 
+
 locals {
   # Build import blocks for all fetched/filtered rules
-  import_blocks = var.is_importing ? join("\n\n", [
-    for r in data.wallarm_rules.all[0].rules :
-    <<-EOT
-    import {
-      to = ${r.terraform_resource}.imported["${r.rule_id}"]
-      id = "${r.import_id}"
-    }
-    EOT
+  import_blocks = var.is_importing ? join("\n", [
+    for rule in data.wallarm_rules.all[0].rules :
+    "import {\n  to = ${rule.terraform_resource}.rule_${rule.rule_id}\n  id = \"${rule.import_id}\"\n}"
   ]) : null
 }
 
@@ -130,14 +127,12 @@ resource "local_file" "imports" {
 # --- Outputs ---
 
 output "total_rules" {
-  count = var.is_importing ? 1 : 0
-  value = length(data.wallarm_rules.all[0].rules)
+  value = length(data.wallarm_rules.all) > 0 ? length(data.wallarm_rules.all[0].rules) : null
 }
 
-output "rule_counts_by_type" {
-  count = var.is_importing ? 1 : 0
-  value = local.rule_counts
-}
+# output "rule_counts_by_type" {
+#   value = local.rule_counts
+# }
 
 # output "all_rules" {
 #   value = data.wallarm_rules.all[0].rules

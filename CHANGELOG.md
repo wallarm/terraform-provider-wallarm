@@ -1,3 +1,17 @@
+# v2.0.0 (Mar 12, 2026)
+
+## NOTES:
+
+* Updated Terraform Plugin SDK to v2
+* Updated IP List to support all current API source types
+* Updated existing integrations
+* Removed Scanner
+* Added data_source_rules for bulk rules imports
+* Added data_source_applications for bulk applications imports
+* Added retries for rules CREATE/UPDATE/DELETE methods to handle snapshot 423 error
+* Fixed tests
+* Fixed bugs
+
 # v1.9.0 (Mar 6, 2026)
 
 ## NOTES:
