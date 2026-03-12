@@ -1,10 +1,9 @@
 package wallarm
 
 import (
-	"encoding/json"
 	"fmt"
 	"log"
-	"net/http"
+	"strings"
 
 	"github.com/wallarm/wallarm-go"
 
@@ -19,9 +18,14 @@ func resourceWallarmGlobalMode() *schema.Resource {
 		Update: resourceWallarmGlobalModeUpdate,
 		Delete: resourceWallarmGlobalModeDelete,
 
+		Importer: &schema.ResourceImporter{
+			StateContext: schema.ImportStatePassthroughContext,
+		},
+
 		Schema: map[string]*schema.Schema{
 			"client_id": defaultClientIDWithValidationSchema,
 
+			// wallarm_mode settings (PUT /v2/client/{id}/rules/wallarm_mode)
 			"filtration_mode": {
 				Type:         schema.TypeString,
 				Optional:     true,
@@ -29,11 +33,28 @@ func resourceWallarmGlobalMode() *schema.Resource {
 				ValidateFunc: validation.StringInSlice([]string{"default", "monitoring", "block", "safe_blocking", "off"}, false),
 			},
 
+			// Client-level rechecker setting (ClientUpdate API)
 			"rechecker_mode": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Default:      "off",
 				ValidateFunc: validation.StringInSlice([]string{"on", "off"}, false),
+			},
+
+			// overlimit_res_settings (PUT /v2/client/{id}/rules/overlimit_res_settings)
+			"overlimit_time": {
+				Type:         schema.TypeInt,
+				Optional:     true,
+				Computed:     true,
+				Description:  "Time limit for single request processing (ms). Range: 0-10000.",
+				ValidateFunc: validation.IntBetween(0, 10000),
+			},
+			"overlimit_mode": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				Description:  "Action when overlimit_time is exceeded: blocking or monitoring.",
+				ValidateFunc: validation.StringInSlice([]string{"blocking", "monitoring"}, false),
 			},
 		},
 	}
@@ -43,15 +64,14 @@ func resourceWallarmGlobalModeCreate(d *schema.ResourceData, m interface{}) erro
 	client := m.(wallarm.API)
 	clientID := retrieveClientID(d)
 
+	// Update wallarm_mode
 	filtrationMode := d.Get("filtration_mode").(string)
-
-	_, err := client.WallarmModeUpdate(&wallarm.WallarmModeParams{Mode: filtrationMode}, clientID)
-	if err != nil {
+	if _, err := client.WallarmModeUpdate(&wallarm.WallarmModeParams{Mode: filtrationMode}, clientID); err != nil {
 		return err
 	}
 
+	// Update rechecker_mode
 	recheckerMode := d.Get("rechecker_mode").(string)
-
 	mode := &wallarm.ClientUpdate{
 		Filter: &wallarm.ClientFilter{
 			ID: clientID,
@@ -60,14 +80,16 @@ func resourceWallarmGlobalModeCreate(d *schema.ResourceData, m interface{}) erro
 			AttackRecheckerMode: recheckerMode,
 		},
 	}
-	_, err = client.ClientUpdate(mode)
-	if err != nil {
+	if _, err := client.ClientUpdate(mode); err != nil {
 		return err
 	}
 
-	resID := fmt.Sprintf("%d/%s/%s", clientID, filtrationMode, recheckerMode)
-	d.SetId(resID)
+	// Update overlimit_res_settings
+	if err := updateOverlimitResSettings(d, client, clientID); err != nil {
+		return err
+	}
 
+	d.SetId(fmt.Sprintf("%d/global_mode", clientID))
 	d.Set("client_id", clientID)
 
 	return resourceWallarmGlobalModeRead(d, m)
@@ -75,54 +97,56 @@ func resourceWallarmGlobalModeCreate(d *schema.ResourceData, m interface{}) erro
 
 func resourceWallarmGlobalModeRead(d *schema.ResourceData, m interface{}) error {
 	client := m.(wallarm.API)
-	clientID := retrieveClientID(d)
 
+	// Parse client_id from composite ID on import.
+	// ID format: "{clientID}/global_mode"
+	clientID := retrieveClientID(d)
+	if id := d.Id(); strings.Contains(id, "/") {
+		parts := strings.SplitN(id, "/", 2)
+		if len(parts) == 2 {
+			var parsed int
+			if _, err := fmt.Sscanf(parts[0], "%d", &parsed); err == nil {
+				clientID = parsed
+			}
+		}
+	}
+
+	// Read wallarm_mode
 	wallarmModeResp, err := client.WallarmModeRead(clientID)
 	if err != nil {
 		return err
 	}
-	if wallarmModeResp.Status != http.StatusOK {
-		body, err := json.Marshal(wallarmModeResp)
-		if err != nil {
-			return err
-		}
-		log.Printf("[WARN] Couldn't fetch wallarm_mode. Body: %s", body)
+	d.Set("filtration_mode", wallarmModeResp.Body.Mode)
 
-		d.SetId("")
-		return nil
-	}
-
-	filtrationMode := wallarmModeResp.Body.Mode
-	d.Set("filtration_mode", filtrationMode)
-
+	// Read rechecker_mode from client info
 	clientInfo := &wallarm.ClientRead{
 		Filter: &wallarm.ClientReadFilter{
 			Enabled: true,
 			ClientFilter: wallarm.ClientFilter{
-				ID: clientID},
+				ID: clientID,
+			},
 		},
 		Limit:  1000,
 		Offset: 0,
 	}
-
 	otherModesResp, err := client.ClientRead(clientInfo)
 	if err != nil {
 		return err
 	}
 	if len(otherModesResp.Body) == 0 {
-		body, err := json.Marshal(otherModesResp)
-		if err != nil {
-			return err
-		}
-		log.Printf("[WARN] Client hasn't been found in API. Body: %s", body)
-
+		log.Printf("[WARN] Client %d not found in API, removing from state", clientID)
 		d.SetId("")
 		return nil
 	}
+	d.Set("rechecker_mode", otherModesResp.Body[0].AttackRecheckerMode)
 
-	recheckerMode := otherModesResp.Body[0].AttackRecheckerMode
-
-	d.Set("rechecker_mode", recheckerMode)
+	// Read overlimit_res_settings
+	overlimitResp, err := client.OverlimitResSettingsRead(clientID)
+	if err != nil {
+		return err
+	}
+	d.Set("overlimit_time", overlimitResp.Body.OverlimitTime)
+	d.Set("overlimit_mode", overlimitResp.Body.Mode)
 
 	d.Set("client_id", clientID)
 
@@ -130,9 +154,60 @@ func resourceWallarmGlobalModeRead(d *schema.ResourceData, m interface{}) error 
 }
 
 func resourceWallarmGlobalModeUpdate(d *schema.ResourceData, m interface{}) error {
-	return resourceWallarmGlobalModeCreate(d, m)
+	client := m.(wallarm.API)
+	clientID := retrieveClientID(d)
+
+	if d.HasChange("filtration_mode") {
+		filtrationMode := d.Get("filtration_mode").(string)
+		if _, err := client.WallarmModeUpdate(&wallarm.WallarmModeParams{Mode: filtrationMode}, clientID); err != nil {
+			return err
+		}
+	}
+
+	if d.HasChange("rechecker_mode") {
+		recheckerMode := d.Get("rechecker_mode").(string)
+		mode := &wallarm.ClientUpdate{
+			Filter: &wallarm.ClientFilter{
+				ID: clientID,
+			},
+			Fields: &wallarm.ClientFields{
+				AttackRecheckerMode: recheckerMode,
+			},
+		}
+		if _, err := client.ClientUpdate(mode); err != nil {
+			return err
+		}
+	}
+
+	if d.HasChange("overlimit_time") || d.HasChange("overlimit_mode") {
+		if err := updateOverlimitResSettings(d, client, clientID); err != nil {
+			return err
+		}
+	}
+
+	return resourceWallarmGlobalModeRead(d, m)
 }
 
 func resourceWallarmGlobalModeDelete(_ *schema.ResourceData, _ interface{}) error {
+	// Global settings are a singleton — cannot be deleted, only modified.
 	return nil
+}
+
+// updateOverlimitResSettings sends the current overlimit_time and overlimit_mode
+// to the API. Both fields are always sent together since the API expects the
+// full overlimit_res_settings object.
+func updateOverlimitResSettings(d *schema.ResourceData, client wallarm.API, clientID int) error {
+	overlimitTime := d.Get("overlimit_time").(int)
+	overlimitMode := d.Get("overlimit_mode").(string)
+
+	// Skip if neither field is configured (both at zero values).
+	if overlimitTime == 0 && overlimitMode == "" {
+		return nil
+	}
+
+	_, err := client.OverlimitResSettingsUpdate(&wallarm.OverlimitResSettingsParams{
+		OverlimitTime: overlimitTime,
+		Mode:          overlimitMode,
+	}, clientID)
+	return err
 }
