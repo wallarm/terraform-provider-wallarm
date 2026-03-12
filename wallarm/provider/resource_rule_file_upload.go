@@ -79,7 +79,7 @@ func resourceWallarmFileUploadSizeLimitDelete(d *schema.ResourceData, m interfac
 	}
 
 	if len(respRules.Body) == 1 && respRules.Body[0].Hints == 1 && respRules.Body[0].GroupedHintsCount == 1 {
-		if err = client.RuleDelete(actionID); err != nil {
+		if err = client.ActionDelete(actionID); err != nil {
 			return err
 		}
 	} else {

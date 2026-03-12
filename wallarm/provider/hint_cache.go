@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"sort"
+	"strings"
 	"sync"
 	"time"
 
@@ -15,7 +16,30 @@ const (
 	defaultBulkFetchLimit = 200
 	// maxBulkFetchPages caps the number of paginated requests to prevent runaway fetches.
 	maxBulkFetchPages = 500
+
+	// rulesLockedRetryDelay is the wait time between retries when the API returns HTTP 423
+	// (rules locked during snapshot backup/restore).
+	rulesLockedRetryDelay = 5 * time.Second
+	// rulesLockedMaxRetries is the maximum number of retry attempts (12 × 5s = 60s total).
+	rulesLockedMaxRetries = 12
 )
+
+// isRulesLockedError returns true if the error indicates HTTP 423 (rules locked during snapshot).
+func isRulesLockedError(err error) bool {
+	return err != nil && strings.Contains(err.Error(), "HTTP Status: 423")
+}
+
+// retryOnRulesLocked retries fn when the API returns HTTP 423 (rules locked during snapshot).
+// Waits rulesLockedRetryDelay between attempts, up to rulesLockedMaxRetries times.
+func retryOnRulesLocked(fn func() error) error {
+	err := fn()
+	for attempt := 1; attempt <= rulesLockedMaxRetries && isRulesLockedError(err); attempt++ {
+		log.Printf("[WARN] Rules locked (HTTP 423), retrying in %s (attempt %d/%d)", rulesLockedRetryDelay, attempt, rulesLockedMaxRetries)
+		time.Sleep(rulesLockedRetryDelay)
+		err = fn()
+	}
+	return err
+}
 
 // CacheStats provides a snapshot of the cache's operational state.
 type CacheStats struct {
@@ -212,7 +236,7 @@ func (c *HintCache) Stats() CacheStats {
 // rule resource's Read function) are served from a bulk-loaded cache.
 // Multi-ID or complex filter queries pass through to the underlying API.
 //
-// Mutating methods (HintCreate, HintDelete, HintUpdateV3, RuleDelete) invalidate
+// Mutating methods (HintCreate, HintDelete, HintUpdateV3, ActionDelete) invalidate
 // the cache AFTER the mutation succeeds, so:
 //   - Failed mutations don't unnecessarily clear the cache
 //   - Post-mutation reads (e.g. Create calling Read at the end) get fresh data
@@ -294,8 +318,14 @@ func (c *CachedClient) HintRead(body *wallarm.HintRead) (*wallarm.HintReadResp, 
 }
 
 // HintCreate delegates to the underlying API and invalidates the cache AFTER success.
+// Retries on HTTP 423 (rules locked during snapshot).
 func (c *CachedClient) HintCreate(body *wallarm.ActionCreate) (*wallarm.ActionCreateResp, error) {
-	resp, err := c.API.HintCreate(body)
+	var resp *wallarm.ActionCreateResp
+	err := retryOnRulesLocked(func() error {
+		var e error
+		resp, e = c.API.HintCreate(body)
+		return e
+	})
 	if err != nil {
 		return resp, err
 	}
@@ -304,8 +334,11 @@ func (c *CachedClient) HintCreate(body *wallarm.ActionCreate) (*wallarm.ActionCr
 }
 
 // HintDelete delegates to the underlying API and invalidates the cache AFTER success.
+// Retries on HTTP 423 (rules locked during snapshot).
 func (c *CachedClient) HintDelete(body *wallarm.HintDelete) error {
-	err := c.API.HintDelete(body)
+	err := retryOnRulesLocked(func() error {
+		return c.API.HintDelete(body)
+	})
 	if err != nil {
 		return err
 	}
@@ -313,19 +346,28 @@ func (c *CachedClient) HintDelete(body *wallarm.HintDelete) error {
 	return nil
 }
 
-// RuleDelete delegates to the underlying API and invalidates the cache AFTER success.
-func (c *CachedClient) RuleDelete(actionID int) error {
-	err := c.API.RuleDelete(actionID)
+// ActionDelete delegates to the underlying API and invalidates the cache AFTER success.
+// Retries on HTTP 423 (rules locked during snapshot).
+func (c *CachedClient) ActionDelete(actionID int) error {
+	err := retryOnRulesLocked(func() error {
+		return c.API.ActionDelete(actionID)
+	})
 	if err != nil {
 		return err
 	}
-	c.hintCache.Invalidate("RuleDelete")
+	c.hintCache.Invalidate("ActionDelete")
 	return nil
 }
 
 // HintUpdateV3 delegates to the underlying API and invalidates the cache AFTER success.
+// Retries on HTTP 423 (rules locked during snapshot).
 func (c *CachedClient) HintUpdateV3(ruleID int, body *wallarm.HintUpdateV3Params) (*wallarm.ActionCreateResp, error) {
-	resp, err := c.API.HintUpdateV3(ruleID, body)
+	var resp *wallarm.ActionCreateResp
+	err := retryOnRulesLocked(func() error {
+		var e error
+		resp, e = c.API.HintUpdateV3(ruleID, body)
+		return e
+	})
 	if err != nil {
 		return resp, err
 	}
