@@ -664,3 +664,19 @@ func findRule(client wallarm.API, clientID, ruleID int) (*wallarm.ActionBody, er
 
 	return &(*resp.Body)[0], nil
 }
+
+// findCredentialStuffingRule fetches credential stuffing configs via the v4 API
+// and returns the one matching ruleID.
+// API: GET /v4/clients/{clientID}/credential_stuffing/configs
+func findCredentialStuffingRule(client wallarm.API, clientID, ruleID int) (*wallarm.ActionBody, error) {
+	configs, err := client.CredentialStuffingConfigsRead(clientID)
+	if err != nil {
+		return nil, errors.WithMessagef(err, "on CredentialStuffingConfigsRead, client ID %d", clientID)
+	}
+	for i := range configs {
+		if configs[i].ID == ruleID {
+			return &configs[i], nil
+		}
+	}
+	return nil, &ruleNotFoundError{clientID: clientID, ruleID: ruleID}
+}

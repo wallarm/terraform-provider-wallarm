@@ -102,7 +102,7 @@ func resourceWallarmCredentialStuffingRegexRead(d *schema.ResourceData, m interf
 	clientID := retrieveClientID(d)
 	ruleID := d.Get("rule_id").(int)
 
-	rule, err := findRule(client, clientID, ruleID)
+	rule, err := findCredentialStuffingRule(client, clientID, ruleID)
 	if !d.IsNewResource() {
 		if _, ok := err.(*ruleNotFoundError); ok {
 			log.Printf("[WARN] Rule %s not found, removing from state", d.Id())
@@ -124,6 +124,12 @@ func resourceWallarmCredentialStuffingRegexRead(d *schema.ResourceData, m interf
 	d.Set("title", rule.Title)
 	d.Set("mitigation", rule.Mitigation)
 	d.Set("set", rule.Set)
+	d.Set("variativity_disabled", true)
+	if rule.Comment == "" {
+		d.Set("comment", "Managed by Terraform")
+	} else {
+		d.Set("comment", rule.Comment)
+	}
 	actionsSet := schema.Set{F: hashResponseActionDetails}
 	for _, a := range rule.Action {
 		acts, err := actionDetailsToMap(a)
@@ -184,7 +190,7 @@ func resourceWallarmCredentialStuffingRegexImport(d *schema.ResourceData, m inte
 		return nil, err
 	}
 
-	_, err = findRule(client, clientID, ruleID)
+	_, err = findCredentialStuffingRule(client, clientID, ruleID)
 	if err != nil {
 		return nil, err
 	}

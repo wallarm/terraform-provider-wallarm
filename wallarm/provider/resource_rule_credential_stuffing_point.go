@@ -96,7 +96,7 @@ func resourceWallarmCredentialStuffingPointRead(d *schema.ResourceData, m interf
 	clientID := retrieveClientID(d)
 	ruleID := d.Get("rule_id").(int)
 
-	rule, err := findRule(client, clientID, ruleID)
+	rule, err := findCredentialStuffingRule(client, clientID, ruleID)
 	if !d.IsNewResource() {
 		if _, ok := err.(*ruleNotFoundError); ok {
 			log.Printf("[WARN] Rule %s not found, removing from state", d.Id())
@@ -121,6 +121,12 @@ func resourceWallarmCredentialStuffingPointRead(d *schema.ResourceData, m interf
 	d.Set("title", rule.Title)
 	d.Set("mitigation", rule.Mitigation)
 	d.Set("set", rule.Set)
+	d.Set("variativity_disabled", true)
+	if rule.Comment == "" {
+		d.Set("comment", "Managed by Terraform")
+	} else {
+		d.Set("comment", rule.Comment)
+	}
 	actionsSet := schema.Set{F: hashResponseActionDetails}
 	for _, a := range rule.Action {
 		acts, err := actionDetailsToMap(a)
@@ -185,57 +191,34 @@ func resourceWallarmCredentialStuffingPointImport(d *schema.ResourceData, m inte
 		return nil, err
 	}
 
-	_, err = findRule(client, clientID, ruleID)
+	rule, err := findCredentialStuffingRule(client, clientID, ruleID)
 	if err != nil {
 		return nil, err
 	}
-
-	ruleType := "credentials_point"
 
 	d.Set("client_id", clientID)
 	d.Set("rule_id", ruleID)
 	d.Set("action_id", actionID)
-	d.Set("type", ruleType)
+	d.Set("type", rule.Type)
 
-	hint := &wallarm.HintRead{
-		Limit:     1000,
-		Offset:    0,
-		OrderBy:   "updated_at",
-		OrderDesc: true,
-		Filter: &wallarm.HintFilter{
-			Clientid: []int{clientID},
-			ID:       []int{ruleID},
-			Type:     []string{ruleType},
-		},
-	}
-	actionHints, err := client.HintRead(hint)
-	if err != nil {
-		return nil, err
-	}
 	actionsSet := schema.Set{
 		F: hashResponseActionDetails,
 	}
-	if len((*actionHints.Body)) != 0 && len((*actionHints.Body)[0].Action) != 0 {
-		for _, a := range (*actionHints.Body)[0].Action {
-			acts, err := actionDetailsToMap(a)
-			if err != nil {
-				return nil, err
-			}
-			actionsSet.Add(acts)
+	for _, a := range rule.Action {
+		acts, err := actionDetailsToMap(a)
+		if err != nil {
+			return nil, err
 		}
-		if err := d.Set("action", &actionsSet); err != nil {
-			return nil, fmt.Errorf("error setting action: %w", err)
-		}
+		actionsSet.Add(acts)
+	}
+	if err := d.Set("action", &actionsSet); err != nil {
+		return nil, fmt.Errorf("error setting action: %w", err)
 	}
 
-	pointInterface := (*actionHints.Body)[0].Point
-	point := wrapPointElements(pointInterface)
-	if err := d.Set("point", point); err != nil {
+	if err := d.Set("point", wrapPointElements(rule.Point)); err != nil {
 		return nil, fmt.Errorf("error setting point: %w", err)
 	}
-	pointInterface = (*actionHints.Body)[0].LoginPoint
-	point = wrapPointElements(pointInterface)
-	if err := d.Set("login_point", point); err != nil {
+	if err := d.Set("login_point", wrapPointElements(rule.LoginPoint)); err != nil {
 		return nil, fmt.Errorf("error setting login_point: %w", err)
 	}
 

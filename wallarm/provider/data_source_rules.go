@@ -160,6 +160,16 @@ func dataSourceWallarmRulesRead(d *schema.ResourceData, m interface{}) error {
 		log.Printf("[INFO] wallarm_rules data source: fetched %d rules for client %d (direct API)", len(allRules), clientID)
 	}
 
+	// Fetch credential stuffing configs from the v4 API — they are not
+	// returned by HintRead, so we merge them into the common list.
+	credConfigs, err := client.CredentialStuffingConfigsRead(clientID)
+	if err != nil {
+		log.Printf("[WARN] wallarm_rules data source: failed to read credential stuffing configs: %s", err)
+	} else {
+		allRules = append(allRules, credConfigs...)
+		log.Printf("[INFO] wallarm_rules data source: added %d credential stuffing configs for client %d", len(credConfigs), clientID)
+	}
+
 	// Flatten results.
 	rules := make([]interface{}, 0)
 	for _, rule := range allRules {
