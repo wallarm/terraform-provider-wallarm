@@ -1,4 +1,6 @@
 .DS_Store
+build.sh
+.claude/
 .vscode/
 .idea/
 .terraform/

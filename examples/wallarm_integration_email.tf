@@ -8,7 +8,7 @@ resource "wallarm_integration_email" "email_integration" {
   }
   
   event {
-    event_type = "vuln_low"
+    event_type = "aasm_report"
     active = true
   }
 }

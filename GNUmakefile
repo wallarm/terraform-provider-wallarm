@@ -5,6 +5,8 @@ GOARCH?=$$(go env GOARCH)
 VERSION?=$$(git describe --abbrev=0 --tags)
 TESTTIMEOUT=120m
 
+WALLARM_API_HOST=https://api.wallarm.com
+
 default: build
 
 install: fmtcheck
@@ -27,7 +29,7 @@ init-plugin: build
 
 lint:
 	@echo "Running golangci-lint..."
-	@go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.64.8
+	@go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
 	@golangci-lint run
 
 test:

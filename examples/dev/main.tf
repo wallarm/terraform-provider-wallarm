@@ -13,7 +13,7 @@ terraform {
 #
 # Define provider parameters
 #
-provider "wallarm" {
+provider "" {
   api_token = var.api_token
   api_host = var.api_host
   client_id = 133
@@ -203,11 +203,11 @@ provider "wallarm" {
 #   active = true
 
 #   event {
-#     event_type = "hit"
+#     event_type = "rules_and_triggers"
 #     active = true
 #   }
 #   event {
-#     event_type = "vuln_high"
+#     event_type = "system"
 #     active = true
 #   }
 #   headers = {
@@ -281,25 +281,12 @@ provider "wallarm" {
 
 # }
 
-# #
-# # Scanner scope section
-# #
-# resource "wallarm_scanner" "scan" {
-#     element = ["1.1.1.1", "example.com", "2.2.2.2/31"]
-#     disabled = true
-# }
-
-# output "scan_id" {
-#   value = wallarm_scanner.scan.resource_id
-# }
-
 
 # #
 # # Global mode section
 # #
 # resource "wallarm_global_mode" "global_block" {
 #   filtration_mode = "block"
-#   scanner_mode = "off"
 #   rechecker_mode = "on"
 # }
 
@@ -616,7 +603,7 @@ provider "wallarm" {
 #   }
 
 #   event {
-#     event_type = "vuln_high"
+#     event_type = "system"
 #     active = true
 #   }
 # }

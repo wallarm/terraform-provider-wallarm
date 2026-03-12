@@ -1,6 +1,47 @@
 resource "wallarm_integration_telegram" "telegram_integration" {
-  name = "my_tg_chat_name"
-  active = false
-  chat_data = "Z72S5kwWBPYpTnLrIfvYIQ=="
-  token = "df8e6c1050180c3ce1b84fe7d6940070"
+  name = "Terraform Telegram Integration"
+  telegram_username = "WallarmIntegrationTest"
+  chat_data = "+y86q0LOQ4QG3hK9QgVDfw=="
+  active = true
+
+  event {
+    event_type = "rules_and_triggers"
+    active = true
+  }
+  event {
+    event_type = "security_issue_critical"
+    active = true
+  }
+  event {
+    event_type = "security_issue_high"
+    active = true
+  }
+  event {
+    event_type = "security_issue_medium"
+    active = true
+  }
+  event {
+    event_type = "security_issue_low"
+    active = true
+  }
+  event {
+    event_type = "security_issue_info"
+    active = true
+  }
+  event {
+    event_type = "system"
+    active = true
+  }
+  event {
+		event_type = "report_daily"
+		active = false
+	}
+	event {
+		event_type = "report_weekly"
+		active = false
+	}
+	event {
+		event_type = "report_monthly"
+		active = false
+	}
 }
