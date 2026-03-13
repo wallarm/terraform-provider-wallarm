@@ -1,21 +1,26 @@
 package wallarm
 
 import (
+	"context"
 	"fmt"
-	"strings"
 
 	"github.com/wallarm/wallarm-go"
 
+	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
 func resourceWallarmTelegram() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceWallarmTelegramCreate,
-		Read:   resourceWallarmTelegramRead,
-		Update: resourceWallarmTelegramUpdate,
-		Delete: resourceWallarmTelegramDelete,
+		CreateContext: resourceWallarmTelegramCreate,
+		ReadContext:   resourceWallarmTelegramRead,
+		UpdateContext: resourceWallarmTelegramUpdate,
+		DeleteContext: resourceWallarmTelegramDelete,
+
+		Importer: &schema.ResourceImporter{
+			StateContext: schema.ImportStatePassthroughContext,
+		},
 
 		Schema: map[string]*schema.Schema{
 			"client_id": defaultClientIDWithValidationSchema,
@@ -99,9 +104,12 @@ func resourceWallarmTelegram() *schema.Resource {
 	}
 }
 
-func resourceWallarmTelegramCreate(d *schema.ResourceData, m interface{}) error {
-	client := m.(wallarm.API)
-	clientID := retrieveClientID(d)
+func resourceWallarmTelegramCreate(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+	client := apiClient(m)
+	clientID, err := retrieveClientID(d, m)
+	if err != nil {
+		return diag.FromErr(err)
+	}
 	telegramUsername := d.Get("telegram_username").(string)
 	chatData := d.Get("chat_data").(string)
 
@@ -113,7 +121,7 @@ func resourceWallarmTelegramCreate(d *schema.ResourceData, m interface{}) error 
 
 	createRes, err := client.TelegramIntegrationCreate(&tgBody)
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 
 	integrationID := createRes.Body.ID
@@ -129,22 +137,25 @@ func resourceWallarmTelegramCreate(d *schema.ResourceData, m interface{}) error 
 		"events": expandWallarmEventToIntEvents(d.Get("event"), "telegram"),
 	}
 	if _, err := client.IntegrationPartialUpdate(integrationID, updateBody); err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 
-	return resourceWallarmTelegramRead(d, m)
+	return resourceWallarmTelegramRead(context.TODO(), d, m)
 }
 
-func resourceWallarmTelegramRead(d *schema.ResourceData, m interface{}) error {
-	client := m.(wallarm.API)
-	clientID := retrieveClientID(d)
+func resourceWallarmTelegramRead(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+	client := apiClient(m)
+	clientID, err := retrieveClientID(d, m)
+	if err != nil {
+		return diag.FromErr(err)
+	}
 	telegram, err := client.IntegrationRead(clientID, d.Get("integration_id").(int))
 	if err != nil {
-		if strings.HasPrefix(err.Error(), "Not found.") {
+		if isNotFoundError(err) {
 			d.SetId("")
 			return nil
 		}
-		return err
+		return diag.FromErr(err)
 	}
 
 	d.Set("integration_id", telegram.ID)
@@ -157,17 +168,20 @@ func resourceWallarmTelegramRead(d *schema.ResourceData, m interface{}) error {
 	return nil
 }
 
-func resourceWallarmTelegramUpdate(d *schema.ResourceData, m interface{}) error {
-	client := m.(wallarm.API)
-	clientID := retrieveClientID(d)
+func resourceWallarmTelegramUpdate(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+	client := apiClient(m)
+	clientID, err := retrieveClientID(d, m)
+	if err != nil {
+		return diag.FromErr(err)
+	}
 
 	telegram, err := client.IntegrationRead(clientID, d.Get("integration_id").(int))
 	if err != nil {
-		if strings.HasPrefix(err.Error(), "Not found.") {
+		if isNotFoundError(err) {
 			d.SetId("")
 			return nil
 		}
-		return err
+		return diag.FromErr(err)
 	}
 
 	updateBody := make(map[string]interface{})
@@ -183,21 +197,21 @@ func resourceWallarmTelegramUpdate(d *schema.ResourceData, m interface{}) error 
 	if len(updateBody) > 0 {
 		updateRes, err := client.IntegrationPartialUpdate(telegram.ID, updateBody)
 		if err != nil {
-			return err
+			return diag.FromErr(err)
 		}
 		d.Set("integration_id", updateRes.Body.ID)
 		resID := fmt.Sprintf("%d/%s/%d", clientID, updateRes.Body.Type, updateRes.Body.ID)
 		d.SetId(resID)
 	}
 
-	return resourceWallarmTelegramRead(d, m)
+	return resourceWallarmTelegramRead(context.TODO(), d, m)
 }
 
-func resourceWallarmTelegramDelete(d *schema.ResourceData, m interface{}) error {
-	client := m.(wallarm.API)
+func resourceWallarmTelegramDelete(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+	client := apiClient(m)
 	integrationID := d.Get("integration_id").(int)
 	if err := client.IntegrationDelete(integrationID); err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 
 	return nil

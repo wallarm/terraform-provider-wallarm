@@ -1,10 +1,12 @@
 package wallarm
 
 import (
+	"context"
 	"fmt"
 	"strconv"
 	"strings"
 
+	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/samber/lo"
 	"github.com/wallarm/terraform-provider-wallarm/wallarm/common"
 	"github.com/wallarm/terraform-provider-wallarm/wallarm/common/resourcerule"
@@ -45,7 +47,6 @@ func resourceWallarmRateLimit() *schema.Resource {
 			Type:         schema.TypeInt,
 			ForceNew:     true,
 			Optional:     true,
-			Default:      0,
 			ValidateFunc: validation.IntBetween(400, 599),
 		},
 
@@ -57,32 +58,35 @@ func resourceWallarmRateLimit() *schema.Resource {
 		},
 	}
 	return &schema.Resource{
-		Create: resourceWallarmRateLimitCreate,
-		Read:   resourceWallarmRateLimitRead,
-		Update: resourceWallarmRateLimitUpdate,
-		Delete: resourceWallarmRateLimitDelete,
+		CreateContext: resourceWallarmRateLimitCreate,
+		ReadContext:   resourceWallarmRateLimitRead,
+		UpdateContext: resourceWallarmRateLimitUpdate,
+		DeleteContext: resourceWallarmRateLimitDelete,
 		Importer: &schema.ResourceImporter{
-			State: resourceWallarmRateLimitImport,
+			StateContext: resourceWallarmRateLimitImport,
 		},
 		Schema: lo.Assign(fields, commonResourceRuleFields),
 	}
 }
 
-func resourceWallarmRateLimitCreate(d *schema.ResourceData, m interface{}) error {
-	client := m.(wallarm.API)
-	clientID := retrieveClientID(d)
+func resourceWallarmRateLimitCreate(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+	client := apiClient(m)
+	clientID, err := retrieveClientID(d, m)
+	if err != nil {
+		return diag.FromErr(err)
+	}
 	fields := getCommonResourceRuleFieldsDTOFromResourceData(d)
 
 	actionsFromState := d.Get("action").(*schema.Set)
 	action, err := resourcerule.ExpandSetToActionDetailsList(actionsFromState)
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 
 	iPoint := d.Get("point").([]interface{})
 	point, err := expandPointsToTwoDimensionalArray(iPoint)
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 	delay := d.Get("delay").(int)
 	burst := d.Get("burst").(int)
@@ -91,26 +95,25 @@ func resourceWallarmRateLimitCreate(d *schema.ResourceData, m interface{}) error
 	timeUnit := d.Get("time_unit").(string)
 
 	actionBody := &wallarm.ActionCreate{
-		Type:       "rate_limit",
-		Clientid:   clientID,
-		Action:     &action,
-		Validated:  false,
-		Comment:    fields.Comment,
-		Point:      point,
-		Delay:      delay,
-		Burst:      burst,
-		Rate:       rate,
-		RspStatus:  rspStatus,
-		TimeUnit:   timeUnit,
-		Set:        fields.Set,
-		Active:     fields.Active,
-		Title:      fields.Title,
-		Mitigation: fields.Mitigation,
+		Type:      "rate_limit",
+		Clientid:  clientID,
+		Action:    &action,
+		Validated: false,
+		Comment:   fields.Comment,
+		Point:     point,
+		Delay:     delay,
+		Burst:     burst,
+		Rate:      rate,
+		RspStatus: rspStatus,
+		TimeUnit:  timeUnit,
+		Set:       fields.Set,
+		Active:    fields.Active,
+		Title:     fields.Title,
 	}
 
 	actionResp, err := client.HintCreate(actionBody)
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 	actionID := actionResp.Body.ActionID
 
@@ -119,22 +122,29 @@ func resourceWallarmRateLimitCreate(d *schema.ResourceData, m interface{}) error
 	d.Set("rule_type", actionResp.Body.Type)
 	d.Set("client_id", clientID)
 	if err := d.Set("point", wrapPointElements(actionResp.Body.Point)); err != nil {
-		return fmt.Errorf("error setting point: %w", err)
+		return diag.FromErr(fmt.Errorf("error setting point: %w", err))
 	}
 
 	resID := fmt.Sprintf("%d/%d/%d", clientID, actionID, actionResp.Body.ID)
 	d.SetId(resID)
 
-	return resourceWallarmRateLimitRead(d, m)
+	return resourceWallarmRateLimitRead(context.TODO(), d, m)
 }
 
-func resourceWallarmRateLimitRead(d *schema.ResourceData, m interface{}) error {
-	return resourcerule.ResourceRuleWallarmRead(d, retrieveClientID(d), m.(wallarm.API), common.ReadOptionWithAction)
+func resourceWallarmRateLimitRead(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+	clientID, err := retrieveClientID(d, m)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+	return diag.FromErr(resourcerule.ResourceRuleWallarmRead(d, clientID, apiClient(m), common.ReadOptionWithAction))
 }
 
-func resourceWallarmRateLimitDelete(d *schema.ResourceData, m interface{}) error {
-	client := m.(wallarm.API)
-	clientID := retrieveClientID(d)
+func resourceWallarmRateLimitDelete(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+	client := apiClient(m)
+	clientID, err := retrieveClientID(d, m)
+	if err != nil {
+		return diag.FromErr(err)
+	}
 	ruleID := d.Get("rule_id").(int)
 
 	h := &wallarm.HintDelete{
@@ -145,24 +155,24 @@ func resourceWallarmRateLimitDelete(d *schema.ResourceData, m interface{}) error
 	}
 
 	if err := client.HintDelete(h); err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 
 	return nil
 }
 
-func resourceWallarmRateLimitUpdate(d *schema.ResourceData, m interface{}) error {
-	client := m.(wallarm.API)
+func resourceWallarmRateLimitUpdate(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+	client := apiClient(m)
 	variativityDisabled, _ := d.Get("variativity_disabled").(bool)
 	comment, _ := d.Get("comment").(string)
 	_, err := client.HintUpdateV3(d.Get("rule_id").(int), &wallarm.HintUpdateV3Params{
 		VariativityDisabled: lo.ToPtr(variativityDisabled),
 		Comment:             lo.ToPtr(comment),
 	})
-	return err
+	return diag.FromErr(err)
 }
 
-func resourceWallarmRateLimitImport(d *schema.ResourceData, _ interface{}) ([]*schema.ResourceData, error) {
+func resourceWallarmRateLimitImport(_ context.Context, d *schema.ResourceData, _ interface{}) ([]*schema.ResourceData, error) {
 	idAttr := strings.SplitN(d.Id(), "/", 3)
 	if len(idAttr) == 3 {
 		clientID, err := strconv.Atoi(idAttr[0])

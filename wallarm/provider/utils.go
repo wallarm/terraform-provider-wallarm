@@ -13,6 +13,9 @@ import (
 	"strings"
 	"unicode"
 
+	stderrors "errors"
+	"net/http"
+
 	"github.com/pkg/errors"
 	"github.com/wallarm/terraform-provider-wallarm/wallarm/common/resourcerule"
 	"github.com/wallarm/wallarm-go"
@@ -22,6 +25,12 @@ import (
 )
 
 const eventTypeSIEM = "siem"
+
+// isNotFoundError checks if the error is a Wallarm API 404 response.
+func isNotFoundError(err error) bool {
+	var apiErr *wallarm.APIError
+	return stderrors.As(err, &apiErr) && apiErr.StatusCode == http.StatusNotFound
+}
 
 // validateWithHeadersOnlySiem returns a CustomizeDiffFunc that ensures
 // with_headers is only set to true on events of type "siem".
@@ -208,40 +217,62 @@ func interfaceToInt(i interface{}) int {
 	return r
 }
 
-func retrieveClientID(d *schema.ResourceData) int {
-	if v, ok := d.GetOk("client_id"); ok {
-		return v.(int)
-	}
-	return ClientID
+// retrieveClientID extracts client_id from a resource or falls back to the provider default.
+func retrieveClientID(d *schema.ResourceData, m interface{}) (int, error) {
+	meta := m.(*ProviderMeta)
+	return meta.RetrieveClientID(d)
 }
 
-func passwordGenerate(length int) string {
+// apiClient extracts the wallarm.API client from the provider meta.
+func apiClient(m interface{}) wallarm.API {
+	return m.(*ProviderMeta).Client
+}
+
+func passwordGenerate(length int) (string, error) {
 	digits := "0123456789"
 	specials := "~=+%^*()_[]{}!@#$?"
 	all := "ABCDEFGHIJKLMNOPQRSTUVWXYZ" +
 		"abcdefghijklmnopqrstuvwxyz" +
 		digits + specials
 	buf := make([]byte, length)
-	buf[0] = digits[cryptoRandIntn(len(digits))]
-	buf[1] = specials[cryptoRandIntn(len(specials))]
+	var err error
+	if buf[0], err = cryptoRandByte(digits); err != nil {
+		return "", err
+	}
+	if buf[1], err = cryptoRandByte(specials); err != nil {
+		return "", err
+	}
 	for i := 2; i < length; i++ {
-		buf[i] = all[cryptoRandIntn(len(all))]
+		if buf[i], err = cryptoRandByte(all); err != nil {
+			return "", err
+		}
 	}
 	// Fisher-Yates shuffle using crypto/rand
 	for i := len(buf) - 1; i > 0; i-- {
-		j := cryptoRandIntn(i + 1)
+		j, err := cryptoRandIntn(i + 1)
+		if err != nil {
+			return "", err
+		}
 		buf[i], buf[j] = buf[j], buf[i]
 	}
-	return string(buf)
+	return string(buf), nil
 }
 
-func cryptoRandIntn(n int) int {
+func cryptoRandByte(charset string) (byte, error) {
+	idx, err := cryptoRandIntn(len(charset))
+	if err != nil {
+		return 0, err
+	}
+	return charset[idx], nil
+}
+
+func cryptoRandIntn(n int) (int, error) {
 	maxN := big.NewInt(int64(n))
 	v, err := crand.Int(crand.Reader, maxN)
 	if err != nil {
-		panic(fmt.Sprintf("crypto/rand failed: %v", err))
+		return 0, fmt.Errorf("crypto/rand failed: %w", err)
 	}
-	return int(v.Int64())
+	return int(v.Int64()), nil
 }
 
 func isPasswordValid(s string) bool {
@@ -465,14 +496,14 @@ func equalWithoutOrder(conditionsA, conditionsB []wallarm.ActionDetails) bool {
 	}
 
 	sort.Slice(conditionsA, func(i, j int) bool {
-		// Преобразуем Point в строку для сравнения
+		// Convert Point to String for Comparison
 		pointStrI := strings.Join(convertToStringSlice(conditionsA[i].Point), "/")
 		pointStrJ := strings.Join(convertToStringSlice(conditionsA[j].Point), "/")
 		return pointStrI < pointStrJ
 	})
 
 	sort.Slice(conditionsB, func(i, j int) bool {
-		// Преобразуем Point в строку для сравнения
+		// Convert Point to String for Comparison
 		pointStrI := strings.Join(convertToStringSlice(conditionsB[i].Point), "/")
 		pointStrJ := strings.Join(convertToStringSlice(conditionsB[j].Point), "/")
 		return pointStrI < pointStrJ
@@ -533,8 +564,11 @@ func actionPointsEqual(listA, listB []interface{}) bool {
 }
 
 func existsAction(d *schema.ResourceData, m interface{}, hintType string) (string, bool, error) {
-	client := m.(wallarm.API)
-	clientID := retrieveClientID(d)
+	client := apiClient(m)
+	clientID, err := retrieveClientID(d, m)
+	if err != nil {
+		return "", false, err
+	}
 
 	actionsFromState := d.Get("action").(*schema.Set)
 	action, err := resourcerule.ExpandSetToActionDetailsList(actionsFromState)
@@ -547,7 +581,7 @@ func existsAction(d *schema.ResourceData, m interface{}, hintType string) (strin
 			HintType: []string{hintType},
 			Clientid: []int{clientID},
 		},
-		Limit:  1000,
+		Limit:  DefaultAPIListLimit,
 		Offset: 0,
 	}
 
@@ -582,8 +616,11 @@ func existsAction(d *schema.ResourceData, m interface{}, hintType string) (strin
 }
 
 func existsHint(d *schema.ResourceData, m interface{}, actionID int, hintType string) (string, bool, error) {
-	client := m.(wallarm.API)
-	clientID := retrieveClientID(d)
+	client := apiClient(m)
+	clientID, err := retrieveClientID(d, m)
+	if err != nil {
+		return "", false, err
+	}
 
 	var points wallarm.TwoDimensionalSlice
 
@@ -596,7 +633,7 @@ func existsHint(d *schema.ResourceData, m interface{}, actionID int, hintType st
 	}
 
 	hint := &wallarm.HintRead{
-		Limit:     1000,
+		Limit:     DefaultAPIListLimit,
 		Offset:    0,
 		OrderBy:   "updated_at",
 		OrderDesc: true,

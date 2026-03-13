@@ -23,10 +23,20 @@ func EnumeratedParameters(enumeratedParameters []interface{}) *wallarm.Enumerate
 }
 
 func mapEnumeratedParameterRegexpToAPI(enumeratedParameter map[string]interface{}) *wallarm.EnumeratedParameters {
+	nameRegexps := common.ConvertToStringSlice(enumeratedParameter["name_regexps"].([]interface{}))
+	if len(nameRegexps) == 0 {
+		nameRegexps = []string{""}
+	}
+
+	valueRegexps := common.ConvertToStringSlice(enumeratedParameter["value_regexps"].([]interface{}))
+	if len(valueRegexps) == 0 {
+		valueRegexps = []string{""}
+	}
+
 	return &wallarm.EnumeratedParameters{
 		Mode:                 "regexp",
-		NameRegexps:          common.ConvertToStringSlice(enumeratedParameter["name_regexps"].([]interface{})),
-		ValueRegexp:          common.ConvertToStringSlice(enumeratedParameter["value_regexps"].([]interface{})),
+		NameRegexps:          nameRegexps,
+		ValueRegexp:          valueRegexps,
 		PlainParameters:      lo.ToPtr(enumeratedParameter["plain_parameters"].(bool)),
 		AdditionalParameters: lo.ToPtr(enumeratedParameter["additional_parameters"].(bool)),
 	}

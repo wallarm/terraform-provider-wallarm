@@ -1,6 +1,7 @@
 package wallarm
 
 import (
+	"fmt"
 	"log"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -9,11 +10,28 @@ import (
 	"github.com/pkg/errors"
 )
 
-var (
-	// ClientID of the Provider User communicating with
-	// the Wallarm Cloud
-	ClientID int
-)
+// ProviderMeta holds the configured API client and provider-level settings.
+// It is returned from ProviderConfigure and passed as meta to all CRUD functions.
+type ProviderMeta struct {
+	Client                  wallarm.API
+	DefaultClientID         int
+	RequireExplicitClientID bool
+}
+
+// RetrieveClientID returns the client_id from the resource if set,
+// otherwise falls back to the provider's default. Returns an error
+// if require_explicit_client_id is enabled and no resource-level client_id is set.
+func (pm *ProviderMeta) RetrieveClientID(d *schema.ResourceData) (int, error) {
+	if v, ok := d.GetOk("client_id"); ok {
+		return v.(int), nil
+	}
+	if pm.RequireExplicitClientID {
+		return 0, fmt.Errorf(
+			"client_id is required on this resource because " +
+				"require_explicit_client_id is enabled on the provider")
+	}
+	return pm.DefaultClientID, nil
+}
 
 // Config specifies client related parameters used within calls.
 type Config struct {

@@ -1,21 +1,26 @@
 package wallarm
 
 import (
+	"context"
 	"fmt"
-	"strings"
 
 	"github.com/wallarm/wallarm-go"
 
+	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
 func resourceWallarmPagerDuty() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceWallarmPagerDutyCreate,
-		Read:   resourceWallarmPagerDutyRead,
-		Update: resourceWallarmPagerDutyUpdate,
-		Delete: resourceWallarmPagerDutyDelete,
+		CreateContext: resourceWallarmPagerDutyCreate,
+		ReadContext:   resourceWallarmPagerDutyRead,
+		UpdateContext: resourceWallarmPagerDutyUpdate,
+		DeleteContext: resourceWallarmPagerDutyDelete,
+
+		Importer: &schema.ResourceImporter{
+			StateContext: schema.ImportStatePassthroughContext,
+		},
 
 		Schema: map[string]*schema.Schema{
 			"client_id": defaultClientIDWithValidationSchema,
@@ -90,9 +95,12 @@ func resourceWallarmPagerDuty() *schema.Resource {
 	}
 }
 
-func resourceWallarmPagerDutyCreate(d *schema.ResourceData, m interface{}) error {
-	client := m.(wallarm.API)
-	clientID := retrieveClientID(d)
+func resourceWallarmPagerDutyCreate(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+	client := apiClient(m)
+	clientID, err := retrieveClientID(d, m)
+	if err != nil {
+		return diag.FromErr(err)
+	}
 	name := d.Get("name").(string)
 	apiToken := d.Get("integration_key").(string)
 	active := d.Get("active").(bool)
@@ -109,7 +117,7 @@ func resourceWallarmPagerDutyCreate(d *schema.ResourceData, m interface{}) error
 
 	createRes, err := client.IntegrationCreate(&pagerdutyBody)
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 
 	d.Set("integration_id", createRes.Body.ID)
@@ -117,19 +125,22 @@ func resourceWallarmPagerDutyCreate(d *schema.ResourceData, m interface{}) error
 	resID := fmt.Sprintf("%d/%s/%d", clientID, createRes.Body.Type, createRes.Body.ID)
 	d.SetId(resID)
 
-	return resourceWallarmPagerDutyRead(d, m)
+	return resourceWallarmPagerDutyRead(context.TODO(), d, m)
 }
 
-func resourceWallarmPagerDutyRead(d *schema.ResourceData, m interface{}) error {
-	client := m.(wallarm.API)
-	clientID := retrieveClientID(d)
+func resourceWallarmPagerDutyRead(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+	client := apiClient(m)
+	clientID, err := retrieveClientID(d, m)
+	if err != nil {
+		return diag.FromErr(err)
+	}
 	pagerduty, err := client.IntegrationRead(clientID, d.Get("integration_id").(int))
 	if err != nil {
-		if strings.HasPrefix(err.Error(), "Not found.") {
+		if isNotFoundError(err) {
 			d.SetId("")
 			return nil
 		}
-		return err
+		return diag.FromErr(err)
 	}
 
 	d.Set("integration_id", pagerduty.ID)
@@ -142,17 +153,20 @@ func resourceWallarmPagerDutyRead(d *schema.ResourceData, m interface{}) error {
 	return nil
 }
 
-func resourceWallarmPagerDutyUpdate(d *schema.ResourceData, m interface{}) error {
-	client := m.(wallarm.API)
-	clientID := retrieveClientID(d)
+func resourceWallarmPagerDutyUpdate(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+	client := apiClient(m)
+	clientID, err := retrieveClientID(d, m)
+	if err != nil {
+		return diag.FromErr(err)
+	}
 
 	pagerDuty, err := client.IntegrationRead(clientID, d.Get("integration_id").(int))
 	if err != nil {
-		if strings.HasPrefix(err.Error(), "Not found.") {
+		if isNotFoundError(err) {
 			d.SetId("")
 			return nil
 		}
-		return err
+		return diag.FromErr(err)
 	}
 
 	if d.HasChange("event") {
@@ -166,7 +180,7 @@ func resourceWallarmPagerDutyUpdate(d *schema.ResourceData, m interface{}) error
 		}
 		updateRes, err := client.IntegrationUpdate(&fullBody, pagerDuty.ID)
 		if err != nil {
-			return err
+			return diag.FromErr(err)
 		}
 		d.Set("integration_id", updateRes.Body.ID)
 		resID := fmt.Sprintf("%d/%s/%d", clientID, updateRes.Body.Type, updateRes.Body.ID)
@@ -185,7 +199,7 @@ func resourceWallarmPagerDutyUpdate(d *schema.ResourceData, m interface{}) error
 		if len(updateBody) > 0 {
 			updateRes, err := client.IntegrationPartialUpdate(pagerDuty.ID, updateBody)
 			if err != nil {
-				return err
+				return diag.FromErr(err)
 			}
 			d.Set("integration_id", updateRes.Body.ID)
 			resID := fmt.Sprintf("%d/%s/%d", clientID, updateRes.Body.Type, updateRes.Body.ID)
@@ -193,14 +207,14 @@ func resourceWallarmPagerDutyUpdate(d *schema.ResourceData, m interface{}) error
 		}
 	}
 
-	return resourceWallarmPagerDutyRead(d, m)
+	return resourceWallarmPagerDutyRead(context.TODO(), d, m)
 }
 
-func resourceWallarmPagerDutyDelete(d *schema.ResourceData, m interface{}) error {
-	client := m.(wallarm.API)
+func resourceWallarmPagerDutyDelete(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+	client := apiClient(m)
 	integrationID := d.Get("integration_id").(int)
 	if err := client.IntegrationDelete(integrationID); err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 
 	return nil

@@ -11,6 +11,9 @@ const (
 	path              = "path"
 	experimentalRegex = "experimental_regex"
 	iequal            = "iequal"
+
+	// DefaultAPIListLimit is the default limit for API list/read requests.
+	DefaultAPIListLimit = 500
 )
 
 var (
@@ -69,50 +72,58 @@ var (
 
 	commonResourceRuleFields = map[string]*schema.Schema{
 		"rule_id": {
-			Type:     schema.TypeInt,
-			Computed: true,
+			Type:        schema.TypeInt,
+			Computed:    true,
+			Description: "The numeric ID of the rule (hint) in the Wallarm Cloud.",
 		},
 		"action_id": {
-			Type:     schema.TypeInt,
-			Computed: true,
+			Type:        schema.TypeInt,
+			Computed:    true,
+			Description: "The ID of the action (rule branch) this rule belongs to.",
 		},
 		"rule_type": {
-			Type:     schema.TypeString,
-			Computed: true,
+			Type:        schema.TypeString,
+			Computed:    true,
+			Description: "The type identifier of the rule (e.g. wallarm_mode, brute, bola).",
 		},
 		"client_id": defaultClientIDWithValidationSchema,
 		"comment": {
-			Type:     schema.TypeString,
-			Default:  "Managed by Terraform",
-			Optional: true,
+			Type:        schema.TypeString,
+			Default:     "Managed by Terraform",
+			Optional:    true,
+			Description: "A human-readable comment for the rule.",
 		},
 		"set": {
-			Type:     schema.TypeString,
-			Computed: true,
-			Optional: true,
-			ForceNew: true,
+			Type:        schema.TypeString,
+			Computed:    true,
+			Optional:    true,
+			ForceNew:    true,
+			Description: "The rule set name. Used to group related rules together.",
 		},
 		"active": {
-			Type:     schema.TypeBool,
-			Default:  true,
-			Optional: true,
-			ForceNew: true,
+			Type:        schema.TypeBool,
+			Default:     true,
+			Optional:    true,
+			ForceNew:    true,
+			Description: "Whether the rule is active.",
 		},
 		"title": {
-			Type:     schema.TypeString,
-			Computed: true,
-			Optional: true,
-			ForceNew: true,
+			Type:        schema.TypeString,
+			Computed:    true,
+			Optional:    true,
+			ForceNew:    true,
+			Description: "A short title for the rule.",
 		},
 		"mitigation": {
-			Type:     schema.TypeString,
-			Optional: true,
-			Computed: true,
+			Type:        schema.TypeString,
+			Optional:    true,
+			Computed:    true,
+			Description: "Read-only mitigation type assigned by the API. Accepted in config but not sent to the API.",
 		},
 		"variativity_disabled": {
-			Type:     schema.TypeBool,
-			Default:  true,
-			Optional: true,
+			Type:        schema.TypeBool,
+			Computed:    true,
+			Description: "Whether variativity is disabled. Always set to true by the provider.",
 		},
 	}
 
@@ -209,13 +220,11 @@ var (
 				"additional_parameters": {
 					Type:     schema.TypeBool,
 					Optional: true,
-					Default:  false,
 					ForceNew: true,
 				},
 				"plain_parameters": {
 					Type:     schema.TypeBool,
 					Optional: true,
-					Default:  false,
 					ForceNew: true,
 				},
 			},
@@ -275,11 +284,10 @@ var (
 )
 
 type CommonResourceRuleFieldsDTO struct {
-	Comment    string
-	Set        string
-	Active     bool
-	Title      string
-	Mitigation string
+	Comment string
+	Set     string
+	Active  bool
+	Title   string
 }
 
 func getCommonResourceRuleFieldsDTOFromResourceData(d *schema.ResourceData) CommonResourceRuleFieldsDTO {
@@ -290,12 +298,10 @@ func getCommonResourceRuleFieldsDTOFromResourceData(d *schema.ResourceData) Comm
 	set, _ := d.Get("set").(string)
 	active, _ := d.Get("active").(bool)
 	title, _ := d.Get("title").(string)
-	mitigation, _ := d.Get("mitigation").(string)
 	return CommonResourceRuleFieldsDTO{
-		Comment:    comment,
-		Set:        set,
-		Active:     active,
-		Title:      title,
-		Mitigation: mitigation,
+		Comment: comment,
+		Set:     set,
+		Active:  active,
+		Title:   title,
 	}
 }

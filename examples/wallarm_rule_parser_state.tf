@@ -8,7 +8,7 @@ resource "wallarm_rule_parser_state" "enable_base64_parser" {
   }
   point = [["post"]]
   parser = "base64"
-  state = "enabled"
+  state = "disabled"
 }
 
 resource "wallarm_rule_parser_state" "disable_htmljs_parser" {

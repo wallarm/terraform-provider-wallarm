@@ -76,7 +76,7 @@ func TestHintCache_BulkLoadReducesAPICalls(t *testing.T) {
 	// then all reads served from cache.
 	for _, h := range hints {
 		body := &wallarm.HintRead{
-			Limit:     1000,
+			Limit:     DefaultAPIListLimit,
 			Offset:    0,
 			OrderBy:   "updated_at",
 			OrderDesc: true,
@@ -137,7 +137,7 @@ func TestHintCache_ConcurrentReads(t *testing.T) {
 		go func(hintID int) {
 			defer wg.Done()
 			body := &wallarm.HintRead{
-				Limit:     1000,
+				Limit:     DefaultAPIListLimit,
 				Offset:    0,
 				OrderBy:   "updated_at",
 				OrderDesc: true,
@@ -178,7 +178,7 @@ func TestHintCache_InvalidateOnMutation(t *testing.T) {
 
 	// Initial read — triggers bulk load (1 API call for 50 hints)
 	body := &wallarm.HintRead{
-		Limit: 1000, Offset: 0, OrderBy: "updated_at", OrderDesc: true,
+		Limit: DefaultAPIListLimit, Offset: 0, OrderBy: "updated_at", OrderDesc: true,
 		Filter: &wallarm.HintFilter{Clientid: []int{1}, ID: []int{1000}},
 	}
 	_, err := cached.HintRead(body)
@@ -211,7 +211,7 @@ func TestHintCache_CacheMissFallsBackToAPI(t *testing.T) {
 
 	// Load cache with IDs 1000-1009
 	body := &wallarm.HintRead{
-		Limit: 1000, Offset: 0, OrderBy: "updated_at", OrderDesc: true,
+		Limit: DefaultAPIListLimit, Offset: 0, OrderBy: "updated_at", OrderDesc: true,
 		Filter: &wallarm.HintFilter{Clientid: []int{1}, ID: []int{1000}},
 	}
 	_, err := cached.HintRead(body)
@@ -238,7 +238,7 @@ func TestHintCache_NonCacheableQueryPassesThrough(t *testing.T) {
 
 	// Query with multiple IDs — should NOT use cache, pass through directly
 	body := &wallarm.HintRead{
-		Limit: 1000, Offset: 0, OrderBy: "updated_at", OrderDesc: true,
+		Limit: DefaultAPIListLimit, Offset: 0, OrderBy: "updated_at", OrderDesc: true,
 		Filter: &wallarm.HintFilter{
 			Clientid: []int{1},
 			ID:       []int{1000, 1001, 1002},
@@ -254,7 +254,7 @@ func TestHintCache_NonCacheableQueryPassesThrough(t *testing.T) {
 
 	// Query with type filter — should NOT use cache
 	body2 := &wallarm.HintRead{
-		Limit: 1000, Offset: 0, OrderBy: "updated_at", OrderDesc: true,
+		Limit: DefaultAPIListLimit, Offset: 0, OrderBy: "updated_at", OrderDesc: true,
 		Filter: &wallarm.HintFilter{
 			Clientid: []int{1},
 			ID:       []int{1000},
@@ -290,7 +290,7 @@ func TestHintCache_BulkLoadFailureFallsBack(t *testing.T) {
 	// The bulk load will fail, but the fallback direct API call should work
 	// (failOnCall=1 only fails the first call)
 	body := &wallarm.HintRead{
-		Limit: 1000, Offset: 0, OrderBy: "updated_at", OrderDesc: true,
+		Limit: DefaultAPIListLimit, Offset: 0, OrderBy: "updated_at", OrderDesc: true,
 		Filter: &wallarm.HintFilter{Clientid: []int{1}, ID: []int{1000}},
 	}
 	resp, err := cached.HintRead(body)
@@ -310,7 +310,7 @@ func TestHintCache_StatsTrackInvalidationCycle(t *testing.T) {
 	// Phase 1: Read 10 hints — triggers bulk load, 10 cache hits
 	for i := 0; i < 10; i++ {
 		body := &wallarm.HintRead{
-			Limit: 1000, Offset: 0, OrderBy: "updated_at", OrderDesc: true,
+			Limit: DefaultAPIListLimit, Offset: 0, OrderBy: "updated_at", OrderDesc: true,
 			Filter: &wallarm.HintFilter{Clientid: []int{1}, ID: []int{hints[i].ID}},
 		}
 		if _, err := cached.HintRead(body); err != nil {
@@ -342,7 +342,7 @@ func TestHintCache_StatsTrackInvalidationCycle(t *testing.T) {
 	// Phase 3: Read 5 more — triggers second bulk load, 5 more cache hits
 	for i := 0; i < 5; i++ {
 		body := &wallarm.HintRead{
-			Limit: 1000, Offset: 0, OrderBy: "updated_at", OrderDesc: true,
+			Limit: DefaultAPIListLimit, Offset: 0, OrderBy: "updated_at", OrderDesc: true,
 			Filter: &wallarm.HintFilter{Clientid: []int{1}, ID: []int{hints[i].ID}},
 		}
 		if _, err := cached.HintRead(body); err != nil {

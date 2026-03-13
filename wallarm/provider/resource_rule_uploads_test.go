@@ -30,6 +30,12 @@ func TestAccRuleUploadsCreate_Basic(t *testing.T) {
 					resource.TestCheckResourceAttr(name, "point.1.1", "query"),
 				),
 			},
+			{
+				ResourceName:            name,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"rule_type"},
+			},
 		},
 	})
 }
@@ -132,7 +138,7 @@ resource "wallarm_rule_uploads" "%[1]s" {
 }
 
 func testAccCheckWallarmRuleUploadsDestroy(s *terraform.State) error {
-	client := testAccProvider.Meta().(wallarm.API)
+	client := testAccProvider.Meta().(*ProviderMeta).Client
 
 	for _, rs := range s.RootModule().Resources {
 		if rs.Type != "wallarm_rule_uploads" {
@@ -149,7 +155,7 @@ func testAccCheckWallarmRuleUploadsDestroy(s *terraform.State) error {
 		}
 
 		hint := &wallarm.HintRead{
-			Limit:     1000,
+			Limit:     DefaultAPIListLimit,
 			Offset:    0,
 			OrderBy:   "updated_at",
 			OrderDesc: true,

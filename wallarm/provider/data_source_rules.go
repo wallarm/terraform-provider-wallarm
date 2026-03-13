@@ -1,12 +1,13 @@
 package wallarm
 
 import (
+	"context"
 	"fmt"
 	"log"
 
-	"github.com/wallarm/wallarm-go"
-
+	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/wallarm/wallarm-go"
 )
 
 // apiTypeToTerraformResource maps Wallarm API rule types to Terraform resource names.
@@ -48,7 +49,7 @@ var fourPartIDTypes = map[string]bool{
 
 func dataSourceWallarmRules() *schema.Resource {
 	return &schema.Resource{
-		Read: dataSourceWallarmRulesRead,
+		ReadContext: dataSourceWallarmRulesRead,
 
 		Schema: map[string]*schema.Schema{
 			"client_id": defaultClientIDWithValidationSchema,
@@ -101,9 +102,12 @@ func dataSourceWallarmRules() *schema.Resource {
 	}
 }
 
-func dataSourceWallarmRulesRead(d *schema.ResourceData, m interface{}) error {
-	client := m.(wallarm.API)
-	clientID := retrieveClientID(d)
+func dataSourceWallarmRulesRead(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+	client := apiClient(m)
+	clientID, err := retrieveClientID(d, m)
+	if err != nil {
+		return diag.FromErr(err)
+	}
 
 	// Build optional type filter set.
 	typeFilter := make(map[string]bool)
@@ -119,7 +123,7 @@ func dataSourceWallarmRulesRead(d *schema.ResourceData, m interface{}) error {
 	if cached, ok := client.(*CachedClient); ok {
 		rules, err := cached.AllRules(clientID)
 		if err != nil {
-			return fmt.Errorf("error reading rules from cache: %w", err)
+			return diag.FromErr(fmt.Errorf("error reading rules from cache: %w", err))
 		}
 		allRules = rules
 		log.Printf("[INFO] wallarm_rules data source: got %d rules from cache for client %d", len(allRules), clientID)
@@ -141,7 +145,7 @@ func dataSourceWallarmRulesRead(d *schema.ResourceData, m interface{}) error {
 				},
 			})
 			if err != nil {
-				return fmt.Errorf("error reading rules at offset %d: %w", offset, err)
+				return diag.FromErr(fmt.Errorf("error reading rules at offset %d: %w", offset, err))
 			}
 
 			if resp.Body == nil || len(*resp.Body) == 0 {
@@ -203,7 +207,7 @@ func dataSourceWallarmRulesRead(d *schema.ResourceData, m interface{}) error {
 
 	d.SetId(fmt.Sprintf("rules_%d", clientID))
 	if err := d.Set("rules", rules); err != nil {
-		return fmt.Errorf("error setting rules: %w", err)
+		return diag.FromErr(fmt.Errorf("error setting rules: %w", err))
 	}
 
 	return nil

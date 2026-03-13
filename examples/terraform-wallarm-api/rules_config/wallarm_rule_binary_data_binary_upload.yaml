@@ -1,0 +1,21 @@
+# Custom rule: binary_upload
+# Resource: wallarm_rule_binary_data
+# Editable: all fields below. Changes are preserved on subsequent applies.
+
+name: binary_upload
+resource_type: wallarm_rule_binary_data
+comment: "Managed by Terraform"
+point:
+  - ["post"]
+  - ["multipart_all"]
+  - ["file"]
+
+action:
+  - type: ""
+    value: ""
+    point:
+      instance: "1"
+  - type: "iequal"
+    value: "wallarm.net"
+    point:
+      header: "HOST"

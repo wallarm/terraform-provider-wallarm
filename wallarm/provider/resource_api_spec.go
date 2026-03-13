@@ -1,20 +1,25 @@
 package wallarm
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"strconv"
 
 	"github.com/wallarm/wallarm-go"
 
+	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 func resourceWallarmAPISpec() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceWallarmAPISpecCreate,
-		Read:   resourceWallarmAPISpecRead,
-		Delete: resourceWallarmAPISpecDelete,
+		CreateContext: resourceWallarmAPISpecCreate,
+		ReadContext:   resourceWallarmAPISpecRead,
+		DeleteContext: resourceWallarmAPISpecDelete,
+		Importer: &schema.ResourceImporter{
+			StateContext: schema.ImportStatePassthroughContext,
+		},
 
 		Schema: map[string]*schema.Schema{
 			"client_id": {
@@ -79,8 +84,8 @@ func resourceWallarmAPISpec() *schema.Resource {
 	}
 }
 
-func resourceWallarmAPISpecCreate(d *schema.ResourceData, m interface{}) error {
-	client := m.(wallarm.API)
+func resourceWallarmAPISpecCreate(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+	client := apiClient(m)
 
 	apiSpecBody := wallarm.ApiSpecCreate{
 		Title:             d.Get("title").(string),
@@ -95,17 +100,17 @@ func resourceWallarmAPISpecCreate(d *schema.ResourceData, m interface{}) error {
 
 	createRes, err := client.ApiSpecCreate(&apiSpecBody)
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 
 	d.Set("api_spec_id", createRes.Body.ID)
 	d.SetId(strconv.Itoa(createRes.Body.ID))
 
-	return resourceWallarmAPISpecRead(d, m)
+	return resourceWallarmAPISpecRead(context.TODO(), d, m)
 }
 
-func resourceWallarmAPISpecRead(d *schema.ResourceData, m interface{}) error {
-	client := m.(wallarm.API)
+func resourceWallarmAPISpecRead(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+	client := apiClient(m)
 	clientID := d.Get("client_id").(int)
 	apiSpecID := d.Get("api_spec_id").(int)
 
@@ -115,7 +120,7 @@ func resourceWallarmAPISpecRead(d *schema.ResourceData, m interface{}) error {
 			d.SetId("")
 			return nil
 		}
-		return err
+		return diag.FromErr(err)
 	}
 
 	d.Set("title", apiSpec.Title)
@@ -125,23 +130,23 @@ func resourceWallarmAPISpecRead(d *schema.ResourceData, m interface{}) error {
 	d.Set("api_detection", apiSpec.ApiDetection)
 	d.Set("client_id", apiSpec.ClientID)
 	if err := d.Set("instances", apiSpec.Instances); err != nil {
-		return fmt.Errorf("error setting instances: %w", err)
+		return diag.FromErr(fmt.Errorf("error setting instances: %w", err))
 	}
 	if err := d.Set("domains", apiSpec.Domains); err != nil {
-		return fmt.Errorf("error setting domains: %w", err)
+		return diag.FromErr(fmt.Errorf("error setting domains: %w", err))
 	}
 
 	return nil
 }
 
-func resourceWallarmAPISpecDelete(d *schema.ResourceData, m interface{}) error {
-	client := m.(wallarm.API)
+func resourceWallarmAPISpecDelete(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+	client := apiClient(m)
 	clientID := d.Get("client_id").(int)
 	apiSpecID := d.Get("api_spec_id").(int)
 
 	err := client.ApiSpecDelete(clientID, apiSpecID)
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 
 	d.SetId("")

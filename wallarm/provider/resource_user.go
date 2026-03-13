@@ -1,6 +1,7 @@
 package wallarm
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -9,16 +10,20 @@ import (
 
 	"github.com/wallarm/wallarm-go"
 
+	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
 func resourceWallarmUser() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceWallarmUserCreate,
-		Read:   resourceWallarmUserRead,
-		Update: resourceWallarmUserUpdate,
-		Delete: resourceWallarmUserDelete,
+		CreateContext: resourceWallarmUserCreate,
+		ReadContext:   resourceWallarmUserRead,
+		UpdateContext: resourceWallarmUserUpdate,
+		DeleteContext: resourceWallarmUserDelete,
+		Importer: &schema.ResourceImporter{
+			StateContext: schema.ImportStatePassthroughContext,
+		},
 
 		Schema: map[string]*schema.Schema{
 			"client_id": defaultClientIDWithValidationSchema,
@@ -79,9 +84,12 @@ func resourceWallarmUser() *schema.Resource {
 	}
 }
 
-func resourceWallarmUserCreate(d *schema.ResourceData, m interface{}) error {
-	client := m.(wallarm.API)
-	clientID := retrieveClientID(d)
+func resourceWallarmUserCreate(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+	client := apiClient(m)
+	clientID, err := retrieveClientID(d, m)
+	if err != nil {
+		return diag.FromErr(err)
+	}
 	email := d.Get("email").(string)
 	realname := d.Get("realname").(string)
 	permissions := d.Get("permissions").(string)
@@ -91,7 +99,11 @@ func resourceWallarmUserCreate(d *schema.ResourceData, m interface{}) error {
 	if v, ok := d.GetOk("password"); ok {
 		password = v.(string)
 	} else {
-		password = passwordGenerate(10)
+		generated, err := passwordGenerate(10)
+		if err != nil {
+			return diag.FromErr(fmt.Errorf("failed to generate password: %w", err))
+		}
+		password = generated
 		d.Set("generated_password", password)
 	}
 
@@ -109,9 +121,9 @@ func resourceWallarmUserCreate(d *schema.ResourceData, m interface{}) error {
 	if err != nil {
 		if errors.Is(err, wallarm.ErrExistingResource) {
 			existingID := fmt.Sprintf("%d/%s", clientID, email)
-			return ImportAsExistsError("wallarm_user", existingID)
+			return diag.FromErr(ImportAsExistsError("wallarm_user", existingID))
 		}
-		return err
+		return diag.FromErr(err)
 	}
 
 	userID := res.Body.ID
@@ -121,14 +133,17 @@ func resourceWallarmUserCreate(d *schema.ResourceData, m interface{}) error {
 	resID := fmt.Sprintf("%d/%d", clientID, userID)
 	d.SetId(resID)
 
-	return resourceWallarmUserRead(d, m)
+	return resourceWallarmUserRead(context.TODO(), d, m)
 }
-func resourceWallarmUserRead(d *schema.ResourceData, m interface{}) error {
-	client := m.(wallarm.API)
-	clientID := retrieveClientID(d)
+func resourceWallarmUserRead(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+	client := apiClient(m)
+	clientID, err := retrieveClientID(d, m)
+	if err != nil {
+		return diag.FromErr(err)
+	}
 	userID := d.Get("user_id").(int)
 	user := &wallarm.UserGet{
-		Limit:     1000,
+		Limit:     DefaultAPIListLimit,
 		OrderBy:   "realname",
 		OrderDesc: false,
 		Filter: &wallarm.UserFilter{
@@ -137,13 +152,13 @@ func resourceWallarmUserRead(d *schema.ResourceData, m interface{}) error {
 	}
 	res, err := client.UserRead(user)
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 
 	if len(res.Body) == 0 {
 		body, err := json.Marshal(res)
 		if err != nil {
-			return err
+			return diag.FromErr(err)
 		}
 		log.Printf("[WARN] User hasn't been found in API. Body: %s", body)
 
@@ -163,16 +178,16 @@ func resourceWallarmUserRead(d *schema.ResourceData, m interface{}) error {
 	return nil
 }
 
-func resourceWallarmUserUpdate(d *schema.ResourceData, m interface{}) error {
+func resourceWallarmUserUpdate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	if d.HasChange("email") || d.HasChange("password") {
-		if err := resourceWallarmUserDelete(d, m); err != nil {
-			return err
+		if diags := resourceWallarmUserDelete(ctx, d, m); diags != nil {
+			return diags
 		}
-		if err := resourceWallarmUserCreate(d, m); err != nil {
-			return err
+		if diags := resourceWallarmUserCreate(ctx, d, m); diags != nil {
+			return diags
 		}
 	} else {
-		client := m.(wallarm.API)
+		client := apiClient(m)
 		userID := d.Get("user_id").(int)
 
 		fields := &wallarm.UserFields{}
@@ -195,17 +210,20 @@ func resourceWallarmUserUpdate(d *schema.ResourceData, m interface{}) error {
 				UserFields: fields,
 			}
 			if err := client.UserUpdate(userBody); err != nil {
-				return err
+				return diag.FromErr(err)
 			}
 		}
 	}
 
-	return resourceWallarmUserRead(d, m)
+	return resourceWallarmUserRead(context.TODO(), d, m)
 }
 
-func resourceWallarmUserDelete(d *schema.ResourceData, m interface{}) error {
-	client := m.(wallarm.API)
-	clientID := retrieveClientID(d)
+func resourceWallarmUserDelete(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+	client := apiClient(m)
+	clientID, err := retrieveClientID(d, m)
+	if err != nil {
+		return diag.FromErr(err)
+	}
 	userID := d.Get("user_id").(int)
 	userBody := &wallarm.UserDelete{
 		Filter: &wallarm.UserFilter{
@@ -214,7 +232,7 @@ func resourceWallarmUserDelete(d *schema.ResourceData, m interface{}) error {
 		},
 	}
 	if err := client.UserDelete(userBody); err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 	return nil
 }

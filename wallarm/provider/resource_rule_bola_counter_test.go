@@ -31,6 +31,12 @@ func TestAccRuleBolaCounterCreate(t *testing.T) {
 					resource.TestMatchResourceAttr(name, "counter", regexp.MustCompile("^i:.+")),
 				),
 			},
+			{
+				ResourceName:            name,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"rule_type"},
+			},
 		},
 	})
 }
@@ -63,7 +69,7 @@ resource "wallarm_rule_bola_counter" "%[1]s" {
 }
 
 func testAccCheckWallarmRuleBolaCounterDestroy(s *terraform.State) error {
-	client := testAccProvider.Meta().(wallarm.API)
+	client := testAccProvider.Meta().(*ProviderMeta).Client
 
 	for _, rs := range s.RootModule().Resources {
 		if rs.Type != "bola_counter" {
@@ -80,7 +86,7 @@ func testAccCheckWallarmRuleBolaCounterDestroy(s *terraform.State) error {
 		}
 
 		hint := &wallarm.HintRead{
-			Limit:     1000,
+			Limit:     DefaultAPIListLimit,
 			Offset:    0,
 			OrderBy:   "updated_at",
 			OrderDesc: true,

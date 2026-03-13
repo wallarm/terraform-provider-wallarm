@@ -1,23 +1,36 @@
 package wallarm
 
 import (
+	"context"
 	"crypto/sha256"
 	"encoding/json"
 	"fmt"
+	"log"
 	"sort"
 	"strconv"
 	"strings"
 	"time"
 
+	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 	wallarm "github.com/wallarm/wallarm-go"
 )
 
-const maxPathDepth = 10
+const (
+	maxPathDepth      = 10
+	hitFetchBatchSize = 500
+)
+
+var defaultAllowedAttackTypes = []string{
+	"xss", "sqli", "rce", "xxe", "ptrav", "crlf", "redir",
+	"nosqli", "ldapi", "scanner", "mass_assignment", "ssrf",
+	"ssi", "mail_injection", "ssti",
+}
 
 func dataSourceWallarmHits() *schema.Resource {
 	return &schema.Resource{
-		Read: dataSourceWallarmHitsRead,
+		ReadContext: dataSourceWallarmHitsRead,
 
 		Schema: map[string]*schema.Schema{
 			"client_id": defaultClientIDWithValidationSchema,
@@ -26,6 +39,21 @@ func dataSourceWallarmHits() *schema.Resource {
 				Type:        schema.TypeString,
 				Required:    true,
 				Description: "The unique request identifier to fetch all related hits",
+			},
+
+			"mode": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Default:      "request",
+				ValidateFunc: validation.StringInSlice([]string{"request", "attack"}, false),
+				Description:  "Fetch mode: 'request' fetches hits for the request_id only; 'attack' expands to all related hits by attack_id",
+			},
+
+			"attack_types": {
+				Type:        schema.TypeList,
+				Optional:    true,
+				Description: "Allowed attack types for filtering in attack mode. Defaults to the standard FP-relevant types.",
+				Elem:        &schema.Schema{Type: schema.TypeString},
 			},
 
 			"time": {
@@ -144,25 +172,109 @@ func dataSourceWallarmHits() *schema.Resource {
 	}
 }
 
-func dataSourceWallarmHitsRead(d *schema.ResourceData, m interface{}) error {
-	client := m.(wallarm.API)
-	clientID := retrieveClientID(d)
+func dataSourceWallarmHitsRead(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+	client := apiClient(m)
+	clientID, err := retrieveClientID(d, m)
+	if err != nil {
+		return diag.FromErr(err)
+	}
 	requestID := d.Get("request_id").(string)
+	mode := d.Get("mode").(string)
 
-	var timeRange [][]interface{}
+	timeRange := buildTimeRange(d)
+
+	// Phase 1: Fetch direct hits by request_id.
+	directHits, err := fetchDirectHits(client, clientID, requestID, timeRange)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+
+	// Set stable resource ID.
+	resourceID := fmt.Sprintf("hits_%d_%s", clientID, requestID)
+	if mode == "attack" {
+		resourceID += "_attack"
+	}
+	d.SetId(resourceID)
+
+	if len(directHits) == 0 {
+		return setEmptyHitsState(d)
+	}
+
+	// Validate all direct hits share the same action.
+	refDomain := directHits[0].Domain
+	refPath := directHits[0].Path
+	refPoolID := directHits[0].PoolID
+	for _, h := range directHits[1:] {
+		if h.Domain != refDomain || h.Path != refPath || h.PoolID != refPoolID {
+			return diag.FromErr(fmt.Errorf(
+				"inconsistent hit data for request_id %s: expected domain=%s path=%s poolid=%d, got domain=%s path=%s poolid=%d",
+				requestID, refDomain, refPath, refPoolID, h.Domain, h.Path, h.PoolID,
+			))
+		}
+	}
+
+	// Phase 2 & 3: In attack mode, expand to related hits.
+	allHits := directHits
+	if mode == "attack" {
+		attackTypes := resolveAttackTypes(d)
+		relatedHits, err := fetchRelatedHitsByAttackIDs(client, clientID, directHits, attackTypes, timeRange, refDomain, refPath, refPoolID)
+		if err != nil {
+			return diag.FromErr(err)
+		}
+		allHits = mergeHits(directHits, relatedHits)
+	}
+
+	// Phase 4: Build action, hash, and set state.
+	action := buildActionFromHit(refDomain, refPath, refPoolID)
+	actionHash := computeActionHash(action)
+	actionSet := actionToSchemaSet(action)
+
+	hitsForSchema := hitsToSchemaList(allHits)
+
+	if err := d.Set("action", actionSet); err != nil {
+		return diag.FromErr(fmt.Errorf("error setting action: %s", err))
+	}
+	if err := d.Set("action_hash", actionHash); err != nil {
+		return diag.FromErr(fmt.Errorf("error setting action_hash: %s", err))
+	}
+	if err := d.Set("hits", hitsForSchema); err != nil {
+		return diag.FromErr(fmt.Errorf("error setting hits: %s", err))
+	}
+
+	return nil
+}
+
+// buildTimeRange extracts the time range from schema or defaults to 6 months.
+func buildTimeRange(d *schema.ResourceData) [][]interface{} {
 	if v, ok := d.GetOk("time"); ok {
 		tl := v.([]interface{})
 		if len(tl) == 2 {
-			timeRange = [][]interface{}{{tl[0], tl[1]}}
+			return [][]interface{}{{tl[0], tl[1]}}
 		}
 	}
-	if len(timeRange) == 0 {
-		sixMonthsAgo := time.Now().AddDate(0, -6, 0).Unix()
-		now := time.Now().Unix()
-		timeRange = [][]interface{}{{sixMonthsAgo, now}}
-	}
+	sixMonthsAgo := time.Now().AddDate(0, -6, 0).Unix()
+	now := time.Now().Unix()
+	return [][]interface{}{{sixMonthsAgo, now}}
+}
 
-	req := &wallarm.HitReadRequest{
+// resolveAttackTypes returns the attack types to filter by, using schema override or defaults.
+func resolveAttackTypes(d *schema.ResourceData) []string {
+	if v, ok := d.GetOk("attack_types"); ok {
+		items := v.([]interface{})
+		types := make([]string, 0, len(items))
+		for _, item := range items {
+			types = append(types, item.(string))
+		}
+		if len(types) > 0 {
+			return types
+		}
+	}
+	return defaultAllowedAttackTypes
+}
+
+// fetchDirectHits fetches hits by request_id with standard noise filters.
+func fetchDirectHits(client wallarm.API, clientID int, requestID string, timeRange [][]interface{}) ([]*wallarm.Hit, error) {
+	resp, err := client.HitRead(&wallarm.HitReadRequest{
 		Filter: &wallarm.HitFilter{
 			ClientID:        clientID,
 			RequestID:       requestID,
@@ -174,61 +286,164 @@ func dataSourceWallarmHitsRead(d *schema.ResourceData, m interface{}) error {
 			NotExperimental: true,
 			NotAasmEvent:    true,
 		},
-		Limit:     200,
+		Limit:     hitFetchBatchSize,
 		Offset:    0,
 		OrderBy:   "time",
 		OrderDesc: true,
-	}
-
-	resp, err := client.HitRead(req)
+	})
 	if err != nil {
-		return fmt.Errorf("error reading hits for request_id %s: %s", requestID, err)
+		return nil, fmt.Errorf("error reading hits for request_id %s: %w", requestID, err)
 	}
+	return resp, nil
+}
 
-	// Stable, deterministic ID — does not change between plans.
-	d.SetId(fmt.Sprintf("hits_%d_%s", clientID, requestID))
-
-	if len(resp) == 0 {
-		_ = d.Set("action", schema.NewSet(schema.HashResource(
-			defaultResourceRuleActionSchema.Elem.(*schema.Resource)), []interface{}{}))
-		_ = d.Set("action_hash", "")
-		_ = d.Set("hits", []interface{}{})
-		return nil
-	}
-
-	// Validate all hits share the same domain/path/poolid.
-	refDomain := resp[0].Domain
-	refPath := resp[0].Path
-	refPoolID := resp[0].PoolID
-	for _, h := range resp[1:] {
-		if h.Domain != refDomain || h.Path != refPath || h.PoolID != refPoolID {
-			return fmt.Errorf(
-				"inconsistent hit data for request_id %s: expected domain=%s path=%s poolid=%d, got domain=%s path=%s poolid=%d",
-				requestID, refDomain, refPath, refPoolID, h.Domain, h.Path, h.PoolID,
-			)
+// fetchRelatedHitsByAttackIDs collects attack_ids from direct hits, then fetches
+// all related hits in batches, filtering by allowed attack types and matching action.
+func fetchRelatedHitsByAttackIDs(
+	client wallarm.API,
+	clientID int,
+	directHits []*wallarm.Hit,
+	attackTypes []string,
+	timeRange [][]interface{},
+	refDomain, refPath string,
+	refPoolID int,
+) ([]*wallarm.Hit, error) {
+	// Collect unique attack IDs.
+	attackIDSet := make(map[string]bool)
+	for _, h := range directHits {
+		for _, aid := range h.AttackID {
+			if aid != "" {
+				attackIDSet[aid] = true
+			}
 		}
 	}
 
-	action := buildActionFromHit(refDomain, refPath, refPoolID)
-
-	sortedAction := make([]map[string]interface{}, len(action))
-	copy(sortedAction, action)
-	sort.Slice(sortedAction, func(i, j int) bool {
-		return fmt.Sprintf("%v", sortedAction[i]["point"]) < fmt.Sprintf("%v", sortedAction[j]["point"])
-	})
-	actionHash := hashAction(sortedAction)
-
-	actionIfaces := make([]interface{}, len(action))
-	for i, a := range action {
-		actionIfaces[i] = a
+	if len(attackIDSet) == 0 {
+		log.Printf("[DEBUG] No attack_ids found in direct hits, skipping related hits fetch")
+		return nil, nil
 	}
-	actionSet := schema.NewSet(
-		schema.HashResource(defaultResourceRuleActionSchema.Elem.(*schema.Resource)),
-		actionIfaces,
-	)
 
-	hits := make([]interface{}, 0, len(resp))
-	for _, h := range resp {
+	attackIDs := make([]string, 0, len(attackIDSet))
+	for aid := range attackIDSet {
+		attackIDs = append(attackIDs, aid)
+	}
+
+	log.Printf("[INFO] Fetching related hits for %d attack_ids: %v", len(attackIDs), attackIDs)
+
+	// Fetch in batches.
+	var allRelated []*wallarm.Hit
+	offset := 0
+	discarded := 0
+
+	for {
+		resp, err := client.HitRead(&wallarm.HitReadRequest{
+			Filter: &wallarm.HitFilter{
+				ClientID:          clientID,
+				AttackID:          attackIDs,
+				Type:              attackTypes,
+				State:             nil,
+				Time:              timeRange,
+				NotState:          "falsepositive",
+				SecurityIssueID:   nil,
+				NotExperimental:   true,
+				NotAasmEvent:      true,
+				NotWallarmScanner: true,
+			},
+			Limit:     hitFetchBatchSize,
+			Offset:    offset,
+			OrderBy:   "time",
+			OrderDesc: true,
+		})
+		if err != nil {
+			return nil, fmt.Errorf("error fetching related hits at offset %d: %w", offset, err)
+		}
+
+		if len(resp) == 0 {
+			break
+		}
+
+		// Filter by matching action (domain + path + poolid).
+		for _, h := range resp {
+			if h.Domain == refDomain && h.Path == refPath && h.PoolID == refPoolID {
+				allRelated = append(allRelated, h)
+			} else {
+				discarded++
+				log.Printf("[DEBUG] Discarding related hit %v: action mismatch (domain=%s path=%s poolid=%d)",
+					h.ID, h.Domain, h.Path, h.PoolID)
+			}
+		}
+
+		if len(resp) < hitFetchBatchSize {
+			break
+		}
+		offset += hitFetchBatchSize
+	}
+
+	log.Printf("[INFO] Fetched %d related hits (%d discarded for action mismatch)", len(allRelated), discarded)
+	return allRelated, nil
+}
+
+// mergeHits combines direct and related hits, deduplicating by hit ID.
+func mergeHits(direct, related []*wallarm.Hit) []*wallarm.Hit {
+	seen := make(map[string]bool, len(direct))
+	for _, h := range direct {
+		seen[hitKey(h)] = true
+	}
+
+	merged := make([]*wallarm.Hit, len(direct), len(direct)+len(related))
+	copy(merged, direct)
+
+	for _, h := range related {
+		key := hitKey(h)
+		if !seen[key] {
+			seen[key] = true
+			merged = append(merged, h)
+		}
+	}
+
+	return merged
+}
+
+// hitKey returns a string key for deduplication based on hit ID components.
+func hitKey(h *wallarm.Hit) string {
+	return strings.Join(h.ID, "/")
+}
+
+// setEmptyHitsState sets empty values for all computed fields.
+func setEmptyHitsState(d *schema.ResourceData) diag.Diagnostics {
+	_ = d.Set("action", schema.NewSet(schema.HashResource(
+		defaultResourceRuleActionSchema.Elem.(*schema.Resource)), []interface{}{}))
+	_ = d.Set("action_hash", "")
+	_ = d.Set("hits", []interface{}{})
+	return nil
+}
+
+// computeActionHash produces a deterministic SHA256 hex string from action conditions.
+func computeActionHash(action []map[string]interface{}) string {
+	sorted := make([]map[string]interface{}, len(action))
+	copy(sorted, action)
+	sort.Slice(sorted, func(i, j int) bool {
+		return fmt.Sprintf("%v", sorted[i]["point"]) < fmt.Sprintf("%v", sorted[j]["point"])
+	})
+	return hashAction(sorted)
+}
+
+// actionToSchemaSet converts action conditions to a schema.Set.
+func actionToSchemaSet(action []map[string]interface{}) *schema.Set {
+	ifaces := make([]interface{}, len(action))
+	for i, a := range action {
+		ifaces[i] = a
+	}
+	return schema.NewSet(
+		schema.HashResource(defaultResourceRuleActionSchema.Elem.(*schema.Resource)),
+		ifaces,
+	)
+}
+
+// hitsToSchemaList converts wallarm.Hit objects to the schema list format.
+func hitsToSchemaList(hits []*wallarm.Hit) []interface{} {
+	result := make([]interface{}, 0, len(hits))
+	for _, h := range hits {
 		pointStrings := make([]interface{}, 0, len(h.Point))
 		for _, p := range h.Point {
 			pointStrings = append(pointStrings, fmt.Sprintf("%v", p))
@@ -244,7 +459,7 @@ func dataSourceWallarmHitsRead(d *schema.ResourceData, m interface{}) error {
 			wrappedForSchema = append(wrappedForSchema, inner)
 		}
 
-		hits = append(hits, map[string]interface{}{
+		result = append(result, map[string]interface{}{
 			"id":            h.ID,
 			"type":          h.Type,
 			"ip":            h.IP,
@@ -266,18 +481,7 @@ func dataSourceWallarmHitsRead(d *schema.ResourceData, m interface{}) error {
 			"node_uuid":     h.NodeUUID,
 		})
 	}
-
-	if err := d.Set("action", actionSet); err != nil {
-		return fmt.Errorf("error setting action: %s", err)
-	}
-	if err := d.Set("action_hash", actionHash); err != nil {
-		return fmt.Errorf("error setting action_hash: %s", err)
-	}
-	if err := d.Set("hits", hits); err != nil {
-		return fmt.Errorf("error setting hits: %s", err)
-	}
-
-	return nil
+	return result
 }
 
 // buildActionFromHit converts hit domain, path and poolid into Wallarm rule

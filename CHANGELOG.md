@@ -1,3 +1,18 @@
+# v2.1.0 (Mar 17, 2026)
+
+## NOTES:
+
+* Completed migration to Terraform Plugin SDKv2
+* Added IP Lists Auto Import
+* Improved logging system
+* Implemented APIError type
+* Added errors handling for 5xx and some 4xx responses
+* Added 'attack' mode to fetch hits by data source
+* Fixed bugs
+* Updated tests
+* Updated documentation
+* Added a module for interaction with Wallarm API: `./examples/terraform-wallarm-api`
+
 # v2.0.0 (Mar 12, 2026)
 
 ## NOTES:

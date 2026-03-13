@@ -1,6 +1,7 @@
 package wallarm
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"strconv"
@@ -8,17 +9,18 @@ import (
 
 	"github.com/wallarm/wallarm-go"
 
+	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 func resourceWallarmApp() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceWallarmAppCreate,
-		Read:   resourceWallarmAppRead,
-		Update: resourceWallarmAppUpdate,
-		Delete: resourceWallarmAppDelete,
+		CreateContext: resourceWallarmAppCreate,
+		ReadContext:   resourceWallarmAppRead,
+		UpdateContext: resourceWallarmAppUpdate,
+		DeleteContext: resourceWallarmAppDelete,
 		Importer: &schema.ResourceImporter{
-			State: resourceWallarmAppImport,
+			StateContext: resourceWallarmAppImport,
 		},
 
 		Schema: map[string]*schema.Schema{
@@ -43,9 +45,12 @@ func resourceWallarmApp() *schema.Resource {
 	}
 }
 
-func resourceWallarmAppCreate(d *schema.ResourceData, m interface{}) error {
-	client := m.(wallarm.API)
-	clientID := retrieveClientID(d)
+func resourceWallarmAppCreate(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+	client := apiClient(m)
+	clientID, err := retrieveClientID(d, m)
+	if err != nil {
+		return diag.FromErr(err)
+	}
 	name := d.Get("name").(string)
 	appID := d.Get("app_id").(int)
 
@@ -58,9 +63,9 @@ func resourceWallarmAppCreate(d *schema.ResourceData, m interface{}) error {
 	if err := client.AppCreate(appBody); err != nil {
 		if errors.Is(err, wallarm.ErrExistingResource) {
 			existingID := fmt.Sprintf("%d/%d", clientID, appID)
-			return ImportAsExistsError("wallarm_application", existingID)
+			return diag.FromErr(ImportAsExistsError("wallarm_application", existingID))
 		}
-		return err
+		return diag.FromErr(err)
 	}
 
 	d.Set("app_id", appID)
@@ -68,16 +73,19 @@ func resourceWallarmAppCreate(d *schema.ResourceData, m interface{}) error {
 	resID := fmt.Sprintf("%d/%d", clientID, appID)
 	d.SetId(resID)
 
-	return resourceWallarmAppRead(d, m)
+	return resourceWallarmAppRead(context.TODO(), d, m)
 }
 
-func resourceWallarmAppRead(d *schema.ResourceData, m interface{}) error {
-	client := m.(wallarm.API)
-	clientID := retrieveClientID(d)
+func resourceWallarmAppRead(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+	client := apiClient(m)
+	clientID, err := retrieveClientID(d, m)
+	if err != nil {
+		return diag.FromErr(err)
+	}
 	appID := d.Get("app_id").(int)
 
 	appRead := &wallarm.AppRead{
-		Limit:  1000,
+		Limit:  DefaultAPIListLimit,
 		Offset: 0,
 		Filter: &wallarm.AppReadFilter{
 			Clientid: []int{clientID},
@@ -85,7 +93,7 @@ func resourceWallarmAppRead(d *schema.ResourceData, m interface{}) error {
 	}
 	appResp, err := client.AppRead(appRead)
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 	for _, app := range appResp.Body {
 		if app.ID != nil && *app.ID == appID {
@@ -99,9 +107,12 @@ func resourceWallarmAppRead(d *schema.ResourceData, m interface{}) error {
 	return nil
 }
 
-func resourceWallarmAppUpdate(d *schema.ResourceData, m interface{}) error {
-	client := m.(wallarm.API)
-	clientID := retrieveClientID(d)
+func resourceWallarmAppUpdate(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+	client := apiClient(m)
+	clientID, err := retrieveClientID(d, m)
+	if err != nil {
+		return diag.FromErr(err)
+	}
 	appID := d.Get("app_id").(int)
 	name := d.Get("name").(string)
 
@@ -117,17 +128,25 @@ func resourceWallarmAppUpdate(d *schema.ResourceData, m interface{}) error {
 		}
 
 		if err := client.AppUpdate(appBody); err != nil {
-			return err
+			return diag.FromErr(err)
 		}
 	}
 
-	return resourceWallarmAppRead(d, m)
+	return resourceWallarmAppRead(context.TODO(), d, m)
 }
 
-func resourceWallarmAppDelete(d *schema.ResourceData, m interface{}) error {
-	client := m.(wallarm.API)
-	clientID := retrieveClientID(d)
+func resourceWallarmAppDelete(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+	client := apiClient(m)
+	clientID, err := retrieveClientID(d, m)
+	if err != nil {
+		return diag.FromErr(err)
+	}
 	appID := d.Get("app_id").(int)
+
+	// The default application (ID -1) cannot be deleted.
+	if appID == -1 {
+		return nil
+	}
 
 	appBody := &wallarm.AppDelete{
 		Filter: &wallarm.AppFilter{
@@ -137,13 +156,13 @@ func resourceWallarmAppDelete(d *schema.ResourceData, m interface{}) error {
 	}
 
 	if err := client.AppDelete(appBody); err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 
 	return nil
 }
 
-func resourceWallarmAppImport(d *schema.ResourceData, m interface{}) ([]*schema.ResourceData, error) {
+func resourceWallarmAppImport(_ context.Context, d *schema.ResourceData, m interface{}) ([]*schema.ResourceData, error) {
 	idAttr := strings.SplitN(d.Id(), "/", 2)
 	if len(idAttr) != 2 {
 		return nil, fmt.Errorf("invalid id (%q) specified, should be in format \"{clientID}/{appID}\"", d.Id())
@@ -162,8 +181,8 @@ func resourceWallarmAppImport(d *schema.ResourceData, m interface{}) ([]*schema.
 	d.Set("app_id", appID)
 	d.SetId(fmt.Sprintf("%d/%d", clientID, appID))
 
-	if err := resourceWallarmAppRead(d, m); err != nil {
-		return nil, err
+	if diags := resourceWallarmAppRead(context.TODO(), d, m); diags.HasError() {
+		return nil, fmt.Errorf("%s", diags[0].Summary)
 	}
 
 	return []*schema.ResourceData{d}, nil

@@ -49,6 +49,12 @@ resource "wallarm_rule_rate_limit_enum" "wallarm_rule_rate_limit_enum_regexp" {
 					resource.TestCheckResourceAttr("wallarm_rule_rate_limit_enum.wallarm_rule_rate_limit_enum_regexp", "action.#", "1"),
 				),
 			},
+			{
+				ResourceName:            "wallarm_rule_rate_limit_enum.wallarm_rule_rate_limit_enum_regexp",
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"rule_type"},
+			},
 		},
 	})
 }
@@ -149,7 +155,7 @@ resource "wallarm_rule_rate_limit_enum" "wallarm_rule_rate_limit_enum_arbitrary_
 }
 
 func testAccCheckWallarmRuleRateLimitEnumDestroy(s *terraform.State) error {
-	client := testAccProvider.Meta().(wallarm.API)
+	client := testAccProvider.Meta().(*ProviderMeta).Client
 
 	for _, rs := range s.RootModule().Resources {
 		if rs.Type != "wallarm_rule_rate_limit_enum" {
@@ -166,7 +172,7 @@ func testAccCheckWallarmRuleRateLimitEnumDestroy(s *terraform.State) error {
 		}
 
 		hint := &wallarm.HintRead{
-			Limit:     1000,
+			Limit:     DefaultAPIListLimit,
 			Offset:    0,
 			OrderBy:   "updated_at",
 			OrderDesc: true,

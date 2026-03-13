@@ -8,17 +8,16 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
-	"github.com/wallarm/wallarm-go"
 )
 
 func testAccPreCheckAPISpec(t *testing.T) {
 	testAccPreCheck(t)
-	v := os.Getenv("WALLARM_CLIENT_ID")
+	v := os.Getenv("WALLARM_API_CLIENT_ID")
 	if v == "" {
-		t.Skip("WALLARM_CLIENT_ID must be set for wallarm_api_spec acceptance tests")
+		t.Skip("WALLARM_API_CLIENT_ID must be set for wallarm_api_spec acceptance tests")
 	}
 	if _, err := strconv.Atoi(v); err != nil {
-		t.Fatalf("WALLARM_CLIENT_ID must be an integer, got %q", v)
+		t.Fatalf("WALLARM_API_CLIENT_ID must be an integer, got %q", v)
 	}
 }
 
@@ -36,7 +35,7 @@ func TestAccWallarmAPISpec_basic(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "title", "tf-test-"+rnd),
 					resource.TestCheckResourceAttr(resourceName, "description", "Created by Terraform acceptance test"),
-					resource.TestCheckResourceAttr(resourceName, "file_remote_url", "https://raw.githubusercontent.com/OAI/OpenAPI-Specification/main/examples/v3.0/petstore.yaml"),
+					resource.TestCheckResourceAttr(resourceName, "file_remote_url", "https://raw.githubusercontent.com/concentrator/petstore/refs/heads/main/spec.yaml"),
 					resource.TestCheckResourceAttr(resourceName, "domains.#", "1"),
 					resource.TestCheckResourceAttr(resourceName, "domains.0", "petstore-tf-test.example.com"),
 					resource.TestCheckResourceAttr(resourceName, "instances.#", "1"),
@@ -53,16 +52,16 @@ resource "wallarm_api_spec" "%[1]s" {
   client_id           = %[2]s
   title               = "tf-test-%[1]s"
   description         = "Created by Terraform acceptance test"
-  file_remote_url     = "https://raw.githubusercontent.com/OAI/OpenAPI-Specification/main/examples/v3.0/petstore.yaml"
+  file_remote_url     = "https://raw.githubusercontent.com/concentrator/petstore/refs/heads/main/spec.yaml"
   regular_file_update = false
   api_detection       = false
   domains             = ["petstore-tf-test.example.com"]
   instances           = [1]
-}`, resourceID, os.Getenv("WALLARM_CLIENT_ID"))
+}`, resourceID, os.Getenv("WALLARM_API_CLIENT_ID"))
 }
 
 func testAccCheckWallarmAPISpecDestroy(s *terraform.State) error {
-	client := testAccProvider.Meta().(wallarm.API)
+	client := testAccProvider.Meta().(*ProviderMeta).Client
 
 	for _, rs := range s.RootModule().Resources {
 		if rs.Type != "wallarm_api_spec" {

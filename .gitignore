@@ -1,5 +1,7 @@
 .DS_Store
+CLAUDE.md
 build.sh
+acc_test.env
 .claude/
 .vscode/
 .idea/

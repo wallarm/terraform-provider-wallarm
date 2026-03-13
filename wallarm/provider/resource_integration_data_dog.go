@@ -1,21 +1,27 @@
 package wallarm
 
 import (
+	"context"
 	"fmt"
-	"strings"
 
 	"github.com/wallarm/wallarm-go"
 
+	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
 func resourceWallarmDataDog() *schema.Resource {
 	return &schema.Resource{
-		Create:        resourceWallarmDataDogCreate,
-		Read:          resourceWallarmDataDogRead,
-		Update:        resourceWallarmDataDogUpdate,
-		Delete:        resourceWallarmDataDogDelete,
+		CreateContext: resourceWallarmDataDogCreate,
+		ReadContext:   resourceWallarmDataDogRead,
+		UpdateContext: resourceWallarmDataDogUpdate,
+		DeleteContext: resourceWallarmDataDogDelete,
+
+		Importer: &schema.ResourceImporter{
+			StateContext: schema.ImportStatePassthroughContext,
+		},
+
 		CustomizeDiff: validateWithHeadersOnlySiem(),
 
 		Schema: map[string]*schema.Schema{
@@ -103,9 +109,12 @@ func resourceWallarmDataDog() *schema.Resource {
 	}
 }
 
-func resourceWallarmDataDogCreate(d *schema.ResourceData, m interface{}) error {
-	client := m.(wallarm.API)
-	clientID := retrieveClientID(d)
+func resourceWallarmDataDogCreate(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+	client := apiClient(m)
+	clientID, err := retrieveClientID(d, m)
+	if err != nil {
+		return diag.FromErr(err)
+	}
 	name := d.Get("name").(string)
 	token := d.Get("token").(string)
 	region := d.Get("region").(string)
@@ -126,7 +135,7 @@ func resourceWallarmDataDogCreate(d *schema.ResourceData, m interface{}) error {
 
 	createRes, err := client.IntegrationCreate(&ddBody)
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 
 	d.Set("integration_id", createRes.Body.ID)
@@ -134,19 +143,22 @@ func resourceWallarmDataDogCreate(d *schema.ResourceData, m interface{}) error {
 	resID := fmt.Sprintf("%d/%s/%d", clientID, createRes.Body.Type, createRes.Body.ID)
 	d.SetId(resID)
 
-	return resourceWallarmDataDogRead(d, m)
+	return resourceWallarmDataDogRead(context.TODO(), d, m)
 }
 
-func resourceWallarmDataDogRead(d *schema.ResourceData, m interface{}) error {
-	client := m.(wallarm.API)
-	clientID := retrieveClientID(d)
+func resourceWallarmDataDogRead(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+	client := apiClient(m)
+	clientID, err := retrieveClientID(d, m)
+	if err != nil {
+		return diag.FromErr(err)
+	}
 	dd, err := client.IntegrationRead(clientID, d.Get("integration_id").(int))
 	if err != nil {
-		if strings.HasPrefix(err.Error(), "Not found.") {
+		if isNotFoundError(err) {
 			d.SetId("")
 			return nil
 		}
-		return err
+		return diag.FromErr(err)
 	}
 
 	d.Set("integration_id", dd.ID)
@@ -159,17 +171,20 @@ func resourceWallarmDataDogRead(d *schema.ResourceData, m interface{}) error {
 	return nil
 }
 
-func resourceWallarmDataDogUpdate(d *schema.ResourceData, m interface{}) error {
-	client := m.(wallarm.API)
-	clientID := retrieveClientID(d)
+func resourceWallarmDataDogUpdate(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+	client := apiClient(m)
+	clientID, err := retrieveClientID(d, m)
+	if err != nil {
+		return diag.FromErr(err)
+	}
 
 	dd, err := client.IntegrationRead(clientID, d.Get("integration_id").(int))
 	if err != nil {
-		if strings.HasPrefix(err.Error(), "Not found.") {
+		if isNotFoundError(err) {
 			d.SetId("")
 			return nil
 		}
-		return err
+		return diag.FromErr(err)
 	}
 
 	if d.HasChange("event") {
@@ -186,7 +201,7 @@ func resourceWallarmDataDogUpdate(d *schema.ResourceData, m interface{}) error {
 		}
 		updateRes, err := client.IntegrationUpdate(&fullBody, dd.ID)
 		if err != nil {
-			return err
+			return diag.FromErr(err)
 		}
 		d.Set("integration_id", updateRes.Body.ID)
 		resID := fmt.Sprintf("%d/%s/%d", clientID, updateRes.Body.Type, updateRes.Body.ID)
@@ -208,7 +223,7 @@ func resourceWallarmDataDogUpdate(d *schema.ResourceData, m interface{}) error {
 		if len(updateBody) > 0 {
 			updateRes, err := client.IntegrationPartialUpdate(dd.ID, updateBody)
 			if err != nil {
-				return err
+				return diag.FromErr(err)
 			}
 			d.Set("integration_id", updateRes.Body.ID)
 			resID := fmt.Sprintf("%d/%s/%d", clientID, updateRes.Body.Type, updateRes.Body.ID)
@@ -216,14 +231,14 @@ func resourceWallarmDataDogUpdate(d *schema.ResourceData, m interface{}) error {
 		}
 	}
 
-	return resourceWallarmDataDogRead(d, m)
+	return resourceWallarmDataDogRead(context.TODO(), d, m)
 }
 
-func resourceWallarmDataDogDelete(d *schema.ResourceData, m interface{}) error {
-	client := m.(wallarm.API)
+func resourceWallarmDataDogDelete(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+	client := apiClient(m)
 	integrationID := d.Get("integration_id").(int)
 	if err := client.IntegrationDelete(integrationID); err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 
 	return nil

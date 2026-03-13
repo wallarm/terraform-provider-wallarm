@@ -32,6 +32,12 @@ func TestAccRuleWmodeCreate_Basic(t *testing.T) {
 					resource.TestCheckResourceAttr(name, "action.#", "1"),
 				),
 			},
+			{
+				ResourceName:            name,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"rule_type"},
+			},
 		},
 	})
 }
@@ -198,7 +204,7 @@ resource "wallarm_rule_mode" "%[7]s" {
 }
 
 func testAccCheckWallarmRuleWmodeDestroy(s *terraform.State) error {
-	client := testAccProvider.Meta().(wallarm.API)
+	client := testAccProvider.Meta().(*ProviderMeta).Client
 
 	for _, rs := range s.RootModule().Resources {
 		if rs.Type != "wallarm_rule_mode" {
@@ -215,7 +221,7 @@ func testAccCheckWallarmRuleWmodeDestroy(s *terraform.State) error {
 		}
 
 		hint := &wallarm.HintRead{
-			Limit:     1000,
+			Limit:     DefaultAPIListLimit,
 			Offset:    0,
 			OrderBy:   "updated_at",
 			OrderDesc: true,

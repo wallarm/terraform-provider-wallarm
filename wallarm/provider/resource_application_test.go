@@ -27,6 +27,11 @@ func TestAccApp(t *testing.T) {
 					resource.TestCheckResourceAttr(name, "app_id", rndID),
 				),
 			},
+			{
+				ResourceName:      name,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
 		},
 	})
 }
@@ -110,7 +115,7 @@ func testAccCheckWallarmAppResourceExists(n string) resource.TestCheckFunc {
 		}
 
 		// retrieve the configured client from the test setup
-		conn := testAccProvider.Meta().(wallarm.API)
+		conn := testAccProvider.Meta().(*ProviderMeta).Client
 		name := rs.Primary.Attributes["name"]
 		clientID, err := strconv.Atoi(rs.Primary.Attributes["client_id"])
 		if err != nil {
@@ -121,7 +126,7 @@ func testAccCheckWallarmAppResourceExists(n string) resource.TestCheckFunc {
 			return err
 		}
 		appRead := &wallarm.AppRead{
-			Limit:  1000,
+			Limit:  DefaultAPIListLimit,
 			Offset: 0,
 			Filter: &wallarm.AppReadFilter{
 				Clientid: []int{clientID},

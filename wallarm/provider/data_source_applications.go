@@ -1,16 +1,17 @@
 package wallarm
 
 import (
+	"context"
 	"fmt"
 
-	"github.com/wallarm/wallarm-go"
-
+	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/wallarm/wallarm-go"
 )
 
 func dataSourceWallarmApplications() *schema.Resource {
 	return &schema.Resource{
-		Read: dataSourceWallarmApplicationsRead,
+		ReadContext: dataSourceWallarmApplicationsRead,
 
 		Schema: map[string]*schema.Schema{
 			"client_id": defaultClientIDWithValidationSchema,
@@ -39,12 +40,15 @@ func dataSourceWallarmApplications() *schema.Resource {
 	}
 }
 
-func dataSourceWallarmApplicationsRead(d *schema.ResourceData, m interface{}) error {
-	client := m.(wallarm.API)
-	clientID := retrieveClientID(d)
+func dataSourceWallarmApplicationsRead(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+	client := apiClient(m)
+	clientID, err := retrieveClientID(d, m)
+	if err != nil {
+		return diag.FromErr(err)
+	}
 
 	appRead := &wallarm.AppRead{
-		Limit:  1000,
+		Limit:  DefaultAPIListLimit,
 		Offset: 0,
 		Filter: &wallarm.AppReadFilter{
 			Clientid: []int{clientID},
@@ -53,7 +57,7 @@ func dataSourceWallarmApplicationsRead(d *schema.ResourceData, m interface{}) er
 
 	appResp, err := client.AppRead(appRead)
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 
 	apps := make([]interface{}, 0)
@@ -70,7 +74,7 @@ func dataSourceWallarmApplicationsRead(d *schema.ResourceData, m interface{}) er
 
 	d.SetId(fmt.Sprintf("applications_%d", clientID))
 	if err := d.Set("applications", apps); err != nil {
-		return fmt.Errorf("error setting applications: %w", err)
+		return diag.FromErr(fmt.Errorf("error setting applications: %w", err))
 	}
 
 	return nil

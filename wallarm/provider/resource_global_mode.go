@@ -1,22 +1,24 @@
 package wallarm
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"strings"
 
 	"github.com/wallarm/wallarm-go"
 
+	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
 func resourceWallarmGlobalMode() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceWallarmGlobalModeCreate,
-		Read:   resourceWallarmGlobalModeRead,
-		Update: resourceWallarmGlobalModeUpdate,
-		Delete: resourceWallarmGlobalModeDelete,
+		CreateContext: resourceWallarmGlobalModeCreate,
+		ReadContext:   resourceWallarmGlobalModeRead,
+		UpdateContext: resourceWallarmGlobalModeUpdate,
+		DeleteContext: resourceWallarmGlobalModeDelete,
 
 		Importer: &schema.ResourceImporter{
 			StateContext: schema.ImportStatePassthroughContext,
@@ -60,14 +62,17 @@ func resourceWallarmGlobalMode() *schema.Resource {
 	}
 }
 
-func resourceWallarmGlobalModeCreate(d *schema.ResourceData, m interface{}) error {
-	client := m.(wallarm.API)
-	clientID := retrieveClientID(d)
+func resourceWallarmGlobalModeCreate(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+	client := apiClient(m)
+	clientID, err := retrieveClientID(d, m)
+	if err != nil {
+		return diag.FromErr(err)
+	}
 
 	// Update wallarm_mode
 	filtrationMode := d.Get("filtration_mode").(string)
 	if _, err := client.WallarmModeUpdate(&wallarm.WallarmModeParams{Mode: filtrationMode}, clientID); err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 
 	// Update rechecker_mode
@@ -81,26 +86,29 @@ func resourceWallarmGlobalModeCreate(d *schema.ResourceData, m interface{}) erro
 		},
 	}
 	if _, err := client.ClientUpdate(mode); err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 
 	// Update overlimit_res_settings
 	if err := updateOverlimitResSettings(d, client, clientID); err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 
 	d.SetId(fmt.Sprintf("%d/global_mode", clientID))
 	d.Set("client_id", clientID)
 
-	return resourceWallarmGlobalModeRead(d, m)
+	return resourceWallarmGlobalModeRead(context.TODO(), d, m)
 }
 
-func resourceWallarmGlobalModeRead(d *schema.ResourceData, m interface{}) error {
-	client := m.(wallarm.API)
+func resourceWallarmGlobalModeRead(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+	client := apiClient(m)
 
 	// Parse client_id from composite ID on import.
 	// ID format: "{clientID}/global_mode"
-	clientID := retrieveClientID(d)
+	clientID, err := retrieveClientID(d, m)
+	if err != nil {
+		return diag.FromErr(err)
+	}
 	if id := d.Id(); strings.Contains(id, "/") {
 		parts := strings.SplitN(id, "/", 2)
 		if len(parts) == 2 {
@@ -114,7 +122,7 @@ func resourceWallarmGlobalModeRead(d *schema.ResourceData, m interface{}) error 
 	// Read wallarm_mode
 	wallarmModeResp, err := client.WallarmModeRead(clientID)
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 	d.Set("filtration_mode", wallarmModeResp.Body.Mode)
 
@@ -126,12 +134,12 @@ func resourceWallarmGlobalModeRead(d *schema.ResourceData, m interface{}) error 
 				ID: clientID,
 			},
 		},
-		Limit:  1000,
+		Limit:  DefaultAPIListLimit,
 		Offset: 0,
 	}
 	otherModesResp, err := client.ClientRead(clientInfo)
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 	if len(otherModesResp.Body) == 0 {
 		log.Printf("[WARN] Client %d not found in API, removing from state", clientID)
@@ -143,7 +151,7 @@ func resourceWallarmGlobalModeRead(d *schema.ResourceData, m interface{}) error 
 	// Read overlimit_res_settings
 	overlimitResp, err := client.OverlimitResSettingsRead(clientID)
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 	d.Set("overlimit_time", overlimitResp.Body.OverlimitTime)
 	d.Set("overlimit_mode", overlimitResp.Body.Mode)
@@ -153,14 +161,17 @@ func resourceWallarmGlobalModeRead(d *schema.ResourceData, m interface{}) error 
 	return nil
 }
 
-func resourceWallarmGlobalModeUpdate(d *schema.ResourceData, m interface{}) error {
-	client := m.(wallarm.API)
-	clientID := retrieveClientID(d)
+func resourceWallarmGlobalModeUpdate(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+	client := apiClient(m)
+	clientID, err := retrieveClientID(d, m)
+	if err != nil {
+		return diag.FromErr(err)
+	}
 
 	if d.HasChange("filtration_mode") {
 		filtrationMode := d.Get("filtration_mode").(string)
 		if _, err := client.WallarmModeUpdate(&wallarm.WallarmModeParams{Mode: filtrationMode}, clientID); err != nil {
-			return err
+			return diag.FromErr(err)
 		}
 	}
 
@@ -175,20 +186,20 @@ func resourceWallarmGlobalModeUpdate(d *schema.ResourceData, m interface{}) erro
 			},
 		}
 		if _, err := client.ClientUpdate(mode); err != nil {
-			return err
+			return diag.FromErr(err)
 		}
 	}
 
 	if d.HasChange("overlimit_time") || d.HasChange("overlimit_mode") {
 		if err := updateOverlimitResSettings(d, client, clientID); err != nil {
-			return err
+			return diag.FromErr(err)
 		}
 	}
 
-	return resourceWallarmGlobalModeRead(d, m)
+	return resourceWallarmGlobalModeRead(context.TODO(), d, m)
 }
 
-func resourceWallarmGlobalModeDelete(_ *schema.ResourceData, _ interface{}) error {
+func resourceWallarmGlobalModeDelete(_ context.Context, _ *schema.ResourceData, _ interface{}) diag.Diagnostics {
 	// Global settings are a singleton — cannot be deleted, only modified.
 	return nil
 }

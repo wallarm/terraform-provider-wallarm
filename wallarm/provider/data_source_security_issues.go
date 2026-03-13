@@ -1,17 +1,18 @@
 package wallarm
 
 import (
+	"context"
 	"fmt"
 
-	"github.com/wallarm/wallarm-go"
-
+	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
+	"github.com/wallarm/wallarm-go"
 )
 
 func dataSourceWallarmSecurityIssues() *schema.Resource {
 	return &schema.Resource{
-		Read: dataSourceWallarmSecurityIssuesRead,
+		ReadContext: dataSourceWallarmSecurityIssuesRead,
 
 		Schema: map[string]*schema.Schema{
 			"client_id": defaultClientIDWithValidationSchema,
@@ -199,11 +200,15 @@ func dataSourceWallarmSecurityIssues() *schema.Resource {
 	}
 }
 
-func dataSourceWallarmSecurityIssuesRead(d *schema.ResourceData, m interface{}) error {
-	client := m.(wallarm.API)
+func dataSourceWallarmSecurityIssuesRead(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+	client := apiClient(m)
+	clientID, err := retrieveClientID(d, m)
+	if err != nil {
+		return diag.FromErr(err)
+	}
 
 	req := &wallarm.GetSecurityIssuesRead{
-		ClientID:  d.Get("client_id").(int),
+		ClientID:  clientID,
 		Limit:     GetValueWithTypeCastingOrOverridedDefault[int](d, "limit", 1000),
 		Offset:    GetValueWithTypeCastingOrOverridedDefault[int](d, "offset", 0),
 		Unlimited: GetValueWithTypeCastingOrOverridedDefault[bool](d, "unlimited", false),
@@ -212,7 +217,7 @@ func dataSourceWallarmSecurityIssuesRead(d *schema.ResourceData, m interface{}) 
 
 	resp, err := client.GetSecurityIssuesRead(req)
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 
 	issues := make([]interface{}, 0)
@@ -285,7 +290,7 @@ func dataSourceWallarmSecurityIssuesRead(d *schema.ResourceData, m interface{}) 
 	d.SetId(fmt.Sprintf("issues_%d", req.ClientID))
 
 	if err = d.Set("issues", issues); err != nil {
-		return fmt.Errorf("error setting Issues: %s", err)
+		return diag.FromErr(fmt.Errorf("error setting Issues: %s", err))
 	}
 	return nil
 }

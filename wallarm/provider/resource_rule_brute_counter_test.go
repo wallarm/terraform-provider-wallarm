@@ -26,6 +26,12 @@ func TestAccRuleBruteForceCounterCreate(t *testing.T) {
 					resource.TestMatchResourceAttr(name, "counter", regexp.MustCompile("^b:.*")),
 				),
 			},
+			{
+				ResourceName:            name,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"rule_type"},
+			},
 		},
 	})
 }

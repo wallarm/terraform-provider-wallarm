@@ -1,11 +1,13 @@
 package wallarm
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"strconv"
 	"strings"
 
+	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/samber/lo"
 	"github.com/wallarm/terraform-provider-wallarm/wallarm/common/resourcerule"
 	"github.com/wallarm/wallarm-go"
@@ -42,20 +44,23 @@ func resourceWallarmCredentialStuffingRegex() *schema.Resource {
 		"action": defaultResourceRuleActionSchema,
 	}
 	return &schema.Resource{
-		Create: resourceWallarmCredentialStuffingRegexCreate,
-		Read:   resourceWallarmCredentialStuffingRegexRead,
-		Update: resourceWallarmCredentialStuffingRegexUpdate,
-		Delete: resourceWallarmCredentialStuffingRegexDelete,
+		CreateContext: resourceWallarmCredentialStuffingRegexCreate,
+		ReadContext:   resourceWallarmCredentialStuffingRegexRead,
+		UpdateContext: resourceWallarmCredentialStuffingRegexUpdate,
+		DeleteContext: resourceWallarmCredentialStuffingRegexDelete,
 		Importer: &schema.ResourceImporter{
-			State: resourceWallarmCredentialStuffingRegexImport,
+			StateContext: resourceWallarmCredentialStuffingRegexImport,
 		},
 		Schema: lo.Assign(fields, commonResourceRuleFields),
 	}
 }
 
-func resourceWallarmCredentialStuffingRegexCreate(d *schema.ResourceData, m interface{}) error {
-	client := m.(wallarm.API)
-	clientID := retrieveClientID(d)
+func resourceWallarmCredentialStuffingRegexCreate(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+	client := apiClient(m)
+	clientID, err := retrieveClientID(d, m)
+	if err != nil {
+		return diag.FromErr(err)
+	}
 	fields := getCommonResourceRuleFieldsDTOFromResourceData(d)
 	regex := d.Get("regex").(string)
 	credStuffType := d.Get("cred_stuff_type").(string)
@@ -65,7 +70,7 @@ func resourceWallarmCredentialStuffingRegexCreate(d *schema.ResourceData, m inte
 	actionsFromState := d.Get("action").(*schema.Set)
 	action, err := resourcerule.ExpandSetToActionDetailsList(actionsFromState)
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 
 	resp, err := client.HintCreate(&wallarm.ActionCreate{
@@ -82,10 +87,9 @@ func resourceWallarmCredentialStuffingRegexCreate(d *schema.ResourceData, m inte
 		Set:                 fields.Set,
 		Active:              fields.Active,
 		Title:               fields.Title,
-		Mitigation:          fields.Mitigation,
 	})
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 
 	resID := fmt.Sprintf("%d/%d/%d", resp.Body.Clientid, resp.Body.ActionID, resp.Body.ID)
@@ -94,12 +98,15 @@ func resourceWallarmCredentialStuffingRegexCreate(d *schema.ResourceData, m inte
 	d.Set("action_id", resp.Body.ActionID)
 	d.Set("rule_id", resp.Body.ID)
 
-	return resourceWallarmCredentialStuffingRegexRead(d, m)
+	return resourceWallarmCredentialStuffingRegexRead(context.TODO(), d, m)
 }
 
-func resourceWallarmCredentialStuffingRegexRead(d *schema.ResourceData, m interface{}) error {
-	client := m.(wallarm.API)
-	clientID := retrieveClientID(d)
+func resourceWallarmCredentialStuffingRegexRead(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+	client := apiClient(m)
+	clientID, err := retrieveClientID(d, m)
+	if err != nil {
+		return diag.FromErr(err)
+	}
 	ruleID := d.Get("rule_id").(int)
 
 	rule, err := findCredentialStuffingRule(client, clientID, ruleID)
@@ -111,7 +118,7 @@ func resourceWallarmCredentialStuffingRegexRead(d *schema.ResourceData, m interf
 		}
 	}
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 
 	d.Set("regex", rule.Regex)
@@ -134,48 +141,51 @@ func resourceWallarmCredentialStuffingRegexRead(d *schema.ResourceData, m interf
 	for _, a := range rule.Action {
 		acts, err := actionDetailsToMap(a)
 		if err != nil {
-			return err
+			return diag.FromErr(err)
 		}
 		actionsSet.Add(acts)
 	}
 	if err := d.Set("action", &actionsSet); err != nil {
-		return fmt.Errorf("error setting action: %w", err)
+		return diag.FromErr(fmt.Errorf("error setting action: %w", err))
 	}
 
 	return nil
 }
 
-func resourceWallarmCredentialStuffingRegexDelete(d *schema.ResourceData, m interface{}) error {
-	client := m.(wallarm.API)
-	clientID := retrieveClientID(d)
+func resourceWallarmCredentialStuffingRegexDelete(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+	client := apiClient(m)
+	clientID, err := retrieveClientID(d, m)
+	if err != nil {
+		return diag.FromErr(err)
+	}
 	ruleID := d.Get("rule_id").(int)
 
-	err := client.HintDelete(&wallarm.HintDelete{
+	err = client.HintDelete(&wallarm.HintDelete{
 		Filter: &wallarm.HintDeleteFilter{
 			Clientid: []int{clientID},
 			ID:       ruleID,
 		},
 	})
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 
 	return nil
 }
 
-func resourceWallarmCredentialStuffingRegexUpdate(d *schema.ResourceData, m interface{}) error {
-	client := m.(wallarm.API)
+func resourceWallarmCredentialStuffingRegexUpdate(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+	client := apiClient(m)
 	variativityDisabled, _ := d.Get("variativity_disabled").(bool)
 	comment, _ := d.Get("comment").(string)
 	_, err := client.HintUpdateV3(d.Get("rule_id").(int), &wallarm.HintUpdateV3Params{
 		VariativityDisabled: lo.ToPtr(variativityDisabled),
 		Comment:             lo.ToPtr(comment),
 	})
-	return err
+	return diag.FromErr(err)
 }
 
-func resourceWallarmCredentialStuffingRegexImport(d *schema.ResourceData, m interface{}) ([]*schema.ResourceData, error) {
-	client := m.(wallarm.API)
+func resourceWallarmCredentialStuffingRegexImport(_ context.Context, d *schema.ResourceData, m interface{}) ([]*schema.ResourceData, error) {
+	client := apiClient(m)
 	idParts := strings.SplitN(d.Id(), "/", 3)
 	if len(idParts) != 3 {
 		return nil, fmt.Errorf("invalid id (%q) specified, should be in format \"{clientID}/{actionID}/{ruleID}\"", d.Id())

@@ -1,21 +1,26 @@
 package wallarm
 
 import (
+	"context"
 	"fmt"
-	"strings"
 
 	"github.com/wallarm/wallarm-go"
 
+	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
 func resourceWallarmEmail() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceWallarmEmailCreate,
-		Read:   resourceWallarmEmailRead,
-		Update: resourceWallarmEmailUpdate,
-		Delete: resourceWallarmEmailDelete,
+		CreateContext: resourceWallarmEmailCreate,
+		ReadContext:   resourceWallarmEmailRead,
+		UpdateContext: resourceWallarmEmailUpdate,
+		DeleteContext: resourceWallarmEmailDelete,
+
+		Importer: &schema.ResourceImporter{
+			StateContext: schema.ImportStatePassthroughContext,
+		},
 
 		Schema: map[string]*schema.Schema{
 			"client_id": defaultClientIDWithValidationSchema,
@@ -83,9 +88,12 @@ func resourceWallarmEmail() *schema.Resource {
 	}
 }
 
-func resourceWallarmEmailCreate(d *schema.ResourceData, m interface{}) error {
-	client := m.(wallarm.API)
-	clientID := retrieveClientID(d)
+func resourceWallarmEmailCreate(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+	client := apiClient(m)
+	clientID, err := retrieveClientID(d, m)
+	if err != nil {
+		return diag.FromErr(err)
+	}
 	name := d.Get("name").(string)
 	active := d.Get("active").(bool)
 	emails := expandInterfaceToStringList(d.Get("emails"))
@@ -102,7 +110,7 @@ func resourceWallarmEmailCreate(d *schema.ResourceData, m interface{}) error {
 
 	createRes, err := client.EmailIntegrationCreate(&emailBody)
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 
 	d.Set("integration_id", createRes.Body.ID)
@@ -110,19 +118,22 @@ func resourceWallarmEmailCreate(d *schema.ResourceData, m interface{}) error {
 	resID := fmt.Sprintf("%d/%s/%d", clientID, createRes.Body.Type, createRes.Body.ID)
 	d.SetId(resID)
 
-	return resourceWallarmEmailRead(d, m)
+	return resourceWallarmEmailRead(context.TODO(), d, m)
 }
 
-func resourceWallarmEmailRead(d *schema.ResourceData, m interface{}) error {
-	client := m.(wallarm.API)
-	clientID := retrieveClientID(d)
+func resourceWallarmEmailRead(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+	client := apiClient(m)
+	clientID, err := retrieveClientID(d, m)
+	if err != nil {
+		return diag.FromErr(err)
+	}
 	email, err := client.IntegrationRead(clientID, d.Get("integration_id").(int))
 	if err != nil {
-		if strings.HasPrefix(err.Error(), "Not found.") {
+		if isNotFoundError(err) {
 			d.SetId("")
 			return nil
 		}
-		return err
+		return diag.FromErr(err)
 	}
 
 	d.Set("integration_id", email.ID)
@@ -135,9 +146,12 @@ func resourceWallarmEmailRead(d *schema.ResourceData, m interface{}) error {
 	return nil
 }
 
-func resourceWallarmEmailUpdate(d *schema.ResourceData, m interface{}) error {
-	client := m.(wallarm.API)
-	clientID := retrieveClientID(d)
+func resourceWallarmEmailUpdate(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+	client := apiClient(m)
+	clientID, err := retrieveClientID(d, m)
+	if err != nil {
+		return diag.FromErr(err)
+	}
 	name := d.Get("name").(string)
 	active := d.Get("active").(bool)
 	emails := expandInterfaceToStringList(d.Get("emails"))
@@ -145,11 +159,11 @@ func resourceWallarmEmailUpdate(d *schema.ResourceData, m interface{}) error {
 
 	email, err := client.IntegrationRead(clientID, d.Get("integration_id").(int))
 	if err != nil {
-		if strings.HasPrefix(err.Error(), "Not found.") {
+		if isNotFoundError(err) {
 			d.SetId("")
 			return nil
 		}
-		return err
+		return diag.FromErr(err)
 	}
 
 	var updateRes *wallarm.IntegrationCreateResp
@@ -161,7 +175,7 @@ func resourceWallarmEmailUpdate(d *schema.ResourceData, m interface{}) error {
 
 		updateRes, err = client.EmailIntegrationUpdate(&emailBody, email.ID)
 		if err != nil {
-			return err
+			return diag.FromErr(err)
 		}
 	}
 
@@ -176,7 +190,7 @@ func resourceWallarmEmailUpdate(d *schema.ResourceData, m interface{}) error {
 
 		updateRes, err = client.EmailIntegrationUpdate(&emailBody, email.ID)
 		if err != nil {
-			return err
+			return diag.FromErr(err)
 		}
 	}
 
@@ -189,14 +203,14 @@ func resourceWallarmEmailUpdate(d *schema.ResourceData, m interface{}) error {
 	resID := fmt.Sprintf("%d/%s/%d", clientID, updateRes.Body.Type, updateRes.Body.ID)
 	d.SetId(resID)
 
-	return resourceWallarmEmailRead(d, m)
+	return resourceWallarmEmailRead(context.TODO(), d, m)
 }
 
-func resourceWallarmEmailDelete(d *schema.ResourceData, m interface{}) error {
-	client := m.(wallarm.API)
+func resourceWallarmEmailDelete(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+	client := apiClient(m)
 	integrationID := d.Get("integration_id").(int)
 	if err := client.IntegrationDelete(integrationID); err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 	return nil
 }

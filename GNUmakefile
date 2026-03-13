@@ -5,7 +5,7 @@ GOARCH?=$$(go env GOARCH)
 VERSION?=$$(git describe --abbrev=0 --tags)
 TESTTIMEOUT=120m
 
-WALLARM_API_HOST=https://api.wallarm.com
+WALLARM_API_HOST?=https://audit.api.wallarm.com
 
 default: build
 

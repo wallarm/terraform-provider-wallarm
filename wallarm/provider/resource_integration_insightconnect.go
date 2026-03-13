@@ -1,21 +1,27 @@
 package wallarm
 
 import (
+	"context"
 	"fmt"
-	"strings"
 
 	"github.com/wallarm/wallarm-go"
 
+	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
 func resourceWallarmInsightConnect() *schema.Resource {
 	return &schema.Resource{
-		Create:        resourceWallarmInsightConnectCreate,
-		Read:          resourceWallarmInsightConnectRead,
-		Update:        resourceWallarmInsightConnectUpdate,
-		Delete:        resourceWallarmInsightConnectDelete,
+		CreateContext: resourceWallarmInsightConnectCreate,
+		ReadContext:   resourceWallarmInsightConnectRead,
+		UpdateContext: resourceWallarmInsightConnectUpdate,
+		DeleteContext: resourceWallarmInsightConnectDelete,
+
+		Importer: &schema.ResourceImporter{
+			StateContext: schema.ImportStatePassthroughContext,
+		},
+
 		CustomizeDiff: validateWithHeadersOnlySiem(),
 
 		Schema: map[string]*schema.Schema{
@@ -104,9 +110,12 @@ func resourceWallarmInsightConnect() *schema.Resource {
 	}
 }
 
-func resourceWallarmInsightConnectCreate(d *schema.ResourceData, m interface{}) error {
-	client := m.(wallarm.API)
-	clientID := retrieveClientID(d)
+func resourceWallarmInsightConnectCreate(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+	client := apiClient(m)
+	clientID, err := retrieveClientID(d, m)
+	if err != nil {
+		return diag.FromErr(err)
+	}
 	name := d.Get("name").(string)
 	apiURL := d.Get("api_url").(string)
 	apiToken := d.Get("api_token").(string)
@@ -127,7 +136,7 @@ func resourceWallarmInsightConnectCreate(d *schema.ResourceData, m interface{}) 
 
 	createRes, err := client.IntegrationCreate(&insightBody)
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 
 	d.Set("integration_id", createRes.Body.ID)
@@ -135,19 +144,22 @@ func resourceWallarmInsightConnectCreate(d *schema.ResourceData, m interface{}) 
 	resID := fmt.Sprintf("%d/%s/%d", clientID, createRes.Body.Type, createRes.Body.ID)
 	d.SetId(resID)
 
-	return resourceWallarmInsightConnectRead(d, m)
+	return resourceWallarmInsightConnectRead(context.TODO(), d, m)
 }
 
-func resourceWallarmInsightConnectRead(d *schema.ResourceData, m interface{}) error {
-	client := m.(wallarm.API)
-	clientID := retrieveClientID(d)
+func resourceWallarmInsightConnectRead(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+	client := apiClient(m)
+	clientID, err := retrieveClientID(d, m)
+	if err != nil {
+		return diag.FromErr(err)
+	}
 	insight, err := client.IntegrationRead(clientID, d.Get("integration_id").(int))
 	if err != nil {
-		if strings.HasPrefix(err.Error(), "Not found.") {
+		if isNotFoundError(err) {
 			d.SetId("")
 			return nil
 		}
-		return err
+		return diag.FromErr(err)
 	}
 
 	d.Set("integration_id", insight.ID)
@@ -160,17 +172,20 @@ func resourceWallarmInsightConnectRead(d *schema.ResourceData, m interface{}) er
 	return nil
 }
 
-func resourceWallarmInsightConnectUpdate(d *schema.ResourceData, m interface{}) error {
-	client := m.(wallarm.API)
-	clientID := retrieveClientID(d)
+func resourceWallarmInsightConnectUpdate(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+	client := apiClient(m)
+	clientID, err := retrieveClientID(d, m)
+	if err != nil {
+		return diag.FromErr(err)
+	}
 
 	insight, err := client.IntegrationRead(clientID, d.Get("integration_id").(int))
 	if err != nil {
-		if strings.HasPrefix(err.Error(), "Not found.") {
+		if isNotFoundError(err) {
 			d.SetId("")
 			return nil
 		}
-		return err
+		return diag.FromErr(err)
 	}
 
 	if d.HasChange("event") {
@@ -187,7 +202,7 @@ func resourceWallarmInsightConnectUpdate(d *schema.ResourceData, m interface{}) 
 		}
 		updateRes, err := client.IntegrationUpdate(&fullBody, insight.ID)
 		if err != nil {
-			return err
+			return diag.FromErr(err)
 		}
 		d.Set("integration_id", updateRes.Body.ID)
 		resID := fmt.Sprintf("%d/%s/%d", clientID, updateRes.Body.Type, updateRes.Body.ID)
@@ -209,7 +224,7 @@ func resourceWallarmInsightConnectUpdate(d *schema.ResourceData, m interface{}) 
 		if len(updateBody) > 0 {
 			updateRes, err := client.IntegrationPartialUpdate(insight.ID, updateBody)
 			if err != nil {
-				return err
+				return diag.FromErr(err)
 			}
 			d.Set("integration_id", updateRes.Body.ID)
 			resID := fmt.Sprintf("%d/%s/%d", clientID, updateRes.Body.Type, updateRes.Body.ID)
@@ -217,14 +232,14 @@ func resourceWallarmInsightConnectUpdate(d *schema.ResourceData, m interface{}) 
 		}
 	}
 
-	return resourceWallarmInsightConnectRead(d, m)
+	return resourceWallarmInsightConnectRead(context.TODO(), d, m)
 }
 
-func resourceWallarmInsightConnectDelete(d *schema.ResourceData, m interface{}) error {
-	client := m.(wallarm.API)
+func resourceWallarmInsightConnectDelete(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+	client := apiClient(m)
 	integrationID := d.Get("integration_id").(int)
 	if err := client.IntegrationDelete(integrationID); err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 
 	return nil
