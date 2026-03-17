@@ -1,0 +1,57 @@
+# Custom rule: block_admin
+# Resource: wallarm_rule_mode
+# Editable: all fields below. Changes are preserved on subsequent applies.
+
+name: block_admin
+resource_type: wallarm_rule_mode
+comment: "Wallarm Mode rule"
+mode: "block"
+action:
+  - type: "iequal"
+    value: "super-example.com"
+    point:
+      header: "HOST"
+  - type: "equal"
+    value: "aaabbbccc"
+    point:
+      header: "WLRM-TEST"
+  - type: "equal"
+    value: "application/json"
+    point:
+      header: "Content-Type"
+  - type: "equal"
+    value: ""
+    point:
+      action_name: "action"
+  - type: "equal"
+    value: "api"
+    point:
+      path: "0"
+  - type: "equal"
+    value: "v1"
+    point:
+      path: "1"
+  - type: "absent"
+    value: ""
+    point:
+      path: "8"
+  - type: "equal"
+    value: ""
+    point:
+      method: "POST"
+  - type: "equal"
+    value: ""
+    point:
+      scheme: "https"
+  - type: "equal"
+    value: ""
+    point:
+      proto: "1.1"
+  - type: "equal"
+    value: "value_1"
+    point:
+      query: "key1"
+  - type: "equal"
+    value: "value_2"
+    point:
+      query: "key2"

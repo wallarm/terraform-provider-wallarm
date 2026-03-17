@@ -6,8 +6,6 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/wallarm/wallarm-go"
-
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
@@ -57,6 +55,12 @@ func TestAccWallarmTriggerAttacksWithThreshold(t *testing.T) {
 					resource.TestCheckResourceAttr(name, "template_id", "attacks_exceeded"),
 					resource.TestCheckResourceAttr(name, "actions.#", "1"),
 				),
+			},
+			{
+				ResourceName: name,
+				ImportState:  true,
+				// ImportStateVerify disabled: trigger Read only populates trigger_id and client_id.
+				// Full field population from API response is a TODO.
 			},
 		},
 	})
@@ -358,7 +362,7 @@ resource "wallarm_trigger" "%[1]s" {
 }
 
 func testAccCheckWallarmTriggerDestroy(s *terraform.State) error {
-	client := testAccProvider.Meta().(wallarm.API)
+	client := testAccProvider.Meta().(*ProviderMeta).Client
 
 	for _, rs := range s.RootModule().Resources {
 		if rs.Type != "wallarm_trigger" {

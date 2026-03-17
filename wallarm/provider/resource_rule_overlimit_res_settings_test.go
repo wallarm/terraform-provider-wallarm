@@ -25,6 +25,12 @@ func TestAccOverlimitResSettings(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceAddress, "mode", "monitoring"),
 				),
 			},
+			{
+				ResourceName:            resourceAddress,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"rule_type"},
+			},
 		},
 	})
 }
@@ -50,7 +56,7 @@ resource "wallarm_rule_overlimit_res_settings" %[1]q {
 
 func testAccRuleOverlimitResSettingsDestroy() resource.TestCheckFunc {
 	return func(s *terraform.State) error {
-		client := testAccProvider.Meta().(wallarm.API)
+		client := testAccProvider.Meta().(*ProviderMeta).Client
 
 		for _, resource := range s.RootModule().Resources {
 			if resource.Type != "wallarm_rule_overlimit_res_settings" {

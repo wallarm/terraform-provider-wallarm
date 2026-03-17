@@ -8,7 +8,6 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
-	"github.com/wallarm/wallarm-go"
 )
 
 func TestAccWallarmTenant(t *testing.T) {
@@ -31,6 +30,12 @@ func TestAccWallarmTenant(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "name", name),
 				),
 			},
+			{
+				ResourceName:            resourceName,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"prevent_destroy"},
+			},
 		},
 	})
 }
@@ -44,31 +49,26 @@ resource "wallarm_tenant" "%[1]s" {
 
 func testAccCheckWallarmTenantDestroy(name string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
-		client := testAccProvider.Meta().(wallarm.API)
+		client := testAccProvider.Meta().(*ProviderMeta).Client
 
-		for _, resource := range s.RootModule().Resources {
-			if resource.Type != name {
+		for _, rs := range s.RootModule().Resources {
+			if rs.Type != "wallarm_tenant" {
 				continue
 			}
 
-			tenantID, err := strconv.Atoi(resource.Primary.Attributes["tenant_id"])
+			tenantClientID, err := strconv.Atoi(rs.Primary.ID)
 			if err != nil {
 				return err
 			}
 
-			res, err := client.ClientUpdate(&wallarm.ClientUpdate{
-				Filter: &wallarm.ClientFilter{ID: tenantID},
-				Fields: &wallarm.ClientFields{Enabled: false},
-			})
+			tenant, err := readTenantByID(client, tenantClientID)
 			if err != nil {
 				return err
 			}
 
-			if res.Body[0].Name == name {
+			if tenant != nil && tenant.Enabled && tenant.Name == name {
 				return fmt.Errorf("Resource still exists: %s", name)
 			}
-
-			return nil
 		}
 
 		return nil
@@ -77,31 +77,26 @@ func testAccCheckWallarmTenantDestroy(name string) resource.TestCheckFunc {
 
 func testAccCheckWallarmTenantExists(resourceName string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
-		client := testAccProvider.Meta().(wallarm.API)
+		client := testAccProvider.Meta().(*ProviderMeta).Client
 
-		resource, ok := s.RootModule().Resources[resourceName]
+		rs, ok := s.RootModule().Resources[resourceName]
 		if !ok {
 			return fmt.Errorf("Not found: %s", resourceName)
 		}
 
-		tenantID, err := strconv.Atoi(resource.Primary.Attributes["tenant_id"])
+		tenantClientID, err := strconv.Atoi(rs.Primary.ID)
 		if err != nil {
 			return err
 		}
 
-		name := resource.Primary.Attributes["name"]
+		name := rs.Primary.Attributes["name"]
 
-		res, err := client.ClientRead(&wallarm.ClientRead{
-			Limit: 1,
-			Filter: &wallarm.ClientReadFilter{
-				ClientFilter: wallarm.ClientFilter{ID: tenantID},
-			},
-		})
+		tenant, err := readTenantByID(client, tenantClientID)
 		if err != nil {
 			return err
 		}
 
-		if res.Body[0].Name == name {
+		if tenant != nil && tenant.Name == name {
 			return nil
 		}
 

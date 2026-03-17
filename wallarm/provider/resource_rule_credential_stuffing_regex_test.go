@@ -28,6 +28,12 @@ func TestAccRuleCredentialStuffingRegex_basic(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceAddress, "action.#", "1"),
 				),
 			},
+			{
+				ResourceName:            resourceAddress,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"rule_type"},
+			},
 		},
 	})
 }
@@ -53,7 +59,7 @@ resource "wallarm_rule_credential_stuffing_regex" %[1]q {
 
 func testAccRuleCredentialStuffingRegexDestroy() resource.TestCheckFunc {
 	return func(s *terraform.State) error {
-		client := testAccProvider.Meta().(wallarm.API)
+		client := testAccProvider.Meta().(*ProviderMeta).Client
 
 		for _, resource := range s.RootModule().Resources {
 			if resource.Type != "wallarm_rule_credential_stuffing_regex" {

@@ -45,12 +45,18 @@ resource "wallarm_rule_graphql_detection" "wallarm_rule_graphql_detection_1" {
 					resource.TestCheckResourceAttr("wallarm_rule_graphql_detection.wallarm_rule_graphql_detection_1", "action.#", "1"),
 				),
 			},
+			{
+				ResourceName:            "wallarm_rule_graphql_detection.wallarm_rule_graphql_detection_1",
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"rule_type"},
+			},
 		},
 	})
 }
 
 func testAccCheckWallarmRuleGraphqlDetectionDestroy(s *terraform.State) error {
-	client := testAccProvider.Meta().(wallarm.API)
+	client := testAccProvider.Meta().(*ProviderMeta).Client
 
 	for _, rs := range s.RootModule().Resources {
 		if rs.Type != "wallarm_rule_graphql_detection" {
@@ -67,7 +73,7 @@ func testAccCheckWallarmRuleGraphqlDetectionDestroy(s *terraform.State) error {
 		}
 
 		hint := &wallarm.HintRead{
-			Limit:     1000,
+			Limit:     DefaultAPIListLimit,
 			Offset:    0,
 			OrderBy:   "updated_at",
 			OrderDesc: true,

@@ -1,10 +1,12 @@
 package wallarm
 
 import (
+	"context"
 	"fmt"
 	"strconv"
 	"strings"
 
+	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/samber/lo"
 	"github.com/wallarm/terraform-provider-wallarm/wallarm/common"
 	"github.com/wallarm/terraform-provider-wallarm/wallarm/common/resourcerule"
@@ -35,38 +37,41 @@ func resourceWallarmParserState() *schema.Resource {
 		"point": defaultPointSchema,
 	}
 	return &schema.Resource{
-		Create: resourceWallarmParserStateCreate,
-		Read:   resourceWallarmParserStateRead,
-		Update: resourceWallarmParserStateUpdate,
-		Delete: resourceWallarmParserStateDelete,
+		CreateContext: resourceWallarmParserStateCreate,
+		ReadContext:   resourceWallarmParserStateRead,
+		UpdateContext: resourceWallarmParserStateUpdate,
+		DeleteContext: resourceWallarmParserStateDelete,
 		Importer: &schema.ResourceImporter{
-			State: resourceWallarmParserStateImport,
+			StateContext: resourceWallarmParserStateImport,
 		},
 		Schema: lo.Assign(fields, commonResourceRuleFields),
 	}
 }
 
-func resourceWallarmParserStateCreate(d *schema.ResourceData, m interface{}) error {
-	client := m.(wallarm.API)
-	clientID := retrieveClientID(d)
+func resourceWallarmParserStateCreate(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+	client := apiClient(m)
+	clientID, err := retrieveClientID(d, m)
+	if err != nil {
+		return diag.FromErr(err)
+	}
 	fields := getCommonResourceRuleFieldsDTOFromResourceData(d)
 	parser := d.Get("parser").(string)
 	state := d.Get("state").(string)
 
 	ps := d.Get("point").([]interface{})
 	if err := d.Set("point", ps); err != nil {
-		return fmt.Errorf("error setting point: %w", err)
+		return diag.FromErr(fmt.Errorf("error setting point: %w", err))
 	}
 
 	points, err := expandPointsToTwoDimensionalArray(ps)
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 
 	actionsFromState := d.Get("action").(*schema.Set)
 	action, err := resourcerule.ExpandSetToActionDetailsList(actionsFromState)
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 
 	wm := &wallarm.ActionCreate{
@@ -82,12 +87,11 @@ func resourceWallarmParserStateCreate(d *schema.ResourceData, m interface{}) err
 		Set:                 fields.Set,
 		Active:              fields.Active,
 		Title:               fields.Title,
-		Mitigation:          fields.Mitigation,
 	}
 
 	actionResp, err := client.HintCreate(wm)
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 
 	d.Set("rule_id", actionResp.Body.ID)
@@ -97,16 +101,23 @@ func resourceWallarmParserStateCreate(d *schema.ResourceData, m interface{}) err
 	resID := fmt.Sprintf("%d/%d/%d", clientID, actionResp.Body.ActionID, actionResp.Body.ID)
 	d.SetId(resID)
 
-	return resourceWallarmParserStateRead(d, m)
+	return resourceWallarmParserStateRead(context.TODO(), d, m)
 }
 
-func resourceWallarmParserStateRead(d *schema.ResourceData, m interface{}) error {
-	return resourcerule.ResourceRuleWallarmRead(d, retrieveClientID(d), m.(wallarm.API), common.ReadOptionWithPoint)
+func resourceWallarmParserStateRead(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+	clientID, err := retrieveClientID(d, m)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+	return diag.FromErr(resourcerule.ResourceRuleWallarmRead(d, clientID, apiClient(m), common.ReadOptionWithPoint))
 }
 
-func resourceWallarmParserStateDelete(d *schema.ResourceData, m interface{}) error {
-	client := m.(wallarm.API)
-	clientID := retrieveClientID(d)
+func resourceWallarmParserStateDelete(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+	client := apiClient(m)
+	clientID, err := retrieveClientID(d, m)
+	if err != nil {
+		return diag.FromErr(err)
+	}
 	actionID := d.Get("action_id").(int)
 
 	rule := &wallarm.ActionRead{
@@ -115,17 +126,17 @@ func resourceWallarmParserStateDelete(d *schema.ResourceData, m interface{}) err
 			Clientid: []int{clientID},
 			ID:       []int{actionID},
 		},
-		Limit:  1000,
+		Limit:  DefaultAPIListLimit,
 		Offset: 0,
 	}
 	respRules, err := client.RuleRead(rule)
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 
 	if len(respRules.Body) == 1 && respRules.Body[0].Hints == 1 && respRules.Body[0].GroupedHintsCount == 1 {
 		if err := client.ActionDelete(actionID); err != nil {
-			return err
+			return diag.FromErr(err)
 		}
 	} else {
 		ruleID := d.Get("rule_id").(int)
@@ -137,24 +148,24 @@ func resourceWallarmParserStateDelete(d *schema.ResourceData, m interface{}) err
 		}
 
 		if err := client.HintDelete(h); err != nil {
-			return err
+			return diag.FromErr(err)
 		}
 	}
 	return nil
 }
 
-func resourceWallarmParserStateUpdate(d *schema.ResourceData, m interface{}) error {
-	client := m.(wallarm.API)
+func resourceWallarmParserStateUpdate(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+	client := apiClient(m)
 	variativityDisabled, _ := d.Get("variativity_disabled").(bool)
 	comment, _ := d.Get("comment").(string)
 	_, err := client.HintUpdateV3(d.Get("rule_id").(int), &wallarm.HintUpdateV3Params{
 		VariativityDisabled: lo.ToPtr(variativityDisabled),
 		Comment:             lo.ToPtr(comment),
 	})
-	return err
+	return diag.FromErr(err)
 }
 
-func resourceWallarmParserStateImport(d *schema.ResourceData, _ interface{}) ([]*schema.ResourceData, error) {
+func resourceWallarmParserStateImport(_ context.Context, d *schema.ResourceData, _ interface{}) ([]*schema.ResourceData, error) {
 	idAttr := strings.SplitN(d.Id(), "/", 3)
 	if len(idAttr) == 3 {
 		clientID, err := strconv.Atoi(idAttr[0])

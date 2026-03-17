@@ -1,22 +1,24 @@
 package wallarm
 
 import (
+	"context"
 	"fmt"
 	"math"
 	"strings"
 
 	"github.com/wallarm/wallarm-go"
 
+	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
 func resourceWallarmRulesSettings() *schema.Resource {
 	return &schema.Resource{
-		Read:   resourceWallarmRulesSettingsRead,
-		Create: resourceWallarmRulesSettingsCreate,
-		Update: resourceWallarmRulesSettingsUpdate,
-		Delete: resourceWallarmRulesSettingsDelete,
+		ReadContext:   resourceWallarmRulesSettingsRead,
+		CreateContext: resourceWallarmRulesSettingsCreate,
+		UpdateContext: resourceWallarmRulesSettingsUpdate,
+		DeleteContext: resourceWallarmRulesSettingsDelete,
 
 		Importer: &schema.ResourceImporter{
 			StateContext: schema.ImportStatePassthroughContext,
@@ -135,12 +137,15 @@ func resourceWallarmRulesSettings() *schema.Resource {
 	}
 }
 
-func resourceWallarmRulesSettingsRead(d *schema.ResourceData, m interface{}) error {
-	client := m.(wallarm.API)
+func resourceWallarmRulesSettingsRead(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+	client := apiClient(m)
 
 	// Parse client_id from the composite ID on import.
 	// ID format: "{clientID}/rules_settings"
-	clientID := retrieveClientID(d)
+	clientID, err := retrieveClientID(d, m)
+	if err != nil {
+		return diag.FromErr(err)
+	}
 	if id := d.Id(); strings.Contains(id, "/") {
 		parts := strings.SplitN(id, "/", 2)
 		if len(parts) == 2 {
@@ -153,7 +158,7 @@ func resourceWallarmRulesSettingsRead(d *schema.ResourceData, m interface{}) err
 
 	res, err := client.RulesSettingsRead(clientID)
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 
 	d.Set("client_id", clientID)
@@ -223,22 +228,28 @@ func resourceWallarmRulesSettingsRead(d *schema.ResourceData, m interface{}) err
 	return nil
 }
 
-func resourceWallarmRulesSettingsCreate(d *schema.ResourceData, m interface{}) error {
-	clientID := retrieveClientID(d)
+func resourceWallarmRulesSettingsCreate(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+	clientID, err := retrieveClientID(d, m)
+	if err != nil {
+		return diag.FromErr(err)
+	}
 
 	if err := updateRulesSettings(d, m); err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 
 	d.SetId(fmt.Sprintf("%d/rules_settings", clientID))
-	return resourceWallarmRulesSettingsRead(d, m)
+	return resourceWallarmRulesSettingsRead(context.TODO(), d, m)
 }
 
-func resourceWallarmRulesSettingsUpdate(d *schema.ResourceData, m interface{}) error {
-	return updateRulesSettings(d, m)
+func resourceWallarmRulesSettingsUpdate(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+	if err := updateRulesSettings(d, m); err != nil {
+		return diag.FromErr(err)
+	}
+	return resourceWallarmRulesSettingsRead(context.TODO(), d, m)
 }
 
-func resourceWallarmRulesSettingsDelete(_ *schema.ResourceData, _ interface{}) error {
+func resourceWallarmRulesSettingsDelete(_ context.Context, _ *schema.ResourceData, _ interface{}) diag.Diagnostics {
 	// Settings are a singleton — cannot be deleted, only modified.
 	return nil
 }
@@ -282,8 +293,11 @@ func setNullableInt(d *schema.ResourceData, key string, target **int) {
 }
 
 func updateRulesSettings(d *schema.ResourceData, m interface{}) error {
-	client := m.(wallarm.API)
-	clientID := retrieveClientID(d)
+	client := apiClient(m)
+	clientID, err := retrieveClientID(d, m)
+	if err != nil {
+		return err
+	}
 
 	params := &wallarm.RuleSettingsParams{}
 
@@ -349,12 +363,12 @@ func updateRulesSettings(d *schema.ResourceData, m interface{}) error {
 		params.RiskScoreAlgo = &val
 	}
 
-	_, err := client.RulesSettingsUpdate(params, clientID)
+	_, err = client.RulesSettingsUpdate(params, clientID)
 	if err != nil {
 		return err
 	}
 
-	return resourceWallarmRulesSettingsRead(d, m)
+	return nil
 }
 
 // isConfigured checks whether the user explicitly set a given key in their

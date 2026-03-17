@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"os"
 	"regexp"
 
 	"github.com/wallarm/terraform-provider-wallarm/version"
@@ -106,6 +105,13 @@ func Provider() *schema.Provider {
 					"When enabled, the first rule read triggers a bulk fetch of all hints for the client, " +
 					"and subsequent reads are served from an in-memory cache. Defaults to true.",
 			},
+			"require_explicit_client_id": {
+				Type:        schema.TypeBool,
+				Optional:    true,
+				DefaultFunc: schema.EnvDefaultFunc("WALLARM_REQUIRE_EXPLICIT_CLIENT_ID", false),
+				Description: "When true, every resource must set client_id explicitly. " +
+					"Prevents accidental cross-tenant operations for Global Administrator tokens managing multiple tenants.",
+			},
 		},
 		ProviderMetaSchema: map[string]*schema.Schema{
 			"module_name": {
@@ -117,6 +123,7 @@ func Provider() *schema.Provider {
 			"wallarm_node":            dataSourceWallarmNode(),
 			"wallarm_security_issues": dataSourceWallarmSecurityIssues(),
 			"wallarm_hits":            dataSourceWallarmHits(),
+			"wallarm_ip_lists":        dataSourceWallarmIPLists(),
 			"wallarm_applications":    dataSourceWallarmApplications(),
 			"wallarm_rules":           dataSourceWallarmRules(),
 		},
@@ -181,12 +188,12 @@ func ProviderConfigure(_ context.Context, d *schema.ResourceData, p *schema.Prov
 	retryOpt := wallarm.UsingRetryPolicy(d.Get("retries").(int), d.Get("min_backoff").(int), d.Get("max_backoff").(int))
 	options := []wallarm.Option{retryOpt}
 
-	if d.Get("api_client_logging").(bool) {
-		options = append(options, wallarm.UsingLogger(log.New(os.Stderr, "", log.LstdFlags|log.Lshortfile)))
-	}
-
 	c := cleanhttp.DefaultPooledClient()
-	c.Transport = logging.NewSubsystemLoggingHTTPTransport("Wallarm", c.Transport)
+	if d.Get("api_client_logging").(bool) {
+		c.Transport = newLoggingTransport(c.Transport)
+	} else {
+		c.Transport = logging.NewSubsystemLoggingHTTPTransport("Wallarm", c.Transport)
+	}
 	options = append(options, wallarm.HTTPClient(c))
 
 	ua := p.UserAgent("terraform-provider-wallarm", version.ProviderVersion)
@@ -222,22 +229,27 @@ func ProviderConfigure(_ context.Context, d *schema.ResourceData, p *schema.Prov
 		return nil, diag.FromErr(fmt.Errorf("could not create Wallarm client: %w", err))
 	}
 
+	var defaultClientID int
 	if v, ok := d.GetOk("client_id"); ok {
-		ClientID = v.(int)
+		defaultClientID = v.(int)
 	} else {
 		u, err := client.UserDetails()
 		if err != nil {
 			return nil, diag.FromErr(fmt.Errorf("could not fetch user details: %w", err))
 		}
 
-		ClientID = u.Body.Clientid
+		defaultClientID = u.Body.Clientid
 	}
 
 	// Wrap with caching layer if hint_prefetch is enabled (default: true)
 	if d.Get("hint_prefetch").(bool) {
 		log.Printf("[INFO] Wallarm hint prefetch enabled — rule reads will use bulk cache")
-		return NewCachedClient(client), nil
+		client = NewCachedClient(client)
 	}
 
-	return client, nil
+	return &ProviderMeta{
+		Client:                  client,
+		DefaultClientID:         defaultClientID,
+		RequireExplicitClientID: d.Get("require_explicit_client_id").(bool),
+	}, nil
 }

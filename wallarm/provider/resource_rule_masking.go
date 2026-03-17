@@ -1,10 +1,12 @@
 package wallarm
 
 import (
+	"context"
 	"fmt"
 	"strconv"
 	"strings"
 
+	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/samber/lo"
 	"github.com/wallarm/terraform-provider-wallarm/wallarm/common"
 	"github.com/wallarm/terraform-provider-wallarm/wallarm/common/resourcerule"
@@ -20,37 +22,40 @@ func resourceWallarmSensitiveData() *schema.Resource {
 		"point": defaultPointSchema,
 	}
 	return &schema.Resource{
-		Create: resourceWallarmSensitiveDataCreate,
-		Read:   resourceWallarmSensitiveDataRead,
-		Update: resourceWallarmSensitiveDataUpdate,
-		Delete: resourceWallarmSensitiveDataDelete,
+		CreateContext: resourceWallarmSensitiveDataCreate,
+		ReadContext:   resourceWallarmSensitiveDataRead,
+		UpdateContext: resourceWallarmSensitiveDataUpdate,
+		DeleteContext: resourceWallarmSensitiveDataDelete,
 		Importer: &schema.ResourceImporter{
-			State: resourceWallarmSensitiveDataImport,
+			StateContext: resourceWallarmSensitiveDataImport,
 		},
 		Schema: lo.Assign(fields, commonResourceRuleFields),
 	}
 }
 
 // nolint:dupl
-func resourceWallarmSensitiveDataCreate(d *schema.ResourceData, m interface{}) error {
-	client := m.(wallarm.API)
-	clientID := retrieveClientID(d)
+func resourceWallarmSensitiveDataCreate(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+	client := apiClient(m)
+	clientID, err := retrieveClientID(d, m)
+	if err != nil {
+		return diag.FromErr(err)
+	}
 	fields := getCommonResourceRuleFieldsDTOFromResourceData(d)
 
 	ps := d.Get("point").([]interface{})
 	if err := d.Set("point", ps); err != nil {
-		return fmt.Errorf("error setting point: %w", err)
+		return diag.FromErr(fmt.Errorf("error setting point: %w", err))
 	}
 
 	points, err := expandPointsToTwoDimensionalArray(ps)
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 
 	actionsFromState := d.Get("action").(*schema.Set)
 	action, err := resourcerule.ExpandSetToActionDetailsList(actionsFromState)
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 
 	wm := &wallarm.ActionCreate{
@@ -64,12 +69,11 @@ func resourceWallarmSensitiveDataCreate(d *schema.ResourceData, m interface{}) e
 		Set:                 fields.Set,
 		Active:              fields.Active,
 		Title:               fields.Title,
-		Mitigation:          fields.Mitigation,
 	}
 
 	actionResp, err := client.HintCreate(wm)
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 
 	d.Set("rule_id", actionResp.Body.ID)
@@ -79,17 +83,24 @@ func resourceWallarmSensitiveDataCreate(d *schema.ResourceData, m interface{}) e
 	resID := fmt.Sprintf("%d/%d/%d", clientID, actionResp.Body.ActionID, actionResp.Body.ID)
 	d.SetId(resID)
 
-	return resourceWallarmSensitiveDataRead(d, m)
+	return resourceWallarmSensitiveDataRead(context.TODO(), d, m)
 }
 
 // nolint:dupl
-func resourceWallarmSensitiveDataRead(d *schema.ResourceData, m interface{}) error {
-	return resourcerule.ResourceRuleWallarmRead(d, retrieveClientID(d), m.(wallarm.API), common.ReadOptionWithPoint)
+func resourceWallarmSensitiveDataRead(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+	clientID, err := retrieveClientID(d, m)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+	return diag.FromErr(resourcerule.ResourceRuleWallarmRead(d, clientID, apiClient(m), common.ReadOptionWithPoint))
 }
 
-func resourceWallarmSensitiveDataDelete(d *schema.ResourceData, m interface{}) error {
-	client := m.(wallarm.API)
-	clientID := retrieveClientID(d)
+func resourceWallarmSensitiveDataDelete(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+	client := apiClient(m)
+	clientID, err := retrieveClientID(d, m)
+	if err != nil {
+		return diag.FromErr(err)
+	}
 	actionID := d.Get("action_id").(int)
 	ruleID := d.Get("rule_id").(int)
 
@@ -99,17 +110,17 @@ func resourceWallarmSensitiveDataDelete(d *schema.ResourceData, m interface{}) e
 			Clientid: []int{clientID},
 			ID:       []int{ruleID},
 		},
-		Limit:  1000,
+		Limit:  DefaultAPIListLimit,
 		Offset: 0,
 	}
 	respRules, err := client.RuleRead(rule)
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 
 	if len(respRules.Body) == 1 && respRules.Body[0].Hints == 1 && respRules.Body[0].GroupedHintsCount == 1 {
 		if err := client.ActionDelete(actionID); err != nil {
-			return err
+			return diag.FromErr(err)
 		}
 	} else {
 		ruleID := d.Get("rule_id").(int)
@@ -121,24 +132,24 @@ func resourceWallarmSensitiveDataDelete(d *schema.ResourceData, m interface{}) e
 		}
 
 		if err := client.HintDelete(h); err != nil {
-			return err
+			return diag.FromErr(err)
 		}
 	}
 	return nil
 }
 
-func resourceWallarmSensitiveDataUpdate(d *schema.ResourceData, m interface{}) error {
-	client := m.(wallarm.API)
+func resourceWallarmSensitiveDataUpdate(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+	client := apiClient(m)
 	variativityDisabled, _ := d.Get("variativity_disabled").(bool)
 	comment, _ := d.Get("comment").(string)
 	_, err := client.HintUpdateV3(d.Get("rule_id").(int), &wallarm.HintUpdateV3Params{
 		VariativityDisabled: lo.ToPtr(variativityDisabled),
 		Comment:             lo.ToPtr(comment),
 	})
-	return err
+	return diag.FromErr(err)
 }
 
-func resourceWallarmSensitiveDataImport(d *schema.ResourceData, _ interface{}) ([]*schema.ResourceData, error) {
+func resourceWallarmSensitiveDataImport(_ context.Context, d *schema.ResourceData, _ interface{}) ([]*schema.ResourceData, error) {
 	idAttr := strings.SplitN(d.Id(), "/", 3)
 	if len(idAttr) == 3 {
 		clientID, err := strconv.Atoi(idAttr[0])

@@ -7,7 +7,6 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
-	"github.com/wallarm/wallarm-go"
 )
 
 func TestAccWallarmNode(t *testing.T) {
@@ -26,6 +25,12 @@ func TestAccWallarmNode(t *testing.T) {
 					resource.TestCheckResourceAttr(name, "hostname", "tf-test-"+rnd),
 				),
 			},
+			{
+				ResourceName:            name,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"token"},
+			},
 		},
 	})
 }
@@ -39,7 +44,7 @@ resource "wallarm_node" "%[1]s" {
 
 func testAccCheckWallarmDestroy(name string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
-		client := testAccProvider.Meta().(wallarm.API)
+		client := testAccProvider.Meta().(*ProviderMeta).Client
 
 		for _, resource := range s.RootModule().Resources {
 			if resource.Type != name {
@@ -74,7 +79,7 @@ func testAccCheckWallarmDestroy(name string) resource.TestCheckFunc {
 
 func testAccCheckWallarmNodeExists(name string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
-		client := testAccProvider.Meta().(wallarm.API)
+		client := testAccProvider.Meta().(*ProviderMeta).Client
 
 		resource, ok := s.RootModule().Resources[name]
 		if !ok {

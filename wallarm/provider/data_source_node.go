@@ -1,17 +1,18 @@
 package wallarm
 
 import (
+	"context"
 	"fmt"
 
-	"github.com/wallarm/wallarm-go"
-
+	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
+	"github.com/wallarm/wallarm-go"
 )
 
 func dataSourceWallarmNode() *schema.Resource {
 	return &schema.Resource{
-		Read: dataSourceWallarmNodeRead,
+		ReadContext: dataSourceWallarmNodeRead,
 
 		Schema: map[string]*schema.Schema{
 
@@ -112,9 +113,12 @@ func dataSourceWallarmNode() *schema.Resource {
 	}
 }
 
-func dataSourceWallarmNodeRead(d *schema.ResourceData, m interface{}) error {
-	client := m.(wallarm.API)
-	clientID := retrieveClientID(d)
+func dataSourceWallarmNodeRead(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+	client := apiClient(m)
+	clientID, err := retrieveClientID(d, m)
+	if err != nil {
+		return diag.FromErr(err)
+	}
 	// Prepare the filters to be applied to the search
 	filter := expandWallarmNode(d.Get("filter"))
 	if filter.Type == "" {
@@ -123,11 +127,10 @@ func dataSourceWallarmNodeRead(d *schema.ResourceData, m interface{}) error {
 
 	nodes := make([]interface{}, 0)
 	var node *wallarm.NodeRead
-	var err error
 	var nodePOST *wallarm.NodeReadPOST
 	nodeReadBody := wallarm.NodeReadByFilter{
 		Filter:    &wallarm.NodeFilter{},
-		Limit:     1000,
+		Limit:     DefaultAPIListLimit,
 		Offset:    0,
 		OrderBy:   "id",
 		OrderDesc: false,
@@ -138,20 +141,20 @@ func dataSourceWallarmNodeRead(d *schema.ResourceData, m interface{}) error {
 		nodeReadBody.Filter.UUID = filter.UUID
 		nodePOST, err = client.NodeReadByFilter(&nodeReadBody)
 		if err != nil {
-			return err
+			return diag.FromErr(err)
 		}
 		POST = true
 	case filter.Hostname != "":
 		nodeReadBody.Filter.Hostname = filter.Hostname
 		nodePOST, err = client.NodeReadByFilter(&nodeReadBody)
 		if err != nil {
-			return err
+			return diag.FromErr(err)
 		}
 		POST = true
 	default:
 		node, err = client.NodeRead(clientID, filter.Type)
 		if err != nil {
-			return err
+			return diag.FromErr(err)
 		}
 		POST = false
 	}
@@ -191,7 +194,7 @@ func dataSourceWallarmNodeRead(d *schema.ResourceData, m interface{}) error {
 	}
 
 	if err := d.Set("nodes", nodes); err != nil {
-		return fmt.Errorf("error setting nodes: %w", err)
+		return diag.FromErr(fmt.Errorf("error setting nodes: %w", err))
 	}
 
 	d.SetId(fmt.Sprintf("nodes_%d_%s", clientID, filter.Type))

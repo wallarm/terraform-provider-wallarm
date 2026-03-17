@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/wallarm/wallarm-go"
@@ -20,6 +21,9 @@ func resourceWallarmTrigger() *schema.Resource {
 		ReadContext:   resourceWallarmTriggerRead,
 		UpdateContext: resourceWallarmTriggerUpdate,
 		DeleteContext: resourceWallarmTriggerDelete,
+		Importer: &schema.ResourceImporter{
+			StateContext: resourceWallarmTriggerImport,
+		},
 
 		Schema: map[string]*schema.Schema{
 			"client_id": defaultClientIDWithValidationSchema,
@@ -48,7 +52,7 @@ func resourceWallarmTrigger() *schema.Resource {
 			"comment": {
 				Type:     schema.TypeString,
 				Optional: true,
-				Default:  "This trigger set by Terraform",
+				Computed: true,
 			},
 
 			"filters": {
@@ -101,11 +105,12 @@ func resourceWallarmTrigger() *schema.Resource {
 						"lock_time": {
 							Type:     schema.TypeInt,
 							Optional: true,
+							Computed: true,
 						},
 						"lock_time_format": {
 							Type:         schema.TypeString,
 							Optional:     true,
-							Default:      "Seconds",
+							Computed:     true,
 							ValidateFunc: validation.StringInSlice([]string{"Seconds", "Minutes", "Hours", "Days", "Weeks", "Months"}, false),
 						},
 					},
@@ -137,10 +142,16 @@ func resourceWallarmTriggerCreate(ctx context.Context, d *schema.ResourceData, m
 		triggerResp *wallarm.TriggerCreateResp
 	)
 
-	client := m.(wallarm.API)
-	clientID := retrieveClientID(d)
+	client := apiClient(m)
+	clientID, err := retrieveClientID(d, m)
+	if err != nil {
+		return diag.FromErr(err)
+	}
 	name := d.Get("name").(string)
 	comment := d.Get("comment").(string)
+	if comment == "" {
+		comment = "This trigger set by Terraform"
+	}
 	templateID := d.Get("template_id").(string)
 	enabled := d.Get("enabled").(bool)
 
@@ -232,13 +243,16 @@ func resourceWallarmTriggerCreate(ctx context.Context, d *schema.ResourceData, m
 }
 
 func resourceWallarmTriggerRead(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
-	client := m.(wallarm.API)
-	clientID := retrieveClientID(d)
+	client := apiClient(m)
+	clientID, err := retrieveClientID(d, m)
+	if err != nil {
+		return diag.FromErr(err)
+	}
 	triggerID := d.Get("trigger_id").(int)
 
 	triggers, err := client.TriggerRead(clientID)
 	if err != nil {
-		return nil
+		return diag.FromErr(fmt.Errorf("failed to read triggers for client %d: %w", clientID, err))
 	}
 
 	for _, t := range triggers.Triggers {
@@ -258,10 +272,16 @@ func resourceWallarmTriggerUpdate(ctx context.Context, d *schema.ResourceData, m
 		triggerResp *wallarm.TriggerCreateResp
 	)
 
-	client := m.(wallarm.API)
-	clientID := retrieveClientID(d)
+	client := apiClient(m)
+	clientID, err := retrieveClientID(d, m)
+	if err != nil {
+		return diag.FromErr(err)
+	}
 	name := d.Get("name").(string)
 	comment := d.Get("comment").(string)
+	if comment == "" {
+		comment = "This trigger set by Terraform"
+	}
 	templateID := d.Get("template_id").(string)
 	enabled := d.Get("enabled").(bool)
 	triggerID := d.Get("trigger_id").(int)
@@ -325,8 +345,11 @@ func resourceWallarmTriggerUpdate(ctx context.Context, d *schema.ResourceData, m
 }
 
 func resourceWallarmTriggerDelete(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
-	client := m.(wallarm.API)
-	clientID := retrieveClientID(d)
+	client := apiClient(m)
+	clientID, err := retrieveClientID(d, m)
+	if err != nil {
+		return diag.FromErr(err)
+	}
 	triggerID := d.Get("trigger_id").(int)
 
 	if err := client.TriggerDelete(clientID, triggerID); err != nil {
@@ -334,6 +357,32 @@ func resourceWallarmTriggerDelete(_ context.Context, d *schema.ResourceData, m i
 	}
 
 	return nil
+}
+
+// resourceWallarmTriggerImport handles terraform import.
+// Format: {client_id}/{template_id}/{trigger_id}
+// Example: terraform import wallarm_trigger.my_trigger 8649/attacks_exceeded/123
+func resourceWallarmTriggerImport(_ context.Context, d *schema.ResourceData, _ interface{}) ([]*schema.ResourceData, error) {
+	parts := strings.SplitN(d.Id(), "/", 3)
+	if len(parts) != 3 {
+		return nil, fmt.Errorf("invalid id %q, expected format: {client_id}/{template_id}/{trigger_id}", d.Id())
+	}
+
+	clientID, err := strconv.Atoi(parts[0])
+	if err != nil {
+		return nil, fmt.Errorf("invalid client_id %q: %w", parts[0], err)
+	}
+	triggerID, err := strconv.Atoi(parts[2])
+	if err != nil {
+		return nil, fmt.Errorf("invalid trigger_id %q: %w", parts[2], err)
+	}
+
+	d.Set("client_id", clientID)
+	d.Set("template_id", parts[1])
+	d.Set("trigger_id", triggerID)
+	d.SetId(d.Id())
+
+	return []*schema.ResourceData{d}, nil
 }
 
 func expandWallarmTriggerFilter(d interface{}) (*[]wallarm.TriggerFilters, error) {
@@ -432,9 +481,15 @@ func expandWallarmTriggerAction(d interface{}) *[]wallarm.TriggerActions {
 		lockTime, ok := m["lock_time"]
 
 		if ok && (a.ID == "block_ips" || a.ID == "add_to_graylist") {
-
-			lockTimeInt := lockTime.(int)
-			switch m["lock_time_format"] {
+			lockTimeInt, ok := lockTime.(int)
+			if !ok {
+				continue
+			}
+			lockTimeFormat, _ := m["lock_time_format"].(string)
+			if lockTimeFormat == "" {
+				lockTimeFormat = "Seconds"
+			}
+			switch lockTimeFormat {
 			case "Minutes":
 				lockTimeInt *= 60
 			case "Hours":

@@ -1,11 +1,13 @@
 package wallarm
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"strconv"
 	"strings"
 
+	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/samber/lo"
 	"github.com/wallarm/terraform-provider-wallarm/wallarm/common/resourcerule"
 	"github.com/wallarm/wallarm-go"
@@ -28,39 +30,42 @@ func resourceWallarmCredentialStuffingPoint() *schema.Resource {
 		"action": defaultResourceRuleActionSchema,
 	}
 	return &schema.Resource{
-		Create: resourceWallarmCredentialStuffingPointCreate,
-		Read:   resourceWallarmCredentialStuffingPointRead,
-		Update: resourceWallarmCredentialStuffingPointUpdate,
-		Delete: resourceWallarmCredentialStuffingPointDelete,
+		CreateContext: resourceWallarmCredentialStuffingPointCreate,
+		ReadContext:   resourceWallarmCredentialStuffingPointRead,
+		UpdateContext: resourceWallarmCredentialStuffingPointUpdate,
+		DeleteContext: resourceWallarmCredentialStuffingPointDelete,
 		Importer: &schema.ResourceImporter{
-			State: resourceWallarmCredentialStuffingPointImport,
+			StateContext: resourceWallarmCredentialStuffingPointImport,
 		},
 		Schema: lo.Assign(fields, commonResourceRuleFields),
 	}
 }
 
-func resourceWallarmCredentialStuffingPointCreate(d *schema.ResourceData, m interface{}) error {
-	client := m.(wallarm.API)
-	clientID := retrieveClientID(d)
+func resourceWallarmCredentialStuffingPointCreate(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+	client := apiClient(m)
+	clientID, err := retrieveClientID(d, m)
+	if err != nil {
+		return diag.FromErr(err)
+	}
 	fields := getCommonResourceRuleFieldsDTOFromResourceData(d)
 	credStuffType := d.Get("cred_stuff_type").(string)
 
 	iPoint := d.Get("point").([]interface{})
 	point, err := expandPointsToTwoDimensionalArray(iPoint)
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 
 	iLoginPoint := d.Get("login_point").([]interface{})
 	loginPoint, err := expandPointsToTwoDimensionalArray(iLoginPoint)
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 
 	actionsFromState := d.Get("action").(*schema.Set)
 	action, err := resourcerule.ExpandSetToActionDetailsList(actionsFromState)
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 
 	resp, err := client.HintCreate(&wallarm.ActionCreate{
@@ -76,10 +81,9 @@ func resourceWallarmCredentialStuffingPointCreate(d *schema.ResourceData, m inte
 		Set:                 fields.Set,
 		Active:              fields.Active,
 		Title:               fields.Title,
-		Mitigation:          fields.Mitigation,
 	})
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 
 	resID := fmt.Sprintf("%d/%d/%d", resp.Body.Clientid, resp.Body.ActionID, resp.Body.ID)
@@ -88,12 +92,15 @@ func resourceWallarmCredentialStuffingPointCreate(d *schema.ResourceData, m inte
 	d.Set("action_id", resp.Body.ActionID)
 	d.Set("rule_id", resp.Body.ID)
 
-	return resourceWallarmCredentialStuffingPointRead(d, m)
+	return resourceWallarmCredentialStuffingPointRead(context.TODO(), d, m)
 }
 
-func resourceWallarmCredentialStuffingPointRead(d *schema.ResourceData, m interface{}) error {
-	client := m.(wallarm.API)
-	clientID := retrieveClientID(d)
+func resourceWallarmCredentialStuffingPointRead(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+	client := apiClient(m)
+	clientID, err := retrieveClientID(d, m)
+	if err != nil {
+		return diag.FromErr(err)
+	}
 	ruleID := d.Get("rule_id").(int)
 
 	rule, err := findCredentialStuffingRule(client, clientID, ruleID)
@@ -105,15 +112,15 @@ func resourceWallarmCredentialStuffingPointRead(d *schema.ResourceData, m interf
 		}
 	}
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 
 	d.Set("cred_stuff_type", rule.CredStuffType)
 	if err := d.Set("point", wrapPointElements(rule.Point)); err != nil {
-		return fmt.Errorf("error setting point: %w", err)
+		return diag.FromErr(fmt.Errorf("error setting point: %w", err))
 	}
 	if err := d.Set("login_point", wrapPointElements(rule.LoginPoint)); err != nil {
-		return fmt.Errorf("error setting login_point: %w", err)
+		return diag.FromErr(fmt.Errorf("error setting login_point: %w", err))
 	}
 	d.Set("rule_type", rule.Type)
 	d.Set("action_id", rule.ActionID)
@@ -131,48 +138,51 @@ func resourceWallarmCredentialStuffingPointRead(d *schema.ResourceData, m interf
 	for _, a := range rule.Action {
 		acts, err := actionDetailsToMap(a)
 		if err != nil {
-			return err
+			return diag.FromErr(err)
 		}
 		actionsSet.Add(acts)
 	}
 	if err := d.Set("action", &actionsSet); err != nil {
-		return fmt.Errorf("error setting action: %w", err)
+		return diag.FromErr(fmt.Errorf("error setting action: %w", err))
 	}
 
 	return nil
 }
 
-func resourceWallarmCredentialStuffingPointDelete(d *schema.ResourceData, m interface{}) error {
-	client := m.(wallarm.API)
-	clientID := retrieveClientID(d)
+func resourceWallarmCredentialStuffingPointDelete(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+	client := apiClient(m)
+	clientID, err := retrieveClientID(d, m)
+	if err != nil {
+		return diag.FromErr(err)
+	}
 	ruleID := d.Get("rule_id").(int)
 
-	err := client.HintDelete(&wallarm.HintDelete{
+	err = client.HintDelete(&wallarm.HintDelete{
 		Filter: &wallarm.HintDeleteFilter{
 			Clientid: []int{clientID},
 			ID:       ruleID,
 		},
 	})
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 
 	return nil
 }
 
-func resourceWallarmCredentialStuffingPointUpdate(d *schema.ResourceData, m interface{}) error {
-	client := m.(wallarm.API)
+func resourceWallarmCredentialStuffingPointUpdate(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+	client := apiClient(m)
 	variativityDisabled, _ := d.Get("variativity_disabled").(bool)
 	comment, _ := d.Get("comment").(string)
 	_, err := client.HintUpdateV3(d.Get("rule_id").(int), &wallarm.HintUpdateV3Params{
 		VariativityDisabled: lo.ToPtr(variativityDisabled),
 		Comment:             lo.ToPtr(comment),
 	})
-	return err
+	return diag.FromErr(err)
 }
 
-func resourceWallarmCredentialStuffingPointImport(d *schema.ResourceData, m interface{}) ([]*schema.ResourceData, error) {
-	client := m.(wallarm.API)
+func resourceWallarmCredentialStuffingPointImport(_ context.Context, d *schema.ResourceData, m interface{}) ([]*schema.ResourceData, error) {
+	client := apiClient(m)
 	idParts := strings.SplitN(d.Id(), "/", 3)
 	if len(idParts) != 3 {
 		return nil, fmt.Errorf("invalid id (%q) specified, should be in format \"{clientID}/{actionID}/{ruleID}\"", d.Id())
@@ -199,7 +209,7 @@ func resourceWallarmCredentialStuffingPointImport(d *schema.ResourceData, m inte
 	d.Set("client_id", clientID)
 	d.Set("rule_id", ruleID)
 	d.Set("action_id", actionID)
-	d.Set("type", rule.Type)
+	d.Set("cred_stuff_type", rule.Type)
 
 	actionsSet := schema.Set{
 		F: hashResponseActionDetails,

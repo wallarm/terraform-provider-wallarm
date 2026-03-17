@@ -23,6 +23,12 @@ func TestAccRuleIgnoreRegexCreate(t *testing.T) {
 					resource.TestCheckResourceAttr(name, "point.0.1", "X-AUTH"),
 				),
 			},
+			{
+				ResourceName:            name,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"rule_type"},
+			},
 		},
 	})
 }

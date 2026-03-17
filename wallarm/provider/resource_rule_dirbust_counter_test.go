@@ -29,6 +29,12 @@ func TestAccRuleDirbustCounterCreate(t *testing.T) {
 				),
 				ExpectNonEmptyPlan: false,
 			},
+			{
+				ResourceName:            name,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"rule_type"},
+			},
 		},
 	})
 }
@@ -61,7 +67,7 @@ resource "wallarm_rule_dirbust_counter" "%[1]s" {
 }
 
 func testAccCheckWallarmRuleDirbustCounterDestroy(s *terraform.State) error {
-	client := testAccProvider.Meta().(wallarm.API)
+	client := testAccProvider.Meta().(*ProviderMeta).Client
 
 	for _, rs := range s.RootModule().Resources {
 		if rs.Type != "dirbust_counter" {
@@ -78,7 +84,7 @@ func testAccCheckWallarmRuleDirbustCounterDestroy(s *terraform.State) error {
 		}
 
 		hint := &wallarm.HintRead{
-			Limit:     1000,
+			Limit:     DefaultAPIListLimit,
 			Offset:    0,
 			OrderBy:   "updated_at",
 			OrderDesc: true,

@@ -1,21 +1,26 @@
 package wallarm
 
 import (
+	"context"
 	"fmt"
-	"strings"
 
 	"github.com/wallarm/wallarm-go"
 
+	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
 func resourceWallarmOpsGenie() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceWallarmOpsGenieCreate,
-		Read:   resourceWallarmOpsGenieRead,
-		Update: resourceWallarmOpsGenieUpdate,
-		Delete: resourceWallarmOpsGenieDelete,
+		CreateContext: resourceWallarmOpsGenieCreate,
+		ReadContext:   resourceWallarmOpsGenieRead,
+		UpdateContext: resourceWallarmOpsGenieUpdate,
+		DeleteContext: resourceWallarmOpsGenieDelete,
+
+		Importer: &schema.ResourceImporter{
+			StateContext: schema.ImportStatePassthroughContext,
+		},
 
 		Schema: map[string]*schema.Schema{
 			"client_id": defaultClientIDWithValidationSchema,
@@ -96,9 +101,12 @@ func resourceWallarmOpsGenie() *schema.Resource {
 	}
 }
 
-func resourceWallarmOpsGenieCreate(d *schema.ResourceData, m interface{}) error {
-	client := m.(wallarm.API)
-	clientID := retrieveClientID(d)
+func resourceWallarmOpsGenieCreate(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+	client := apiClient(m)
+	clientID, err := retrieveClientID(d, m)
+	if err != nil {
+		return diag.FromErr(err)
+	}
 	name := d.Get("name").(string)
 	apiURL := d.Get("api_url").(string)
 	apiToken := d.Get("api_token").(string)
@@ -119,7 +127,7 @@ func resourceWallarmOpsGenieCreate(d *schema.ResourceData, m interface{}) error 
 
 	createRes, err := client.IntegrationCreate(&opsGenieBody)
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 
 	d.Set("integration_id", createRes.Body.ID)
@@ -127,19 +135,22 @@ func resourceWallarmOpsGenieCreate(d *schema.ResourceData, m interface{}) error 
 	resID := fmt.Sprintf("%d/%s/%d", clientID, createRes.Body.Type, createRes.Body.ID)
 	d.SetId(resID)
 
-	return resourceWallarmOpsGenieRead(d, m)
+	return resourceWallarmOpsGenieRead(context.TODO(), d, m)
 }
 
-func resourceWallarmOpsGenieRead(d *schema.ResourceData, m interface{}) error {
-	client := m.(wallarm.API)
-	clientID := retrieveClientID(d)
+func resourceWallarmOpsGenieRead(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+	client := apiClient(m)
+	clientID, err := retrieveClientID(d, m)
+	if err != nil {
+		return diag.FromErr(err)
+	}
 	opsGenie, err := client.IntegrationRead(clientID, d.Get("integration_id").(int))
 	if err != nil {
-		if strings.HasPrefix(err.Error(), "Not found.") {
+		if isNotFoundError(err) {
 			d.SetId("")
 			return nil
 		}
-		return err
+		return diag.FromErr(err)
 	}
 
 	d.Set("integration_id", opsGenie.ID)
@@ -152,17 +163,20 @@ func resourceWallarmOpsGenieRead(d *schema.ResourceData, m interface{}) error {
 	return nil
 }
 
-func resourceWallarmOpsGenieUpdate(d *schema.ResourceData, m interface{}) error {
-	client := m.(wallarm.API)
-	clientID := retrieveClientID(d)
+func resourceWallarmOpsGenieUpdate(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+	client := apiClient(m)
+	clientID, err := retrieveClientID(d, m)
+	if err != nil {
+		return diag.FromErr(err)
+	}
 
 	opsgenie, err := client.IntegrationRead(clientID, d.Get("integration_id").(int))
 	if err != nil {
-		if strings.HasPrefix(err.Error(), "Not found.") {
+		if isNotFoundError(err) {
 			d.SetId("")
 			return nil
 		}
-		return err
+		return diag.FromErr(err)
 	}
 
 	if d.HasChange("event") {
@@ -179,7 +193,7 @@ func resourceWallarmOpsGenieUpdate(d *schema.ResourceData, m interface{}) error 
 		}
 		updateRes, err := client.IntegrationUpdate(&fullBody, opsgenie.ID)
 		if err != nil {
-			return err
+			return diag.FromErr(err)
 		}
 		d.Set("integration_id", updateRes.Body.ID)
 		resID := fmt.Sprintf("%d/%s/%d", clientID, updateRes.Body.Type, updateRes.Body.ID)
@@ -201,7 +215,7 @@ func resourceWallarmOpsGenieUpdate(d *schema.ResourceData, m interface{}) error 
 		if len(updateBody) > 0 {
 			updateRes, err := client.IntegrationPartialUpdate(opsgenie.ID, updateBody)
 			if err != nil {
-				return err
+				return diag.FromErr(err)
 			}
 			d.Set("integration_id", updateRes.Body.ID)
 			resID := fmt.Sprintf("%d/%s/%d", clientID, updateRes.Body.Type, updateRes.Body.ID)
@@ -209,14 +223,14 @@ func resourceWallarmOpsGenieUpdate(d *schema.ResourceData, m interface{}) error 
 		}
 	}
 
-	return resourceWallarmOpsGenieRead(d, m)
+	return resourceWallarmOpsGenieRead(context.TODO(), d, m)
 }
 
-func resourceWallarmOpsGenieDelete(d *schema.ResourceData, m interface{}) error {
-	client := m.(wallarm.API)
+func resourceWallarmOpsGenieDelete(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+	client := apiClient(m)
 	integrationID := d.Get("integration_id").(int)
 	if err := client.IntegrationDelete(integrationID); err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 
 	return nil

@@ -1,10 +1,12 @@
 package wallarm
 
 import (
+	"context"
 	"fmt"
 	"strconv"
 	"strings"
 
+	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 	"github.com/wallarm/terraform-provider-wallarm/wallarm/common/resourcerule"
 	"github.com/wallarm/wallarm-go"
@@ -62,29 +64,40 @@ func resourceWallarmGraphqlDetection() *schema.Resource {
 	sh := lo.Assign(fields, commonResourceRuleFields)
 
 	return &schema.Resource{
-		Create: resourceWallarmGraphqlDetectionCreate,
-		Read:   resourceWallarmGraphqlDetectionRead,
-		Update: resourceWallarmGraphqlDetectionUpdate,
-		Delete: resourceWallarmGraphqlDetectionDelete,
+		CreateContext: resourceWallarmGraphqlDetectionCreate,
+		ReadContext:   resourceWallarmGraphqlDetectionRead,
+		UpdateContext: resourceWallarmGraphqlDetectionUpdate,
+		DeleteContext: resourceWallarmGraphqlDetectionDelete,
 		Importer: &schema.ResourceImporter{
-			State: resourceWallarmGraphqlDetectionImport,
+			StateContext: resourceWallarmGraphqlDetectionImport,
 		},
 		Schema: sh,
 	}
 }
 
-func resourceWallarmGraphqlDetectionCreate(d *schema.ResourceData, m interface{}) error {
-	return resourcerule.ResourceRuleWallarmCreate(d, m.(wallarm.API), retrieveClientID(d),
-		"graphql_detection", "", resourceWallarmGraphqlDetectionRead)
+func resourceWallarmGraphqlDetectionCreate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+	clientID, err := retrieveClientID(d, m)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+	return resourcerule.ResourceRuleWallarmCreate(ctx, d, apiClient(m), clientID,
+		"graphql_detection", "", resourceWallarmGraphqlDetectionRead, m)
 }
 
-func resourceWallarmGraphqlDetectionRead(d *schema.ResourceData, m interface{}) error {
-	return resourcerule.ResourceRuleWallarmRead(d, retrieveClientID(d), m.(wallarm.API))
+func resourceWallarmGraphqlDetectionRead(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+	clientID, err := retrieveClientID(d, m)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+	return diag.FromErr(resourcerule.ResourceRuleWallarmRead(d, clientID, apiClient(m)))
 }
 
-func resourceWallarmGraphqlDetectionDelete(d *schema.ResourceData, m interface{}) error {
-	client := m.(wallarm.API)
-	clientID := retrieveClientID(d)
+func resourceWallarmGraphqlDetectionDelete(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+	client := apiClient(m)
+	clientID, err := retrieveClientID(d, m)
+	if err != nil {
+		return diag.FromErr(err)
+	}
 	actionID := d.Get("action_id").(int)
 
 	rule := &wallarm.ActionRead{
@@ -93,17 +106,17 @@ func resourceWallarmGraphqlDetectionDelete(d *schema.ResourceData, m interface{}
 			Clientid: []int{clientID},
 			ID:       []int{actionID},
 		},
-		Limit:  1000,
+		Limit:  DefaultAPIListLimit,
 		Offset: 0,
 	}
 	respRules, err := client.RuleRead(rule)
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 
 	if len(respRules.Body) == 1 && respRules.Body[0].Hints == 1 && respRules.Body[0].GroupedHintsCount == 1 {
 		if err = client.ActionDelete(actionID); err != nil {
-			return err
+			return diag.FromErr(err)
 		}
 	} else {
 		ruleID := d.Get("rule_id").(int)
@@ -115,24 +128,24 @@ func resourceWallarmGraphqlDetectionDelete(d *schema.ResourceData, m interface{}
 		}
 
 		if err = client.HintDelete(h); err != nil {
-			return err
+			return diag.FromErr(err)
 		}
 	}
 	return nil
 }
 
-func resourceWallarmGraphqlDetectionUpdate(d *schema.ResourceData, m interface{}) error {
-	client := m.(wallarm.API)
+func resourceWallarmGraphqlDetectionUpdate(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+	client := apiClient(m)
 	variativityDisabled, _ := d.Get("variativity_disabled").(bool)
 	comment, _ := d.Get("comment").(string)
 	_, err := client.HintUpdateV3(d.Get("rule_id").(int), &wallarm.HintUpdateV3Params{
 		VariativityDisabled: lo.ToPtr(variativityDisabled),
 		Comment:             lo.ToPtr(comment),
 	})
-	return err
+	return diag.FromErr(err)
 }
 
-func resourceWallarmGraphqlDetectionImport(d *schema.ResourceData, _ interface{}) ([]*schema.ResourceData, error) {
+func resourceWallarmGraphqlDetectionImport(_ context.Context, d *schema.ResourceData, _ interface{}) ([]*schema.ResourceData, error) {
 	idAttr := strings.SplitN(d.Id(), "/", 3)
 	if len(idAttr) == 3 {
 		clientID, err := strconv.Atoi(idAttr[0])

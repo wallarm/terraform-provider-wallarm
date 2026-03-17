@@ -2,6 +2,7 @@ package resourcerule
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"hash/crc32"
@@ -10,6 +11,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/pkg/errors"
 
@@ -147,9 +149,9 @@ func ResourceRuleWallarmRead(d *schema.ResourceData, clientID int, cli wallarm.A
 	for _, a := range updatedRule.Action {
 		acts, err := actionDetailsToMap(a)
 		if err != nil {
-		} else {
-			actionsSet.Add(acts)
+			return fmt.Errorf("failed to map action details: %w", err)
 		}
+		actionsSet.Add(acts)
 	}
 	setIfExists(d, "action", &actionsSet)
 
@@ -158,16 +160,18 @@ func ResourceRuleWallarmRead(d *schema.ResourceData, clientID int, cli wallarm.A
 
 // nolint
 func ResourceRuleWallarmCreate(
+	ctx context.Context,
 	d *schema.ResourceData,
 	cli wallarm.API,
 	clientID int,
 	ruleType, attackType string,
-	readMethod func(*schema.ResourceData, interface{}) error,
-) error {
+	readMethod func(context.Context, *schema.ResourceData, interface{}) diag.Diagnostics,
+	m interface{},
+) diag.Diagnostics {
 	actionsFromState := d.Get("action").(*schema.Set)
 	action, err := ExpandSetToActionDetailsList(actionsFromState)
 	if err != nil {
-		return errors.WithMessage(err, "on ExpandSetToActionDetailsList")
+		return diag.FromErr(errors.WithMessage(err, "on ExpandSetToActionDetailsList"))
 	}
 
 	enumeratedParametersFromState := GetValueWithTypeCastingOrDefault[[]interface{}](d, "enumerated_parameters")
@@ -188,7 +192,7 @@ func ResourceRuleWallarmCreate(
 	pointFromState := GetValueWithTypeCastingOrDefault[[]interface{}](d, "point")
 	points, err := expandPointsToTwoDimensionalArray(pointFromState)
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 
 	wm := &wallarm.ActionCreate{
@@ -202,7 +206,6 @@ func ResourceRuleWallarmCreate(
 		Set:                  GetValueWithTypeCastingOrDefault[string](d, "set"),
 		Active:               GetValueWithTypeCastingOrDefault[bool](d, "active"),
 		Title:                GetValueWithTypeCastingOrDefault[string](d, "title"),
-		Mitigation:           GetValueWithTypeCastingOrDefault[string](d, "mitigation"),
 		AttackType:           attackType,
 		Reaction:             reaction,
 		Threshold:            threshold,
@@ -224,7 +227,7 @@ func ResourceRuleWallarmCreate(
 	actionResp, err := cli.HintCreate(wm)
 	if err != nil {
 		d.SetId("")
-		return err
+		return diag.FromErr(err)
 	}
 
 	d.Set("rule_id", actionResp.Body.ID)
@@ -234,7 +237,7 @@ func ResourceRuleWallarmCreate(
 	resID := fmt.Sprintf("%d/%d/%d", clientID, actionResp.Body.ActionID, actionResp.Body.ID)
 	d.SetId(resID)
 
-	return readMethod(d, cli)
+	return readMethod(ctx, d, m)
 }
 
 // nolint

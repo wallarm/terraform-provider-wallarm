@@ -1,10 +1,12 @@
 package wallarm
 
 import (
+	"context"
 	"fmt"
 	"strconv"
 	"strings"
 
+	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/samber/lo"
 	"github.com/wallarm/terraform-provider-wallarm/wallarm/common"
 	"github.com/wallarm/terraform-provider-wallarm/wallarm/common/resourcerule"
@@ -33,26 +35,29 @@ func resourceWallarmOverlimitResSettings() *schema.Resource {
 		},
 	}
 	return &schema.Resource{
-		Create: resourceWallarmOverlimitResSettingsCreate,
-		Read:   resourceWallarmOverlimitResSettingsRead,
-		Update: resourceWallarmOverlimitResSettingsUpdate,
-		Delete: resourceWallarmOverlimitResSettingsDelete,
+		CreateContext: resourceWallarmOverlimitResSettingsCreate,
+		ReadContext:   resourceWallarmOverlimitResSettingsRead,
+		UpdateContext: resourceWallarmOverlimitResSettingsUpdate,
+		DeleteContext: resourceWallarmOverlimitResSettingsDelete,
 		Importer: &schema.ResourceImporter{
-			State: resourceWallarmOverlimitResSettingsImport,
+			StateContext: resourceWallarmOverlimitResSettingsImport,
 		},
 		Schema: lo.Assign(fields, commonResourceRuleFields),
 	}
 }
 
-func resourceWallarmOverlimitResSettingsCreate(d *schema.ResourceData, m interface{}) error {
-	client := m.(wallarm.API)
-	clientID := retrieveClientID(d)
+func resourceWallarmOverlimitResSettingsCreate(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+	client := apiClient(m)
+	clientID, err := retrieveClientID(d, m)
+	if err != nil {
+		return diag.FromErr(err)
+	}
 	fields := getCommonResourceRuleFieldsDTOFromResourceData(d)
 
 	actionsFromState := d.Get("action").(*schema.Set)
 	action, err := resourcerule.ExpandSetToActionDetailsList(actionsFromState)
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 
 	overlimitTime := d.Get("overlimit_time").(int)
@@ -70,12 +75,11 @@ func resourceWallarmOverlimitResSettingsCreate(d *schema.ResourceData, m interfa
 		Set:                 fields.Set,
 		Active:              fields.Active,
 		Title:               fields.Title,
-		Mitigation:          fields.Mitigation,
 	}
 
 	actionResp, err := client.HintCreate(actionBody)
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 	actionID := actionResp.Body.ActionID
 
@@ -86,16 +90,23 @@ func resourceWallarmOverlimitResSettingsCreate(d *schema.ResourceData, m interfa
 	resID := fmt.Sprintf("%d/%d/%d", clientID, actionID, actionResp.Body.ID)
 	d.SetId(resID)
 
-	return resourceWallarmOverlimitResSettingsRead(d, m)
+	return resourceWallarmOverlimitResSettingsRead(context.TODO(), d, m)
 }
 
-func resourceWallarmOverlimitResSettingsRead(d *schema.ResourceData, m interface{}) error {
-	return resourcerule.ResourceRuleWallarmRead(d, retrieveClientID(d), m.(wallarm.API), common.ReadOptionWithAction)
+func resourceWallarmOverlimitResSettingsRead(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+	clientID, err := retrieveClientID(d, m)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+	return diag.FromErr(resourcerule.ResourceRuleWallarmRead(d, clientID, apiClient(m), common.ReadOptionWithAction))
 }
 
-func resourceWallarmOverlimitResSettingsDelete(d *schema.ResourceData, m interface{}) error {
-	client := m.(wallarm.API)
-	clientID := retrieveClientID(d)
+func resourceWallarmOverlimitResSettingsDelete(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+	client := apiClient(m)
+	clientID, err := retrieveClientID(d, m)
+	if err != nil {
+		return diag.FromErr(err)
+	}
 	ruleID := d.Get("rule_id").(int)
 
 	h := &wallarm.HintDelete{
@@ -106,24 +117,24 @@ func resourceWallarmOverlimitResSettingsDelete(d *schema.ResourceData, m interfa
 	}
 
 	if err := client.HintDelete(h); err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 
 	return nil
 }
 
-func resourceWallarmOverlimitResSettingsUpdate(d *schema.ResourceData, m interface{}) error {
-	client := m.(wallarm.API)
+func resourceWallarmOverlimitResSettingsUpdate(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+	client := apiClient(m)
 	variativityDisabled, _ := d.Get("variativity_disabled").(bool)
 	comment, _ := d.Get("comment").(string)
 	_, err := client.HintUpdateV3(d.Get("rule_id").(int), &wallarm.HintUpdateV3Params{
 		VariativityDisabled: lo.ToPtr(variativityDisabled),
 		Comment:             lo.ToPtr(comment),
 	})
-	return err
+	return diag.FromErr(err)
 }
 
-func resourceWallarmOverlimitResSettingsImport(d *schema.ResourceData, _ interface{}) ([]*schema.ResourceData, error) {
+func resourceWallarmOverlimitResSettingsImport(_ context.Context, d *schema.ResourceData, _ interface{}) ([]*schema.ResourceData, error) {
 	idAttr := strings.SplitN(d.Id(), "/", 3)
 	if len(idAttr) == 3 {
 		clientID, err := strconv.Atoi(idAttr[0])

@@ -1,10 +1,12 @@
 package wallarm
 
 import (
+	"context"
 	"fmt"
 	"strconv"
 	"strings"
 
+	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/samber/lo"
 	"github.com/wallarm/terraform-provider-wallarm/wallarm/common"
 	"github.com/wallarm/terraform-provider-wallarm/wallarm/common/resourcerule"
@@ -28,37 +30,40 @@ func resourceWallarmDisableAttackType() *schema.Resource {
 		"point": defaultPointSchema,
 	}
 	return &schema.Resource{
-		Create: resourceWallarmDisableAttackTypeCreate,
-		Read:   resourceWallarmDisableAttackTypeRead,
-		Update: resourceWallarmDisableAttackTypeUpdate,
-		Delete: resourceWallarmDisableAttackTypeDelete,
+		CreateContext: resourceWallarmDisableAttackTypeCreate,
+		ReadContext:   resourceWallarmDisableAttackTypeRead,
+		UpdateContext: resourceWallarmDisableAttackTypeUpdate,
+		DeleteContext: resourceWallarmDisableAttackTypeDelete,
 		Importer: &schema.ResourceImporter{
-			State: resourceWallarmDisableAttackTypeImport,
+			StateContext: resourceWallarmDisableAttackTypeImport,
 		},
 		Schema: lo.Assign(fields, commonResourceRuleFields),
 	}
 }
 
-func resourceWallarmDisableAttackTypeCreate(d *schema.ResourceData, m interface{}) error {
-	client := m.(wallarm.API)
-	clientID := retrieveClientID(d)
+func resourceWallarmDisableAttackTypeCreate(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+	client := apiClient(m)
+	clientID, err := retrieveClientID(d, m)
+	if err != nil {
+		return diag.FromErr(err)
+	}
 	fields := getCommonResourceRuleFieldsDTOFromResourceData(d)
 	attackType := d.Get("attack_type").(string)
 
 	ps := d.Get("point").([]interface{})
 	if err := d.Set("point", ps); err != nil {
-		return fmt.Errorf("error setting point: %w", err)
+		return diag.FromErr(fmt.Errorf("error setting point: %w", err))
 	}
 
 	points, err := expandPointsToTwoDimensionalArray(ps)
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 
 	actionsFromState := d.Get("action").(*schema.Set)
 	action, err := resourcerule.ExpandSetToActionDetailsList(actionsFromState)
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 
 	wm := &wallarm.ActionCreate{
@@ -73,12 +78,11 @@ func resourceWallarmDisableAttackTypeCreate(d *schema.ResourceData, m interface{
 		Set:                 fields.Set,
 		Active:              fields.Active,
 		Title:               fields.Title,
-		Mitigation:          fields.Mitigation,
 	}
 
 	actionResp, err := client.HintCreate(wm)
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 
 	d.Set("rule_id", actionResp.Body.ID)
@@ -88,16 +92,23 @@ func resourceWallarmDisableAttackTypeCreate(d *schema.ResourceData, m interface{
 	resID := fmt.Sprintf("%d/%d/%d", clientID, actionResp.Body.ActionID, actionResp.Body.ID)
 	d.SetId(resID)
 
-	return resourceWallarmDisableAttackTypeRead(d, m)
+	return resourceWallarmDisableAttackTypeRead(context.TODO(), d, m)
 }
 
-func resourceWallarmDisableAttackTypeRead(d *schema.ResourceData, m interface{}) error {
-	return resourcerule.ResourceRuleWallarmRead(d, retrieveClientID(d), m.(wallarm.API), common.ReadOptionWithPoint)
+func resourceWallarmDisableAttackTypeRead(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+	clientID, err := retrieveClientID(d, m)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+	return diag.FromErr(resourcerule.ResourceRuleWallarmRead(d, clientID, apiClient(m), common.ReadOptionWithPoint))
 }
 
-func resourceWallarmDisableAttackTypeDelete(d *schema.ResourceData, m interface{}) error {
-	client := m.(wallarm.API)
-	clientID := retrieveClientID(d)
+func resourceWallarmDisableAttackTypeDelete(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+	client := apiClient(m)
+	clientID, err := retrieveClientID(d, m)
+	if err != nil {
+		return diag.FromErr(err)
+	}
 	actionID := d.Get("action_id").(int)
 
 	rule := &wallarm.ActionRead{
@@ -106,17 +117,17 @@ func resourceWallarmDisableAttackTypeDelete(d *schema.ResourceData, m interface{
 			Clientid: []int{clientID},
 			ID:       []int{actionID},
 		},
-		Limit:  1000,
+		Limit:  DefaultAPIListLimit,
 		Offset: 0,
 	}
 	respRules, err := client.RuleRead(rule)
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 
 	if len(respRules.Body) == 1 && respRules.Body[0].Hints == 1 && respRules.Body[0].GroupedHintsCount == 1 {
 		if err := client.ActionDelete(actionID); err != nil {
-			return err
+			return diag.FromErr(err)
 		}
 	} else {
 		ruleID := d.Get("rule_id").(int)
@@ -128,25 +139,25 @@ func resourceWallarmDisableAttackTypeDelete(d *schema.ResourceData, m interface{
 		}
 
 		if err := client.HintDelete(h); err != nil {
-			return err
+			return diag.FromErr(err)
 		}
 	}
 	return nil
 }
 
-func resourceWallarmDisableAttackTypeUpdate(d *schema.ResourceData, m interface{}) error {
-	client := m.(wallarm.API)
+func resourceWallarmDisableAttackTypeUpdate(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+	client := apiClient(m)
 	variativityDisabled, _ := d.Get("variativity_disabled").(bool)
 	comment, _ := d.Get("comment").(string)
 	_, err := client.HintUpdateV3(d.Get("rule_id").(int), &wallarm.HintUpdateV3Params{
 		VariativityDisabled: lo.ToPtr(variativityDisabled),
 		Comment:             lo.ToPtr(comment),
 	})
-	return err
+	return diag.FromErr(err)
 }
 
 // nolint:dupl
-func resourceWallarmDisableAttackTypeImport(d *schema.ResourceData, _ interface{}) ([]*schema.ResourceData, error) {
+func resourceWallarmDisableAttackTypeImport(_ context.Context, d *schema.ResourceData, _ interface{}) ([]*schema.ResourceData, error) {
 	idAttr := strings.SplitN(d.Id(), "/", 3)
 	if len(idAttr) == 3 {
 		clientID, err := strconv.Atoi(idAttr[0])

@@ -1,21 +1,27 @@
 package wallarm
 
 import (
+	"context"
 	"fmt"
-	"strings"
 
 	"github.com/wallarm/wallarm-go"
 
+	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
 func resourceWallarmWebhook() *schema.Resource {
 	return &schema.Resource{
-		Create:        resourceWallarmWebhookCreate,
-		Read:          resourceWallarmWebhookRead,
-		Update:        resourceWallarmWebhookUpdate,
-		Delete:        resourceWallarmWebhookDelete,
+		CreateContext: resourceWallarmWebhookCreate,
+		ReadContext:   resourceWallarmWebhookRead,
+		UpdateContext: resourceWallarmWebhookUpdate,
+		DeleteContext: resourceWallarmWebhookDelete,
+
+		Importer: &schema.ResourceImporter{
+			StateContext: schema.ImportStatePassthroughContext,
+		},
+
 		CustomizeDiff: validateWithHeadersOnlySiem(),
 
 		Schema: map[string]*schema.Schema{
@@ -143,9 +149,12 @@ func resourceWallarmWebhook() *schema.Resource {
 	}
 }
 
-func resourceWallarmWebhookCreate(d *schema.ResourceData, m interface{}) error {
-	client := m.(wallarm.API)
-	clientID := retrieveClientID(d)
+func resourceWallarmWebhookCreate(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+	client := apiClient(m)
+	clientID, err := retrieveClientID(d, m)
+	if err != nil {
+		return diag.FromErr(err)
+	}
 	name := d.Get("name").(string)
 	active := d.Get("active").(bool)
 	webhookURL := d.Get("webhook_url").(string)
@@ -180,7 +189,7 @@ func resourceWallarmWebhookCreate(d *schema.ResourceData, m interface{}) error {
 
 	createRes, err := client.IntegrationWithAPICreate(&webhookBody)
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 
 	d.Set("integration_id", createRes.Body.ID)
@@ -188,19 +197,22 @@ func resourceWallarmWebhookCreate(d *schema.ResourceData, m interface{}) error {
 	resID := fmt.Sprintf("%d/%s/%d", clientID, createRes.Body.Type, createRes.Body.ID)
 	d.SetId(resID)
 
-	return resourceWallarmWebhookRead(d, m)
+	return resourceWallarmWebhookRead(context.TODO(), d, m)
 }
 
-func resourceWallarmWebhookRead(d *schema.ResourceData, m interface{}) error {
-	client := m.(wallarm.API)
-	clientID := retrieveClientID(d)
+func resourceWallarmWebhookRead(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+	client := apiClient(m)
+	clientID, err := retrieveClientID(d, m)
+	if err != nil {
+		return diag.FromErr(err)
+	}
 	webhook, err := client.IntegrationRead(clientID, d.Get("integration_id").(int))
 	if err != nil {
-		if strings.HasPrefix(err.Error(), "Not found.") {
+		if isNotFoundError(err) {
 			d.SetId("")
 			return nil
 		}
-		return err
+		return diag.FromErr(err)
 	}
 
 	d.Set("integration_id", webhook.ID)
@@ -213,17 +225,20 @@ func resourceWallarmWebhookRead(d *schema.ResourceData, m interface{}) error {
 	return nil
 }
 
-func resourceWallarmWebhookUpdate(d *schema.ResourceData, m interface{}) error {
-	client := m.(wallarm.API)
-	clientID := retrieveClientID(d)
+func resourceWallarmWebhookUpdate(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+	client := apiClient(m)
+	clientID, err := retrieveClientID(d, m)
+	if err != nil {
+		return diag.FromErr(err)
+	}
 
 	webhook, err := client.IntegrationRead(clientID, d.Get("integration_id").(int))
 	if err != nil {
-		if strings.HasPrefix(err.Error(), "Not found.") {
+		if isNotFoundError(err) {
 			d.SetId("")
 			return nil
 		}
-		return err
+		return diag.FromErr(err)
 	}
 
 	if d.HasChange("event") {
@@ -247,7 +262,7 @@ func resourceWallarmWebhookUpdate(d *schema.ResourceData, m interface{}) error {
 		}
 		updateRes, err := client.IntegrationWithAPIUpdate(&fullBody, webhook.ID)
 		if err != nil {
-			return err
+			return diag.FromErr(err)
 		}
 		d.Set("integration_id", updateRes.Body.ID)
 		resID := fmt.Sprintf("%d/%s/%d", clientID, updateRes.Body.Type, updateRes.Body.ID)
@@ -276,7 +291,7 @@ func resourceWallarmWebhookUpdate(d *schema.ResourceData, m interface{}) error {
 		if len(updateBody) > 0 {
 			updateRes, err := client.IntegrationPartialUpdate(webhook.ID, updateBody)
 			if err != nil {
-				return err
+				return diag.FromErr(err)
 			}
 			d.Set("integration_id", updateRes.Body.ID)
 			resID := fmt.Sprintf("%d/%s/%d", clientID, updateRes.Body.Type, updateRes.Body.ID)
@@ -284,14 +299,14 @@ func resourceWallarmWebhookUpdate(d *schema.ResourceData, m interface{}) error {
 		}
 	}
 
-	return resourceWallarmWebhookRead(d, m)
+	return resourceWallarmWebhookRead(context.TODO(), d, m)
 }
 
-func resourceWallarmWebhookDelete(d *schema.ResourceData, m interface{}) error {
-	client := m.(wallarm.API)
+func resourceWallarmWebhookDelete(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+	client := apiClient(m)
 	integrationID := d.Get("integration_id").(int)
 	if err := client.IntegrationDelete(integrationID); err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 
 	return nil

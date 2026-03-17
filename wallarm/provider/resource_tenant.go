@@ -5,13 +5,15 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"os"
 	"regexp"
+	"strconv"
 	"strings"
 
 	"github.com/wallarm/wallarm-go"
 
+	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
 const (
@@ -21,24 +23,17 @@ const (
 
 func resourceWallarmTenant() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceWallarmTenantCreate,
-		Read:   resourceWallarmTenantRead,
-		Update: resourceWallarmTenantUpdate,
-		Delete: resourceWallarmTenantDelete,
+		CreateContext: resourceWallarmTenantCreate,
+		ReadContext:   resourceWallarmTenantRead,
+		UpdateContext: resourceWallarmTenantUpdate,
+		DeleteContext: resourceWallarmTenantDelete,
 
 		Importer: &schema.ResourceImporter{
 			StateContext: resourceWallarmTenantImport,
 		},
 
 		Schema: map[string]*schema.Schema{
-			"client_id": {
-				Type:         schema.TypeInt,
-				Optional:     true,
-				Computed:     true,
-				ForceNew:     true,
-				Description:  "The parent Client ID",
-				ValidateFunc: validation.IntAtLeast(1),
-			},
+			"client_id": defaultClientIDWithValidationSchema,
 			"name": {
 				Type:        schema.TypeString,
 				Required:    true,
@@ -61,32 +56,15 @@ func resourceWallarmTenant() *schema.Resource {
 				Computed:    true,
 				Description: "Whether the tenant is enabled.",
 			},
+			"prevent_destroy": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				Default:  true,
+				Description: "If true, the tenant will only be disabled on destroy, not deleted. " +
+					"Set to false and export WALLARM_ALLOW_CLIENT_DELETE=1 to permanently delete.",
+			},
 		},
 	}
-}
-
-// parseTenantID parses the resource ID in format {clientID}/{uuidPrefix}.
-func parseTenantID(id string) (int, string, error) {
-	parts := strings.SplitN(id, "/", 2)
-	if len(parts) != 2 || parts[1] == "" {
-		return 0, "", fmt.Errorf("invalid resource ID %q, expected format: {clientID}/{uuidPrefix}", id)
-	}
-
-	var clientID int
-	if _, err := fmt.Sscanf(parts[0], "%d", &clientID); err != nil {
-		return 0, "", fmt.Errorf("invalid client_id %q: %w", parts[0], err)
-	}
-
-	return clientID, parts[1], nil
-}
-
-// uuidShort returns the first segment of a UUID (before the first hyphen).
-// e.g. "1463a8c4-ef77-4eb9-87ca-8a281dfdfceb" → "1463a8c4"
-func uuidShort(uuid string) string {
-	if i := strings.IndexByte(uuid, '-'); i > 0 {
-		return uuid[:i]
-	}
-	return uuid
 }
 
 // readTenantByID fetches a single client by its numeric ID and returns it.
@@ -107,64 +85,44 @@ func readTenantByID(client wallarm.API, tenantClientID int) (*wallarm.ClientInfo
 }
 
 // resourceWallarmTenantImport handles terraform import.
-// Format: {clientID}/{uuidPrefix}
-// The uuidPrefix is the first segment of the tenant UUID (before the first hyphen).
-// Example: terraform import wallarm_tenant.my_tenant 8649/1463a8c4
+// Format: {client_id}
+// Example: terraform import wallarm_tenant.my_tenant 110310
 func resourceWallarmTenantImport(_ context.Context, d *schema.ResourceData, m interface{}) ([]*schema.ResourceData, error) {
-	clientID, uuidPrefix, err := parseTenantID(d.Id())
+	tenantClientID, err := strconv.Atoi(d.Id())
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("invalid tenant client_id %q: %w", d.Id(), err)
 	}
 
-	client := m.(wallarm.API)
+	client := apiClient(m)
 
-	// List accessible clients once to resolve UUID prefix → tenant client ID.
-	res, err := client.ClientRead(&wallarm.ClientRead{
-		Limit:  1000,
-		Offset: 0,
-		Filter: &wallarm.ClientReadFilter{
-			Enabled: true,
-		},
-	})
+	tenant, err := readTenantByID(client, tenantClientID)
 	if err != nil {
-		return nil, fmt.Errorf("failed to list tenants: %w", err)
+		return nil, fmt.Errorf("failed to read tenant %d: %w", tenantClientID, err)
+	}
+	if tenant == nil {
+		return nil, fmt.Errorf("tenant with client_id %d not found", tenantClientID)
 	}
 
-	var matched []wallarm.ClientInfoBody
-	for _, c := range res.Body {
-		if strings.HasPrefix(c.UUID, uuidPrefix) {
-			matched = append(matched, c)
-		}
-	}
-
-	if len(matched) == 0 {
-		return nil, fmt.Errorf("no tenant found with UUID prefix %q", uuidPrefix)
-	}
-	if len(matched) > 1 {
-		return nil, fmt.Errorf("UUID prefix %q is ambiguous — matches %d tenants, use more characters", uuidPrefix, len(matched))
-	}
-
-	// Store the resolved tenant client ID and uuid prefix as the canonical ID.
-	d.Set("client_id", clientID)
-	d.SetId(fmt.Sprintf("%d/%s", matched[0].ID, uuidShort(matched[0].UUID)))
+	d.SetId(strconv.Itoa(tenantClientID))
+	d.Set("client_id", tenantClientID)
 
 	return []*schema.ResourceData{d}, nil
 }
 
-func resourceWallarmTenantCreate(d *schema.ResourceData, m interface{}) error {
-	client := m.(wallarm.API)
-	clientID := retrieveClientID(d)
+func resourceWallarmTenantCreate(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+	client := apiClient(m)
+	meta := m.(*ProviderMeta)
 
 	name := d.Get("name").(string)
 
 	clientRes, err := client.ClientRead(&wallarm.ClientRead{
 		Limit: 1,
 		Filter: &wallarm.ClientReadFilter{
-			ClientFilter: wallarm.ClientFilter{ID: clientID},
+			ClientFilter: wallarm.ClientFilter{ID: meta.DefaultClientID},
 		},
 	})
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 
 	partnerUUID := d.Get("partner_uuid").(string)
@@ -181,29 +139,28 @@ func resourceWallarmTenantCreate(d *schema.ResourceData, m interface{}) error {
 	res, err := client.ClientCreate(&params)
 	if err != nil {
 		if errors.Is(err, wallarm.ErrExistingResource) {
-			return ImportAsExistsError("wallarm_tenant", "{clientID}/{uuidPrefix}")
+			return diag.FromErr(ImportAsExistsError("wallarm_tenant", "{client_id}"))
 		}
-		return err
+		return diag.FromErr(err)
 	}
 
-	d.Set("client_id", clientID)
-	d.SetId(fmt.Sprintf("%d/%s", res.Body.ID, uuidShort(res.Body.UUID)))
+	d.SetId(strconv.Itoa(res.Body.ID))
+	d.Set("client_id", res.Body.ID)
 
-	return resourceWallarmTenantRead(d, m)
+	return resourceWallarmTenantRead(context.TODO(), d, m)
 }
 
-func resourceWallarmTenantRead(d *schema.ResourceData, m interface{}) error {
-	client := m.(wallarm.API)
+func resourceWallarmTenantRead(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+	client := apiClient(m)
 
-	tenantClientID, _, err := parseTenantID(d.Id())
+	tenantClientID, err := strconv.Atoi(d.Id())
 	if err != nil {
-		return err
+		return diag.FromErr(fmt.Errorf("invalid tenant ID %q: %w", d.Id(), err))
 	}
 
-	// Fetch single client by its ID — no listing needed.
 	tenant, err := readTenantByID(client, tenantClientID)
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 
 	if tenant == nil {
@@ -212,6 +169,7 @@ func resourceWallarmTenantRead(d *schema.ResourceData, m interface{}) error {
 		return nil
 	}
 
+	d.Set("client_id", tenantClientID)
 	d.Set("name", tenant.Name)
 	d.Set("uuid", tenant.UUID)
 	d.Set("partner_uuid", tenant.PartnerUUID)
@@ -220,12 +178,12 @@ func resourceWallarmTenantRead(d *schema.ResourceData, m interface{}) error {
 	return nil
 }
 
-func resourceWallarmTenantUpdate(d *schema.ResourceData, m interface{}) error {
-	client := m.(wallarm.API)
+func resourceWallarmTenantUpdate(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+	client := apiClient(m)
 
-	tenantClientID, _, err := parseTenantID(d.Id())
+	tenantClientID, err := strconv.Atoi(d.Id())
 	if err != nil {
-		return err
+		return diag.FromErr(fmt.Errorf("invalid tenant ID %q: %w", d.Id(), err))
 	}
 
 	if d.HasChange("name") {
@@ -233,26 +191,44 @@ func resourceWallarmTenantUpdate(d *schema.ResourceData, m interface{}) error {
 			Filter: &wallarm.ClientFilter{ID: tenantClientID},
 			Fields: &wallarm.ClientFields{Name: d.Get("name").(string)},
 		}); err != nil {
-			return err
+			return diag.FromErr(err)
 		}
 	}
 
-	return resourceWallarmTenantRead(d, m)
+	return resourceWallarmTenantRead(context.TODO(), d, m)
 }
 
-func resourceWallarmTenantDelete(d *schema.ResourceData, m interface{}) error {
-	client := m.(wallarm.API)
+func resourceWallarmTenantDelete(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+	client := apiClient(m)
 
-	tenantClientID, _, err := parseTenantID(d.Id())
+	tenantClientID, err := strconv.Atoi(d.Id())
 	if err != nil {
-		return err
+		return diag.FromErr(fmt.Errorf("invalid tenant ID %q: %w", d.Id(), err))
 	}
 
+	// Always disable the tenant first.
+	enabled := false
 	if _, err := client.ClientUpdate(&wallarm.ClientUpdate{
 		Filter: &wallarm.ClientFilter{ID: tenantClientID},
-		Fields: &wallarm.ClientFields{Enabled: false},
+		Fields: &wallarm.ClientFields{Enabled: &enabled},
 	}); err != nil {
-		return err
+		return diag.FromErr(fmt.Errorf("failed to disable tenant %d: %w", tenantClientID, err))
+	}
+
+	// Permanently delete only when both safeguards are explicitly removed.
+	preventDestroy := d.Get("prevent_destroy").(bool)
+	allowDelete := os.Getenv("WALLARM_ALLOW_CLIENT_DELETE") != ""
+
+	if preventDestroy || !allowDelete {
+		log.Printf("[WARN] Tenant %d has been disabled but not deleted. "+
+			"To permanently delete, set prevent_destroy = false and export WALLARM_ALLOW_CLIENT_DELETE=1", tenantClientID)
+		return nil
+	}
+
+	if _, err := client.ClientDelete(&wallarm.ClientDelete{
+		Filter: &wallarm.ClientFilter{ID: tenantClientID},
+	}); err != nil {
+		return diag.FromErr(fmt.Errorf("failed to delete tenant %d: %w", tenantClientID, err))
 	}
 
 	return nil

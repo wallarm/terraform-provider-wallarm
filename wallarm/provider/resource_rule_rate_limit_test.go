@@ -26,6 +26,12 @@ func TestAccRuleRateLimit(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceAddress, "delay", "100"),
 				),
 			},
+			{
+				ResourceName:            resourceAddress,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"rule_type"},
+			},
 		},
 	})
 }
@@ -55,7 +61,7 @@ resource "wallarm_rule_rate_limit" %[1]q {
 
 func testAccRuleRateLimitDestroy() resource.TestCheckFunc {
 	return func(s *terraform.State) error {
-		client := testAccProvider.Meta().(wallarm.API)
+		client := testAccProvider.Meta().(*ProviderMeta).Client
 
 		for _, resource := range s.RootModule().Resources {
 			if resource.Type != "wallarm_rule_rate_limit" {
