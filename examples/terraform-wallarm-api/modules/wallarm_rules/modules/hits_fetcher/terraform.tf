@@ -4,7 +4,7 @@ terraform {
   required_providers {
     wallarm = {
       source  = "wallarm/wallarm"
-      version = "2.0.1"
+      version = "2.1.1"
     }
   }
 }

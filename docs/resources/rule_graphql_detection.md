@@ -10,9 +10,6 @@ description: |-
 
 Provides the resource to manage mitigation control with the "[GraphQL API protection][1]" action type. They contain generic configuration to detect GraphQL API anomalies.
 
-**Important:** Rules made with Terraform can't be altered by other rules that usually change how rules work (middleware, variative_values, variative_by_regex).
-This is because Terraform is designed to keep its configurations stable and not meant to be modified from outside its environment.
-
 ## Example Usage
 
 ```hcl
@@ -42,7 +39,7 @@ resource "wallarm_rule_graphql_detection" "graphql_detection" {
 ## Argument Reference
 
 * `client_id` - (optional) ID of the client to apply the rules to. The value is required for [multi-tenant scenarios][2].
-* `action` - (optional) rule conditions. Possible attributes are described in [action guide](https://registry.terraform.io/providers/wallarm/wallarm/latest/docs/guides/action.md).
+* `action` - (optional) rule conditions. See the [Action Guide](../guides/action) for full documentation on action conditions, point types, and usage examples.
 * `max_doc_size_kb` - (optional) the limit for the size in kilobytes of an entire GraphQL query.
 * `max_value_size_kb` - (optional) the limit for the size in kilobytes of an entire GraphQL query
 * `max_depth` - (optional) the maximum allowed depth for a GraphQL query. By limiting query depth.

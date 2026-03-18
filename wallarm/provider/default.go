@@ -102,8 +102,8 @@ var (
 		},
 		"active": {
 			Type:        schema.TypeBool,
-			Default:     true,
 			Optional:    true,
+			Computed:    true,
 			ForceNew:    true,
 			Description: "Whether the rule is active.",
 		},
@@ -296,8 +296,14 @@ func getCommonResourceRuleFieldsDTOFromResourceData(d *schema.ResourceData) Comm
 	}
 	comment, _ := d.Get("comment").(string)
 	set, _ := d.Get("set").(string)
-	active, _ := d.Get("active").(bool)
 	title, _ := d.Get("title").(string)
+
+	// Default to true when not explicitly set (replaced schema Default which can't coexist with Computed).
+	active := true
+	if v, ok := d.GetOkExists("active"); ok { //nolint:staticcheck
+		active = v.(bool)
+	}
+
 	return CommonResourceRuleFieldsDTO{
 		Comment: comment,
 		Set:     set,

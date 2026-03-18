@@ -3,12 +3,12 @@ layout: "wallarm"
 page_title: "Wallarm: wallarm_rules"
 subcategory: "Data Source"
 description: |-
-  Reads existing WAF rules from the Wallarm API.
+  Reads existing Wallarm rules from the API.
 ---
 
 # wallarm_rules
 
-Reads all WAF rules (hints) for the specified client from the Wallarm API. Returns rule metadata including IDs, types, and action conditions. Used by the import module to discover existing rules and generate Terraform import blocks.
+Reads all Wallarm rules for the specified client from the API. Returns rule metadata including IDs, types, and action conditions. Used by the import module to discover existing rules and generate Terraform import blocks.
 
 Results are served from the hint cache when available, avoiding redundant API calls.
 
@@ -44,3 +44,10 @@ data "wallarm_rules" "all" {
   * `type` - (String) Rule type (API type name).
   * `resource_type` - (String) Corresponding Terraform resource type name (e.g., `wallarm_rule_mode`).
   * `import_id` - (String) Pre-computed import ID for use in `terraform import` commands. Format varies by type: 3-part (`{clientID}/{actionID}/{ruleID}`) or 4-part (`{clientID}/{actionID}/{ruleID}/{mode}`).
+
+
+**Important:** Rules created using Terraform cannot be modified by other types of rules, such as those employing middleware, variative_values, or variative_by_regex.
+
+This restriction exists because Terraform is built to maintain stable configurations and is not designed for external modifications.
+
+Similarly, during the import process, imported rules will be updated automatically to align with this approach, which is necessary to preserve the stability of the Terraform state.

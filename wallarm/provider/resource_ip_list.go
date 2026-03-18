@@ -77,6 +77,7 @@ func resourceWallarmIPList(listType wallarm.IPListType) *schema.Resource {
 			"time": {
 				Type:     schema.TypeString,
 				Optional: true,
+				Computed: true,
 			},
 			"reason": {
 				Type:     schema.TypeString,
@@ -940,6 +941,12 @@ func matchGroupsByValues(groups []wallarm.IPRule, createdValues map[string]map[s
 			})
 		}
 	}
+
+	// Sort by ip_id for deterministic state — prevents "unexpected new value" warnings
+	// when the API returns groups in different order between plan and apply.
+	sort.Slice(addrIDs, func(i, j int) bool {
+		return addrIDs[i].(map[string]interface{})["ip_id"].(int) < addrIDs[j].(map[string]interface{})["ip_id"].(int)
+	})
 
 	return addrIDs
 }
