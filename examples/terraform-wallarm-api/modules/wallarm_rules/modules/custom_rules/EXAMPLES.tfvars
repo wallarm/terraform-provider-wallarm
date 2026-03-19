@@ -16,7 +16,7 @@
 #   query         = "key=value"                 # Optional. Query string match.
 # ═══════════════════════════════════════════════════════════════════════════════
 
-custom_rules = [
+# custom_rules = [
 #   # ─── wallarm_mode ──────────────────────────────────────────────────────────────────
 #   # Set Wallarm filtration mode for matching requests.
 #   # mode: "monitoring", "safe_blocking", "block", "off", "default"
@@ -400,4 +400,4 @@ custom_rules = [
   #   path          = "/api/users"
   #   domain        = "example.com"
   # },
-]
+# ]
