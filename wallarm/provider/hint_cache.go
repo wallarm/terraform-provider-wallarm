@@ -10,13 +10,6 @@ import (
 	wallarm "github.com/wallarm/wallarm-go"
 )
 
-const (
-	// defaultBulkFetchLimit is the number of hints fetched per API call during bulk loading.
-	defaultBulkFetchLimit = 200
-	// maxBulkFetchPages caps the number of paginated requests to prevent runaway fetches.
-	maxBulkFetchPages = 500
-)
-
 // CacheStats provides a snapshot of the cache's operational state.
 type CacheStats struct {
 	Loaded        bool          `json:"loaded"`
@@ -87,12 +80,12 @@ func (c *HintCache) bulkLoad(clientID int, api wallarm.API) error {
 	totalFetched := 0
 	startTime := time.Now()
 
-	log.Printf("[INFO] HintCache: starting bulk load for client %d (batch size: %d, system=false)", clientID, defaultBulkFetchLimit)
+	log.Printf("[INFO] HintCache: starting bulk load for client %d (batch size: %d, system=false)", clientID, HintBulkFetchLimit)
 	systemFalse := false
 
-	for page := 0; page < maxBulkFetchPages; page++ {
+	for page := 0; page < HintMaxBulkFetchPages; page++ {
 		resp, err := api.HintRead(&wallarm.HintRead{
-			Limit:     defaultBulkFetchLimit,
+			Limit:     HintBulkFetchLimit,
 			Offset:    offset,
 			OrderBy:   "id",
 			OrderDesc: true,
@@ -115,14 +108,14 @@ func (c *HintCache) bulkLoad(clientID int, api wallarm.API) error {
 		}
 		totalFetched += len(batch)
 
-		if len(batch) < defaultBulkFetchLimit {
+		if len(batch) < HintBulkFetchLimit {
 			break // last page
 		}
-		offset += defaultBulkFetchLimit
+		offset += HintBulkFetchLimit
 	}
 
 	loadDuration := time.Since(startTime)
-	apiCalls := (offset / defaultBulkFetchLimit) + 1
+	apiCalls := (offset / HintBulkFetchLimit) + 1
 
 	c.bulkLoads++
 	c.lastLoadTime = loadDuration

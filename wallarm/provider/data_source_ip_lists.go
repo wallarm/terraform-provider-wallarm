@@ -82,7 +82,7 @@ func dataSourceWallarmIPListsRead(_ context.Context, d *schema.ResourceData, m i
 	listTypeStr := d.Get("list_type").(string)
 	listType := mapListType(listTypeStr)
 
-	groups, err := client.IPListRead(listType, clientID)
+	groups, err := client.IPListRead(listType, clientID, IPListPageSize)
 	if err != nil {
 		return diag.FromErr(fmt.Errorf("error reading IP lists (%s) for client %d: %w", listTypeStr, clientID, err))
 	}

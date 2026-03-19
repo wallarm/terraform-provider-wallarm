@@ -221,7 +221,7 @@ func testAccCheckWallarmRuleWmodeDestroy(s *terraform.State) error {
 		}
 
 		hint := &wallarm.HintRead{
-			Limit:     DefaultAPIListLimit,
+			Limit:     APIListLimit,
 			Offset:    0,
 			OrderBy:   "updated_at",
 			OrderDesc: true,

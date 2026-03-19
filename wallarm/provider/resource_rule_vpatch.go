@@ -118,7 +118,7 @@ func resourceWallarmVpatchDelete(_ context.Context, d *schema.ResourceData, m in
 			Clientid: []int{clientID},
 			ID:       []int{actionID},
 		},
-		Limit:  DefaultAPIListLimit,
+		Limit:  APIListLimit,
 		Offset: 0,
 	}
 	respRules, err := client.RuleRead(rule)

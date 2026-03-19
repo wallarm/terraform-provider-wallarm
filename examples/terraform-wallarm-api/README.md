@@ -135,6 +135,7 @@ The import module generates import blocks for:
 | `hits_mode` | `string` | `"request"` | no | Fetch mode: `"request"` (direct hits) or `"attack"` (expand to related hits by attack_id) |
 | `custom_rules` | `list(object)` | `[]` | no | Custom rules defined in variables (see [custom_rules module](modules/wallarm_rules/modules/custom_rules/)) |
 | `is_importing` | `bool` | `false` | no | Activate import functionality |
+| `subnet_import_mode` | `string` | `"grouped"` | no | `"grouped"` merges subnets by expiry (max 1000/resource); `"individual"` creates one resource per IP |
 | `config_format` | `string` | `"yaml"` | no | Config file format: `"yaml"` or `"hcl"` |
 
 ## Outputs

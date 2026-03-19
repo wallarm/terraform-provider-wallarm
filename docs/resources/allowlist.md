@@ -35,7 +35,7 @@ resource "wallarm_allowlist" "allowlist_date" {
 
 ## Argument Reference
 
-* `ip_range` - (**required**) IP range to be blocked. Can be defined as an array of ranges. Accept:
+* `ip_range` - (**required**) IP range to be blocked. Can be defined as an array of ranges. Maximum **1000** entries per resource. Accept:
   - distinct IP addresses (e.g. `1.1.1.1`, `2.2.2.2`)
   - subnets (e.g. `1.1.1.1/24`, `2.2.2.2/30`)
 * `time_format` - (**required**) block time format.

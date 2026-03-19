@@ -16,6 +16,7 @@ type ProviderMeta struct {
 	Client                  wallarm.API
 	DefaultClientID         int
 	RequireExplicitClientID bool
+	IPListCache             *IPListCache
 }
 
 // RetrieveClientID returns the client_id from the resource if set,

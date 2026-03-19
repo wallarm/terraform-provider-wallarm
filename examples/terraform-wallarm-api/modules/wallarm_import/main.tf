@@ -19,7 +19,8 @@ module "import_applications" {
 # ─── Import existing IP lists ────────────────────────────────────────────────
 
 module "import_ip_lists" {
-  source       = "./modules/import_ip_lists"
-  is_importing = var.is_importing
-  client_id    = var.client_id
+  source             = "./modules/import_ip_lists"
+  is_importing       = var.is_importing
+  client_id          = var.client_id
+  subnet_import_mode = var.subnet_import_mode
 }

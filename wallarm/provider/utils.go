@@ -581,7 +581,7 @@ func existsAction(d *schema.ResourceData, m interface{}, hintType string) (strin
 			HintType: []string{hintType},
 			Clientid: []int{clientID},
 		},
-		Limit:  DefaultAPIListLimit,
+		Limit:  APIListLimit,
 		Offset: 0,
 	}
 
@@ -633,7 +633,7 @@ func existsHint(d *schema.ResourceData, m interface{}, actionID int, hintType st
 	}
 
 	hint := &wallarm.HintRead{
-		Limit:     DefaultAPIListLimit,
+		Limit:     APIListLimit,
 		Offset:    0,
 		OrderBy:   "updated_at",
 		OrderDesc: true,

@@ -130,7 +130,7 @@ func dataSourceWallarmNodeRead(_ context.Context, d *schema.ResourceData, m inte
 	var nodePOST *wallarm.NodeReadPOST
 	nodeReadBody := wallarm.NodeReadByFilter{
 		Filter:    &wallarm.NodeFilter{},
-		Limit:     DefaultAPIListLimit,
+		Limit:     APIListLimit,
 		Offset:    0,
 		OrderBy:   "id",
 		OrderDesc: false,

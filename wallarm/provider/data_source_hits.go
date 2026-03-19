@@ -17,11 +17,6 @@ import (
 	wallarm "github.com/wallarm/wallarm-go"
 )
 
-const (
-	maxPathDepth      = 10
-	hitFetchBatchSize = 500
-)
-
 var defaultAllowedAttackTypes = []string{
 	"xss", "sqli", "rce", "xxe", "ptrav", "crlf", "redir",
 	"nosqli", "ldapi", "scanner", "mass_assignment", "ssrf",
@@ -286,7 +281,7 @@ func fetchDirectHits(client wallarm.API, clientID int, requestID string, timeRan
 			NotExperimental: true,
 			NotAasmEvent:    true,
 		},
-		Limit:     hitFetchBatchSize,
+		Limit:     HitFetchBatchSize,
 		Offset:    0,
 		OrderBy:   "time",
 		OrderDesc: true,
@@ -349,7 +344,7 @@ func fetchRelatedHitsByAttackIDs(
 				NotAasmEvent:      true,
 				NotWallarmScanner: true,
 			},
-			Limit:     hitFetchBatchSize,
+			Limit:     HitFetchBatchSize,
 			Offset:    offset,
 			OrderBy:   "time",
 			OrderDesc: true,
@@ -373,10 +368,10 @@ func fetchRelatedHitsByAttackIDs(
 			}
 		}
 
-		if len(resp) < hitFetchBatchSize {
+		if len(resp) < HitFetchBatchSize {
 			break
 		}
-		offset += hitFetchBatchSize
+		offset += HitFetchBatchSize
 	}
 
 	log.Printf("[INFO] Fetched %d related hits (%d discarded for action mismatch)", len(allRelated), discarded)
@@ -526,7 +521,7 @@ func buildActionFromHit(domain, urlPath string, poolID int) []map[string]interfa
 // locationToConditions converts a URL path into action conditions.
 // Port of the Ruby LocationToConditions class.
 func locationToConditions(location string) []map[string]interface{} {
-	if strings.Count(location, "/") > maxPathDepth {
+	if strings.Count(location, "/") > MaxPathDepth {
 		return []map[string]interface{}{
 			{
 				"type":  "equal",

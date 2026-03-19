@@ -11,9 +11,6 @@ const (
 	path              = "path"
 	experimentalRegex = "experimental_regex"
 	iequal            = "iequal"
-
-	// DefaultAPIListLimit is the default limit for API list/read requests.
-	DefaultAPIListLimit = 500
 )
 
 var (

@@ -7,7 +7,6 @@ import (
 	stderrors "errors"
 	"fmt"
 	"log"
-	"net"
 	"net/http"
 	"sort"
 	"strconv"
@@ -37,6 +36,7 @@ func resourceWallarmIPList(listType wallarm.IPListType) *schema.Resource {
 			"ip_range": {
 				Type:          schema.TypeList,
 				Optional:      true,
+				MaxItems:      IPListMaxSubnets,
 				Elem:          &schema.Schema{Type: schema.TypeString},
 				ConflictsWith: []string{"country", "datacenter", "proxy_type"},
 			},
@@ -84,6 +84,22 @@ func resourceWallarmIPList(listType wallarm.IPListType) *schema.Resource {
 				Optional: true,
 				Default:  "Terraform managed IP list",
 			},
+			"entry_count": {
+				Type:        schema.TypeInt,
+				Computed:    true,
+				Description: "Number of entries tracked in address_id.",
+			},
+			"untracked_count": {
+				Type:        schema.TypeInt,
+				Computed:    true,
+				Description: "Number of config values not found in the API.",
+			},
+			"untracked_ips": {
+				Type:        schema.TypeList,
+				Computed:    true,
+				Description: "Config values not found in the API — can be removed from config if the API rejected them.",
+				Elem:        &schema.Schema{Type: schema.TypeString},
+			},
 			"address_id": {
 				Type:     schema.TypeList,
 				Computed: true,
@@ -115,6 +131,12 @@ func resourceWallarmIPListCreate(listType wallarm.IPListType) schema.CreateConte
 		if err != nil {
 			return diag.FromErr(err)
 		}
+
+		// Serialize Creates for the same list type to prevent concurrent
+		// cache refresh races between resources sharing the same denylist/allowlist/graylist.
+		cache := m.(*ProviderMeta).IPListCache
+		cache.LockCreate(listType)
+		defer cache.UnlockCreate(listType)
 
 		rules, diags := buildRulesFromSchema(d)
 		if diags != nil {
@@ -164,45 +186,33 @@ func resourceWallarmIPListCreate(listType wallarm.IPListType) schema.CreateConte
 		valuesHash := ipListValuesHash(rules)
 		d.SetId(fmt.Sprintf("%d/%s/%s/%s", clientID, ipListFriendlyType(listType), ruleType, valuesHash))
 
-		// Build the set of values we just created, keyed by API rule type.
-		createdValues := make(map[string]map[string]bool)
+		// Collect config values and rule types for cache lookup.
+		var configValues []string
+		var ruleTypes []string
 		for _, r := range rules {
-			set := make(map[string]bool, len(r.Values))
-			for _, v := range r.Values {
-				set[v] = true
-			}
-			createdValues[r.RulesType] = set
+			configValues = append(configValues, r.Values...)
+			ruleTypes = append(ruleTypes, r.RulesType)
 		}
 
-		// Collect the distinct rule types for a targeted API query.
-		apiRuleTypes := make([]string, 0, len(createdValues))
-		for rt := range createdValues {
-			apiRuleTypes = append(apiRuleTypes, rt)
+		// Refresh shared cache and resolve config values to group IDs.
+		found, missing := cache.RefreshUntilFound(
+			client, listType, clientID, configValues, ruleTypes,
+			IPListCacheMaxRetries, IPListCacheRetryDelay*time.Second,
+		)
+
+		addrIDs := cacheEntriesToAddrIDs(found)
+		if err := d.Set("address_id", addrIDs); err != nil {
+			return diag.FromErr(err)
+		}
+		d.Set("entry_count", len(configValues)-len(missing))
+		d.Set("untracked_count", len(missing))
+		d.Set("untracked_ips", missing)
+		d.Set("client_id", clientID)
+
+		if len(missing) > 0 {
+			log.Printf("[WARN] IP list Create: %d values not found in API after retries", len(missing))
 		}
 
-		// Poll with a filtered /groups request until we find the exact
-		// group(s) matching our created values.
-		maxAttempts := 20
-		for attempt := 0; attempt < maxAttempts; attempt++ {
-			groups, err := client.IPListReadByRuleType(listType, clientID, apiRuleTypes)
-			if err != nil {
-				return diag.FromErr(err)
-			}
-
-			addrIDs := matchGroupsByValues(groups, createdValues)
-			if len(addrIDs) > 0 {
-				if err := d.Set("address_id", addrIDs); err != nil {
-					return diag.FromErr(err)
-				}
-				d.Set("client_id", clientID)
-				return nil
-			}
-
-			log.Printf("[DEBUG] IP list entry not yet visible (attempt %d/%d)", attempt+1, maxAttempts)
-			time.Sleep(3 * time.Second)
-		}
-
-		log.Printf("[WARN] IP list entry not found after %d attempts — will be picked up on next refresh", maxAttempts)
 		return nil
 	}
 }
@@ -215,68 +225,22 @@ func resourceWallarmIPListRead(listType wallarm.IPListType) schema.ReadContextFu
 			return diag.FromErr(err)
 		}
 
-		// Determine which rule types and values this resource tracks.
-		createdValues := make(map[string]map[string]bool)
-
-		if v, ok := d.GetOk("ip_range"); ok {
-			set := make(map[string]bool)
-			for _, item := range v.([]interface{}) {
-				set[item.(string)] = true
-			}
-			if len(set) > 0 {
-				createdValues[ruleTypeSubnet] = set
-			}
-		}
-		if v, ok := d.GetOk("country"); ok {
-			set := make(map[string]bool)
-			for _, item := range v.([]interface{}) {
-				set[item.(string)] = true
-			}
-			if len(set) > 0 {
-				createdValues["location"] = set
-			}
-		}
-		if v, ok := d.GetOk("datacenter"); ok {
-			set := make(map[string]bool)
-			for _, item := range v.([]interface{}) {
-				set[item.(string)] = true
-			}
-			if len(set) > 0 {
-				createdValues["datacenter"] = set
-			}
-		}
-		if v, ok := d.GetOk("proxy_type"); ok {
-			set := make(map[string]bool)
-			for _, item := range v.([]interface{}) {
-				set[item.(string)] = true
-			}
-			if len(set) > 0 {
-				createdValues["proxy_type"] = set
-			}
-		}
-
-		// Build targeted rule type filter for the API query.
-		apiRuleTypes := make([]string, 0, len(createdValues))
-		for rt := range createdValues {
-			apiRuleTypes = append(apiRuleTypes, rt)
-		}
-
-		if len(apiRuleTypes) == 0 {
+		// Collect config values for cache lookup.
+		configValues := ipListConfigValues(d)
+		if len(configValues) == 0 {
 			d.SetId("")
 			return nil
 		}
 
-		groups, err := client.IPListReadByRuleType(listType, clientID, apiRuleTypes)
-		if err != nil {
+		// Ensure shared cache is loaded, then look up this resource's values.
+		cache := m.(*ProviderMeta).IPListCache
+		if err := cache.EnsureLoaded(client, listType, clientID); err != nil {
 			return diag.FromErr(err)
 		}
 
-		log.Printf("[DEBUG] IPListReadByRuleType returned %d groups for client %d, list %s, types %v",
-			len(groups), clientID, listType, apiRuleTypes)
+		found, missing := cache.LookupMany(listType, configValues)
 
-		addrIDs := matchGroupsByValues(groups, createdValues)
-
-		if len(addrIDs) == 0 {
+		if len(found) == 0 {
 			if !d.IsNewResource() {
 				oldAddrs := d.Get("address_id").([]interface{})
 				if len(oldAddrs) > 0 {
@@ -289,10 +253,13 @@ func resourceWallarmIPListRead(listType wallarm.IPListType) schema.ReadContextFu
 			return nil
 		}
 
-		if err = d.Set("address_id", addrIDs); err != nil {
-			return diag.FromErr(fmt.Errorf("cannot set content for address_id: %v", err))
+		addrIDs := cacheEntriesToAddrIDs(found)
+		if err := d.Set("address_id", addrIDs); err != nil {
+			return diag.FromErr(fmt.Errorf("cannot set address_id: %v", err))
 		}
-
+		d.Set("entry_count", len(configValues)-len(missing))
+		d.Set("untracked_count", len(missing))
+		d.Set("untracked_ips", missing)
 		d.Set("client_id", clientID)
 
 		return nil
@@ -307,48 +274,40 @@ func resourceWallarmIPListUpdate(listType wallarm.IPListType) schema.UpdateConte
 			return diag.FromErr(err)
 		}
 
-		// If address_id is empty (e.g., Create polling timed out), fetch it first.
-		addrIDs := d.Get("address_id").([]interface{})
-		if len(addrIDs) == 0 {
-			log.Printf("[DEBUG] address_id is empty during Update — running Read to populate")
-			if diags := resourceWallarmIPListRead(listType)(ctx, d, m); diags.HasError() {
-				return diags
-			}
-			addrIDs = d.Get("address_id").([]interface{})
-		}
+		cache := m.(*ProviderMeta).IPListCache
 
-		// If only ip_range changed (subnet type), do a targeted diff update:
-		// delete only removed IPs, add only new IPs.
+		// If only ip_range changed (subnet type), do a targeted diff update.
 		if d.HasChange("ip_range") && !d.HasChanges("time_format", "time", "reason", "application") {
-			return ipListSubnetDiffUpdate(ctx, d, m, client, clientID, listType)
+			return ipListSubnetDiffUpdate(ctx, d, m, client, clientID, listType, cache)
 		}
 
 		// For grouped types or when metadata changed, do full delete+create.
-		// Use address_id from state to delete (not the API query in resourceWallarmIPListDelete,
-		// which would use the NEW schema values and fail to match the OLD API entries).
+		// Use address_id from state to delete old entries.
+		addrIDs := d.Get("address_id").([]interface{})
 		if len(addrIDs) > 0 {
 			if diags := deleteByAddrIDs(client, clientID, addrIDs); diags != nil {
 				return diags
 			}
 		}
+		cache.Invalidate(listType)
 		return resourceWallarmIPListCreate(listType)(ctx, d, m)
 	}
 }
 
 // ipListSubnetDiffUpdate deletes only removed IPs and creates only added IPs.
 func ipListSubnetDiffUpdate(
-	ctx context.Context,
+	_ context.Context,
 	d *schema.ResourceData,
-	m interface{},
+	_ interface{},
 	client wallarm.API,
 	clientID int,
 	listType wallarm.IPListType,
+	cache *IPListCache,
 ) diag.Diagnostics {
 	oldRaw, newRaw := d.GetChange("ip_range")
 	oldIPs := toStringSet(oldRaw.([]interface{}))
 	newIPs := toStringSet(newRaw.([]interface{}))
 
-	// Find removed and added IPs.
 	var removed []string
 	for ip := range oldIPs {
 		if !newIPs[ip] {
@@ -365,16 +324,26 @@ func ipListSubnetDiffUpdate(
 	log.Printf("[DEBUG] IP list diff: %d removed, %d added, %d unchanged",
 		len(removed), len(added), len(newIPs)-len(added))
 
-	// Delete removed IPs by searching each one directly in the API.
+	// Delete removed IPs using cache to resolve group IDs.
 	if len(removed) > 0 {
+		found, _ := cache.LookupMany(listType, removed)
 		var deleteIDs []int
-		for _, ip := range removed {
-			groups, err := client.IPListSearch(listType, clientID, ruleTypeSubnet, ip)
-			if err != nil {
-				return diag.FromErr(err)
-			}
-			for _, group := range groups {
-				deleteIDs = append(deleteIDs, group.ID)
+		for _, entry := range found {
+			deleteIDs = append(deleteIDs, entry.GroupID)
+		}
+
+		// Fallback: search individually for any not in cache.
+		if len(deleteIDs) < len(removed) {
+			for _, ip := range removed {
+				if _, ok := cache.Lookup(listType, ip); !ok {
+					groups, err := client.IPListSearch(listType, clientID, ruleTypeSubnet, ip)
+					if err != nil {
+						return diag.FromErr(err)
+					}
+					for _, group := range groups {
+						deleteIDs = append(deleteIDs, group.ID)
+					}
+				}
 			}
 		}
 
@@ -421,14 +390,19 @@ func ipListSubnetDiffUpdate(
 		}
 	}
 
+	// Refresh cache after modifications.
+	if len(removed) > 0 || len(added) > 0 {
+		cache.Invalidate(listType)
+	}
+
 	// Update resource ID hash since values changed.
 	rules, _ := buildRulesFromSchema(d)
 	valuesHash := ipListValuesHash(rules)
 	ruleType := ipListRuleTypes(rules)
 	d.SetId(fmt.Sprintf("%d/%s/%s/%s", clientID, ipListFriendlyType(listType), ruleType, valuesHash))
 
-	// Re-read state to populate address_id with current entries.
-	return resourceWallarmIPListRead(listType)(ctx, d, m)
+	// Don't update address_id — next terraform plan refresh handles it via Read + cache.
+	return nil
 }
 
 // deleteByAddrIDs deletes IP list entries using group IDs from the address_id state.
@@ -459,93 +433,35 @@ func deleteByAddrIDs(client wallarm.API, clientID int, addrIDs []interface{}) di
 	return nil
 }
 
-// resolveGroupIDs maps rule values to their API group IDs.
-// 1. Bulk fetch all groups by rule type (1-2 API calls via pagination)
-// 2. Match values to groups using matchValue()
-// 3. For any unmatched values, fall back to IPListSearch (1 call per value)
-func resolveGroupIDs(
-	client wallarm.API,
-	listType wallarm.IPListType,
-	clientID int,
-	rules []wallarm.AccessRuleEntry,
-) (map[string][]int, diag.Diagnostics) {
-	// Collect rule types and build expected value sets.
-	apiRuleTypes := make([]string, 0, len(rules))
-	expectedValues := make(map[string]map[string]bool)
-	for _, r := range rules {
-		apiRuleTypes = append(apiRuleTypes, r.RulesType)
-		set := make(map[string]bool, len(r.Values))
-		for _, v := range r.Values {
-			set[v] = true
-		}
-		expectedValues[r.RulesType] = set
-	}
-
-	// Step 1: bulk fetch all groups for the relevant rule types.
-	groups, err := client.IPListReadByRuleType(listType, clientID, apiRuleTypes)
-	if err != nil {
-		return nil, diag.FromErr(err)
-	}
-
-	// Step 2: match groups to our expected values, build value→ID map.
-	ruleTypeIDs := make(map[string][]int)
-	knownIDs := make(map[int]bool)
-	matchedValues := make(map[string]map[string]bool) // track which values were found
-
-	for _, group := range groups {
-		expected, ok := expectedValues[group.RuleType]
-		if !ok {
-			continue
-		}
-
-		allMatch := len(group.Values) > 0
-		for _, val := range group.Values {
-			if !matchValue(expected, val, group.RuleType) {
-				allMatch = false
-				break
-			}
-		}
-
-		if allMatch && !knownIDs[group.ID] {
-			knownIDs[group.ID] = true
-			ruleTypeIDs[group.RuleType] = append(ruleTypeIDs[group.RuleType], group.ID)
-
-			// Track matched values.
-			if matchedValues[group.RuleType] == nil {
-				matchedValues[group.RuleType] = make(map[string]bool)
-			}
-			for _, val := range group.Values {
-				matchedValues[group.RuleType][val] = true
-				// Also mark the bare IP for subnets (API returns /32).
-				if group.RuleType == ruleTypeSubnet {
-					bareIP, _, _ := strings.Cut(val, "/")
-					matchedValues[group.RuleType][bareIP] = true
-				}
+// ipListConfigValues extracts all config values (ip_range, country, datacenter, proxy_type) from schema.
+func ipListConfigValues(d *schema.ResourceData) []string {
+	var values []string
+	for _, field := range []string{"ip_range", "country", "datacenter", "proxy_type"} {
+		if v, ok := d.GetOk(field); ok {
+			for _, item := range v.([]interface{}) {
+				values = append(values, item.(string))
 			}
 		}
 	}
+	return values
+}
 
-	// Step 3: for any unmatched values, fall back to individual search.
-	for _, rule := range rules {
-		matched := matchedValues[rule.RulesType]
-		for _, val := range rule.Values {
-			if matched != nil && matched[val] {
-				continue
-			}
-			results, err := client.IPListSearch(listType, clientID, rule.RulesType, val)
-			if err != nil {
-				return nil, diag.FromErr(err)
-			}
-			for _, group := range results {
-				if !knownIDs[group.ID] {
-					knownIDs[group.ID] = true
-					ruleTypeIDs[rule.RulesType] = append(ruleTypeIDs[rule.RulesType], group.ID)
-				}
-			}
-		}
+// cacheEntriesToAddrIDs converts cache entries to the address_id schema format, sorted by group ID.
+func cacheEntriesToAddrIDs(entries []IPCacheEntry) []interface{} {
+	// Sort by GroupID for deterministic ordering.
+	sort.Slice(entries, func(i, j int) bool {
+		return entries[i].GroupID < entries[j].GroupID
+	})
+
+	addrIDs := make([]interface{}, 0, len(entries))
+	for _, entry := range entries {
+		addrIDs = append(addrIDs, map[string]interface{}{
+			"rule_type": entry.RuleType,
+			"value":     entry.RawValue,
+			"ip_id":     entry.GroupID,
+		})
 	}
-
-	return ruleTypeIDs, nil
+	return addrIDs
 }
 
 func toStringSet(items []interface{}) map[string]bool {
@@ -563,34 +479,49 @@ func resourceWallarmIPListDelete(listType wallarm.IPListType) schema.DeleteConte
 		if err != nil {
 			return diag.FromErr(err)
 		}
+		cache := m.(*ProviderMeta).IPListCache
 
-		rules, _ := buildRulesFromSchema(d)
-		if len(rules) == 0 {
-			return nil
+		// Primary: use address_id from state (populated by Read during refresh).
+		addrIDs := d.Get("address_id").([]interface{})
+		if len(addrIDs) > 0 {
+			log.Printf("[DEBUG] IPListDelete: using %d address_id entries from state", len(addrIDs))
+			if diags := deleteByAddrIDs(client, clientID, addrIDs); diags != nil {
+				return diags
+			}
 		}
 
-		// Bulk fetch all groups by rule type, then resolve values to IDs.
-		ruleTypeIDs, diags := resolveGroupIDs(client, listType, clientID, rules)
-		if diags != nil {
-			return diags
+		// Cleanup: refresh cache and look up any config values not in address_id.
+		configValues := ipListConfigValues(d)
+		if len(configValues) > 0 {
+			if err := cache.Refresh(client, listType, clientID); err != nil {
+				log.Printf("[WARN] IPListDelete: cache refresh for cleanup failed: %v", err)
+			} else {
+				found, _ := cache.LookupMany(listType, configValues)
+				if len(found) > 0 {
+					var cleanupIDs []int
+					for _, entry := range found {
+						cleanupIDs = append(cleanupIDs, entry.GroupID)
+					}
+					log.Printf("[DEBUG] IPListDelete: cleanup sweep found %d remaining entries", len(cleanupIDs))
+					ruleTypeIDs := make(map[string][]int)
+					for _, entry := range found {
+						ruleTypeIDs[entry.RuleType] = append(ruleTypeIDs[entry.RuleType], entry.GroupID)
+					}
+					cleanupRules := make([]wallarm.AccessRuleDeleteEntry, 0, len(ruleTypeIDs))
+					for ruleType, ids := range ruleTypeIDs {
+						cleanupRules = append(cleanupRules, wallarm.AccessRuleDeleteEntry{
+							RuleType: ruleType,
+							IDs:      ids,
+						})
+					}
+					if err := client.IPListDelete(clientID, cleanupRules); err != nil {
+						return diag.FromErr(err)
+					}
+				}
+			}
 		}
 
-		if len(ruleTypeIDs) == 0 {
-			return nil
-		}
-
-		deleteRules := make([]wallarm.AccessRuleDeleteEntry, 0, len(ruleTypeIDs))
-		for ruleType, ids := range ruleTypeIDs {
-			deleteRules = append(deleteRules, wallarm.AccessRuleDeleteEntry{
-				RuleType: ruleType,
-				IDs:      ids,
-			})
-		}
-
-		if err := client.IPListDelete(clientID, deleteRules); err != nil {
-			return diag.FromErr(err)
-		}
-
+		cache.Invalidate(listType)
 		return nil
 	}
 }
@@ -622,7 +553,7 @@ func resourceWallarmIPListImport(listType wallarm.IPListType) schema.StateContex
 		d.Set("client_id", clientID)
 
 		// Fetch all groups for this list type.
-		allGroups, err := client.IPListRead(listType, clientID)
+		allGroups, err := client.IPListRead(listType, clientID, IPListPageSize)
 		if err != nil {
 			return nil, fmt.Errorf("failed to read IP lists: %w", err)
 		}
@@ -671,6 +602,7 @@ func resourceWallarmIPListImport(listType wallarm.IPListType) schema.StateContex
 				d.Set("application", apps)
 			}
 			d.Set("address_id", addrIDs)
+			d.Set("entry_count", len(addrIDs))
 
 			rules := []wallarm.AccessRuleEntry{{RulesType: ruleTypeSubnet, Values: ips}}
 			valuesHash := ipListValuesHash(rules)
@@ -704,6 +636,7 @@ func resourceWallarmIPListImport(listType wallarm.IPListType) schema.StateContex
 			},
 		}
 		d.Set("address_id", addrIDs)
+		d.Set("entry_count", len(addrIDs))
 		d.Set("reason", found.Reason)
 		d.Set("time_format", "RFC3339")
 		d.Set("time", time.Unix(int64(found.ExpiredAt), 0).UTC().Format(time.RFC3339))
@@ -905,86 +838,6 @@ func ipListRuleTypes(rules []wallarm.AccessRuleEntry) string {
 		}
 	}
 	return strings.Join(types, ",")
-}
-
-// matchGroupsByValues finds API groups whose values are a subset of the created values.
-// For each rule type, it looks for a group where ALL values belong to the created set.
-// This identifies the exact group created by this resource without relying on timing or IDs.
-func matchGroupsByValues(groups []wallarm.IPRule, createdValues map[string]map[string]bool) []interface{} {
-	var addrIDs []interface{}
-	now := int(time.Now().Unix())
-
-	for _, group := range groups {
-		if group.ExpiredAt > 0 && group.ExpiredAt < now {
-			continue
-		}
-
-		expectedSet, ok := createdValues[group.RuleType]
-		if !ok {
-			continue
-		}
-
-		// Check if ALL values in this group belong to our created set.
-		allMatch := len(group.Values) > 0
-		for _, val := range group.Values {
-			if !matchValue(expectedSet, val, group.RuleType) {
-				allMatch = false
-				break
-			}
-		}
-
-		if allMatch {
-			addrIDs = append(addrIDs, map[string]interface{}{
-				"rule_type": group.RuleType,
-				"value":     strings.Join(group.Values, ","),
-				"ip_id":     group.ID,
-			})
-		}
-	}
-
-	// Sort by ip_id for deterministic state — prevents "unexpected new value" warnings
-	// when the API returns groups in different order between plan and apply.
-	sort.Slice(addrIDs, func(i, j int) bool {
-		return addrIDs[i].(map[string]interface{})["ip_id"].(int) < addrIDs[j].(map[string]interface{})["ip_id"].(int)
-	})
-
-	return addrIDs
-}
-
-// matchValue checks if an API-returned value belongs to the expected set.
-// For non-subnet types, uses exact string match.
-// For subnets, uses network containment — the API may normalize IPs
-// (e.g., "1.2.3.4" → "1.2.3.4/32") and the old matching logic used
-// net.IPNet.Contains() which handled all these cases reliably.
-func matchValue(expectedSet map[string]bool, apiVal, ruleType string) bool {
-	if expectedSet[apiVal] {
-		return true
-	}
-	if ruleType != ruleTypeSubnet {
-		return false
-	}
-	// Extract the bare IP from the API value.
-	apiIP, _, _ := strings.Cut(apiVal, "/")
-
-	// Try bare IP match (API returned "1.2.3.4/32", config has "1.2.3.4").
-	if expectedSet[apiIP] {
-		return true
-	}
-
-	// Try containment: check if the API IP falls within any configured CIDR.
-	parsed := net.ParseIP(apiIP)
-	if parsed == nil {
-		return false
-	}
-	for configVal := range expectedSet {
-		if strings.Contains(configVal, "/") {
-			_, ipNet, err := net.ParseCIDR(configVal)
-			if err == nil && ipNet.Contains(parsed) {
-				return true
-			}
-		}
-	}
-	return false
 }
 
 // ipListValuesHash returns a short deterministic hash of the rule values for use in resource IDs.

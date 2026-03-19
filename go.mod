@@ -10,6 +10,8 @@ require (
 	github.com/wallarm/wallarm-go v0.8.0
 )
 
+replace github.com/wallarm/wallarm-go => ../wallarm-go
+
 require (
 	github.com/ProtonMail/go-crypto v1.3.0 // indirect
 	github.com/agext/levenshtein v1.2.2 // indirect

@@ -50,12 +50,22 @@ IP list entries are grouped for import based on their type:
 
 Subnets are merged by expiration time — all IPs with the same `expired_at` become one Terraform resource with `ip_range = [...]`. This is logically correct since IPs created together share the same expiration.
 
+Groups exceeding **1000 subnets** are automatically chunked into multiple resources (e.g., `import_subnet_{expiredAt}`, `import_subnet_{expiredAt}_1`, etc.).
+
+### Subnet Import Modes
+
+| Mode | Description | Usage |
+|------|-------------|-------|
+| `grouped` (default) | Merge subnets by `expired_at`, chunk into max 1000 per resource | `terraform apply -var='subnet_import_mode=grouped'` |
+| `individual` | One resource per IP (one import block per API group) | `terraform apply -var='subnet_import_mode=individual'` |
+
 ## Variables
 
 | Name | Type | Default | Required | Description |
 |------|------|---------|----------|-------------|
 | `client_id` | `number` | — | yes | Wallarm client ID |
 | `is_importing` | `bool` | `false` | no | Must be `true` to activate import functionality |
+| `subnet_import_mode` | `string` | `"grouped"` | no | `"grouped"` merges by expired_at (max 1000 per resource); `"individual"` creates one resource per IP |
 
 ## Outputs
 

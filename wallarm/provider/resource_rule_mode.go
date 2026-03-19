@@ -112,7 +112,7 @@ func resourceWallarmModeDelete(_ context.Context, d *schema.ResourceData, m inte
 			Clientid: []int{clientID},
 			ID:       []int{actionID},
 		},
-		Limit:  DefaultAPIListLimit,
+		Limit:  APIListLimit,
 		Offset: 0,
 	}
 	respRules, err := client.RuleRead(rule)

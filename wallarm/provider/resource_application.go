@@ -85,7 +85,7 @@ func resourceWallarmAppRead(_ context.Context, d *schema.ResourceData, m interfa
 	appID := d.Get("app_id").(int)
 
 	appRead := &wallarm.AppRead{
-		Limit:  DefaultAPIListLimit,
+		Limit:  APIListLimit,
 		Offset: 0,
 		Filter: &wallarm.AppReadFilter{
 			Clientid: []int{clientID},

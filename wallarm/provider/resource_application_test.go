@@ -126,7 +126,7 @@ func testAccCheckWallarmAppResourceExists(n string) resource.TestCheckFunc {
 			return err
 		}
 		appRead := &wallarm.AppRead{
-			Limit:  DefaultAPIListLimit,
+			Limit:  APIListLimit,
 			Offset: 0,
 			Filter: &wallarm.AppReadFilter{
 				Clientid: []int{clientID},

@@ -101,7 +101,7 @@ func resourceWallarmBolaCounterDelete(_ context.Context, d *schema.ResourceData,
 			Clientid: []int{clientID},
 			ID:       []int{actionID},
 		},
-		Limit:  DefaultAPIListLimit,
+		Limit:  APIListLimit,
 		Offset: 0,
 	}
 	respRules, err := client.RuleRead(rule)

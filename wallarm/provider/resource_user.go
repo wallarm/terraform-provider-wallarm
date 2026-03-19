@@ -143,7 +143,7 @@ func resourceWallarmUserRead(_ context.Context, d *schema.ResourceData, m interf
 	}
 	userID := d.Get("user_id").(int)
 	user := &wallarm.UserGet{
-		Limit:     DefaultAPIListLimit,
+		Limit:     APIListLimit,
 		OrderBy:   "realname",
 		OrderDesc: false,
 		Filter: &wallarm.UserFilter{

@@ -110,7 +110,7 @@ func resourceWallarmSensitiveDataDelete(_ context.Context, d *schema.ResourceDat
 			Clientid: []int{clientID},
 			ID:       []int{ruleID},
 		},
-		Limit:  DefaultAPIListLimit,
+		Limit:  APIListLimit,
 		Offset: 0,
 	}
 	respRules, err := client.RuleRead(rule)

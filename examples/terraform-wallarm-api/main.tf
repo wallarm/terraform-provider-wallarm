@@ -17,8 +17,9 @@ module "wallarm_rules" {
 module "wallarm_import" {
   source = "./modules/wallarm_import"
 
-  client_id    = var.client_id
-  is_importing = var.is_importing
+  client_id          = var.client_id
+  is_importing       = var.is_importing
+  subnet_import_mode = var.subnet_import_mode
 }
 
 # ─── Outputs ─────────────────────────────────────────────────────────────────

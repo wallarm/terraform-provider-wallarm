@@ -134,7 +134,7 @@ func resourceWallarmGlobalModeRead(_ context.Context, d *schema.ResourceData, m 
 				ID: clientID,
 			},
 		},
-		Limit:  DefaultAPIListLimit,
+		Limit:  APIListLimit,
 		Offset: 0,
 	}
 	otherModesResp, err := client.ClientRead(clientInfo)
