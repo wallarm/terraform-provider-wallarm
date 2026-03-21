@@ -98,21 +98,15 @@ func ResourceRuleWallarmRead(d *schema.ResourceData, clientID int, cli wallarm.A
 	d.Set("title", updatedRule.Title)
 	d.Set("mitigation", updatedRule.Mitigation)
 	d.Set("set", updatedRule.Set)
-	// Override variativity_disabled to true and default empty comments to "Managed by Terraform".
-	// All Terraform-managed rules must have variativity_disabled=true. During import, these
-	// overrides ensure the generated config has the correct values and the first apply updates
-	// the rules in the API via HintUpdateV3.
+	// Always set variativity_disabled=true. All Terraform-managed rules must have this.
+	// During import, this ensures the state differs from API (if false) → triggers Update.
 	d.Set("variativity_disabled", true)
-	if updatedRule.Comment == "" {
-		d.Set("comment", "Managed by Terraform")
-	} else {
-		d.Set("comment", updatedRule.Comment)
-	}
+	d.Set("comment", updatedRule.Comment)
 
 	// Resource-specific fields — use setIfExists because each resource
 	// only defines a subset of these in its schema. In SDK v2, d.Set
 	// panics for keys not in the schema.
-	setIfExists(d, "point", wrapPointElements(updatedRule.Point))
+	setIfExists(d, "point", WrapPointElements(updatedRule.Point))
 	setIfExists(d, "threshold", apitotf.Threshold(updatedRule.Threshold))
 	setIfExists(d, "reaction", apitotf.Reaction(updatedRule.Reaction))
 	setIfExists(d, "mode", updatedRule.Mode)
@@ -145,9 +139,9 @@ func ResourceRuleWallarmRead(d *schema.ResourceData, clientID int, cli wallarm.A
 	setIfExists(d, "regex", updatedRule.Regex)
 	setIfExists(d, "regex_id", updatedRule.RegexID)
 
-	actionsSet := schema.Set{F: hashResponseActionDetails}
+	actionsSet := schema.Set{F: HashResponseActionDetails}
 	for _, a := range updatedRule.Action {
-		acts, err := actionDetailsToMap(a)
+		acts, err := ActionDetailsToMap(a)
 		if err != nil {
 			return fmt.Errorf("failed to map action details: %w", err)
 		}
@@ -190,7 +184,7 @@ func ResourceRuleWallarmCreate(
 	arbitraryConditions := tftoapi.ArbitraryConditionsReq(arbitraryConditionsFromState)
 
 	pointFromState := GetValueWithTypeCastingOrDefault[[]interface{}](d, "point")
-	points, err := expandPointsToTwoDimensionalArray(pointFromState)
+	points, err := ExpandPointsToTwoDimensionalArray(pointFromState)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -361,18 +355,34 @@ func GetPointerWithTypeCastingOrDefault[T any](d *schema.ResourceData, name stri
 	return &v
 }
 
-func wrapPointElements(input []interface{}) [][]string {
+// WrapPointElements converts a flat API point array into a 2D string slice
+// for the Terraform point schema. 2-part elements (hash, header, get, form_urlencoded, etc.)
+// consume the next element as their value; 1-part elements (post, json_doc, uri, etc.) stand alone.
+func WrapPointElements(input []interface{}) [][]string {
 	var result [][]string // This will store the final result as a 2D slice of strings
 	i := 0
 
 	for i < len(input) {
 		switch input[i] {
-		case "json_array", "xml_pi", "hash", "array", "viewstate_array", "viewstate_pair",
-			"viewstate_triplet", "viewstate_dict", "header", "xml_dtd_entity",
-			"xml_tag_array", "xml_tag", "xml_attr", "xml_comment", "grpc", "protobuf",
-			"json_obj", "json", "jwt", "multipart", "get", "content_disp", "form_urlencoded",
-			"path", "cookie", "response_header", "viewstate_sparse_array",
-			"gql_fragment", "gql_mutation", "gql_query", "gql_subscription":
+		// Paired point types — consume the next element as key/index.
+		// Keep in sync with TYPES_INFO in proton/types.rb (all except simple:true).
+		case
+			// Core
+			"hash", "array", "json", "json_obj", "json_array",
+			// HTTP
+			"header", "cookie", "get", "path", "multipart",
+			"form_urlencoded", "content_disp", "response_header",
+			// XML
+			"xml_pi", "xml_dtd_entity", "xml_tag_array", "xml_tag",
+			"xml_attr", "xml_comment",
+			// JWT / Protobuf / gRPC
+			"jwt", "grpc", "protobuf",
+			// ViewState
+			"viewstate_array", "viewstate_pair", "viewstate_triplet",
+			"viewstate_dict", "viewstate_sparse_array",
+			// GraphQL
+			"gql_query", "gql_mutation", "gql_subscription", "gql_fragment",
+			"gql_dir", "gql_spread", "gql_type", "gql_var":
 			// Check if there is a next element to include
 			if i+1 < len(input) {
 				// Convert both elements to strings and wrap them in a slice of strings
@@ -395,7 +405,10 @@ func wrapPointElements(input []interface{}) [][]string {
 	return result
 }
 
-func hashResponseActionDetails(v interface{}) int {
+// HashResponseActionDetails is the hash function for the action TypeSet.
+// It transforms API point arrays into point maps as a side effect (e.g.,
+// ["header","HOST"] → {header: "HOST"}, ["get","key"] → {query: "key"}).
+func HashResponseActionDetails(v interface{}) int {
 	var buf bytes.Buffer
 	m := v.(map[string]interface{})
 	var p []interface{}
@@ -459,7 +472,9 @@ func hashResponseActionDetails(v interface{}) int {
 	return HashString(buf.String())
 }
 
-func actionDetailsToMap(actionDetails wallarm.ActionDetails) (map[string]interface{}, error) {
+// ActionDetailsToMap converts an API ActionDetails struct to a Terraform-compatible map
+// via JSON marshal/unmarshal. Ensures "value" key is always present.
+func ActionDetailsToMap(actionDetails wallarm.ActionDetails) (map[string]interface{}, error) {
 	jsonActions, err := json.Marshal(actionDetails)
 	if err != nil {
 		return nil, err
@@ -468,13 +483,16 @@ func actionDetailsToMap(actionDetails wallarm.ActionDetails) (map[string]interfa
 	if err = json.Unmarshal(jsonActions, &mapActions); err != nil {
 		return nil, err
 	}
-	if _, ok := mapActions["value"]; !ok {
+	if v, ok := mapActions["value"]; !ok || v == nil {
 		mapActions["value"] = ""
 	}
 	return mapActions, nil
 }
 
-func expandPointsToTwoDimensionalArray(ps []interface{}) (wallarm.TwoDimensionalSlice, error) {
+// ExpandPointsToTwoDimensionalArray converts the Terraform point schema (list of lists of strings)
+// to the API TwoDimensionalSlice format. Numeric-value point types (path, array, etc.) are
+// converted from string to float64.
+func ExpandPointsToTwoDimensionalArray(ps []interface{}) (wallarm.TwoDimensionalSlice, error) {
 	if len(ps) == 0 {
 		return nil, nil
 	}

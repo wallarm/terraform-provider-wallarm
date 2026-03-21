@@ -27,7 +27,7 @@ func resourceWallarmCredentialStuffingPoint() *schema.Resource {
 			ForceNew:     true,
 			ValidateFunc: validation.StringInSlice([]string{"custom", "default"}, false),
 		},
-		"action": defaultResourceRuleActionSchema,
+		"action": resourcerule.ScopeActionSchema(),
 	}
 	return &schema.Resource{
 		CreateContext: resourceWallarmCredentialStuffingPointCreate,
@@ -37,7 +37,8 @@ func resourceWallarmCredentialStuffingPoint() *schema.Resource {
 		Importer: &schema.ResourceImporter{
 			StateContext: resourceWallarmCredentialStuffingPointImport,
 		},
-		Schema: lo.Assign(fields, commonResourceRuleFields),
+		CustomizeDiff: resourcerule.ActionScopeCustomizeDiff,
+		Schema:        lo.Assign(fields, commonResourceRuleFields, resourcerule.ActionScopeFields),
 	}
 }
 
@@ -51,13 +52,13 @@ func resourceWallarmCredentialStuffingPointCreate(_ context.Context, d *schema.R
 	credStuffType := d.Get("cred_stuff_type").(string)
 
 	iPoint := d.Get("point").([]interface{})
-	point, err := expandPointsToTwoDimensionalArray(iPoint)
+	point, err := resourcerule.ExpandPointsToTwoDimensionalArray(iPoint)
 	if err != nil {
 		return diag.FromErr(err)
 	}
 
 	iLoginPoint := d.Get("login_point").([]interface{})
-	loginPoint, err := expandPointsToTwoDimensionalArray(iLoginPoint)
+	loginPoint, err := resourcerule.ExpandPointsToTwoDimensionalArray(iLoginPoint)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -116,10 +117,10 @@ func resourceWallarmCredentialStuffingPointRead(_ context.Context, d *schema.Res
 	}
 
 	d.Set("cred_stuff_type", rule.CredStuffType)
-	if err := d.Set("point", wrapPointElements(rule.Point)); err != nil {
+	if err := d.Set("point", resourcerule.WrapPointElements(rule.Point)); err != nil {
 		return diag.FromErr(fmt.Errorf("error setting point: %w", err))
 	}
-	if err := d.Set("login_point", wrapPointElements(rule.LoginPoint)); err != nil {
+	if err := d.Set("login_point", resourcerule.WrapPointElements(rule.LoginPoint)); err != nil {
 		return diag.FromErr(fmt.Errorf("error setting login_point: %w", err))
 	}
 	d.Set("rule_type", rule.Type)
@@ -134,9 +135,9 @@ func resourceWallarmCredentialStuffingPointRead(_ context.Context, d *schema.Res
 	} else {
 		d.Set("comment", rule.Comment)
 	}
-	actionsSet := schema.Set{F: hashResponseActionDetails}
+	actionsSet := schema.Set{F: resourcerule.HashResponseActionDetails}
 	for _, a := range rule.Action {
-		acts, err := actionDetailsToMap(a)
+		acts, err := resourcerule.ActionDetailsToMap(a)
 		if err != nil {
 			return diag.FromErr(err)
 		}
@@ -212,10 +213,10 @@ func resourceWallarmCredentialStuffingPointImport(_ context.Context, d *schema.R
 	d.Set("cred_stuff_type", rule.Type)
 
 	actionsSet := schema.Set{
-		F: hashResponseActionDetails,
+		F: resourcerule.HashResponseActionDetails,
 	}
 	for _, a := range rule.Action {
-		acts, err := actionDetailsToMap(a)
+		acts, err := resourcerule.ActionDetailsToMap(a)
 		if err != nil {
 			return nil, err
 		}
@@ -225,10 +226,10 @@ func resourceWallarmCredentialStuffingPointImport(_ context.Context, d *schema.R
 		return nil, fmt.Errorf("error setting action: %w", err)
 	}
 
-	if err := d.Set("point", wrapPointElements(rule.Point)); err != nil {
+	if err := d.Set("point", resourcerule.WrapPointElements(rule.Point)); err != nil {
 		return nil, fmt.Errorf("error setting point: %w", err)
 	}
-	if err := d.Set("login_point", wrapPointElements(rule.LoginPoint)); err != nil {
+	if err := d.Set("login_point", resourcerule.WrapPointElements(rule.LoginPoint)); err != nil {
 		return nil, fmt.Errorf("error setting login_point: %w", err)
 	}
 

@@ -25,7 +25,7 @@ func resourceWallarmDisableAttackType() *schema.Resource {
 				"xxe", "xss", "scanner", "redir", "ldapi", "mass_assignment", "ssrf"`,
 		},
 
-		"action": defaultResourceRuleActionSchema,
+		"action": resourcerule.ScopeActionSchema(),
 
 		"point": defaultPointSchema,
 	}
@@ -37,7 +37,8 @@ func resourceWallarmDisableAttackType() *schema.Resource {
 		Importer: &schema.ResourceImporter{
 			StateContext: resourceWallarmDisableAttackTypeImport,
 		},
-		Schema: lo.Assign(fields, commonResourceRuleFields),
+		CustomizeDiff: resourcerule.ActionScopeCustomizeDiff,
+		Schema:        lo.Assign(fields, commonResourceRuleFields, resourcerule.ActionScopeFields),
 	}
 }
 
@@ -55,7 +56,7 @@ func resourceWallarmDisableAttackTypeCreate(_ context.Context, d *schema.Resourc
 		return diag.FromErr(fmt.Errorf("error setting point: %w", err))
 	}
 
-	points, err := expandPointsToTwoDimensionalArray(ps)
+	points, err := resourcerule.ExpandPointsToTwoDimensionalArray(ps)
 	if err != nil {
 		return diag.FromErr(err)
 	}

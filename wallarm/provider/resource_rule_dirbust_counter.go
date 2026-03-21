@@ -23,7 +23,7 @@ func resourceWallarmDirbustCounter() *schema.Resource {
 			Computed: true,
 		},
 
-		"action": defaultResourceRuleActionSchema,
+		"action": resourcerule.ScopeActionSchema(),
 	}
 	return &schema.Resource{
 		CreateContext: resourceWallarmDirbustCounterCreate,
@@ -34,7 +34,8 @@ func resourceWallarmDirbustCounter() *schema.Resource {
 			StateContext: resourceWallarmDirbustCounterImport,
 		},
 
-		Schema: lo.Assign(fields, commonResourceRuleFields),
+		CustomizeDiff: resourcerule.ActionScopeCustomizeDiff,
+		Schema:        lo.Assign(fields, commonResourceRuleFields, resourcerule.ActionScopeFields),
 	}
 }
 

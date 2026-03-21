@@ -18,7 +18,7 @@ import (
 // nolint:dupl
 func resourceWallarmGraphqlDetection() *schema.Resource {
 	fields := map[string]*schema.Schema{
-		"action": defaultResourceRuleActionSchema,
+		"action": resourcerule.ScopeActionSchema(),
 		"mode": {
 			Type:         schema.TypeString,
 			Required:     true,
@@ -61,7 +61,7 @@ func resourceWallarmGraphqlDetection() *schema.Resource {
 			ForceNew: true,
 		},
 	}
-	sh := lo.Assign(fields, commonResourceRuleFields)
+	sh := lo.Assign(fields, commonResourceRuleFields, resourcerule.ActionScopeFields)
 
 	return &schema.Resource{
 		CreateContext: resourceWallarmGraphqlDetectionCreate,
@@ -71,7 +71,8 @@ func resourceWallarmGraphqlDetection() *schema.Resource {
 		Importer: &schema.ResourceImporter{
 			StateContext: resourceWallarmGraphqlDetectionImport,
 		},
-		Schema: sh,
+		CustomizeDiff: resourcerule.ActionScopeCustomizeDiff,
+		Schema:        sh,
 	}
 }
 

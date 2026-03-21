@@ -11,10 +11,11 @@ description: |-
 Provides the resource to manage [integrations via generic webhooks][1]. Webhooks can be used as system log sources.
 
 The types of events available to be sent via WebHooks:
-- Detected hits
-- System related: newly added users, deleted or disabled integration
-- Detected vulnerabilities
-- Changes in exposed assets: updates in hosts, services, and domains
+- SIEM events (detected hits and related data)
+- System related: newly added users, deleted or disabled integrations
+- Rule and trigger changes
+- Security issues (critical, high, medium, low, info)
+- Request volume monitoring
 
 ## Example Usage
 
@@ -27,24 +28,26 @@ resource "wallarm_integration_webhook" "wh_integration" {
   webhook_url = "https://example.com/api/v1/webhook/"
   http_method = "POST"
   active = true
-  
-  event {
-    event_type = "hit"
-    active = true
-  }
+  format = "json"
 
   event {
-    event_type = "scope"
+    event_type = "siem"
     active = true
+    with_headers = true
   }
 
   event {
     event_type = "system"
     active = true
   }
-  
+
   event {
-    event_type = "vuln_high"
+    event_type = "rules_and_triggers"
+    active = true
+  }
+
+  event {
+    event_type = "security_issue_critical"
     active = true
   }
 
@@ -63,32 +66,42 @@ resource "wallarm_integration_webhook" "wh_integration" {
 
   Default: `false`
 * `name` - (optional) integration name.
-* `http_method` - (optional) HTTP method via which requests are to be sent. Can be: `POST`, `PUT`. 
+* `http_method` - (optional) HTTP method via which requests are to be sent. Can be: `POST`, `PUT`.
 Default: `POST`
 * `webhook_url` - (optional) Webhook URL with the schema (https://).
 * `ca_file` - (optional) CA certificate if needed by webhook collector.
 * `ca_verify` - (optional) indicator of the SSL/TLS certificate verification. Can be: `true` or `false`.
 Default: `true`
-* `timeout` - (optional) time in seconds to raise a timeout error whilst connecting to the specified Webhook URL. 
+* `timeout` - (optional) time in seconds to raise a timeout error whilst connecting to the specified Webhook URL.
 Default: 15
 * `open_timeout` - (optional) time in seconds to raise a timeout error while opening a TCP connection to the specified Webhook URL.
 Default: 20
-* `headers` - (optional) HTTP headers required by the Webhook endpoint. For instance, basic authentication can be set. 
+* `headers` - (optional) HTTP headers required by the Webhook endpoint. For instance, basic authentication can be set.
 Type: `map`
+* `format` - (optional) event data format. Can be: `json` or `jsonl`.
+Default: `json`
 
 ## Event
 
 `event` are events for integration to monitor. Can be:
+```
+event {
 
-* `event_type` - (optional) event type. Can be:
-  - `hit` - detected hits
-  - `vuln` - detected vulnerabilities
-  - `system` - system related
-  - `scope` - scope changes
+* `event_type`: (optional) event type. Options:
+  - `siem` - SIEM events: Detected hits, original request data, and malicious payloads.
+  - `rules_and_triggers` - rule and trigger changes
+  - `number_of_requests_per_hour` - number of requests per hour
+  - `security_issue_critical` - critical security issues
+  - `security_issue_high` - high severity security issues
+  - `security_issue_medium` - medium severity security issues
+  - `security_issue_low` - low severity security issues
+  - `security_issue_info` - informational security issues
+  - `system` - system related (newly added users, deleted or disabled integrations)
+* `with_headers`: (Optional) Include request headers in event data (for `siem` event type only). Can be `true` or `false`. Default: `false`.
+* `active`: `true` for active events (notifications sent), `false` for disabled events (no notifications). Default: `true`.
 
-  Default: `vuln`
-* `active` - (optional) indicator of the event type status. Can be: `true` for active events and `false` for disabled events (notifications are not sent). 
-Default: `true`
+}
+```
 
 
 Example:
@@ -97,22 +110,23 @@ Example:
   # ... omitted
 
   event {
-    event_type = "hit"
+    event_type = "siem"
     active = true
-  }
-
-  event {
-    event_type = "scope"
-    active = false
+    with_headers = true
   }
 
   event {
     event_type = "system"
     active = true
   }
-  
+
   event {
-    event_type = "vuln_high"
+    event_type = "rules_and_triggers"
+    active = false
+  }
+
+  event {
+    event_type = "security_issue_critical"
     active = false
   }
 

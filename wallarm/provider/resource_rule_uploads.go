@@ -25,7 +25,7 @@ func resourceWallarmUploads() *schema.Resource {
 			ForceNew:     true,
 		},
 
-		"action": defaultResourceRuleActionSchema,
+		"action": resourcerule.ScopeActionSchema(),
 
 		"point": defaultPointSchema,
 	}
@@ -37,7 +37,8 @@ func resourceWallarmUploads() *schema.Resource {
 		Importer: &schema.ResourceImporter{
 			StateContext: resourceWallarmUploadsImport,
 		},
-		Schema: lo.Assign(fields, commonResourceRuleFields),
+		CustomizeDiff: resourcerule.ActionScopeCustomizeDiff,
+		Schema:        lo.Assign(fields, commonResourceRuleFields, resourcerule.ActionScopeFields),
 	}
 }
 
@@ -55,7 +56,7 @@ func resourceWallarmUploadsCreate(_ context.Context, d *schema.ResourceData, m i
 		return diag.FromErr(fmt.Errorf("error setting point: %w", err))
 	}
 
-	points, err := expandPointsToTwoDimensionalArray(ps)
+	points, err := resourcerule.ExpandPointsToTwoDimensionalArray(ps)
 	if err != nil {
 		return diag.FromErr(err)
 	}

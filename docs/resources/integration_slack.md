@@ -11,9 +11,9 @@ description: |-
 Provides the resource to manage integrations to send [notifications to Slack][1].
 
 The types of events available to be sent to Slack:
-- System related: newly added users, deleted or disabled integration
-- Detected vulnerabilities
-- Changes in exposed assets: updates in hosts, services, and domains
+- System related: newly added users, deleted or disabled integrations
+- Rule and trigger changes
+- Security issues (critical, high, medium, low, info)
 
 ## Example Usage
 
@@ -25,18 +25,23 @@ resource "wallarm_integration_slack" "slack_integration" {
   webhook_url = "https://hooks.slack.com/services/T00000000/B00000000/XXXXXXXXXXXXXXXXXXXXXXXX"
 
   event {
-    event_type = "scope"
+    event_type = "system"
     active = true
   }
 
   event {
-    event_type = "system"
+    event_type = "rules_and_triggers"
     active = true
   }
-  
+
   event {
-    event_type = "vuln_high"
+    event_type = "security_issue_critical"
     active = true
+  }
+
+  event {
+    event_type = "security_issue_high"
+    active = false
   }
 }
 ```
@@ -56,12 +61,15 @@ resource "wallarm_integration_slack" "slack_integration" {
 `event` are events for integration to monitor. Can be:
 
 * `event_type` - (optional) event type. Can be:
-  - `vuln` - detected vulnerabilities
-  - `system` - System related
-  - `scope` - scope changes
+  - `system` - system related (newly added users, deleted or disabled integrations)
+  - `rules_and_triggers` - rule and trigger changes
+  - `security_issue_critical` - critical security issues
+  - `security_issue_high` - high severity security issues
+  - `security_issue_medium` - medium severity security issues
+  - `security_issue_low` - low severity security issues
+  - `security_issue_info` - informational security issues
 
-  Default: `vuln`
-* `active` - (optional) indicator of the event type status. Can be: `true` for active events and `false` for disabled events (notifications are not sent). 
+* `active` - (optional) indicator of the event type status. Can be: `true` for active events and `false` for disabled events (notifications are not sent).
 Default: `true`
 
 
@@ -71,17 +79,17 @@ Example:
   # ... omitted
 
   event {
-    event_type = "scope"
-    active = false
-  }
-
-  event {
     event_type = "system"
     active = true
   }
-  
+
   event {
-    event_type = "vuln_high"
+    event_type = "rules_and_triggers"
+    active = true
+  }
+
+  event {
+    event_type = "security_issue_critical"
     active = false
   }
 

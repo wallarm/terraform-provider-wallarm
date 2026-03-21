@@ -6,11 +6,7 @@ import (
 )
 
 const (
-	Minutes           = "Minutes"
-	header            = "header"
-	path              = "path"
 	experimentalRegex = "experimental_regex"
-	iequal            = "iequal"
 )
 
 var (
@@ -35,38 +31,6 @@ var (
 		ValidateFunc: validation.IntAtLeast(1),
 	}
 
-	defaultResourceRuleActionSchema = &schema.Schema{
-		Type:     schema.TypeSet,
-		Optional: true,
-		ForceNew: true,
-		Elem: &schema.Resource{
-			Schema: map[string]*schema.Schema{
-				"type": {
-					Type:         schema.TypeString,
-					Optional:     true,
-					ValidateFunc: validation.StringInSlice([]string{"equal", "iequal", "regex", "absent"}, false),
-					ForceNew:     true,
-				},
-
-				"value": {
-					Type:     schema.TypeString,
-					Optional: true,
-					ForceNew: true,
-					Computed: true,
-				},
-
-				"point": {
-					Type:     schema.TypeMap,
-					Optional: true,
-					ForceNew: true,
-					Elem: &schema.Schema{
-						Type: schema.TypeString,
-					},
-				},
-			},
-		},
-	}
-
 	commonResourceRuleFields = map[string]*schema.Schema{
 		"rule_id": {
 			Type:        schema.TypeInt,
@@ -86,8 +50,8 @@ var (
 		"client_id": defaultClientIDWithValidationSchema,
 		"comment": {
 			Type:        schema.TypeString,
-			Default:     "Managed by Terraform",
 			Optional:    true,
+			Default:     "Managed by Terraform",
 			Description: "A human-readable comment for the rule.",
 		},
 		"set": {
@@ -153,16 +117,19 @@ var (
 				"block_by_session": {
 					Type:     schema.TypeInt,
 					Optional: true,
+					Computed: true,
 					ForceNew: true,
 				},
 				"block_by_ip": {
 					Type:     schema.TypeInt,
 					Optional: true,
+					Computed: true,
 					ForceNew: true,
 				},
 				"graylist_by_ip": {
 					Type:     schema.TypeInt,
 					Optional: true,
+					Computed: true,
 					ForceNew: true,
 				},
 			},
@@ -205,23 +172,27 @@ var (
 				"name_regexps": {
 					Type:     schema.TypeList,
 					Optional: true,
+					Computed: true,
 					Elem:     &schema.Schema{Type: schema.TypeString},
 					ForceNew: true,
 				},
 				"value_regexps": {
 					Type:     schema.TypeList,
 					Optional: true,
+					Computed: true,
 					Elem:     &schema.Schema{Type: schema.TypeString},
 					ForceNew: true,
 				},
 				"additional_parameters": {
 					Type:     schema.TypeBool,
 					Optional: true,
+					Computed: true,
 					ForceNew: true,
 				},
 				"plain_parameters": {
 					Type:     schema.TypeBool,
 					Optional: true,
+					Computed: true,
 					ForceNew: true,
 				},
 			},

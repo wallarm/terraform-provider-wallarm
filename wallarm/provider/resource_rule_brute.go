@@ -19,7 +19,7 @@ import (
 // nolint:dupl
 func resourceWallarmBrute() *schema.Resource {
 	fields := map[string]*schema.Schema{
-		"action":    defaultResourceRuleActionSchema,
+		"action":    resourcerule.ScopeActionSchema(),
 		"threshold": thresholdSchema,
 		"reaction":  reactionSchema,
 		"mode": {
@@ -32,7 +32,7 @@ func resourceWallarmBrute() *schema.Resource {
 		"advanced_conditions":   advancedConditionsSchema,
 		"arbitrary_conditions":  arbitraryConditionsSchema,
 	}
-	sh := lo.Assign(fields, commonResourceRuleFields)
+	sh := lo.Assign(fields, commonResourceRuleFields, resourcerule.ActionScopeFields)
 
 	return &schema.Resource{
 		CreateContext: resourceWallarmBruteCreate,
@@ -42,7 +42,8 @@ func resourceWallarmBrute() *schema.Resource {
 		Importer: &schema.ResourceImporter{
 			StateContext: resourceWallarmBruteImport,
 		},
-		Schema: sh,
+		CustomizeDiff: resourcerule.ActionScopeCustomizeDiff,
+		Schema:        sh,
 	}
 }
 

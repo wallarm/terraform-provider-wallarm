@@ -1,19 +1,19 @@
-output "rule_ids_by_request" {
-  description = "Rule IDs grouped by request_id (from fp_rules)"
-  value = {
-    for req_id in keys(local.rules_by_request) : req_id => try(module.fp_rules[req_id].rule_ids, {})
-  }
+output "rule_ids" {
+  description = "Flat map of all created rule IDs"
+  value       = module.rules.rule_ids
 }
 
-output "custom_rule_ids" {
-  description = "Rule IDs from custom rules defined in variables"
-  value       = module.custom_rules.rule_ids
+output "config_files" {
+  description = "Paths to generated YAML config files (from hits)"
+  value       = module.rules.config_files
 }
 
-output "all_rule_ids" {
-  description = "Flat map of all created rule IDs across every request_id, rule type, and custom rules"
-  value = merge(concat(
-    [for req_id, mod in module.fp_rules : mod.rule_ids],
-    [module.custom_rules.rule_ids],
-  )...)
+output "import_blocks" {
+  description = "Import block content (written to wallarm_rule_imports.tf when is_importing=true)"
+  value       = module.import_generator.import_blocks
+}
+
+output "moved_blocks" {
+  description = "Moved block content (written to wallarm_moved_blocks.tf when convert_imports=true)"
+  value       = module.import_generator.moved_blocks
 }

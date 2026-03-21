@@ -32,7 +32,7 @@ func resourceWallarmParserState() *schema.Resource {
 			ForceNew:     true,
 		},
 
-		"action": defaultResourceRuleActionSchema,
+		"action": resourcerule.ScopeActionSchema(),
 
 		"point": defaultPointSchema,
 	}
@@ -44,7 +44,8 @@ func resourceWallarmParserState() *schema.Resource {
 		Importer: &schema.ResourceImporter{
 			StateContext: resourceWallarmParserStateImport,
 		},
-		Schema: lo.Assign(fields, commonResourceRuleFields),
+		CustomizeDiff: resourcerule.ActionScopeCustomizeDiff,
+		Schema:        lo.Assign(fields, commonResourceRuleFields, resourcerule.ActionScopeFields),
 	}
 }
 
@@ -63,7 +64,7 @@ func resourceWallarmParserStateCreate(_ context.Context, d *schema.ResourceData,
 		return diag.FromErr(fmt.Errorf("error setting point: %w", err))
 	}
 
-	points, err := expandPointsToTwoDimensionalArray(ps)
+	points, err := resourcerule.ExpandPointsToTwoDimensionalArray(ps)
 	if err != nil {
 		return diag.FromErr(err)
 	}

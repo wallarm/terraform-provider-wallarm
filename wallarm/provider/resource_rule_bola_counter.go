@@ -23,7 +23,7 @@ func resourceWallarmBolaCounter() *schema.Resource {
 			Computed: true,
 		},
 
-		"action": defaultResourceRuleActionSchema,
+		"action": resourcerule.ScopeActionSchema(),
 	}
 
 	return &schema.Resource{
@@ -35,7 +35,8 @@ func resourceWallarmBolaCounter() *schema.Resource {
 			StateContext: resourceWallarmBolaCounterImport,
 		},
 
-		Schema: lo.Assign(fields, commonResourceRuleFields),
+		CustomizeDiff: resourcerule.ActionScopeCustomizeDiff,
+		Schema:        lo.Assign(fields, commonResourceRuleFields, resourcerule.ActionScopeFields),
 	}
 }
 

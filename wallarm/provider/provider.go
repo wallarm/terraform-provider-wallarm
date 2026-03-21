@@ -69,7 +69,7 @@ func Provider() *schema.Provider {
 			"retries": {
 				Type:        schema.TypeInt,
 				Optional:    true,
-				DefaultFunc: schema.EnvDefaultFunc("WALLARM_API_RETRIES", 3),
+				DefaultFunc: schema.EnvDefaultFunc("WALLARM_API_RETRIES", 12),
 				Description: "Maximum number of retries to perform when an API request fails",
 			},
 			"min_backoff": {

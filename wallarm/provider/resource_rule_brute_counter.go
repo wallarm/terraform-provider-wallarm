@@ -23,7 +23,7 @@ func resourceWallarmBruteForceCounter() *schema.Resource {
 			Computed: true,
 		},
 
-		"action": defaultResourceRuleActionSchema,
+		"action": resourcerule.ScopeActionSchema(),
 	}
 	return &schema.Resource{
 		CreateContext: resourceWallarmBruteForceCounterCreate,
@@ -33,7 +33,8 @@ func resourceWallarmBruteForceCounter() *schema.Resource {
 		Importer: &schema.ResourceImporter{
 			StateContext: resourceWallarmBruteForceCounterImport,
 		},
-		Schema: lo.Assign(fields, commonResourceRuleFields),
+		CustomizeDiff: resourcerule.ActionScopeCustomizeDiff,
+		Schema:        lo.Assign(fields, commonResourceRuleFields, resourcerule.ActionScopeFields),
 	}
 }
 

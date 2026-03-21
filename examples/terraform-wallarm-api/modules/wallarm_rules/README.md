@@ -1,16 +1,18 @@
 # wallarm_rules
 
-Parent module for all Wallarm WAF rule creation. Orchestrates hit fetching, aggregation, false-positive rule creation, and custom rule creation.
+Parent module for unified Wallarm WAF rule management. All rules — custom, hit-based FP suppression, and imported — share the same YAML config format and are processed by a single rules engine.
 
 ## Overview
 
-This module combines two rule creation pipelines:
+Three rule sources, one engine:
 
-1. **Hit-based rules (false-positive suppression)** — Given a set of request IDs, the module fetches attack hits from the Wallarm API (once per request_id), persists aggregated data in Terraform state, and creates `disable_stamp` / `disable_attack_type` rules.
+1. **Custom rules** — User writes YAML configs in `custom_rules/` directory. Path/domain/method/headers/query auto-expand into Wallarm action conditions.
 
-2. **Custom rules (variable-based)** — Rules defined in `terraform.tfvars` with a `path` field that auto-expands into Wallarm action conditions. Supports 25 resource types.
+2. **Hit-based FP rules** — Given request IDs, the module fetches attack hits from the Wallarm API, generates YAML configs in `fp_rules/<request_id>/`, and creates `disable_stamp` / `disable_attack_type` rules. User can edit generated YAML to add wildcards or modify stamps.
 
-Both pipelines generate editable config files (YAML or HCL) and follow the variables-first pattern where variable values always override config file values.
+3. **Imported rules** — Fetches existing rules from the Wallarm API, reverse-maps action conditions back to path/domain/etc., groups expandable types (stamps, attack_types, file_types, parsers), and generates YAML configs in `import_rules/`.
+
+All three sources feed into the **rules_engine** module which reads YAML, expands paths, creates resources, and generates reference HCL.
 
 ## Architecture
 
@@ -18,18 +20,102 @@ Both pipelines generate editable config files (YAML or HCL) and follow the varia
 wallarm_rules/
 │
 ├─ module "hits" (for_each = var.requests)
-│  └─ hits_fetcher/       Fetch + aggregate hits, persist in terraform_data
+│  └─ hits_fetcher/         Fetch + aggregate hits, persist in terraform_data
 │
-├─ locals
-│  └─ rules_by_request    Map from hits_fetcher outputs (action, domain, path, poolid, points)
+├─ module "hits_generator" (for_each = var.requests)
+│  └─ hits_generator/       Convert hit data → universal rule objects
 │
-├─ module "fp_rules" (for_each = rules_by_request)
-│  └─ fp_rules/           Create disable_stamp + disable_attack_type rules
-│                          Config files: fp-rules-configs/<request_id>/*.yaml
+├─ module "import_generator"
+│  └─ import_generator/     Fetch rules from API → universal rule objects
+│                            Groups stamps/attack_types/file_types/parsers by action_id
 │
-└─ module "custom_rules"
-   └─ custom_rules/       25 resource types with path-to-action expansion
-                           Config files: rules_config/*.<yaml|tf>
+└─ module "rules" (single instance)
+   └─ rules_engine/         Unified engine for all rule sources
+      ├─ Read YAML from custom_rules/, fp_rules/, import_rules/
+      ├─ Accept generated_rules from hits_generator + import_generator
+      ├─ Expand path → action conditions (wildcards: *, **)
+      ├─ Expand multi-value rules (stamps, attack_types, file_types, parsers)
+      ├─ Create all 25 resource types
+      └─ Generate reference HCL in _reference/ subdirs
+```
+
+## Directory Structure
+
+```
+rules_config/
+├── custom_rules/          ← user writes YAML configs here
+│   ├── block_admin.yaml
+│   ├── mask_passwords.yaml
+│   └── _reference/        ← auto-generated standard HCL (read-only)
+│       └── wallarm_rule_mode_block_admin.tf
+├── fp_rules/              ← generated from hits
+│   ├── <request_id>/
+│   │   ├── <hash>_disable_stamp.yaml
+│   │   └── _reference/
+│   │       └── wallarm_rule_disable_stamp_<hash>_disable_stamp_1001.tf
+│   └── ...
+└── import_rules/          ← generated from API import
+    ├── imported_disable_stamp_12345.yaml
+    └── _reference/
+        └── wallarm_rule_disable_stamp_imported_disable_stamp_12345_1001.tf
+```
+
+## Universal YAML Config Format
+
+All rule configs share the same shape:
+
+```yaml
+name: block_admin
+resource_type: wallarm_rule_mode
+comment: "Block admin panel"
+
+# Scope (auto-expanded into action conditions)
+path: "/api/v1/admin/*"      # Wildcards: * (any segment), ** (any depth)
+domain: "example.com"
+instance: "1"
+method: "POST"
+scheme: "https"
+query:
+  - key: "token"
+    value: "secret"
+headers:
+  - name: "X-Custom"
+    value: "val"
+
+# Rule-specific
+mode: "block"
+
+# Detection point (for rules that support it)
+point:
+  - ["post"]
+  - ["json_doc"]
+```
+
+### Multi-value grouping (one config = multiple resources)
+
+```yaml
+# 3 disable_stamp resources from one config
+name: disable_sqli_login
+resource_type: wallarm_rule_disable_stamp
+stamps: [1001, 1002, 1003]
+point: [["post"], ["form_urlencoded"]]
+path: "/auth/login"
+domain: "example.com"
+
+# 2 disable_attack_type resources
+name: disable_xss_sqli
+resource_type: wallarm_rule_disable_attack_type
+attack_types: [sqli, xss]
+
+# 3 uploads resources
+name: allow_uploads
+resource_type: wallarm_rule_uploads
+file_types: [docs, images, music]
+
+# 3 parser_state resources (state always "disabled")
+name: disable_parsers
+resource_type: wallarm_rule_parser_state
+parsers: [json_doc, xml, base64]
 ```
 
 ## Usage
@@ -38,81 +124,111 @@ wallarm_rules/
 module "wallarm_rules" {
   source = "./modules/wallarm_rules"
 
-  client_id     = 12345
-  hits_mode     = "attack"  # "request" (default) or "attack"
-  requests      = {
+  client_id = 12345
+
+  # Directories
+  config_dir        = "${path.root}/rules_config/custom_rules"
+  fp_config_dir     = "${path.root}/rules_config/fp_rules"
+  import_config_dir = "${path.root}/rules_config/import_rules"
+
+  # Hit-based FP rules
+  hits_mode = "attack"  # "request" (default) or "attack"
+  requests  = {
     "abc123" = ["disable_stamp", "disable_attack_type"]
   }
-  custom_rules  = [
-    {
-      name          = "block_admin"
-      resource_type = "wallarm_rule_mode"
-      mode          = "block"
-      path          = "/admin"
-      domain        = "example.com"
-    }
-  ]
-  config_dir    = "${path.root}/rules_config"
-  fp_config_dir = "${path.root}/fp-rules-configs"
-  config_format = "yaml"
+
+  # Import existing rules from API
+  is_importing      = false  # Set to true for first import
+  import_rule_types = []     # Empty = all types
 }
 ```
 
+### Workflow: Custom Rules
+
+1. Create a YAML file in `custom_rules/` directory
+2. `terraform apply` — engine reads YAML, expands path, creates resources
+3. Edit YAML to change the rule — next apply updates the resource
+4. Delete YAML to destroy the rule
+
+### Workflow: FP Rules from Hits
+
+1. Add request_id to `var.requests`
+2. `terraform apply` — fetches hits, generates YAML in `fp_rules/<request_id>/`, creates rules
+3. Edit generated YAML (add wildcards, remove stamps) — next apply updates rules
+4. Remove request_id from `var.requests` — rules and configs destroyed
+
+### Workflow: Import Existing Rules
+
+1. `terraform apply -var='is_importing=true'` — fetches all rules from API, generates YAML in `import_rules/`
+2. Set `is_importing = false` — subsequent applies read from YAML, no API fetch
+3. Edit YAML configs as needed
+4. Delete YAML files for rules you don't want to manage
+
 ### Hits Mode
 
-- **`"request"`** (default) — Fetches hits only for the exact `request_id`. Produces rules for that specific request.
-- **`"attack"`** — Fetches hits for the `request_id`, then expands to all related hits sharing the same `attack_id`. Related hits are filtered by allowed attack types and must match the same action (Host + path). This produces broader FP suppression covering the entire attack campaign.
+- **`"request"`** (default) — Fetches hits only for the exact `request_id`
+- **`"attack"`** — Expands to all related hits sharing the same `attack_id`. Related hits are filtered by allowed attack types and must match the same action (Host + path)
 
 ## Variables
 
 | Name | Type | Default | Required | Description |
 |------|------|---------|----------|-------------|
 | `client_id` | `number` | — | yes | Wallarm client ID |
-| `requests` | `map(list(string))` | `{}` | no | Map of `request_id => [rule_types]` |
-| `hits_mode` | `string` | `"request"` | no | Fetch mode: `"request"` (direct hits) or `"attack"` (expand to related hits by attack_id) |
-| `custom_rules` | `any` | `[]` | no | Custom rule definitions (passed to custom_rules child module) |
-| `config_dir` | `string` | — | yes | Directory where custom rule config files are written |
-| `fp_config_dir` | `string` | — | yes | Directory where false-positive rule config files are written |
-| `config_format` | `string` | `"yaml"` | no | Config file format: `"yaml"` or `"hcl"` |
+| `config_dir` | `string` | — | yes | Directory for custom rule YAML configs |
+| `fp_config_dir` | `string` | — | yes | Directory for FP rule YAML configs |
+| `import_config_dir` | `string` | — | yes | Directory for imported rule YAML configs |
+| `requests` | `map(list(string))` | `{}` | no | Map of `request_id => [rule_types]` for FP rules |
+| `hits_mode` | `string` | `"request"` | no | `"request"` or `"attack"` |
+| `is_importing` | `bool` | `false` | no | Set true to fetch rules from API |
+| `import_rule_types` | `list(string)` | `[]` | no | Filter import by API rule type(s) |
 
 ## Outputs
 
 | Name | Description |
 |------|-------------|
-| `rule_ids_by_request` | Rule IDs grouped by request_id (from fp_rules) |
-| `custom_rule_ids` | Map of custom rule names to their created rule IDs |
-| `all_rule_ids` | Flat map of all created rule IDs across fp_rules and custom_rules |
+| `rule_ids` | Flat map of all created rule IDs (all sources) |
+| `config_files` | Paths to generated YAML config files (from hits/import) |
+| `reference_files` | Paths to generated reference HCL files |
 
 ## Submodules
 
 | Name | Description |
 |------|-------------|
-| [hits_fetcher](modules/hits_fetcher/) | Fetch hits from Wallarm API, aggregate by detection point, persist in Terraform state |
-| [fp_rules](modules/fp_rules/) | Create false-positive suppression rules from aggregated hit data |
-| [custom_rules](modules/custom_rules/) | Create rules from variable definitions with path expansion |
+| [rules_engine](modules/rules_engine/) | Core engine: YAML discovery, path expansion, multi-value expansion, resource creation, reference HCL |
+| [hits_fetcher](modules/hits_fetcher/) | Fetch hits from API, aggregate by detection point, persist in state |
+| [hits_generator](modules/hits_generator/) | Convert hit data → universal rule objects |
+| [import_generator](modules/import_generator/) | Fetch rules from API, reverse-map actions, group expandable types |
 
-## How It Works
+### Deprecated (replaced by rules_engine)
 
-### Hit-Based Pipeline
+| Name | Status |
+|------|--------|
+| [custom_rules](modules/custom_rules/) | Replaced by rules_engine. Kept for reference. |
+| [fp_rules](modules/fp_rules/) | Replaced by rules_engine. Kept for reference. |
 
-1. **Gate** — `fileset()` checks if fp_rules config files exist for this request_id. If empty, `fetch_hits = true`
-2. **Fetch + Aggregate** — `hits_fetcher` calls `data.wallarm_hits` per request ID, aggregates hits by detection point (`point_hash`), and stores the result in `terraform_data.hits_state`
-3. **Persist** — `terraform_data.hits_state` with `ignore_changes = [input]` ensures data is written once and never overwritten
-4. **Create** — `fp_rules` generates YAML config files in `fp-rules-configs/<request_id>/` and creates `wallarm_rule_disable_stamp` / `wallarm_rule_disable_attack_type` resources
+## Path-to-Action Expansion
 
-On subsequent applies, the fileset gate detects existing config files and skips the API call entirely. All data comes from Terraform state.
+The `path` field is parsed into Wallarm action conditions:
 
-### Custom Rules Pipeline
+| Path | Conditions generated |
+|------|---------------------|
+| `/api/v1/users` | path[0]="api", path[1]="v1", action_name="users", action_ext=absent, path[2]=absent |
+| `/api/v1/data.json` | path[0]="api", path[1]="v1", action_name="data", action_ext="json", path[2]=absent |
+| `/` | action_name="", action_ext=absent, path[0]=absent |
+| `/api/*/users` | path[0]="api", (path[1] skipped), action_name="users", path[2]=absent |
+| `/api/**/admin` | path[0]="api", action_name="admin" (no limiter — any depth) |
+| (empty) | No path conditions (global rule) |
 
-1. **Expand** — `path` field is parsed into action conditions (HOST header, path segments, action_name/ext, limiter)
-2. **Config** — YAML or HCL config file generated per rule
-3. **Merge** — Config file values merged with variable values (variables win)
-4. **Create** — Appropriate `wallarm_rule_*` resource created
+Wildcard rules:
+- `*` in a directory segment — matches any value at that position
+- `*` as action_name — skips action_name condition
+- `*.ext` — skips action_ext condition
+- `**` as last directory — allows any depth (no path limiter)
 
-### Managing Request IDs
+## Reverse Mapping (Import)
 
-| Scenario | What happens |
-|----------|------|
-| Add new request_id | Added to `requests` map — auto-fetched (no configs yet), rules created |
-| Subsequent applies | Config files exist — no API call, data from state |
-| Remove request_id | Remove from `requests` map — terraform_data, rules, and config files destroyed |
+The `import_generator` module uses Go code in the provider (`ReverseMapActions()`) to convert API action conditions back to path/domain/method/etc. This is the inverse of the path expansion above. The reverse mapping handles all condition types including wildcards (gaps in path indices → `*`, no limiter → `**`).
+
+## Supported Resource Types (25)
+
+`wallarm_rule_binary_data`, `wallarm_rule_masking`, `wallarm_rule_disable_attack_type`, `wallarm_rule_disable_stamp`, `wallarm_rule_vpatch`, `wallarm_rule_uploads`, `wallarm_rule_ignore_regex`, `wallarm_rule_parser_state`, `wallarm_rule_regex`, `wallarm_rule_file_upload_size_limit`, `wallarm_rule_rate_limit`, `wallarm_rule_credential_stuffing_point`, `wallarm_rule_credential_stuffing_regex`, `wallarm_rule_mode`, `wallarm_rule_set_response_header`, `wallarm_rule_overlimit_res_settings`, `wallarm_rule_graphql_detection`, `wallarm_rule_brute`, `wallarm_rule_bruteforce_counter`, `wallarm_rule_dirbust_counter`, `wallarm_rule_bola`, `wallarm_rule_bola_counter`, `wallarm_rule_enum`, `wallarm_rule_rate_limit_enum`, `wallarm_rule_forced_browsing`

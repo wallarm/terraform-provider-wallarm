@@ -18,7 +18,7 @@ import (
 // nolint:dupl
 func resourceWallarmFileUploadSizeLimit() *schema.Resource {
 	fields := map[string]*schema.Schema{
-		"action": defaultResourceRuleActionSchema,
+		"action": resourcerule.ScopeActionSchema(),
 		"point":  defaultPointSchema,
 		"mode": {
 			Type:         schema.TypeString,
@@ -38,7 +38,7 @@ func resourceWallarmFileUploadSizeLimit() *schema.Resource {
 			ForceNew:     true,
 		},
 	}
-	sh := lo.Assign(fields, commonResourceRuleFields)
+	sh := lo.Assign(fields, commonResourceRuleFields, resourcerule.ActionScopeFields)
 
 	return &schema.Resource{
 		CreateContext: resourceWallarmFileUploadSizeLimitCreate,
@@ -48,7 +48,8 @@ func resourceWallarmFileUploadSizeLimit() *schema.Resource {
 		Importer: &schema.ResourceImporter{
 			StateContext: resourceWallarmFileUploadSizeLimitImport,
 		},
-		Schema: sh,
+		CustomizeDiff: resourcerule.ActionScopeCustomizeDiff,
+		Schema:        sh,
 	}
 }
 

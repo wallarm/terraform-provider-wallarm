@@ -41,7 +41,7 @@ func resourceWallarmCredentialStuffingRegex() *schema.Resource {
 			ForceNew:     true,
 			ValidateFunc: validation.StringLenBetween(1, 4096),
 		},
-		"action": defaultResourceRuleActionSchema,
+		"action": resourcerule.ScopeActionSchema(),
 	}
 	return &schema.Resource{
 		CreateContext: resourceWallarmCredentialStuffingRegexCreate,
@@ -51,7 +51,8 @@ func resourceWallarmCredentialStuffingRegex() *schema.Resource {
 		Importer: &schema.ResourceImporter{
 			StateContext: resourceWallarmCredentialStuffingRegexImport,
 		},
-		Schema: lo.Assign(fields, commonResourceRuleFields),
+		CustomizeDiff: resourcerule.ActionScopeCustomizeDiff,
+		Schema:        lo.Assign(fields, commonResourceRuleFields, resourcerule.ActionScopeFields),
 	}
 }
 
@@ -137,9 +138,9 @@ func resourceWallarmCredentialStuffingRegexRead(_ context.Context, d *schema.Res
 	} else {
 		d.Set("comment", rule.Comment)
 	}
-	actionsSet := schema.Set{F: hashResponseActionDetails}
+	actionsSet := schema.Set{F: resourcerule.HashResponseActionDetails}
 	for _, a := range rule.Action {
-		acts, err := actionDetailsToMap(a)
+		acts, err := resourcerule.ActionDetailsToMap(a)
 		if err != nil {
 			return diag.FromErr(err)
 		}

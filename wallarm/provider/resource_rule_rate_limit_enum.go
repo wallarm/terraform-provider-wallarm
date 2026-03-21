@@ -19,7 +19,7 @@ import (
 // nolint:dupl
 func resourceWallarmRateLimitEnum() *schema.Resource {
 	fields := map[string]*schema.Schema{
-		"action":    defaultResourceRuleActionSchema,
+		"action":    resourcerule.ScopeActionSchema(),
 		"threshold": thresholdSchema,
 		"reaction":  reactionSchema,
 		"mode": {
@@ -31,7 +31,7 @@ func resourceWallarmRateLimitEnum() *schema.Resource {
 		"advanced_conditions":  advancedConditionsSchema,
 		"arbitrary_conditions": arbitraryConditionsSchema,
 	}
-	sh := lo.Assign(fields, commonResourceRuleFields)
+	sh := lo.Assign(fields, commonResourceRuleFields, resourcerule.ActionScopeFields)
 
 	return &schema.Resource{
 		CreateContext: resourceWallarmRateLimitEnumCreate,
@@ -41,7 +41,8 @@ func resourceWallarmRateLimitEnum() *schema.Resource {
 		Importer: &schema.ResourceImporter{
 			StateContext: resourceWallarmRateLimitEnumImport,
 		},
-		Schema: sh,
+		CustomizeDiff: resourcerule.ActionScopeCustomizeDiff,
+		Schema:        sh,
 	}
 }
 

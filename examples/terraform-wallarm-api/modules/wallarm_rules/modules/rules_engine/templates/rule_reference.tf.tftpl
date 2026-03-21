@@ -1,0 +1,156 @@
+# Auto-generated reference — do not edit.
+# Modify ${config_name}.yaml instead. Regenerated on every apply.
+
+resource "${resource_type}" "${resource_name}" {
+  client_id = ${client_id}
+  comment   = "${comment}"
+%{ if action_path != "" ~}
+  action_path = "${action_path}"
+%{ endif ~}
+%{ if action_domain != "" ~}
+  action_domain = "${action_domain}"
+%{ endif ~}
+%{ if action_instance != "" ~}
+  action_instance = "${action_instance}"
+%{ endif ~}
+%{ if action_method != "" ~}
+  action_method = "${action_method}"
+%{ endif ~}
+%{ if action_scheme != "" ~}
+  action_scheme = "${action_scheme}"
+%{ endif ~}
+%{ if action_proto != "" ~}
+  action_proto = "${action_proto}"
+%{ endif ~}
+%{ for q in coalesce(query, []) ~}
+
+  action_query {
+    key   = "${q.key}"
+    value = "${q.value}"
+%{ if try(q.type, "equal") != "equal" ~}
+    type  = "${q.type}"
+%{ endif ~}
+  }
+%{ endfor ~}
+%{ for h in coalesce(headers, []) ~}
+
+  action_header {
+    name  = "${h.name}"
+    value = "${h.value}"
+%{ if try(h.type, "equal") != "equal" ~}
+    type  = "${h.type}"
+%{ endif ~}
+  }
+%{ endfor ~}
+%{ if contains(["wallarm_rule_disable_attack_type", "wallarm_rule_vpatch"], resource_type) ~}
+  attack_type = "${attack_type}"
+%{ endif ~}
+%{ if resource_type == "wallarm_rule_disable_stamp" ~}
+  stamp = ${stamp}
+%{ endif ~}
+%{ if resource_type == "wallarm_rule_regex" ~}
+  attack_type  = "${attack_type}"
+  regex        = "${regex}"
+  experimental = ${experimental}
+%{ endif ~}
+%{ if resource_type == "wallarm_rule_ignore_regex" ~}
+%{ if regex_rule != "" ~}
+  # References wallarm_rule_regex.${regex_rule}
+  regex_id = wallarm_rule_regex.${regex_rule}.regex_id
+%{ else ~}
+  regex_id = ${regex_id}
+%{ endif ~}
+%{ endif ~}
+%{ if resource_type == "wallarm_rule_parser_state" ~}
+  parser = "${parser}"
+  state  = "${state}"
+%{ endif ~}
+%{ if resource_type == "wallarm_rule_uploads" ~}
+  file_type = "${file_type}"
+%{ endif ~}
+%{ if contains(["wallarm_rule_mode", "wallarm_rule_file_upload_size_limit", "wallarm_rule_overlimit_res_settings", "wallarm_rule_graphql_detection", "wallarm_rule_brute", "wallarm_rule_bola", "wallarm_rule_enum", "wallarm_rule_rate_limit_enum", "wallarm_rule_forced_browsing"], resource_type) ~}
+  mode = "${mode}"
+%{ endif ~}
+%{ if resource_type == "wallarm_rule_file_upload_size_limit" ~}
+  size      = ${size}
+  size_unit = "${size_unit}"
+%{ endif ~}
+%{ if resource_type == "wallarm_rule_rate_limit" ~}
+  delay      = ${delay}
+  burst      = ${burst}
+  rate       = ${rate}
+  rsp_status = ${rsp_status}
+  time_unit  = "${time_unit}"
+%{ endif ~}
+%{ if resource_type == "wallarm_rule_set_response_header" ~}
+  name   = "${header_name}"
+  mode   = "${header_mode}"
+%{ if length(header_values) > 0 ~}
+  values = [${join(", ", [for v in header_values : "\"${v}\""])}]
+%{ else ~}
+  values = []
+%{ endif ~}
+%{ endif ~}
+%{ if resource_type == "wallarm_rule_overlimit_res_settings" ~}
+  overlimit_time = ${overlimit_time}
+%{ endif ~}
+%{ if resource_type == "wallarm_rule_graphql_detection" ~}
+  max_depth         = ${max_depth}
+  max_value_size_kb = ${max_value_size_kb}
+  max_doc_size_kb   = ${max_doc_size_kb}
+  max_alias_size_kb = ${max_alias_size_kb}
+  max_doc_per_batch = ${max_doc_per_batch}
+  introspection     = ${introspection}
+  debug_enabled     = ${debug_enabled}
+%{ endif ~}
+%{ if resource_type == "wallarm_rule_credential_stuffing_point" ~}
+  cred_stuff_type = "${cred_stuff_type}"
+%{ if length(login_point) > 0 ~}
+  login_point = ${jsonencode(login_point)}
+%{ else ~}
+  login_point = []
+%{ endif ~}
+%{ endif ~}
+%{ if resource_type == "wallarm_rule_credential_stuffing_regex" ~}
+  regex           = "${regex}"
+  login_regex     = "${login_regex}"
+  case_sensitive  = ${case_sensitive}
+  cred_stuff_type = "${cred_stuff_type}"
+%{ endif ~}
+%{ if contains(["wallarm_rule_brute", "wallarm_rule_bola", "wallarm_rule_enum", "wallarm_rule_rate_limit_enum", "wallarm_rule_forced_browsing"], resource_type) ~}
+
+  threshold {
+    period = ${try(threshold.period, 0)}
+    count  = ${try(threshold.count, 0)}
+  }
+
+  reaction {
+    block_by_session = ${try(reaction.block_by_session, 0)}
+    block_by_ip      = ${try(reaction.block_by_ip, 0)}
+  }
+%{ endif ~}
+%{ if contains(["wallarm_rule_brute", "wallarm_rule_bola", "wallarm_rule_enum"], resource_type) && enumerated_parameters != null ~}
+
+  enumerated_parameters {
+    mode = "${try(enumerated_parameters.mode, "regexp")}"
+%{ if try(enumerated_parameters.mode, "regexp") == "regexp" ~}
+    name_regexps          = [${join(", ", [for r in try(enumerated_parameters.name_regexps, [""]) : "\"${r}\""])}]
+    value_regexps         = [${join(", ", [for r in try(enumerated_parameters.value_regexps, [""]) : "\"${r}\""])}]
+    additional_parameters = ${try(enumerated_parameters.additional_parameters, false)}
+    plain_parameters      = ${try(enumerated_parameters.plain_parameters, false)}
+%{ endif ~}
+%{ if try(enumerated_parameters.mode, "") == "exact" ~}
+%{ for p in try(enumerated_parameters.points, []) ~}
+    points {
+      point     = ${jsonencode(p.point)}
+      sensitive = ${try(p.sensitive, false)}
+    }
+%{ endfor ~}
+%{ endif ~}
+  }
+%{ endif ~}
+%{ if contains(["wallarm_rule_binary_data", "wallarm_rule_masking", "wallarm_rule_disable_attack_type", "wallarm_rule_disable_stamp", "wallarm_rule_vpatch", "wallarm_rule_uploads", "wallarm_rule_ignore_regex", "wallarm_rule_parser_state", "wallarm_rule_regex", "wallarm_rule_file_upload_size_limit", "wallarm_rule_rate_limit", "wallarm_rule_credential_stuffing_point"], resource_type) ~}
+
+  point = ${jsonencode(point)}
+%{ endif ~}
+}

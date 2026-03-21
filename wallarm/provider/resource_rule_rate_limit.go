@@ -18,7 +18,7 @@ import (
 
 func resourceWallarmRateLimit() *schema.Resource {
 	fields := map[string]*schema.Schema{
-		"action": defaultResourceRuleActionSchema,
+		"action": resourcerule.ScopeActionSchema(),
 
 		"point": defaultPointSchema,
 
@@ -65,7 +65,8 @@ func resourceWallarmRateLimit() *schema.Resource {
 		Importer: &schema.ResourceImporter{
 			StateContext: resourceWallarmRateLimitImport,
 		},
-		Schema: lo.Assign(fields, commonResourceRuleFields),
+		CustomizeDiff: resourcerule.ActionScopeCustomizeDiff,
+		Schema:        lo.Assign(fields, commonResourceRuleFields, resourcerule.ActionScopeFields),
 	}
 }
 
@@ -84,7 +85,7 @@ func resourceWallarmRateLimitCreate(_ context.Context, d *schema.ResourceData, m
 	}
 
 	iPoint := d.Get("point").([]interface{})
-	point, err := expandPointsToTwoDimensionalArray(iPoint)
+	point, err := resourcerule.ExpandPointsToTwoDimensionalArray(iPoint)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -121,7 +122,7 @@ func resourceWallarmRateLimitCreate(_ context.Context, d *schema.ResourceData, m
 	d.Set("action_id", actionID)
 	d.Set("rule_type", actionResp.Body.Type)
 	d.Set("client_id", clientID)
-	if err := d.Set("point", wrapPointElements(actionResp.Body.Point)); err != nil {
+	if err := d.Set("point", resourcerule.WrapPointElements(actionResp.Body.Point)); err != nil {
 		return diag.FromErr(fmt.Errorf("error setting point: %w", err))
 	}
 

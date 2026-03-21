@@ -24,7 +24,7 @@ func resourceWallarmVpatch() *schema.Resource {
 			Description: `Possible values: "any", "sqli", "rce", "crlf", "nosqli", "ptrav",
 				"xxe", "xss", "scanner", "redir", "ldapi"`,
 		},
-		"action": defaultResourceRuleActionSchema,
+		"action": resourcerule.ScopeActionSchema(),
 		"point":  defaultPointSchema,
 	}
 	return &schema.Resource{
@@ -35,7 +35,8 @@ func resourceWallarmVpatch() *schema.Resource {
 		Importer: &schema.ResourceImporter{
 			StateContext: resourceWallarmVpatchImport,
 		},
-		Schema: lo.Assign(fields, commonResourceRuleFields),
+		CustomizeDiff: resourcerule.ActionScopeCustomizeDiff,
+		Schema:        lo.Assign(fields, commonResourceRuleFields, resourcerule.ActionScopeFields),
 	}
 }
 
@@ -53,7 +54,7 @@ func resourceWallarmVpatchCreate(_ context.Context, d *schema.ResourceData, m in
 		return diag.FromErr(fmt.Errorf("error setting point: %w", err))
 	}
 
-	points, err := expandPointsToTwoDimensionalArray(ps)
+	points, err := resourcerule.ExpandPointsToTwoDimensionalArray(ps)
 	if err != nil {
 		return diag.FromErr(err)
 	}

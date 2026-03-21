@@ -1,7 +1,6 @@
 package wallarm
 
 import (
-	"bytes"
 	"context"
 	crand "crypto/rand"
 	"encoding/json"
@@ -9,7 +8,6 @@ import (
 	"math/big"
 	"reflect"
 	"sort"
-	"strconv"
 	"strings"
 	"unicode"
 
@@ -70,141 +68,6 @@ func expandInterfaceToStringList(list interface{}) []string {
 		vs = append(vs, v.(string))
 	}
 	return vs
-}
-
-func actionDetailsToMap(actionDetails wallarm.ActionDetails) (map[string]interface{}, error) {
-	jsonActions, err := json.Marshal(actionDetails)
-	if err != nil {
-		return nil, err
-	}
-	var mapActions map[string]interface{}
-	if err = json.Unmarshal(jsonActions, &mapActions); err != nil {
-		return nil, err
-	}
-	if _, ok := mapActions["value"]; !ok {
-		mapActions["value"] = ""
-	}
-	return mapActions, nil
-}
-
-func hashResponseActionDetails(v interface{}) int {
-	var buf bytes.Buffer
-	m := v.(map[string]interface{})
-	var p []interface{}
-	buf.WriteString(fmt.Sprintf("%s-", m["type"].(string)))
-	buf.WriteString(fmt.Sprintf("%s-", m["value"].(string)))
-	if val, ok := m["point"]; ok {
-		p = val.([]interface{})
-		switch p[0].(string) {
-		case "action_name":
-			pointMap := make(map[string]string)
-			pointMap["action_name"] = m["value"].(string)
-			m["point"] = pointMap
-			m["value"] = ""
-		case "action_ext":
-			pointMap := make(map[string]string)
-			pointMap["action_ext"] = m["value"].(string)
-			m["point"] = pointMap
-			m["value"] = ""
-		case "scheme":
-			pointMap := make(map[string]string)
-			pointMap["scheme"] = m["value"].(string)
-			m["point"] = pointMap
-			m["value"] = ""
-		case "uri":
-			pointMap := make(map[string]string)
-			pointMap["uri"] = m["value"].(string)
-			m["point"] = pointMap
-			m["value"] = ""
-		case "proto":
-			pointMap := make(map[string]string)
-			pointMap["proto"] = m["value"].(string)
-			m["point"] = pointMap
-			m["value"] = ""
-		case "method":
-			pointMap := make(map[string]string)
-			pointMap["method"] = m["value"].(string)
-			m["point"] = pointMap
-			m["value"] = ""
-		case path:
-			pointMap := make(map[string]string)
-			pointMap[path] = fmt.Sprintf("%d", int(p[1].(float64)))
-			m["point"] = pointMap
-		case "instance":
-			pointMap := make(map[string]string)
-			pointMap["instance"] = m["value"].(string)
-			m["point"] = pointMap
-			m["value"] = ""
-			m["type"] = ""
-		case "header":
-			pointMap := make(map[string]string)
-			pointMap["header"] = p[1].(string)
-			m["point"] = pointMap
-		case "get":
-			pointMap := make(map[string]string)
-			pointMap["query"] = p[1].(string)
-			m["point"] = pointMap
-		}
-
-		buf.WriteString(fmt.Sprintf("%v-", m["point"]))
-	}
-	return resourcerule.HashString(buf.String())
-}
-
-func expandPointsToTwoDimensionalArray(ps []interface{}) (wallarm.TwoDimensionalSlice, error) {
-	points := make(wallarm.TwoDimensionalSlice, len(ps))
-	for i, point := range ps {
-		pointSlice := point.([]interface{})
-		switch pointSlice[0] {
-		case "path", "array", "grpc", "json_array", "xml_comment",
-			"xml_dtd_entity", "xml_pi", "xml_tag_array":
-			// Align to the []string{} schema, float is used since marshalling considers numbers as float64
-			if len(pointSlice) > 1 {
-				number, err := strconv.ParseFloat(pointSlice[1].(string), 64)
-				if err != nil {
-					return nil, err
-				}
-				pointSlice[1] = number
-				points[i] = pointSlice
-			}
-		default:
-			points[i] = pointSlice
-		}
-	}
-	return points, nil
-}
-
-func wrapPointElements(input []interface{}) [][]string {
-	var result [][]string // This will store the final result as a 2D slice of strings
-	i := 0
-
-	for i < len(input) {
-		switch input[i] {
-		case "json_array", "xml_pi", "hash", "array", "viewstate_array", "viewstate_pair",
-			"viewstate_triplet", "viewstate_dict", "header", "xml_dtd_entity",
-			"xml_tag_array", "xml_tag", "xml_attr", "xml_comment", "grpc", "protobuf",
-			"json_obj", "json", "jwt", "multipart", "get", "content_disp", "form_urlencoded",
-			"path", "cookie", "response_header", "viewstate_sparse_array":
-			// Check if there is a next element to include
-			if i+1 < len(input) {
-				// Convert both elements to strings and wrap them in a slice of strings
-				result = append(result, []string{
-					fmt.Sprintf("%v", input[i]),
-					fmt.Sprintf("%v", input[i+1]),
-				})
-				i++ // Skip the next element as it's already included
-			} else {
-				// If no next element, still wrap the special case string alone
-				result = append(result, []string{fmt.Sprintf("%v", input[i])})
-			}
-		default:
-			// For regular elements, convert to string and wrap it in a slice of strings
-			result = append(result, []string{fmt.Sprintf("%v", input[i])})
-		}
-		i++ // Move to the next element
-	}
-
-	return result
 }
 
 func interfaceToString(i interface{}) string {
@@ -626,7 +489,7 @@ func existsHint(d *schema.ResourceData, m interface{}, actionID int, hintType st
 
 	if ps, ok := d.GetOk("point"); ok {
 		var err error
-		points, err = expandPointsToTwoDimensionalArray(ps.([]interface{}))
+		points, err = resourcerule.ExpandPointsToTwoDimensionalArray(ps.([]interface{}))
 		if err != nil {
 			return "", false, err
 		}

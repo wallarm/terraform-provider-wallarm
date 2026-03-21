@@ -14,13 +14,14 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
+	"github.com/wallarm/terraform-provider-wallarm/wallarm/common/resourcerule"
 	wallarm "github.com/wallarm/wallarm-go"
 )
 
 var defaultAllowedAttackTypes = []string{
-	"xss", "sqli", "rce", "xxe", "ptrav", "crlf", "redir",
+	"xss", "sqli", "rce", "ptrav", "crlf", "redir",
 	"nosqli", "ldapi", "scanner", "mass_assignment", "ssrf",
-	"ssi", "mail_injection", "ssti",
+	"ssi", "mail_injection", "ssti", "xxe", "invalid_xml",
 }
 
 func dataSourceWallarmHits() *schema.Resource {
@@ -61,7 +62,7 @@ func dataSourceWallarmHits() *schema.Resource {
 
 			// Uses the exact same schema as all rule resources so the output
 			// can be passed directly into any wallarm_rule_* action argument.
-			"action": defaultResourceRuleActionSchema,
+			"action": resourcerule.ScopeActionSchema(),
 
 			"action_hash": {
 				Type:        schema.TypeString,
@@ -407,7 +408,7 @@ func hitKey(h *wallarm.Hit) string {
 // setEmptyHitsState sets empty values for all computed fields.
 func setEmptyHitsState(d *schema.ResourceData) diag.Diagnostics {
 	_ = d.Set("action", schema.NewSet(schema.HashResource(
-		defaultResourceRuleActionSchema.Elem.(*schema.Resource)), []interface{}{}))
+		resourcerule.ScopeActionSchema().Elem.(*schema.Resource)), []interface{}{}))
 	_ = d.Set("action_hash", "")
 	_ = d.Set("hits", []interface{}{})
 	return nil
@@ -430,7 +431,7 @@ func actionToSchemaSet(action []map[string]interface{}) *schema.Set {
 		ifaces[i] = a
 	}
 	return schema.NewSet(
-		schema.HashResource(defaultResourceRuleActionSchema.Elem.(*schema.Resource)),
+		schema.HashResource(resourcerule.ScopeActionSchema().Elem.(*schema.Resource)),
 		ifaces,
 	)
 }
@@ -444,7 +445,7 @@ func hitsToSchemaList(hits []*wallarm.Hit) []interface{} {
 			pointStrings = append(pointStrings, fmt.Sprintf("%v", p))
 		}
 
-		pointWrapped := wrapPointElements(h.Point)
+		pointWrapped := resourcerule.WrapPointElements(h.Point)
 		wrappedForSchema := make([]interface{}, 0, len(pointWrapped))
 		for _, pw := range pointWrapped {
 			inner := make([]interface{}, 0, len(pw))
@@ -482,7 +483,7 @@ func hitsToSchemaList(hits []*wallarm.Hit) []interface{} {
 // buildActionFromHit converts hit domain, path and poolid into Wallarm rule
 // action conditions in the exact format used by wallarm_rule_* resources.
 //
-// Conventions match hashResponseActionDetails in utils.go:
+// Conventions match HashResponseActionDetails in resourcerule:
 //
 //	point type    | type   | value  | point map
 //	--------------+--------+--------+-------------------------
@@ -495,7 +496,7 @@ func hitsToSchemaList(hits []*wallarm.Hit) []interface{} {
 func buildActionFromHit(domain, urlPath string, poolID int) []map[string]interface{} {
 	var conditions []map[string]interface{}
 
-	// Instance — type and value must be empty per hashResponseActionDetails.
+	// Instance — type and value must be empty per HashResponseActionDetails.
 	if poolID > 0 {
 		conditions = append(conditions, map[string]interface{}{
 			"type":  "",
@@ -507,7 +508,7 @@ func buildActionFromHit(domain, urlPath string, poolID int) []map[string]interfa
 	// HOST header — always iequal.
 	if domain != "" {
 		conditions = append(conditions, map[string]interface{}{
-			"type":  iequal,
+			"type":  "iequal",
 			"value": domain,
 			"point": map[string]interface{}{"header": "HOST"},
 		})

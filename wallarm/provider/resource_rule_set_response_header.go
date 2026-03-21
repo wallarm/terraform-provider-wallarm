@@ -38,7 +38,7 @@ func resourceWallarmSetResponseHeader() *schema.Resource {
 			Elem:     &schema.Schema{Type: schema.TypeString},
 		},
 
-		"action": defaultResourceRuleActionSchema,
+		"action": resourcerule.ScopeActionSchema(),
 	}
 	return &schema.Resource{
 		CreateContext: resourceWallarmSetResponseHeaderCreate,
@@ -48,7 +48,8 @@ func resourceWallarmSetResponseHeader() *schema.Resource {
 		Importer: &schema.ResourceImporter{
 			StateContext: resourceWallarmSetResponseHeaderImport,
 		},
-		Schema: lo.Assign(fields, commonResourceRuleFields),
+		CustomizeDiff: resourcerule.ActionScopeCustomizeDiff,
+		Schema:        lo.Assign(fields, commonResourceRuleFields, resourcerule.ActionScopeFields),
 	}
 }
 

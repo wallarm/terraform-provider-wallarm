@@ -26,7 +26,7 @@ func resourceWallarmRegex() *schema.Resource {
 			ForceNew: true,
 		},
 
-		"action": defaultResourceRuleActionSchema,
+		"action": resourcerule.ScopeActionSchema(),
 
 		"regex": {
 			Type:     schema.TypeString,
@@ -51,7 +51,8 @@ func resourceWallarmRegex() *schema.Resource {
 		Importer: &schema.ResourceImporter{
 			StateContext: resourceWallarmRegexImport,
 		},
-		Schema: lo.Assign(fields, commonResourceRuleFields),
+		CustomizeDiff: resourcerule.ActionScopeCustomizeDiff,
+		Schema:        lo.Assign(fields, commonResourceRuleFields, resourcerule.ActionScopeFields),
 	}
 }
 
@@ -78,7 +79,7 @@ func resourceWallarmRegexCreate(_ context.Context, d *schema.ResourceData, m int
 		return diag.FromErr(fmt.Errorf("error setting point: %w", err))
 	}
 
-	points, err := expandPointsToTwoDimensionalArray(ps)
+	points, err := resourcerule.ExpandPointsToTwoDimensionalArray(ps)
 	if err != nil {
 		return diag.FromErr(err)
 	}

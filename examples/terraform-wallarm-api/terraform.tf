@@ -3,7 +3,7 @@ terraform {
 
   required_providers {
     wallarm = {
-      source  = "wallarm/wallarm"
+      source = "wallarm/wallarm"
     }
   }
 }

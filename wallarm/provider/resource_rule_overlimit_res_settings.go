@@ -18,7 +18,7 @@ import (
 
 func resourceWallarmOverlimitResSettings() *schema.Resource {
 	fields := map[string]*schema.Schema{
-		"action": defaultResourceRuleActionSchema,
+		"action": resourcerule.ScopeActionSchema(),
 
 		"overlimit_time": {
 			Type:         schema.TypeInt,
@@ -42,7 +42,8 @@ func resourceWallarmOverlimitResSettings() *schema.Resource {
 		Importer: &schema.ResourceImporter{
 			StateContext: resourceWallarmOverlimitResSettingsImport,
 		},
-		Schema: lo.Assign(fields, commonResourceRuleFields),
+		CustomizeDiff: resourcerule.ActionScopeCustomizeDiff,
+		Schema:        lo.Assign(fields, commonResourceRuleFields, resourcerule.ActionScopeFields),
 	}
 }
 

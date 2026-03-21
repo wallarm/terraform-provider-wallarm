@@ -2,50 +2,15 @@ package wallarm
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/wallarm/terraform-provider-wallarm/wallarm/common/resourcerule"
 	"github.com/wallarm/wallarm-go"
 )
-
-// apiTypeToTerraformResource maps Wallarm API rule types to Terraform resource names.
-var apiTypeToTerraformResource = map[string]string{
-	"binary_data":            "wallarm_rule_binary_data",
-	"bola":                   "wallarm_rule_bola",
-	"bola_counter":           "wallarm_rule_bola_counter",
-	"brute":                  "wallarm_rule_brute",
-	"brute_counter":          "wallarm_rule_bruteforce_counter",
-	"credentials_point":      "wallarm_rule_credential_stuffing_point",
-	"credentials_regex":      "wallarm_rule_credential_stuffing_regex",
-	"dirbust_counter":        "wallarm_rule_dirbust_counter",
-	"disable_attack_type":    "wallarm_rule_disable_attack_type",
-	"disable_regex":          "wallarm_rule_ignore_regex",
-	"disable_stamp":          "wallarm_rule_disable_stamp",
-	"enum":                   "wallarm_rule_enum",
-	"experimental_regex":     "wallarm_rule_regex",
-	"file_upload_size_limit": "wallarm_rule_file_upload_size_limit",
-	"forced_browsing":        "wallarm_rule_forced_browsing",
-	"graphql_detection":      "wallarm_rule_graphql_detection",
-	"overlimit_res_settings": "wallarm_rule_overlimit_res_settings",
-	"parser_state":           "wallarm_rule_parser_state",
-	"rate_limit":             "wallarm_rule_rate_limit",
-	"rate_limit_enum":        "wallarm_rule_rate_limit_enum",
-	"regex":                  "wallarm_rule_regex",
-	"sensitive_data":         "wallarm_rule_masking",
-	"set_response_header":    "wallarm_rule_set_response_header",
-	"uploads":                "wallarm_rule_uploads",
-	"vpatch":                 "wallarm_rule_vpatch",
-	"wallarm_mode":           "wallarm_rule_mode",
-}
-
-// fourPartIDTypes are rule types whose import ID requires a 4th segment (the API type).
-var fourPartIDTypes = map[string]bool{
-	"regex":              true,
-	"experimental_regex": true,
-	"wallarm_mode":       true,
-}
 
 func dataSourceWallarmRules() *schema.Resource {
 	return &schema.Resource{
@@ -64,8 +29,9 @@ func dataSourceWallarmRules() *schema.Resource {
 			},
 
 			"rules": {
-				Type:     schema.TypeList,
-				Computed: true,
+				Type:        schema.TypeList,
+				Computed:    true,
+				Description: "Basic rule list with IDs and import info (backward-compatible).",
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"rule_id": {
@@ -95,6 +61,84 @@ func dataSourceWallarmRules() *schema.Resource {
 							Computed:    true,
 							Description: "Pre-computed import ID for use in import blocks",
 						},
+					},
+				},
+			},
+
+			"rules_export": {
+				Type:        schema.TypeList,
+				Computed:    true,
+				Description: "Full rule details with reverse-mapped path/domain/etc. for YAML config generation.",
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"rule_id":            {Type: schema.TypeInt, Computed: true},
+						"action_id":          {Type: schema.TypeInt, Computed: true},
+						"client_id":          {Type: schema.TypeInt, Computed: true},
+						"api_type":           {Type: schema.TypeString, Computed: true, Description: "API rule type"},
+						"terraform_resource": {Type: schema.TypeString, Computed: true},
+						"import_id":          {Type: schema.TypeString, Computed: true},
+
+						// Reverse-mapped scope
+						"path":     {Type: schema.TypeString, Computed: true, Description: "Reverse-mapped path from action conditions"},
+						"domain":   {Type: schema.TypeString, Computed: true},
+						"instance": {Type: schema.TypeString, Computed: true},
+						"method":   {Type: schema.TypeString, Computed: true},
+						"scheme":   {Type: schema.TypeString, Computed: true},
+						"proto":    {Type: schema.TypeString, Computed: true},
+
+						// Query & headers as JSON (easier to pass through to HCL)
+						"query_json":   {Type: schema.TypeString, Computed: true, Description: "Query params as JSON array"},
+						"headers_json": {Type: schema.TypeString, Computed: true, Description: "Custom headers as JSON array"},
+
+						// Action conditions as JSON (for reference HCL)
+						"action_json": {Type: schema.TypeString, Computed: true, Description: "Raw action conditions as JSON"},
+
+						// Detection point as JSON
+						"point_json": {Type: schema.TypeString, Computed: true, Description: "Detection point as JSON"},
+
+						// Rule-specific fields
+						"comment":        {Type: schema.TypeString, Computed: true},
+						"attack_type":    {Type: schema.TypeString, Computed: true},
+						"stamp":          {Type: schema.TypeInt, Computed: true},
+						"mode":           {Type: schema.TypeString, Computed: true},
+						"regex":          {Type: schema.TypeString, Computed: true},
+						"regex_id":       {Type: schema.TypeInt, Computed: true},
+						"experimental":   {Type: schema.TypeBool, Computed: true},
+						"parser":         {Type: schema.TypeString, Computed: true},
+						"state":          {Type: schema.TypeString, Computed: true},
+						"file_type":      {Type: schema.TypeString, Computed: true},
+						"delay":          {Type: schema.TypeInt, Computed: true},
+						"burst":          {Type: schema.TypeInt, Computed: true},
+						"rate":           {Type: schema.TypeInt, Computed: true},
+						"rsp_status":     {Type: schema.TypeInt, Computed: true},
+						"time_unit":      {Type: schema.TypeString, Computed: true},
+						"overlimit_time": {Type: schema.TypeInt, Computed: true},
+						"size":           {Type: schema.TypeInt, Computed: true},
+						"size_unit":      {Type: schema.TypeString, Computed: true},
+
+						// GraphQL
+						"max_depth":           {Type: schema.TypeInt, Computed: true},
+						"max_value_size_kb":   {Type: schema.TypeInt, Computed: true},
+						"max_doc_size_kb":     {Type: schema.TypeInt, Computed: true},
+						"max_aliases_size_kb": {Type: schema.TypeInt, Computed: true},
+						"max_doc_per_batch":   {Type: schema.TypeInt, Computed: true},
+						"introspection":       {Type: schema.TypeBool, Computed: true},
+						"debug_enabled":       {Type: schema.TypeBool, Computed: true},
+
+						// Response header
+						"header_name":        {Type: schema.TypeString, Computed: true},
+						"header_values_json": {Type: schema.TypeString, Computed: true},
+
+						// Credential stuffing
+						"login_point_json": {Type: schema.TypeString, Computed: true},
+						"login_regex":      {Type: schema.TypeString, Computed: true},
+						"case_sensitive":   {Type: schema.TypeBool, Computed: true},
+						"cred_stuff_type":  {Type: schema.TypeString, Computed: true},
+
+						// Threshold/reaction/enum as JSON (complex nested objects)
+						"threshold_json":             {Type: schema.TypeString, Computed: true},
+						"reaction_json":              {Type: schema.TypeString, Computed: true},
+						"enumerated_parameters_json": {Type: schema.TypeString, Computed: true},
 					},
 				},
 			},
@@ -174,41 +218,133 @@ func dataSourceWallarmRulesRead(_ context.Context, d *schema.ResourceData, m int
 		log.Printf("[INFO] wallarm_rules data source: added %d credential stuffing configs for client %d", len(credConfigs), clientID)
 	}
 
-	// Flatten results.
-	rules := make([]interface{}, 0)
+	// Filter rules by type.
+	var filteredRules []wallarm.ActionBody
 	for _, rule := range allRules {
-		tfResource, known := apiTypeToTerraformResource[rule.Type]
-		if !known {
-			continue // skip types not managed by this provider
+		if _, known := resourcerule.APITypeToTerraformResource[rule.Type]; !known {
+			continue
 		}
-
-		// Apply optional type filter.
 		if len(typeFilter) > 0 && !typeFilter[rule.Type] {
 			continue
 		}
+		filteredRules = append(filteredRules, rule)
+	}
 
-		// Compute import ID: 4-part for regex/mode, 3-part for all others.
+	// Build basic rules list (backward-compatible).
+	basicRules := make([]interface{}, 0, len(filteredRules))
+	for _, rule := range filteredRules {
 		var importID string
-		if fourPartIDTypes[rule.Type] {
+		if resourcerule.FourPartIDTypes[rule.Type] {
 			importID = fmt.Sprintf("%d/%d/%d/%s", clientID, rule.ActionID, rule.ID, rule.Type)
 		} else {
 			importID = fmt.Sprintf("%d/%d/%d", clientID, rule.ActionID, rule.ID)
 		}
 
-		rules = append(rules, map[string]interface{}{
+		basicRules = append(basicRules, map[string]interface{}{
 			"rule_id":            rule.ID,
 			"action_id":          rule.ActionID,
 			"client_id":          clientID,
 			"type":               rule.Type,
-			"terraform_resource": tfResource,
+			"terraform_resource": resourcerule.APITypeToTerraformResource[rule.Type],
 			"import_id":          importID,
 		})
 	}
 
+	// Build full export list with reverse-mapped fields.
+	exported := resourcerule.ExportRules(filteredRules, clientID)
+	exportList := make([]interface{}, 0, len(exported))
+	for _, e := range exported {
+		entry := map[string]interface{}{
+			"rule_id":            e.RuleID,
+			"action_id":          e.ActionID,
+			"client_id":          e.ClientID,
+			"api_type":           e.APIType,
+			"terraform_resource": e.TerraformResource,
+			"import_id":          e.ImportID,
+
+			"path":     e.Path,
+			"domain":   e.Domain,
+			"instance": e.Instance,
+			"method":   e.Method,
+			"scheme":   e.Scheme,
+			"proto":    e.Proto,
+
+			"comment":        e.Comment,
+			"attack_type":    e.AttackType,
+			"stamp":          e.Stamp,
+			"mode":           e.Mode,
+			"regex":          e.Regex,
+			"regex_id":       e.RegexID,
+			"experimental":   e.Experimental,
+			"parser":         e.Parser,
+			"state":          e.State,
+			"file_type":      e.FileType,
+			"delay":          e.Delay,
+			"burst":          e.Burst,
+			"rate":           e.Rate,
+			"rsp_status":     e.RspStatus,
+			"time_unit":      e.TimeUnit,
+			"overlimit_time": e.OverlimitTime,
+			"size":           e.Size,
+			"size_unit":      e.SizeUnit,
+
+			"max_depth":           e.MaxDepth,
+			"max_value_size_kb":   e.MaxValueSizeKb,
+			"max_doc_size_kb":     e.MaxDocSizeKb,
+			"max_aliases_size_kb": e.MaxAliasesSizeKb,
+			"max_doc_per_batch":   e.MaxDocPerBatch,
+			"introspection":       e.Introspection,
+			"debug_enabled":       e.DebugEnabled,
+
+			"header_name":     e.HeaderName,
+			"login_regex":     e.LoginRegex,
+			"case_sensitive":  e.CaseSensitive,
+			"cred_stuff_type": e.CredStuffType,
+		}
+
+		// Serialize complex fields as JSON strings.
+		entry["query_json"] = mustJSON(e.Query)
+		entry["headers_json"] = mustJSON(e.Headers)
+		// Convert action to TF format (point as map) before serializing.
+		tfActions := make([]map[string]interface{}, 0, len(e.Action))
+		for _, a := range e.Action {
+			m, err := resourcerule.ActionDetailsToMap(a)
+			if err != nil {
+				continue
+			}
+			resourcerule.HashResponseActionDetails(m) // side effect: converts point array → map
+			tfActions = append(tfActions, m)
+		}
+		entry["action_json"] = mustJSON(tfActions)
+		entry["point_json"] = mustJSON(resourcerule.WrapPointElements(e.Point))
+		entry["header_values_json"] = mustJSON(e.HeaderValues)
+		entry["login_point_json"] = mustJSON(resourcerule.WrapPointElements(e.LoginPoint))
+		entry["threshold_json"] = mustJSON(e.Threshold)
+		entry["reaction_json"] = mustJSON(e.Reaction)
+		entry["enumerated_parameters_json"] = mustJSON(e.EnumeratedParameters)
+
+		exportList = append(exportList, entry)
+	}
+
 	d.SetId(fmt.Sprintf("rules_%d", clientID))
-	if err := d.Set("rules", rules); err != nil {
+	if err := d.Set("rules", basicRules); err != nil {
 		return diag.FromErr(fmt.Errorf("error setting rules: %w", err))
+	}
+	if err := d.Set("rules_export", exportList); err != nil {
+		return diag.FromErr(fmt.Errorf("error setting rules_export: %w", err))
 	}
 
 	return nil
+}
+
+// mustJSON serializes a value to JSON string. Returns "null" on nil, "[]" on empty slices.
+func mustJSON(v interface{}) string {
+	if v == nil {
+		return "null"
+	}
+	b, err := json.Marshal(v)
+	if err != nil {
+		return "null"
+	}
+	return string(b)
 }

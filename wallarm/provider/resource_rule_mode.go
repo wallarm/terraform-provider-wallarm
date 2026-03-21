@@ -25,7 +25,7 @@ func resourceWallarmMode() *schema.Resource {
 			ForceNew:     true,
 		},
 
-		"action": defaultResourceRuleActionSchema,
+		"action": resourcerule.ScopeActionSchema(),
 	}
 	return &schema.Resource{
 		CreateContext: resourceWallarmModeCreate,
@@ -35,7 +35,8 @@ func resourceWallarmMode() *schema.Resource {
 		Importer: &schema.ResourceImporter{
 			StateContext: resourceWallarmModeImport,
 		},
-		Schema: lo.Assign(fields, commonResourceRuleFields),
+		CustomizeDiff: resourcerule.ActionScopeCustomizeDiff,
+		Schema:        lo.Assign(fields, commonResourceRuleFields, resourcerule.ActionScopeFields),
 	}
 }
 
