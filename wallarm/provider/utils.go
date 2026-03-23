@@ -3,7 +3,6 @@ package wallarm
 import (
 	"context"
 	crand "crypto/rand"
-	"encoding/json"
 	"fmt"
 	"math/big"
 	"reflect"
@@ -439,8 +438,8 @@ func existsAction(d *schema.ResourceData, m interface{}, hintType string) (strin
 		return "", false, err
 	}
 
-	rule := &wallarm.ActionRead{
-		Filter: &wallarm.ActionFilter{
+	params := &wallarm.ActionListParams{
+		Filter: &wallarm.ActionListFilter{
 			HintType: []string{hintType},
 			Clientid: []int{clientID},
 		},
@@ -448,31 +447,14 @@ func existsAction(d *schema.ResourceData, m interface{}, hintType string) (strin
 		Offset: 0,
 	}
 
-	respRules, err := client.RuleRead(rule)
+	resp, err := client.ActionList(params)
 	if err != nil {
 		return "", false, err
 	}
 
-	for _, body := range respRules.Body {
-
-		var apiActions []wallarm.ActionDetails
-
-		for _, condition := range body.Conditions {
-			apiAct := condition.(map[string]interface{})
-			result, err := json.Marshal(apiAct)
-			if err != nil {
-				return "", false, err
-			}
-			var apiAction wallarm.ActionDetails
-			err = json.Unmarshal(result, &apiAction)
-			if err != nil {
-				return "", false, err
-			}
-			apiActions = append(apiActions, apiAction)
-		}
-		if equalWithoutOrder(action, apiActions) {
-			actionID := body.ID
-			return existsHint(d, m, actionID, hintType)
+	for _, entry := range resp.Body {
+		if equalWithoutOrder(action, entry.Conditions) {
+			return existsHint(d, m, entry.ID, hintType)
 		}
 	}
 	return "", false, err

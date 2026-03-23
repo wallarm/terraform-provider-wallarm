@@ -102,39 +102,15 @@ func resourceWallarmSensitiveDataDelete(_ context.Context, d *schema.ResourceDat
 	if err != nil {
 		return diag.FromErr(err)
 	}
-	actionID := d.Get("action_id").(int)
 	ruleID := d.Get("rule_id").(int)
-
-	rule := &wallarm.ActionRead{
-		Filter: &wallarm.ActionFilter{
-			HintType: []string{"sensitive_data"},
+	h := &wallarm.HintDelete{
+		Filter: &wallarm.HintDeleteFilter{
 			Clientid: []int{clientID},
-			ID:       []int{ruleID},
+			ID:       ruleID,
 		},
-		Limit:  APIListLimit,
-		Offset: 0,
 	}
-	respRules, err := client.RuleRead(rule)
-	if err != nil {
+	if err := client.HintDelete(h); err != nil {
 		return diag.FromErr(err)
-	}
-
-	if len(respRules.Body) == 1 && respRules.Body[0].Hints == 1 && respRules.Body[0].GroupedHintsCount == 1 {
-		if err := client.ActionDelete(actionID); err != nil {
-			return diag.FromErr(err)
-		}
-	} else {
-		ruleID := d.Get("rule_id").(int)
-		h := &wallarm.HintDelete{
-			Filter: &wallarm.HintDeleteFilter{
-				Clientid: []int{clientID},
-				ID:       ruleID,
-			},
-		}
-
-		if err := client.HintDelete(h); err != nil {
-			return diag.FromErr(err)
-		}
 	}
 	return nil
 }

@@ -205,7 +205,7 @@ func (c *HintCache) Stats() CacheStats {
 // rule resource's Read function) are served from a bulk-loaded cache.
 // Multi-ID or complex filter queries pass through to the underlying API.
 //
-// Mutating methods (HintCreate, HintDelete, HintUpdateV3, ActionDelete) invalidate
+// Mutating methods (HintCreate, HintDelete, HintUpdateV3) invalidate
 // the cache AFTER the mutation succeeds, so:
 //   - Failed mutations don't unnecessarily clear the cache
 //   - Post-mutation reads (e.g. Create calling Read at the end) get fresh data
@@ -303,15 +303,6 @@ func (c *CachedClient) HintDelete(body *wallarm.HintDelete) error {
 		return err
 	}
 	c.hintCache.Invalidate("HintDelete")
-	return nil
-}
-
-// ActionDelete delegates to the underlying API and invalidates the cache AFTER success.
-func (c *CachedClient) ActionDelete(actionID int) error {
-	if err := c.API.ActionDelete(actionID); err != nil {
-		return err
-	}
-	c.hintCache.Invalidate("ActionDelete")
 	return nil
 }
 
