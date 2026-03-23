@@ -1,4 +1,4 @@
-# ─── Fetch hits per request_id ─────────────────────────────────────────────────
+# ─── Fetch hits and generate rule objects ─────────────────────────────────────
 
 module "hits" {
   for_each = var.requests
@@ -6,28 +6,14 @@ module "hits" {
 
   client_id  = var.client_id
   request_id = each.key
+  rule_types = each.value
+  config_dir = var.configs_dir
   mode       = var.hits_mode
 
-  # Gate: skip API fetch when fp_rules config files already exist for this request_id.
-  # First apply (no configs yet) → true  → data source fetches from API.
-  # Subsequent  (configs exist)  → false → reads persisted data from terraform state.
-  fetch_hits = length(try(fileset("${var.fp_config_dir}/${each.key}", "*.yaml"), toset([]))) == 0
-}
-
-# ─── Convert hits to universal rule objects ───────────────────────────────────
-
-module "hits_generator" {
-  for_each = var.requests
-  source   = "./modules/hits_generator"
-
-  request_id = each.key
-  rule_types = each.value
-  domain     = module.hits[each.key].domain
-  path       = module.hits[each.key].path
-  poolid     = module.hits[each.key].poolid
-  points     = module.hits[each.key].points
-  action     = module.hits[each.key].action
-  config_dir = var.fp_config_dir
+  # Gate: fetch from API when explicitly requested or when no hits YAML files exist.
+  # After first apply, hits_*.yaml files exist → fetch skipped → reads from state.
+  # Set var.fetch_hits=true to force re-fetch (e.g., when adding new request_ids).
+  fetch_hits = var.fetch_hits || length(try(fileset(var.configs_dir, "**/hits_*.yaml"), toset([]))) == 0
 }
 
 # ─── Import / Convert existing rules ─────────────────────────────────────────
@@ -51,7 +37,7 @@ module "import_generator" {
   rule_types            = var.import_rule_types
   import_address_prefix = var.import_address_prefix
   rules_engine_address  = var.rules_engine_address
-  import_config_dir     = var.import_config_dir
+  import_config_dir     = var.configs_dir
 }
 
 resource "local_file" "import_blocks" {
@@ -69,20 +55,56 @@ resource "local_file" "moved_blocks" {
 }
 
 # ─── Unified rules engine ────────────────────────────────────────────────────
-# Reads YAML configs from custom_rules/, fp_rules/, and import_rules/ directories.
+# Single configs_dir with action subdirectories containing .action.yaml + rule YAMLs.
 
 module "rules" {
   source = "./modules/rules_engine"
 
   client_id = var.client_id
 
-  config_dirs = [
-    var.config_dir,           # custom_rules/
-    var.fp_config_dir,        # fp_rules/
-    var.import_config_dir,    # import_rules/ (YAML from converted imports)
-  ]
+  config_dirs = [var.configs_dir]
 
   generated_rules = flatten([
-    for req_id in keys(var.requests) : module.hits_generator[req_id].rules
+    for req_id in keys(var.requests) : module.hits[req_id].rules
   ])
+}
+
+# ─── Action discovery (separate step) ────────────────────────────────────────
+# Discovers new action scopes from API and generates .action.yaml files.
+# Run with: terraform apply -var='discover_actions=true'
+# This is a second-apply step — rules must exist first.
+
+data "wallarm_actions" "discovery" {
+  count     = var.discover_actions ? 1 : 0
+  client_id = var.client_id
+}
+
+locals {
+  known_action_hashes = { for hash, cfg in module.rules.action_map : hash => true }
+
+  discovered_actions = var.discover_actions ? {
+    for a in try(data.wallarm_actions.discovery[0].actions, []) :
+    a.conditions_hash => a
+    if !contains(keys(local.known_action_hashes), a.conditions_hash)
+  } : {}
+}
+
+resource "local_file" "discovered_action_config" {
+  for_each = local.discovered_actions
+
+  filename        = "${var.configs_dir}/${each.value.dir_name}/.action.yaml"
+  file_permission = "0644"
+
+  content = yamlencode({
+    conditions      = each.value.conditions
+    conditions_hash = each.value.conditions_hash
+    action_id       = each.value.action_id
+    action_path     = each.value.endpoint_path
+    action_domain   = each.value.endpoint_domain
+    action_instance = each.value.endpoint_instance
+  })
+
+  lifecycle {
+    ignore_changes = [content]
+  }
 }

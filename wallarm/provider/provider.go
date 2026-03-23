@@ -120,6 +120,7 @@ func Provider() *schema.Provider {
 			},
 		},
 		DataSourcesMap: map[string]*schema.Resource{
+			"wallarm_actions":         dataSourceWallarmActions(),
 			"wallarm_node":            dataSourceWallarmNode(),
 			"wallarm_security_issues": dataSourceWallarmSecurityIssues(),
 			"wallarm_hits":            dataSourceWallarmHits(),
@@ -128,6 +129,7 @@ func Provider() *schema.Provider {
 			"wallarm_rules":           dataSourceWallarmRules(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
+			"wallarm_action":                         resourceWallarmAction(),
 			"wallarm_tenant":                         resourceWallarmTenant(),
 			"wallarm_rules_settings":                 resourceWallarmRulesSettings(),
 			"wallarm_global_mode":                    resourceWallarmGlobalMode(),

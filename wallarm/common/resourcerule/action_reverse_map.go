@@ -312,8 +312,6 @@ func ExpandPathToActions(path, domain, instance, method, scheme, proto string, q
 	return actions
 }
 
-const maxPathDepth = 10
-
 // expandPath parses a path string into action conditions.
 func expandPath(path string) []wallarm.ActionDetails {
 	if path == "" {
@@ -337,13 +335,6 @@ func expandPath(path string) []wallarm.ActionDetails {
 	rawParts := strings.Split(strings.TrimPrefix(path, "/"), "/")
 	if len(rawParts) == 0 {
 		return nil
-	}
-
-	// Too-deep fallback: if path has too many segments, use single URI match.
-	if len(strings.Split(path, "/")) > maxPathDepth && !containsStr(rawParts, "**") {
-		return []wallarm.ActionDetails{
-			{Type: "equal", Value: path, Point: []interface{}{"uri"}},
-		}
 	}
 
 	// Split into directory segments and final segment (action component).
@@ -427,15 +418,6 @@ func parseLastSegment(seg string) (name, ext string, hasDot bool) {
 		return seg, "", false
 	}
 	return seg[:dotIdx], seg[dotIdx+1:], true
-}
-
-func containsStr(ss []string, s string) bool {
-	for _, v := range ss {
-		if v == s {
-			return true
-		}
-	}
-	return false
 }
 
 // --- Helper functions ---

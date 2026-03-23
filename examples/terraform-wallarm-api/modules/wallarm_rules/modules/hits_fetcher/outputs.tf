@@ -1,11 +1,11 @@
-output "action" {
-  description = "Rule action conditions derived from the hit (host, path, instance)"
-  value       = local.effective.action
+output "action_hash" {
+  description = "SHA256 hash of action conditions (Ruby-compatible)"
+  value       = local.effective.action_hash
 }
 
-output "action_hash" {
-  description = "SHA256 hash of sorted action conditions"
-  value       = local.effective.action_hash
+output "action_dir_name" {
+  description = "Computed directory name for this action scope"
+  value       = local.effective.action_dir_name
 }
 
 output "domain" {
@@ -31,4 +31,9 @@ output "points" {
 output "has_hits" {
   description = "Whether any hits are available"
   value       = length(try(local.effective.points, {})) > 0
+}
+
+output "rules" {
+  description = "List of rule objects in universal format for the rules_engine"
+  value       = local.rules
 }

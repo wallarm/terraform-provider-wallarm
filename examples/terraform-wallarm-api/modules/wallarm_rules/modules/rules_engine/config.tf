@@ -3,21 +3,42 @@
 # Path-to-action expansion is handled by the provider via action_* fields.
 
 locals {
-  # ─── Discover YAML configs from all directories (recursive) ─────────────
-  all_yaml_files = merge([
+  # ─── Cache yamldecode: read each file exactly once ─────────────────────
+  _raw_yaml = merge([
     for dir in var.config_dirs : {
       for f in try(fileset(dir, "**/*.yaml"), toset([])) :
-      yamldecode(file("${dir}/${f}")).name => merge(
-        yamldecode(file("${dir}/${f}")),
-        {
-          _source_dir  = dir
-          _source_file = f
-          _ref_dir     = dirname(f) != "." ? "${dir}/${dirname(f)}/_reference" : "${dir}/_reference"
-        }
-      )
-      if can(yamldecode(file("${dir}/${f}")).name) && can(yamldecode(file("${dir}/${f}")).resource_type)
+      "${dir}/${f}" => {
+        dir      = dir
+        filename = f
+        data     = try(yamldecode(file("${dir}/${f}")), {})
+      }
     }
   ]...)
+
+  # ─── Separate action configs from rule configs ─────────────────────────
+  _action_files = {
+    for path, entry in local._raw_yaml : path => entry
+    if basename(entry.filename) == ".action.yaml"
+  }
+
+  _rule_files = {
+    for path, entry in local._raw_yaml : path => entry
+    if basename(entry.filename) != ".action.yaml"
+      && can(entry.data.name)
+      && can(entry.data.resource_type)
+  }
+
+  # ─── Action map is in actions.tf ─────────────────────────────────────────
+
+  # ─── Rule configs from YAML files ─────────────────────────────────────
+  all_yaml_files = {
+    for path, entry in local._rule_files :
+    entry.data.name => merge(entry.data, {
+      _source_dir  = entry.dir
+      _source_file = entry.filename
+      _ref_dir     = dirname(entry.filename) != "." ? "${entry.dir}/${dirname(entry.filename)}/_reference" : "${entry.dir}/_reference"
+    })
+  }
 
   # Generated rules not yet persisted as YAML files (first apply only)
   gen_rules = { for r in var.generated_rules : r.name => r
@@ -34,6 +55,14 @@ locals {
 
   # Map: name → resource_type
   managed_rules = { for name, r in local.all_rules : name => try(r.resource_type, "") }
+
+  # ─── Validate unique names across directories ────────────────────────
+  # Duplicate names silently overwrite in merge(). Check for duplicates.
+  _rule_names_list = [for path, entry in local._rule_files : entry.data.name]
+  _duplicate_names = [
+    for name in local._rule_names_list :
+    name if length([for n in local._rule_names_list : n if n == name]) > 1
+  ]
 
   # ─── Normalize rule fields with defaults ────────────────────────────────
   rule_configs = {

@@ -143,6 +143,18 @@ func (c *HintCache) Get(hintID int) (*wallarm.ActionBody, bool) {
 	return h, ok
 }
 
+// Insert adds or updates a single hint in the cache without invalidating.
+// Used by HintCreate to keep the cache warm after creating new hints.
+func (c *HintCache) Insert(hint *wallarm.ActionBody) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if c.hints == nil {
+		c.hints = make(map[int]*wallarm.ActionBody)
+	}
+	c.hints[hint.ID] = hint
+	log.Printf("[DEBUG] HintCache: INSERT hint_id=%d (cache size: %d)", hint.ID, len(c.hints))
+}
+
 // Invalidate clears the cache so the next read triggers a fresh bulk load.
 // caller identifies which method triggered the invalidation for debugging.
 func (c *HintCache) Invalidate(caller string) {
@@ -286,14 +298,19 @@ func (c *CachedClient) HintRead(body *wallarm.HintRead) (*wallarm.HintReadResp, 
 	return c.API.HintRead(body)
 }
 
-// HintCreate delegates to the underlying API and invalidates the cache AFTER success.
-// Retries (including HTTP 423) are handled at the wallarm-go transport level.
+// HintCreate delegates to the underlying API and inserts the new hint into cache.
+// This avoids invalidating the entire cache during batch creates — subsequent reads
+// can still be served from cache. Retries are handled at the wallarm-go transport level.
 func (c *CachedClient) HintCreate(body *wallarm.ActionCreate) (*wallarm.ActionCreateResp, error) {
 	resp, err := c.API.HintCreate(body)
 	if err != nil {
 		return resp, err
 	}
-	c.hintCache.Invalidate("HintCreate")
+	// Insert the newly created hint into cache instead of invalidating.
+	// The response body contains the full hint data.
+	if resp != nil && resp.Body != nil {
+		c.hintCache.Insert(resp.Body)
+	}
 	return resp, nil
 }
 
@@ -306,12 +323,15 @@ func (c *CachedClient) HintDelete(body *wallarm.HintDelete) error {
 	return nil
 }
 
-// HintUpdateV3 delegates to the underlying API and invalidates the cache AFTER success.
+// HintUpdateV3 delegates to the underlying API and updates the cache entry.
+// Uses Insert instead of Invalidate to keep cache warm during batch operations (e.g., import).
 func (c *CachedClient) HintUpdateV3(ruleID int, body *wallarm.HintUpdateV3Params) (*wallarm.ActionCreateResp, error) {
 	resp, err := c.API.HintUpdateV3(ruleID, body)
 	if err != nil {
 		return resp, err
 	}
-	c.hintCache.Invalidate("HintUpdateV3")
+	if resp != nil && resp.Body != nil {
+		c.hintCache.Insert(resp.Body)
+	}
 	return resp, nil
 }

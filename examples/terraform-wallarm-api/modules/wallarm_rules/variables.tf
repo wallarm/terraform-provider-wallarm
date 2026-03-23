@@ -15,19 +15,21 @@ variable "hits_mode" {
   description = "Fetch mode for hits: 'request' (direct hits only) or 'attack' (expand to all related hits by attack_id)"
 }
 
-variable "config_dir" {
+variable "configs_dir" {
   type        = string
-  description = "Directory for custom rule YAML configs"
+  description = "Top-level directory for all rule configs. Action subdirectories are created automatically."
 }
 
-variable "fp_config_dir" {
-  type        = string
-  description = "Directory for false-positive rule YAML configs (generated from hits)"
+variable "fetch_hits" {
+  type        = bool
+  default     = false
+  description = "Force fetch hits from API even if YAML configs exist. Auto-fetches on first apply (no configs yet). Set true when adding new request_ids with existing configs in the directory."
 }
 
-variable "import_config_dir" {
-  type        = string
-  description = "Directory for YAML configs converted from imported rules"
+variable "discover_actions" {
+  type        = bool
+  default     = false
+  description = "Discover new action scopes from API and generate .action.yaml files. Run after rules are created."
 }
 
 variable "is_importing" {

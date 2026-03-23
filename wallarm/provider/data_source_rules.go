@@ -86,6 +86,10 @@ func dataSourceWallarmRules() *schema.Resource {
 						"scheme":   {Type: schema.TypeString, Computed: true},
 						"proto":    {Type: schema.TypeString, Computed: true},
 
+						// Action grouping
+						"conditions_hash": {Type: schema.TypeString, Computed: true, Description: "SHA256 hash of action conditions (Ruby-compatible)"},
+						"action_dir_name": {Type: schema.TypeString, Computed: true, Description: "Computed directory name for this action scope"},
+
 						// Query & headers as JSON (easier to pass through to HCL)
 						"query_json":   {Type: schema.TypeString, Computed: true, Description: "Query params as JSON array"},
 						"headers_json": {Type: schema.TypeString, Computed: true, Description: "Custom headers as JSON array"},
@@ -268,6 +272,9 @@ func dataSourceWallarmRulesRead(_ context.Context, d *schema.ResourceData, m int
 			"method":   e.Method,
 			"scheme":   e.Scheme,
 			"proto":    e.Proto,
+
+			"conditions_hash": resourcerule.ConditionsHash(e.Action),
+			"action_dir_name": resourcerule.ActionDirName(e.Action),
 
 			"comment":        e.Comment,
 			"attack_type":    e.AttackType,

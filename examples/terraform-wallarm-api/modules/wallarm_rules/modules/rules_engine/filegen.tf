@@ -1,6 +1,7 @@
 # ─── Config file generation ───────────────────────────────────────────────────
 # YAML configs for generated rules (hits). Written on first apply.
 # ignore_changes on content preserves user edits on subsequent applies.
+# File names use source prefix: hits_, imported_ (manual rules have no prefix).
 
 locals {
   yaml_template_vars = {
@@ -60,7 +61,7 @@ locals {
   }
 }
 
-# ─── Write YAML for generated rules (hits) ───────────────────────────────────
+# ─── Write YAML for generated rules (hits/imports) ──────────────────────────
 
 resource "local_file" "generated_config" {
   for_each = { for r in var.generated_rules : r.name => trimprefix(r._config_dir, "./") }
@@ -75,4 +76,40 @@ resource "local_file" "generated_config" {
   lifecycle {
     ignore_changes = [content]
   }
+}
+
+# ─── Generate .action.yaml for each unique action directory ──────────────────
+# Extracts unique action scopes from generated rules and writes .action.yaml
+# so that wallarm_action.this picks them up on this or next apply.
+
+locals {
+  # Unique action directories from generated rules: config_dir → conditions
+  generated_action_dirs = {
+    for r in var.generated_rules :
+    trimprefix(r._config_dir, "./") => {
+      conditions      = try(r._action_conditions, [])
+      conditions_hash = try(r._action_hash, "")
+      path            = try(r.path, "")
+      domain          = try(r.domain, "")
+      instance        = try(r.instance, "")
+    }...  # group by dir
+  }
+
+}
+
+# ─── Default action .action.yaml ─────────────────────────────────────────────
+# Always managed — no count toggle. Stable in state.
+
+resource "local_file" "default_action" {
+  filename        = "${var.config_dirs[0]}/_default/.action.yaml"
+  file_permission = "0644"
+
+  # SHA256("not_null") — the ConditionsHash for empty conditions
+  content = yamlencode({
+    conditions      = []
+    conditions_hash = "5b8b61bd5ed79de9b3d130436a1e5a63ec663e224557ccb981bbb491a891b4dc"
+    action_path     = "/**/*.*"
+    action_domain   = ""
+    action_instance = ""
+  })
 }

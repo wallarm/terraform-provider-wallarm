@@ -531,19 +531,21 @@ func resourceWallarmIPListDelete(listType wallarm.IPListType) schema.DeleteConte
 // Two import ID formats:
 //
 //	{clientID}/{groupID}           — import a single grouped entry (country/datacenter/proxy/single subnet)
-//	{clientID}/subnet/{expiredAt}  — import all subnet entries with this expiration as one resource
+//	{clientID}/subnet/{expiredAt}             — import all subnet entries with this expiration as one resource
+//	{clientID}/subnet/{expiredAt}/{chunkIdx}  — import chunk N (0-indexed, 1000 per chunk) of subnets with this expiration
 //
 // Examples:
 //
 //	terraform import wallarm_denylist.countries 8649/52000393
 //	terraform import wallarm_denylist.ips 8649/subnet/1804809600
+//	terraform import wallarm_denylist.ips_chunk1 8649/subnet/1804809600/1
 func resourceWallarmIPListImport(listType wallarm.IPListType) schema.StateContextFunc {
 	return func(_ context.Context, d *schema.ResourceData, m interface{}) ([]*schema.ResourceData, error) {
 		client := apiClient(m)
 
-		parts := strings.SplitN(d.Id(), "/", 3)
+		parts := strings.SplitN(d.Id(), "/", 4)
 		if len(parts) < 2 {
-			return nil, fmt.Errorf("invalid import ID %q, expected {clientID}/{groupID} or {clientID}/subnet/{expiredAt}", d.Id())
+			return nil, fmt.Errorf("invalid import ID %q, expected {clientID}/{groupID} or {clientID}/subnet/{expiredAt}[/{chunkIdx}]", d.Id())
 		}
 
 		clientID, err := strconv.Atoi(parts[0])
@@ -558,40 +560,93 @@ func resourceWallarmIPListImport(listType wallarm.IPListType) schema.StateContex
 			return nil, fmt.Errorf("failed to read IP lists: %w", err)
 		}
 
-		// Mode 1: {clientID}/subnet/{expiredAt} — merge all subnets by expiry.
-		if len(parts) == 3 && parts[1] == ruleTypeSubnet {
+		// Mode 1: {clientID}/subnet/{expiredAt}[/{chunkIdx}] — merge subnets by expiry, optionally chunked.
+		if (len(parts) == 3 || len(parts) == 4) && parts[1] == ruleTypeSubnet {
 			expiredAt, err := strconv.Atoi(parts[2])
 			if err != nil {
 				return nil, fmt.Errorf("invalid expired_at %q: %w", parts[2], err)
+			}
+
+			chunkIdx := -1 // -1 means no chunking (import all)
+			if len(parts) == 4 {
+				chunkIdx, err = strconv.Atoi(parts[3])
+				if err != nil {
+					return nil, fmt.Errorf("invalid chunk_idx %q: %w", parts[3], err)
+				}
+				if chunkIdx < 0 {
+					return nil, fmt.Errorf("chunk_idx must be >= 0, got %d", chunkIdx)
+				}
+			}
+
+			// Collect all subnets with this expiration, sorted for deterministic chunking.
+			type subnetEntry struct {
+				ip     string
+				addrID map[string]interface{}
+				reason string
+				apps   []int
+			}
+			var allEntries []subnetEntry
+			for _, g := range allGroups {
+				if g.RuleType != ruleTypeSubnet || g.ExpiredAt != expiredAt {
+					continue
+				}
+				for _, v := range g.Values {
+					allEntries = append(allEntries, subnetEntry{
+						ip: strings.TrimSuffix(v, "/32"),
+						addrID: map[string]interface{}{
+							"rule_type": g.RuleType,
+							"value":     v,
+							"ip_id":     g.ID,
+						},
+						reason: g.Reason,
+						apps:   g.ApplicationIDs,
+					})
+				}
+			}
+
+			if len(allEntries) == 0 {
+				return nil, fmt.Errorf("no subnet entries found with expired_at=%d", expiredAt)
+			}
+
+			// Sort by IP string for deterministic chunk boundaries.
+			sort.Slice(allEntries, func(i, j int) bool {
+				return allEntries[i].ip < allEntries[j].ip
+			})
+
+			// Apply chunking if requested.
+			entries := allEntries
+			if chunkIdx >= 0 {
+				start := chunkIdx * IPListMaxSubnets
+				if start >= len(allEntries) {
+					return nil, fmt.Errorf("chunk index %d out of range: only %d subnets with expired_at=%d (max %d per chunk)",
+						chunkIdx, len(allEntries), expiredAt, IPListMaxSubnets)
+				}
+				end := start + IPListMaxSubnets
+				if end > len(allEntries) {
+					end = len(allEntries)
+				}
+				entries = allEntries[start:end]
+			} else if len(allEntries) > IPListMaxSubnets {
+				totalChunks := (len(allEntries) + IPListMaxSubnets - 1) / IPListMaxSubnets
+				return nil, fmt.Errorf(
+					"found %d subnets with expired_at=%d, exceeds max %d per resource — "+
+						"use chunked import with {clientID}/subnet/{expiredAt}/{chunkIdx} (chunks 0..%d)",
+					len(allEntries), expiredAt, IPListMaxSubnets, totalChunks-1)
 			}
 
 			var ips []string
 			var addrIDs []interface{}
 			var reason string
 			var apps []int
-			for _, g := range allGroups {
-				if g.RuleType != ruleTypeSubnet || g.ExpiredAt != expiredAt {
-					continue
-				}
-				for _, v := range g.Values {
-					// Strip /32 from bare IPs for config compatibility.
-					ips = append(ips, strings.TrimSuffix(v, "/32"))
-				}
-				addrIDs = append(addrIDs, map[string]interface{}{
-					"rule_type": g.RuleType,
-					"value":     strings.Join(g.Values, ","),
-					"ip_id":     g.ID,
-				})
+			for _, e := range entries {
+				ips = append(ips, e.ip)
+				addrIDs = append(addrIDs, e.addrID)
 				if reason == "" {
-					reason = g.Reason
+					reason = e.reason
 				}
 				if len(apps) == 0 {
-					apps = g.ApplicationIDs
+					apps = e.apps
 				}
-			}
-
-			if len(ips) == 0 {
-				return nil, fmt.Errorf("no subnet entries found with expired_at=%d", expiredAt)
 			}
 
 			d.Set("ip_range", ips)

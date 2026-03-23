@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"log"
 	"sort"
 	"strings"
 
@@ -96,6 +97,9 @@ func rawPack(v interface{}) string {
 		}
 		return "[" + strings.Join(parts, ",") + "]"
 	default:
+		// Unexpected type — log for debugging. This should not happen with
+		// well-formed ActionDetails from the API or provider.
+		log.Printf("[WARN] rawPack: unexpected type %T for value %v", val, val)
 		return fmt.Sprintf("%v", val)
 	}
 }

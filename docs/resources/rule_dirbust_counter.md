@@ -39,8 +39,6 @@ resource "wallarm_rule_dirbust_counter" "login_counter" {
 
 ## Import
 
-The rule can be imported using a composite ID formed of client ID, action ID, rule ID and rule type.
-
 ```
 $ terraform import wallarm_rule_dirbust_counter.login_counter 6039/563854/11086884
 ```
@@ -48,5 +46,7 @@ $ terraform import wallarm_rule_dirbust_counter.login_counter 6039/563854/110868
 * `6039` - Client ID.
 * `563854` - Action ID.
 * `11086884` - Rule ID.
+
+For automated bulk import using the `wallarm_rules` data source, see the [Rules Import Guide](../guides/rules_import).
 
 [2]: https://docs.wallarm.com/installation/multi-tenant/overview/

@@ -100,15 +100,23 @@ One of `ip_range`, `country`, `datacenter`, or `proxy_type` is required. They ar
 
 ## Import
 
-Graylist resources can be imported:
-
 ```bash
 # Grouped types (country/datacenter/proxy): import by group ID
-terraform import wallarm_graylist.countries 8649/52000393
+$ terraform import wallarm_graylist.countries 8649/52000393
 
 # Subnets: import all IPs with same expiration as one resource
-terraform import wallarm_graylist.ips 8649/subnet/1804809600
+$ terraform import wallarm_graylist.ips 8649/subnet/1804809600
+
+# Subnets (chunked): import chunk 0 (first 1000 IPs) when >1000 share the same expiration
+$ terraform import wallarm_graylist.ips_0 8649/subnet/1804809600/0
 ```
+
+* `8649` - Client ID.
+* `52000393` - API group ID (for grouped types).
+* `subnet/1804809600` - Entry type and expiration unix timestamp (for subnets).
+* `subnet/1804809600/0` - Entry type, expiration, and chunk index (0-indexed, 1000 per chunk).
+
+For automated bulk import using the `wallarm_ip_lists` data source, see the [IP List Import Guide](../guides/ip_list_import).
 
 [1]: https://docs.wallarm.com/user-guides/ip-lists/graylist/
 [2]: https://docs.wallarm.com/installation/multi-tenant/overview/

@@ -53,8 +53,6 @@ resource "wallarm_rule_overlimit_res_settings" "example_overlimit_res_settings" 
 
 ## Import
 
-The rule can be imported using a composite ID formed of client ID, action ID, rule ID and rule type.
-
 ```
 $ terraform import wallarm_rule_overlimit_res_settings.uploads_overlimit 6039/563855/11086881
 ```
@@ -62,59 +60,7 @@ $ terraform import wallarm_rule_overlimit_res_settings.uploads_overlimit 6039/56
 * `6039` - Client ID.
 * `563855` - Action ID.
 * `11086881` - Rule ID.
-* `wallarm_rule_overlimit_res_settings` - Terraform resource rule type.
 
-### Import blocks
-
-The rule can be imported using Terraform import blocks.
-
-Resource block example:
-
-```hcl
-resource "wallarm_rule_overlimit_res_settings" "uploads_overlimit" {
-  action {
-    point = {
-      action_ext = ""
-    }
-    type = "absent"
-  }
-  action {
-    point = {
-      action_name = "upload"
-    }
-    type = "equal"
-  }
-  action {
-    point = {
-      path = 0
-    }
-    type = "absent"
-  }
-  mode = "blocking"
-  overlimit_time = 2000
-}
-```
-
-Import block example:
-
-```hcl
-import {
-  to = wallarm_rule_overlimit_res_settings.uploads_overlimit
-  id = "6039/563855/11086881"
-}
-```
-
-Before importing resources run:
-
-```
-$ terraform plan
-```
-
-If import looks good apply the configuration:
-
-```
-$ terraform apply
-```
-
+For automated bulk import using the `wallarm_rules` data source, see the [Rules Import Guide](../guides/rules_import).
 
 [1]: https://docs.wallarm.com/installation/multi-tenant/overview/

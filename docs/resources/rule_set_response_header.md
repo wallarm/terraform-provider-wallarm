@@ -58,8 +58,6 @@ resource "wallarm_rule_set_response_header" "delete_header" {
 
 ## Import
 
-The rule can be imported using a composite ID formed of client ID, action ID, rule ID and rule type.
-
 ```
 $ terraform import wallarm_rule_set_response_header.resp_header 6039/563855/11086881
 ```
@@ -67,46 +65,7 @@ $ terraform import wallarm_rule_set_response_header.resp_header 6039/563855/1108
 * `6039` - Client ID.
 * `563855` - Action ID.
 * `11086881` - Rule ID.
-* `wallarm_rule_set_response_header` - Terraform resource rule type.
 
-### Import blocks
-
-The rule can be imported using Terraform import blocks.
-
-Resource block example:
-
-```hcl
-resource "wallarm_rule_set_response_header" "resp_header" {
-  action {
-    point = {
-      instance = 3
-    }
-  }
-  mode = "append"
-  name = "Server"
-  values = ["Blocked by Wallarm","Wallarm solution"]
-}
-```
-
-Import block example:
-
-```hcl
-import {
-  to = wallarm_rule_set_response_header.resp_header
-  id = "6039/563855/11086881"
-}
-```
-
-Before importing resources run:
-
-```
-$ terraform plan
-```
-
-If import looks good apply the configuration:
-
-```
-$ terraform apply
-```
+For automated bulk import using the `wallarm_rules` data source, see the [Rules Import Guide](../guides/rules_import).
 
 [1]: https://docs.wallarm.com/user-guides/rules/add-replace-response-header/

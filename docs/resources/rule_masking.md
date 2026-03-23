@@ -68,8 +68,6 @@ resource "wallarm_rule_masking" "masking_json" {
 
 ## Import
 
-The rule can be imported using a composite ID formed of client ID, action ID, rule ID and rule type.
-
 ```
 $ terraform import wallarm_rule_masking.masking_header 6039/563855/11086881
 ```
@@ -77,43 +75,8 @@ $ terraform import wallarm_rule_masking.masking_header 6039/563855/11086881
 * `6039` - Client ID.
 * `563855` - Action ID.
 * `11086881` - Rule ID.
-* `wallarm_rule_masking` - Terraform resource rule type.
 
-### Import blocks
-
-Resource block example:
-
-```hcl
-resource "wallarm_rule_masking" "masking_header" {
-  action {
-    point = {
-      instance = 1
-    }
-  }
-  point = [["header","AUTHORIZATION"]]
-}
-```
-
-Import block example:
-
-```hcl
-import {
-  to = wallarm_rule_masking.masking_header
-  id = "6039/563855/11086881"
-}
-```
-
-Before importing resources run:
-
-```
-$ terraform plan
-```
-
-If import looks good apply the configuration:
-
-```
-$ terraform apply
-```
+For automated bulk import using the `wallarm_rules` data source, see the [Rules Import Guide](../guides/rules_import).
 
 [1]: https://docs.wallarm.com/user-guides/rules/sensitive-data-rule/
 [2]: https://docs.wallarm.com/installation/multi-tenant/overview/

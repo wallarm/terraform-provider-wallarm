@@ -57,8 +57,6 @@ resource "wallarm_rule_graphql_detection" "graphql_detection" {
 
 ## Import
 
-The rule can be imported using a composite ID formed of client ID, action ID, rule ID and rule type.
-
 ```
 $ terraform import wallarm_rule_graphql_detection.graphql_detection 6039/563854/11086884
 ```
@@ -66,54 +64,8 @@ $ terraform import wallarm_rule_graphql_detection.graphql_detection 6039/563854/
 * `6039` - Client ID.
 * `563854` - Action ID.
 * `11086884` - Rule ID.
-* `wallarm_rule_graphql_detection` - Terraform resource rule type.
 
-### Import blocks
-
-The rule can be imported using Terraform import blocks.
-
-Resource block example:
-
-```hcl
-resource "wallarm_rule_graphql_detection" "graphql_detection" {
-  action {
-    type = "iequal"
-    value = "example.com"
-    point = {
-      header = "HOST"
-    }
-  }
-  mode             = "block"
-  max_doc_size_kb   = 100
-  max_value_size_kb = 10
-  max_depth         = 10
-  max_alias_size_kb = 5
-  max_doc_per_batch = 10
-  introspection     = true
-  debug_enabled     = true
-}
-```
-
-Import block example:
-
-```hcl
-import {
-  to = wallarm_rule_graphql_detection.graphql_detection
-  id = "6039/563854/11086884"
-}
-```
-
-Before importing resources run:
-
-```
-$ terraform plan
-```
-
-If import looks good apply the configuration:
-
-```
-$ terraform apply
-```
+For automated bulk import using the `wallarm_rules` data source, see the [Rules Import Guide](../guides/rules_import).
 
 [1]: https://docs.wallarm.com/api-protection/graphql-rule/#mitigation-control-based-protection
 [2]: https://docs.wallarm.com/installation/multi-tenant/overview/

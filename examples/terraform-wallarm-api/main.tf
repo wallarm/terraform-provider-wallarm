@@ -3,16 +3,17 @@
 module "wallarm_rules" {
   source = "./modules/wallarm_rules"
 
-  client_id         = var.client_id
-  config_dir        = "${path.root}/rules_config/custom_rules"
-  fp_config_dir     = "${path.root}/rules_config/fp_rules"
-  import_config_dir = "${path.root}/rules_config/import_rules"
+  client_id   = var.client_id
+  configs_dir = "${path.root}/configs"
 
   # Optional
   requests          = var.requests
   hits_mode         = var.hits_mode
+  fetch_hits        = var.fetch_hits
   is_importing      = var.is_importing
+  convert_imports   = var.convert_imports
   import_rule_types = var.import_rule_types
+  discover_actions  = var.discover_actions
 }
 
 # ─── Import existing resources from API ──────────────────────────────────────
@@ -27,9 +28,9 @@ module "wallarm_import" {
 
 # ─── Outputs ─────────────────────────────────────────────────────────────────
 
-output "rule_ids" {
-  value = module.wallarm_rules.rule_ids
-}
+# output "rule_ids" {
+#   value = module.wallarm_rules.rule_ids
+# }
 
 # ─── Import outputs ──────────────────────────────────────────────────────────
 

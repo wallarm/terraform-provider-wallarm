@@ -22,36 +22,42 @@ var ActionScopeFields = map[string]*schema.Schema{
 	"action_path": {
 		Type:        schema.TypeString,
 		Optional:    true,
+		Computed:    true,
 		ForceNew:    true,
 		Description: "URL path pattern. Supports wildcards: * (any segment), ** (any depth). Expands into action conditions automatically.",
 	},
 	"action_domain": {
 		Type:        schema.TypeString,
 		Optional:    true,
+		Computed:    true,
 		ForceNew:    true,
 		Description: "Domain (HOST header) to match. Use * for any domain.",
 	},
 	"action_instance": {
 		Type:        schema.TypeString,
 		Optional:    true,
+		Computed:    true,
 		ForceNew:    true,
 		Description: "Application instance (pool) ID.",
 	},
 	"action_method": {
 		Type:        schema.TypeString,
 		Optional:    true,
+		Computed:    true,
 		ForceNew:    true,
 		Description: "HTTP method to match (GET, POST, etc.).",
 	},
 	"action_scheme": {
 		Type:        schema.TypeString,
 		Optional:    true,
+		Computed:    true,
 		ForceNew:    true,
 		Description: "URL scheme to match (http, https).",
 	},
 	"action_proto": {
 		Type:        schema.TypeString,
 		Optional:    true,
+		Computed:    true,
 		ForceNew:    true,
 		Description: "HTTP protocol version (1.0, 1.1, 2.0).",
 	},
@@ -150,7 +156,21 @@ func ActionScopeCustomizeDiff(_ context.Context, d *schema.ResourceDiff, _ inter
 	hasScopeFields := actionPath != "" ||
 		d.Get("action_domain").(string) != "" ||
 		d.Get("action_instance").(string) != "" ||
-		d.Get("action_method").(string) != ""
+		d.Get("action_method").(string) != "" ||
+		d.Get("action_scheme").(string) != "" ||
+		d.Get("action_proto").(string) != ""
+
+	// Also check list-type scope fields (query and header blocks).
+	if !hasScopeFields {
+		if v, ok := d.GetOk("action_query"); ok && len(v.([]interface{})) > 0 {
+			hasScopeFields = true
+		}
+	}
+	if !hasScopeFields {
+		if v, ok := d.GetOk("action_header"); ok && len(v.([]interface{})) > 0 {
+			hasScopeFields = true
+		}
+	}
 
 	if !hasScopeFields {
 		return nil
@@ -293,7 +313,9 @@ func validateActionBlocks(d *schema.ResourceDiff) error {
 
 		pointMap, ok := m["point"].(map[string]interface{})
 		if !ok || len(pointMap) == 0 {
-			return fmt.Errorf("action block requires exactly one key in \"point\", got empty map")
+			// Skip empty point maps — can be TypeSet zero-value artifacts
+			// from Computed action blocks during plan.
+			continue
 		}
 
 		condType, _ := m["type"].(string)

@@ -82,7 +82,7 @@ func TestAccRuleWmodeCreate_FullSettings(t *testing.T) {
 				Config: testWallarmRuleWmodeFullSettingsConfig(rnd, rule),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(name, "mode", "off"),
-					resource.TestCheckResourceAttr(name, "action.#", "10"),
+					resource.TestCheckResourceAttr(name, "action.#", "9"),
 				),
 				ExpectNonEmptyPlan: true,
 			},
@@ -182,13 +182,6 @@ resource "wallarm_rule_mode" "%[7]s" {
 		type = "%[2]s"
 		point = {
 		  proto = "1.0"
-		}
-	}
-
-	action {
-		type = "%[4]s"
-		point = {
-		  uri = "/console/username[0-9A-Za-z]+"
 		}
 	}
 

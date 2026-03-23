@@ -57,10 +57,6 @@ resource "wallarm_rule_mode" "tiredful_api_mode" {
 
 ## Import
 
-The rule can be imported using a composite ID formed of client ID, action ID, rule ID and rule type.
-
-ID should end with a wallarm_mode value.
-
 ```
 $ terraform import wallarm_rule_mode.api_mode 6039/563855/11086881/monitoring
 ```
@@ -68,53 +64,9 @@ $ terraform import wallarm_rule_mode.api_mode 6039/563855/11086881/monitoring
 * `6039` - Client ID.
 * `563855` - Action ID.
 * `11086881` - Rule ID.
-* `wallarm_rule_mode` - Terraform resource rule type.
-* `monitoring` - Wallarm mode.
+* `monitoring` - Wallarm mode value (`monitoring`, `block`, `off`, or `default`).
 
-### Import blocks
-
-The rule can be imported using Terraform import blocks.
-
-Resource block example:
-
-```hcl
-resource "wallarm_rule_mode" "api_mode" {
-  action {
-    point = {
-      path = 0
-    }
-    type = "equal"
-    value = "api"
-  }
-  action {
-    point = {
-      instance = 9
-    }
-  }
-  mode = "monitoring"
-}
-```
-
-Import block example:
-
-```hcl
-import {
-  to = wallarm_rule_mode.api_mode
-  id = "6039/563855/11086881/monitoring"
-}
-```
-
-Before importing resources run:
-
-```
-$ terraform plan
-```
-
-If import looks good apply the configuration:
-
-```
-$ terraform apply
-```
+For automated bulk import using the `wallarm_rules` data source, see the [Rules Import Guide](../guides/rules_import).
 
 [1]: https://docs.wallarm.com/user-guides/rules/wallarm-mode-rule/
 [2]: https://docs.wallarm.com/installation/multi-tenant/overview/

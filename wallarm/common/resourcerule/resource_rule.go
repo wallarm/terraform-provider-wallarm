@@ -98,9 +98,10 @@ func ResourceRuleWallarmRead(d *schema.ResourceData, clientID int, cli wallarm.A
 	d.Set("title", updatedRule.Title)
 	d.Set("mitigation", updatedRule.Mitigation)
 	d.Set("set", updatedRule.Set)
-	// Always set variativity_disabled=true. All Terraform-managed rules must have this.
-	// During import, this ensures the state differs from API (if false) → triggers Update.
-	d.Set("variativity_disabled", true)
+	// Return actual API values. Schema Defaults handle the enforcement:
+	// - variativity_disabled: Default=true → generated config gets "true" → diff if API has false → Update
+	// - comment: Default="Managed by Terraform" → generated config gets default → diff if API has "" → Update
+	d.Set("variativity_disabled", updatedRule.VariativityDisabled)
 	d.Set("comment", updatedRule.Comment)
 
 	// Resource-specific fields — use setIfExists because each resource

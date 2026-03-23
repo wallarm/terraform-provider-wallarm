@@ -1,7 +1,6 @@
 package resourcerule
 
 import (
-	"encoding/json"
 	"sort"
 	"testing"
 
@@ -159,51 +158,6 @@ func TestActionDirName_SortOrder(t *testing.T) {
 	}
 }
 
-func TestActionMeta_Format(t *testing.T) {
-	actionID := 11461731
-	meta := NewActionMeta(
-		&actionID,
-		8649,
-		nil,
-		[]wallarm.ActionDetails{
-			{Type: "equal", Point: []interface{}{"path", float64(0)}, Value: "import"},
-			{Type: "equal", Point: []interface{}{"action_name"}, Value: "test"},
-		},
-		strPtr("/import/test"),
-		nil,
-		nil,
-		intPtr(1774068210),
-	)
-
-	data, err := FormatActionMeta(meta)
-	if err != nil {
-		t.Fatalf("FormatActionMeta error: %v", err)
-	}
-
-	// Verify it's valid JSON
-	var parsed map[string]interface{}
-	if err := json.Unmarshal(data, &parsed); err != nil {
-		t.Fatalf("output is not valid JSON: %v", err)
-	}
-
-	// Verify key fields
-	if parsed["action_id"] != float64(11461731) {
-		t.Errorf("action_id: got %v", parsed["action_id"])
-	}
-	if parsed["client_id"] != float64(8649) {
-		t.Errorf("client_id: got %v", parsed["client_id"])
-	}
-	if parsed["conditions_hash"] == nil || parsed["conditions_hash"] == "" {
-		t.Error("conditions_hash is empty")
-	}
-	if parsed["dir_name"] == nil || parsed["dir_name"] == "" {
-		t.Error("dir_name is empty")
-	}
-}
-
 func endsWith(s, suffix string) bool {
 	return len(s) >= len(suffix) && s[len(s)-len(suffix):] == suffix
 }
-
-func strPtr(s string) *string { return &s }
-func intPtr(i int) *int       { return &i }

@@ -39,5 +39,10 @@ variable "action" {
 
 variable "config_dir" {
   type        = string
-  description = "Base directory for generated configs (request_id subdir is appended)"
+  description = "Top-level configs directory"
+}
+
+variable "action_hash_prefix" {
+  type        = string
+  description = "First 8 chars of action conditions_hash, used as subdirectory name for generated configs"
 }

@@ -47,8 +47,12 @@ resource "wallarm_rule_bola_counter" "example" {
 
 ## Import
 
-The resource can be imported using a composite ID formed of `client_id`/`action_id`/`rule_id`, e.g.:
-
 ```
 $ terraform import wallarm_rule_bola_counter.example 12345/67890/12
 ```
+
+* `12345` - Client ID.
+* `67890` - Action ID.
+* `12` - Rule ID.
+
+For automated bulk import using the `wallarm_rules` data source, see the [Rules Import Guide](../guides/rules_import).

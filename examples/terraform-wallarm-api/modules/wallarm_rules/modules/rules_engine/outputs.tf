@@ -36,3 +36,12 @@ output "config_files" {
   value       = { for k, v in local_file.generated_config : k => v.filename }
 }
 
+output "action_map" {
+  description = "Map of conditions_hash → { action_id, dir_name, conditions }"
+  value       = local.action_map
+}
+
+output "duplicate_names" {
+  description = "Rule names that appear in multiple YAML files (should be empty)"
+  value       = distinct(local._duplicate_names)
+}

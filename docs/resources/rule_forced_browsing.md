@@ -99,8 +99,6 @@ resource "wallarm_rule_forced_browsing" "forced_browsing" {
 
 ## Import
 
-The rule can be imported using a composite ID formed of client ID, action ID, rule ID and rule type.
-
 ```
 $ terraform import wallarm_rule_forced_browsing.forced_browsing 6039/563854/11086884
 ```
@@ -108,64 +106,8 @@ $ terraform import wallarm_rule_forced_browsing.forced_browsing 6039/563854/1108
 * `6039` - Client ID.
 * `563854` - Action ID.
 * `11086884` - Rule ID.
-* `wallarm_rule_forced_browsing` - Terraform resource rule type.
 
-### Import blocks
-
-The rule can be imported using Terraform import blocks.
-
-Resource block example:
-
-```hcl
-resource "wallarm_rule_forced_browsing" "forced_browsing" {
-  action {
-    type = "iequal"
-    value = "example.com"
-    point = {
-      header = "HOST"
-    }
-  }
-  mode = "block"
-  reaction {
-    block_by_ip = 600
-  }
-  threshold {
-    count = 5
-    period = 30
-  }
-  advanced_conditions {
-    field    = "method"
-    value    = ["POST"]
-    operator = "eq"
-  }
-  arbitrary_conditions {
-    point    = [["header", "TEST"]]
-    value    = ["98676877"]
-    operator = "eq"
-  }
-}
-```
-
-Import block example:
-
-```hcl
-import {
-  to = wallarm_rule_forced_browsing.forced_browsing
-  id = "6039/563854/11086884"
-}
-```
-
-Before importing resources run:
-
-```
-$ terraform plan
-```
-
-If import looks good apply the configuration:
-
-```
-$ terraform apply
-```
+For automated bulk import using the `wallarm_rules` data source, see the [Rules Import Guide](../guides/rules_import).
 
 [1]: https://docs.wallarm.com/api-protection/enumeration-attack-protection/#mitigation-controls
 [2]: https://docs.wallarm.com/installation/multi-tenant/overview/

@@ -107,8 +107,6 @@ Parameters for mode `regexp`:
 
 ## Import
 
-The rule can be imported using a composite ID formed of client ID, action ID, rule ID and rule type.
-
 ```
 $ terraform import wallarm_rule_enum.wallarm_rule_enum_regexp 6039/563854/11086884
 ```
@@ -116,61 +114,8 @@ $ terraform import wallarm_rule_enum.wallarm_rule_enum_regexp 6039/563854/110868
 * `6039` - Client ID.
 * `563854` - Action ID.
 * `11086884` - Rule ID.
-* `wallarm_rule_enum` - Terraform resource rule type.
 
-### Import blocks
-
-The rule can be imported using Terraform import blocks.
-
-Resource block example:
-
-```hcl
-resource "wallarm_rule_enum" "wallarm_rule_enum_regexp" {
-  action {
-    type = "iequal"
-    value = "example.com"
-    point = {
-      header = "HOST"
-    }
-  }
-  mode = "block"
-  reaction {
-    block_by_ip = 600
-  }
-  threshold {
-    count = 5
-    period = 30
-  }
-  enumerated_parameters {
-    mode                  = "regexp"
-    name_regexps          = ["foo", "bar"]
-    value_regexps         = ["bar"]
-    additional_parameters = true
-    plain_parameters      = true
-  }
-}
-```
-
-Import block example:
-
-```hcl
-import {
-  to = wallarm_rule_enum.wallarm_rule_enum_regexp
-  id = "6039/563854/11086884"
-}
-```
-
-Before importing resources run:
-
-```
-$ terraform plan
-```
-
-If import looks good apply the configuration:
-
-```
-$ terraform apply
-```
+For automated bulk import using the `wallarm_rules` data source, see the [Rules Import Guide](../guides/rules_import).
 
 [1]: https://docs.wallarm.com/api-protection/enumeration-attack-protection/#enumeration-attack-protection
 [2]: https://docs.wallarm.com/installation/multi-tenant/overview/

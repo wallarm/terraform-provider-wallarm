@@ -41,8 +41,6 @@ resource "wallarm_rule_disable_attack_type" "disable_sqli" {
 
 ## Import
 
-The rule can be imported using a composite ID formed of client ID, action ID, rule ID and rule type.
-
 ```
 $ terraform import wallarm_rule_disable_attack_type.disable_sqli 6039/563855/11086881
 ```
@@ -50,48 +48,8 @@ $ terraform import wallarm_rule_disable_attack_type.disable_sqli 6039/563855/110
 * `6039` - Client ID.
 * `563855` - Action ID.
 * `11086881` - Rule ID.
-* `wallarm_rule_disable_attack_type` - Terraform resource rule type.
 
-### Import blocks
-
-The rule can be imported using Terraform import blocks.
-
-Resource block example:
-
-```hcl
-resource "wallarm_rule_disable_attack_type" "disable_sqli" {
-  action {
-    point = {
-      header = "HOST"
-    }
-    type = "iequal"
-    value = "example.com"
-  }
-  point = [["get_all"]]
-  attack_type = "sqli"
-}
-```
-
-Import block example:
-
-```hcl
-import {
-  to = wallarm_rule_disable_attack_type.disable_sqli
-  id = "6039/563855/11086881"
-}
-```
-
-Before importing resources run:
-
-```
-$ terraform plan
-```
-
-If import looks good apply the configuration:
-
-```
-$ terraform apply
-```
+For automated bulk import using the `wallarm_rules` data source, see the [Rules Import Guide](../guides/rules_import).
 
 [1]: https://docs.wallarm.com/user-guides/rules/ignore-attack-types/
 [2]: https://docs.wallarm.com/installation/multi-tenant/overview/

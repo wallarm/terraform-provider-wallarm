@@ -2,11 +2,8 @@ package wallarm
 
 import (
 	"context"
-	"crypto/sha256"
-	"encoding/json"
 	"fmt"
 	"log"
-	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -52,6 +49,13 @@ func dataSourceWallarmHits() *schema.Resource {
 				Elem:        &schema.Schema{Type: schema.TypeString},
 			},
 
+			"include_instance": {
+				Type:        schema.TypeBool,
+				Optional:    true,
+				Default:     true,
+				Description: "Include instance (pool ID) in action conditions. When true (default), rules are scoped to the hit's application instance.",
+			},
+
 			"time": {
 				Type:        schema.TypeList,
 				Optional:    true,
@@ -67,7 +71,36 @@ func dataSourceWallarmHits() *schema.Resource {
 			"action_hash": {
 				Type:        schema.TypeString,
 				Computed:    true,
-				Description: "SHA256 of the sorted action conditions for grouping rules with the same scope",
+				Description: "SHA256 of the sorted action conditions (Ruby-compatible ConditionsHash)",
+			},
+
+			"action_dir_name": {
+				Type:        schema.TypeString,
+				Computed:    true,
+				Description: "Computed directory name for organizing rule files by action scope",
+			},
+
+			"action_conditions": {
+				Type:     schema.TypeList,
+				Computed: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"type": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"point": {
+							Type:     schema.TypeList,
+							Computed: true,
+							Elem:     &schema.Schema{Type: schema.TypeString},
+						},
+						"value": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+					},
+				},
+				Description: "Action conditions in API format (type/point/value list). Used for .action.yaml generation.",
 			},
 
 			"hits": {
@@ -121,6 +154,11 @@ func dataSourceWallarmHits() *schema.Resource {
 								Type: schema.TypeList,
 								Elem: &schema.Schema{Type: schema.TypeString},
 							},
+						},
+						"point_hash": {
+							Type:        schema.TypeString,
+							Computed:    true,
+							Description: "SHA256 hash of the detection point (Ruby-compatible).",
 						},
 						"poolid": {
 							Type:     schema.TypeInt,
@@ -220,11 +258,42 @@ func dataSourceWallarmHitsRead(_ context.Context, d *schema.ResourceData, m inte
 		allHits = mergeHits(directHits, relatedHits)
 	}
 
-	// Phase 4: Build action, hash, and set state.
-	action := buildActionFromHit(refDomain, refPath, refPoolID)
-	actionHash := computeActionHash(action)
-	actionSet := actionToSchemaSet(action)
+	// Phase 4: Build action conditions, compute hash and dir name.
+	includeInstance := d.Get("include_instance").(bool)
+	action := buildActionFromHit(refDomain, refPath, refPoolID, includeInstance)
+	actionDetails := schemaActionToDetails(action)
+	actionHash := resourcerule.ConditionsHash(actionDetails)
+	actionDirName := resourcerule.ActionDirName(actionDetails)
 
+	// Phase 5c: Validate action conditions against API (ActionReadByHitID).
+	// Compare exactly what we produce against what the API returns.
+	if len(directHits[0].ID) >= 2 {
+		apiResp, err := client.ActionReadByHitID(directHits[0].ID)
+		if err != nil {
+			log.Printf("[WARN] wallarm_hits: failed to validate action via ActionReadByHitID: %v", err)
+		} else {
+			apiHash := resourcerule.ConditionsHash(apiResp.Body.Conditions)
+
+			if apiHash != actionHash {
+				log.Printf("[DEBUG] wallarm_hits: provider conditions (%d):", len(actionDetails))
+				for i, c := range actionDetails {
+					log.Printf("[DEBUG]   [%d] type=%q point=%v value=%v (value_type=%T)", i, c.Type, c.Point, c.Value, c.Value)
+				}
+				log.Printf("[DEBUG] wallarm_hits: API conditions (%d):", len(apiResp.Body.Conditions))
+				for i, c := range apiResp.Body.Conditions {
+					log.Printf("[DEBUG]   [%d] type=%q point=%v value=%v (value_type=%T)", i, c.Type, c.Point, c.Value, c.Value)
+				}
+				return diag.Errorf(
+					"wallarm_hits: action conditions mismatch — provider hash=%s, API hash=%s for hit %v. "+
+						"If the difference is instance (pool ID), check include_instance setting and client's instance mode.",
+					actionHash[:16], apiHash[:16], directHits[0].ID,
+				)
+			}
+			log.Printf("[DEBUG] wallarm_hits: action hash validated against API: %s", actionHash[:8])
+		}
+	}
+
+	actionSet := actionToSchemaSet(action)
 	hitsForSchema := hitsToSchemaList(allHits)
 
 	if err := d.Set("action", actionSet); err != nil {
@@ -232,6 +301,12 @@ func dataSourceWallarmHitsRead(_ context.Context, d *schema.ResourceData, m inte
 	}
 	if err := d.Set("action_hash", actionHash); err != nil {
 		return diag.FromErr(fmt.Errorf("error setting action_hash: %s", err))
+	}
+	if err := d.Set("action_conditions", flattenActionConditions(actionDetails)); err != nil {
+		return diag.FromErr(fmt.Errorf("error setting action_conditions: %s", err))
+	}
+	if err := d.Set("action_dir_name", actionDirName); err != nil {
+		return diag.FromErr(fmt.Errorf("error setting action_dir_name: %s", err))
 	}
 	if err := d.Set("hits", hitsForSchema); err != nil {
 		return diag.FromErr(fmt.Errorf("error setting hits: %s", err))
@@ -410,18 +485,56 @@ func setEmptyHitsState(d *schema.ResourceData) diag.Diagnostics {
 	_ = d.Set("action", schema.NewSet(schema.HashResource(
 		resourcerule.ScopeActionSchema().Elem.(*schema.Resource)), []interface{}{}))
 	_ = d.Set("action_hash", "")
+	_ = d.Set("action_dir_name", "")
+	_ = d.Set("action_conditions", []interface{}{})
 	_ = d.Set("hits", []interface{}{})
 	return nil
 }
 
-// computeActionHash produces a deterministic SHA256 hex string from action conditions.
-func computeActionHash(action []map[string]interface{}) string {
-	sorted := make([]map[string]interface{}, len(action))
-	copy(sorted, action)
-	sort.Slice(sorted, func(i, j int) bool {
-		return fmt.Sprintf("%v", sorted[i]["point"]) < fmt.Sprintf("%v", sorted[j]["point"])
-	})
-	return hashAction(sorted)
+// schemaActionToDetails converts []map[string]interface{} (schema format) to []ActionDetails
+// for use with ConditionsHash. Handles the schema convention where point-value types
+// (action_name, method, etc.) store the value in the point map, not the value field.
+func schemaActionToDetails(action []map[string]interface{}) []wallarm.ActionDetails {
+	details := make([]wallarm.ActionDetails, 0, len(action))
+	for _, m := range action {
+		condType, _ := m["type"].(string)
+		condValue, _ := m["value"].(string)
+		pointMap, _ := m["point"].(map[string]interface{})
+
+		var point []interface{}
+		var value interface{}
+
+		for key, val := range pointMap {
+			valStr, _ := val.(string)
+			switch key {
+			case "header", "query":
+				point = []interface{}{key, valStr}
+				value = condValue
+			case "path":
+				idx, _ := strconv.Atoi(valStr)
+				point = []interface{}{key, float64(idx)}
+				if condType == "absent" {
+					value = nil
+				} else {
+					value = condValue
+				}
+			case "instance", "action_name", "action_ext", "method", "proto", "scheme", "uri":
+				point = []interface{}{key}
+				if condType == "absent" {
+					value = nil
+				} else {
+					value = valStr
+				}
+			}
+		}
+
+		details = append(details, wallarm.ActionDetails{
+			Type:  condType,
+			Point: point,
+			Value: value,
+		})
+	}
+	return details
 }
 
 // actionToSchemaSet converts action conditions to a schema.Set.
@@ -466,6 +579,7 @@ func hitsToSchemaList(hits []*wallarm.Hit) []interface{} {
 			"stamps_hash":   h.StampsHash,
 			"point":         pointStrings,
 			"point_wrapped": wrappedForSchema,
+			"point_hash":    resourcerule.PointHash(h.Point),
 			"poolid":        h.PoolID,
 			"attack_id":     h.AttackID,
 			"block_status":  h.BlockStatus,
@@ -493,13 +607,15 @@ func hitsToSchemaList(hits []*wallarm.Hit) []interface{} {
 //	path (absent) | absent | ""     | {"path": "<N>"}
 //	action_name   | equal  | ""     | {"action_name": name}
 //	action_ext    | equal  | ""     | {"action_ext": ext}
-func buildActionFromHit(domain, urlPath string, poolID int) []map[string]interface{} {
+func buildActionFromHit(domain, urlPath string, poolID int, includeInstance bool) []map[string]interface{} {
 	var conditions []map[string]interface{}
 
-	// Instance — type and value must be empty per HashResponseActionDetails.
-	if poolID > 0 {
+	// Instance — included when includeInstance is true (default).
+	// Note: the API's ActionReadByHitID does NOT include instance in conditions,
+	// so validation strips it before comparing hashes.
+	if includeInstance && poolID > 0 {
 		conditions = append(conditions, map[string]interface{}{
-			"type":  "",
+			"type":  "equal",
 			"value": "",
 			"point": map[string]interface{}{"instance": strconv.Itoa(poolID)},
 		})
@@ -522,15 +638,8 @@ func buildActionFromHit(domain, urlPath string, poolID int) []map[string]interfa
 // locationToConditions converts a URL path into action conditions.
 // Port of the Ruby LocationToConditions class.
 func locationToConditions(location string) []map[string]interface{} {
-	if strings.Count(location, "/") > MaxPathDepth {
-		return []map[string]interface{}{
-			{
-				"type":  "equal",
-				"value": location,
-				"point": map[string]interface{}{"uri": location},
-			},
-		}
-	}
+	// URI point is mutually exclusive with path/action_name/action_ext (validated
+	// in ActionScopeCustomizeDiff). Path is always decomposed into segments.
 
 	parts := strings.Split(location, "/")
 	if len(parts) > 0 && parts[0] == "" {
@@ -611,12 +720,4 @@ func actionNameExtConditions(segment string) []map[string]interface{} {
 			"point": map[string]interface{}{"action_ext": ""},
 		},
 	}
-}
-
-// hashAction produces a deterministic SHA256 hex string from a sorted slice
-// of action conditions.
-func hashAction(action []map[string]interface{}) string {
-	data, _ := json.Marshal(action)
-	sum := sha256.Sum256(data)
-	return fmt.Sprintf("%x", sum)
 }

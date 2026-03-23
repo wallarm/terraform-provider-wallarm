@@ -67,5 +67,17 @@ Incorrect:
 * `action_id` - the action ID (The conditions to apply on request).
 * `rule_type` - type of the created rule. For example, `rule_type = "credentials_point"`.
 
+## Import
+
+```
+$ terraform import wallarm_rule_credential_stuffing_point.point1 6039/563855/11086881
+```
+
+* `6039` - Client ID.
+* `563855` - Action ID.
+* `11086881` - Rule ID.
+
+For automated bulk import using the `wallarm_rules` data source, see the [Rules Import Guide](../guides/rules_import).
+
 [1]: https://docs.wallarm.com/user-guides/rules/rules/#points
 [2]: https://docs.wallarm.com/installation/multi-tenant/overview/

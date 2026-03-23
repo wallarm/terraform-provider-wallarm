@@ -8,6 +8,21 @@ variable "request_id" {
   description = "Request ID to fetch hits for"
 }
 
+variable "rule_types" {
+  type        = list(string)
+  description = "Rule types to generate. Valid values: disable_stamp, disable_attack_type"
+
+  validation {
+    condition     = alltrue([for rt in var.rule_types : contains(["disable_stamp", "disable_attack_type"], rt)])
+    error_message = "Valid rule_types: disable_stamp, disable_attack_type."
+  }
+}
+
+variable "config_dir" {
+  type        = string
+  description = "Top-level configs directory. Rules are placed in action_dir_name subdirectory."
+}
+
 variable "time" {
   type        = list(number)
   default     = []

@@ -21,10 +21,6 @@ const (
 	// HitFetchBatchSize is the number of hits fetched per API call.
 	HitFetchBatchSize = 500
 
-	// MaxPathDepth is the maximum number of "/" characters in a URL path before
-	// switching to full URI match instead of path segment conditions.
-	MaxPathDepth = 15
-
 	// IPListCacheMaxRetries is the number of cache refresh retries after Create
 	// to wait for API propagation.
 	IPListCacheMaxRetries = 3

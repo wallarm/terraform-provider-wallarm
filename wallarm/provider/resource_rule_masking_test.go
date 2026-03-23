@@ -116,7 +116,7 @@ func TestAccRuleMaskingCreate_FullSettings(t *testing.T) {
 			{
 				Config: testWallarmRuleMaskingFullSettingsConfig(rnd, rule),
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr(name, "action.#", "9"),
+					resource.TestCheckResourceAttr(name, "action.#", "8"),
 					resource.TestCheckResourceAttr(name, "point.#", "4"),
 					resource.TestCheckResourceAttr(name, "point.0.#", "1"),
 					resource.TestCheckResourceAttr(name, "point.0.0", "post"),
@@ -235,13 +235,6 @@ resource "wallarm_rule_masking" "%[7]s" {
 		type = "%[1]s"
 		point = {
 		  proto = "1.1"
-		}
-	}
-
-	action {
-		type = "%[3]s"
-		point = {
-		  uri = "/api/token[0-9A-Za-z]+"
 		}
 	}
 

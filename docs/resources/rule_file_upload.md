@@ -51,8 +51,6 @@ resource "wallarm_rule_file_upload_size_limit" "file_upload_restriction" {
 
 ## Import
 
-The rule can be imported using a composite ID formed of client ID, action ID, rule ID and rule type.
-
 ```
 $ terraform import wallarm_rule_file_upload_size_limit.file_upload_restriction 6039/563854/11086884
 ```
@@ -60,50 +58,8 @@ $ terraform import wallarm_rule_file_upload_size_limit.file_upload_restriction 6
 * `6039` - Client ID.
 * `563854` - Action ID.
 * `11086884` - Rule ID.
-* `wallarm_rule_file_upload_size_limit` - Terraform resource rule type.
 
-### Import blocks
-
-The rule can be imported using Terraform import blocks.
-
-Resource block example:
-
-```hcl
-resource "wallarm_rule_file_upload_size_limit" "file_upload_restriction" {
-  action {
-    type  = "iequal"
-    value = "example.com"
-    point = {
-      header = "HOST"
-    }
-  }
-  point     = [["post"], ["multipart", "file"]]
-  size      = 10
-  size_unit = "mb"
-  mode      = "block"
-}
-```
-
-Import block example:
-
-```hcl
-import {
-  to = wallarm_rule_file_upload_size_limit.file_upload_restriction
-  id = "6039/563854/11086884"
-}
-```
-
-Before importing resources run:
-
-```
-$ terraform plan
-```
-
-If import looks good apply the configuration:
-
-```
-$ terraform apply
-```
+For automated bulk import using the `wallarm_rules` data source, see the [Rules Import Guide](../guides/rules_import).
 
 [1]: https://docs.wallarm.com/api-protection/file-upload-restriction/#rule-based-protection
 [2]: https://docs.wallarm.com/installation/multi-tenant/overview/

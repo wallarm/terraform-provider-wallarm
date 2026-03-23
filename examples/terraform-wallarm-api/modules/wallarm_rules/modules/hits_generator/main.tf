@@ -9,7 +9,7 @@ locals {
   rules = flatten([
     for ph, cfg in var.points : [
       for rt in var.rule_types : {
-        name          = "${local.req_prefix}_${substr(ph, 0, 8)}_${rt}"
+        name          = "hits_${substr(ph, 0, 8)}_${rt}"
         resource_type = rt == "disable_stamp" ? "wallarm_rule_disable_stamp" : "wallarm_rule_disable_attack_type"
         comment       = "FP from request ${var.request_id}"
 
@@ -79,8 +79,8 @@ locals {
         # Built action conditions (for reference HCL)
         _action = var.action
 
-        # Internal: where to write the YAML config
-        _config_dir = "${var.config_dir}/${var.request_id}"
+        # Internal: where to write the YAML config (action hash subdir)
+        _config_dir = "${var.config_dir}/${var.action_hash_prefix}"
       }
     ]
   ])

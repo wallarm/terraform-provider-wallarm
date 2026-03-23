@@ -235,7 +235,8 @@ locals {
       attack_type   = try(r.attack_type, "")
       mode          = try(r.mode, "")
       stamp         = try(r.stamp, 0)
-      metadata      = { source = "import", rule_id = r.rule_id, import_id = r.import_id }
+      metadata         = { origin = "import", rule_id = r.rule_id, import_id = r.import_id }
+      _action_dir_name = r.action_dir_name
     }
     if contains(local.single_types, r.terraform_resource)
   }
@@ -259,7 +260,8 @@ locals {
       attack_types  = []
       file_types    = []
       parsers       = []
-      metadata      = { source = "import", action_id = action_id, rule_ids = [for r in rules : r.rule_id] }
+      metadata         = { origin = "import", action_id = action_id, rule_ids = [for r in rules : r.rule_id] }
+      _action_dir_name = rules[0].action_dir_name
     })
   }
 
@@ -282,7 +284,8 @@ locals {
       attack_types  = [for r in rules : r.attack_type]
       file_types    = []
       parsers       = []
-      metadata      = { source = "import", action_id = action_id, rule_ids = [for r in rules : r.rule_id] }
+      metadata         = { origin = "import", action_id = action_id, rule_ids = [for r in rules : r.rule_id] }
+      _action_dir_name = rules[0].action_dir_name
     })
   }
 
@@ -305,7 +308,8 @@ locals {
       attack_types  = [for r in rules : r.attack_type]
       file_types    = []
       parsers       = []
-      metadata      = { source = "import", action_id = action_id, rule_ids = [for r in rules : r.rule_id] }
+      metadata         = { origin = "import", action_id = action_id, rule_ids = [for r in rules : r.rule_id] }
+      _action_dir_name = rules[0].action_dir_name
     })
   }
 
@@ -328,7 +332,8 @@ locals {
       attack_types  = []
       file_types    = [for r in rules : r.file_type]
       parsers       = []
-      metadata      = { source = "import", action_id = action_id, rule_ids = [for r in rules : r.rule_id] }
+      metadata         = { origin = "import", action_id = action_id, rule_ids = [for r in rules : r.rule_id] }
+      _action_dir_name = rules[0].action_dir_name
     })
   }
 
@@ -351,7 +356,8 @@ locals {
       attack_types  = []
       file_types    = []
       parsers       = [for r in rules : r.parser]
-      metadata      = { source = "import", action_id = action_id, rule_ids = [for r in rules : r.rule_id] }
+      metadata         = { origin = "import", action_id = action_id, rule_ids = [for r in rules : r.rule_id] }
+      _action_dir_name = rules[0].action_dir_name
     })
   }
 
@@ -363,6 +369,25 @@ locals {
     local.yaml_uploads_groups,
     local.yaml_parser_groups,
   )
+
+  # ── Unique action directories for .action.yaml generation ──────────────
+  _import_actions_grouped = {
+    for r in local.exported :
+    r.action_dir_name => {
+      dir_name        = r.action_dir_name
+      conditions_hash = r.conditions_hash
+      action_id       = r.action_id
+      conditions      = try(jsondecode(r.action_json), [])
+      path            = r.path
+      domain          = r.domain
+      instance        = r.instance
+    }...
+  }
+
+  _unique_import_actions = {
+    for dir, entries in local._import_actions_grouped :
+    dir => entries[0]
+  }
 }
 
 # ─── Write YAML configs (convert_imports mode) ───────────────────────────────
@@ -370,8 +395,29 @@ locals {
 resource "local_file" "yaml_config" {
   for_each = { for k, v in local.all_yaml_configs : k => v if var.convert_imports }
 
-  filename        = "${var.import_config_dir}/${each.key}.yaml"
+  filename        = "${var.import_config_dir}/${each.value._action_dir_name}/${each.key}.yaml"
   file_permission = "0644"
 
-  content = yamlencode({for k, v in each.value : k => v if k != "_config_dir" && k != "_action"})
+  content = yamlencode({
+    for k, v in each.value : k => v
+    if !startswith(k, "_")
+  })
+}
+
+# ─── Generate .action.yaml for each unique action directory ──────────────────
+
+resource "local_file" "action_config" {
+  for_each = { for k, v in local._unique_import_actions : k => v if var.convert_imports }
+
+  filename        = "${var.import_config_dir}/${each.value.dir_name}/.action.yaml"
+  file_permission = "0644"
+
+  content = yamlencode({
+    conditions      = each.value.conditions
+    conditions_hash = each.value.conditions_hash
+    action_id       = each.value.action_id
+    action_path     = each.value.path
+    action_domain   = each.value.domain
+    action_instance = each.value.instance
+  })
 }
