@@ -38,23 +38,10 @@ locals {
   }
 }
 
-# ─── Persist aggregated data in Terraform state ──────────────────────────────
-# Write-once: ignore_changes keeps the original data from the first apply.
-
-resource "terraform_data" "hits_state" {
-  input = local.aggregated
-
-  lifecycle {
-    ignore_changes = [input]
-  }
-}
-
 # ─── Effective values ─────────────────────────────────────────────────────────
-# Always use local.aggregated. When fetch_hits=true, the data source runs and
-# aggregated has data. When fetch_hits=false, aggregated is empty (data source
-# count=0) → empty rules, which is correct because YAML files on disk drive
-# the rules_engine via fileset. The terraform_data persists data for reference
-# but is NOT used as input to rule generation (avoids unknown value issues).
+# When fetch_hits=true: data source runs → aggregated has data → rules generated.
+# When fetch_hits=false: data source skipped → aggregated empty → no generated rules.
+# YAML files on disk drive the rules_engine via fileset after first apply.
 
 locals {
   effective = local.aggregated

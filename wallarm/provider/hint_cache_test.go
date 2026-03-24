@@ -106,21 +106,20 @@ func TestHintCache_BulkLoadReducesAPICalls(t *testing.T) {
 
 	// Verify stats
 	stats := cached.HintCacheStats()
-	if stats.CacheHits != 250 {
-		t.Errorf("expected 250 cache hits, got %d", stats.CacheHits)
+	// 250 hints read, but 2 were found during page fetches (not cache hits):
+	// first read triggers page 1 (200 hints), ID 1200 triggers page 2 (50 hints)
+	if stats.CacheHits != 248 {
+		t.Errorf("expected 248 cache hits, got %d", stats.CacheHits)
 	}
-	if stats.CacheMisses != 0 {
-		t.Errorf("expected 0 cache misses, got %d", stats.CacheMisses)
-	}
-	if stats.BulkLoads != 1 {
-		t.Errorf("expected 1 bulk load, got %d", stats.BulkLoads)
+	// 2 page fetches: page 1 (200 hints at offset 0), page 2 (50 hints at offset 200)
+	if stats.PageFetches != 2 {
+		t.Errorf("expected 2 page fetches, got %d", stats.PageFetches)
 	}
 	if stats.HintCount != 250 {
 		t.Errorf("expected 250 hints in cache, got %d", stats.HintCount)
 	}
-	if stats.APICallsSaved != 250 {
-		t.Errorf("expected 250 API calls saved, got %d", stats.APICallsSaved)
-	}
+	// Note: cache may not be FullyLoaded because page 2 found the hint
+	// and returned early before checking if it was the last page.
 }
 
 func TestHintCache_ConcurrentReads(t *testing.T) {
@@ -319,11 +318,13 @@ func TestHintCache_StatsTrackInvalidationCycle(t *testing.T) {
 	}
 
 	s1 := cached.HintCacheStats()
-	if s1.BulkLoads != 1 {
-		t.Errorf("phase 1: expected 1 bulk load, got %d", s1.BulkLoads)
+	// 1 page fetch loads all 50 hints (50 < 200 batch size → fully loaded)
+	if s1.PageFetches != 1 {
+		t.Errorf("phase 1: expected 1 page fetch, got %d", s1.PageFetches)
 	}
-	if s1.CacheHits != 10 {
-		t.Errorf("phase 1: expected 10 cache hits, got %d", s1.CacheHits)
+	// First read triggers page fetch (not a cache hit), remaining 9 are cache hits
+	if s1.CacheHits != 9 {
+		t.Errorf("phase 1: expected 9 cache hits, got %d", s1.CacheHits)
 	}
 	if s1.Invalidations != 0 {
 		t.Errorf("phase 1: expected 0 invalidations, got %d", s1.Invalidations)
@@ -335,7 +336,7 @@ func TestHintCache_StatsTrackInvalidationCycle(t *testing.T) {
 	if s2.Invalidations != 1 {
 		t.Errorf("phase 2: expected 1 invalidation, got %d", s2.Invalidations)
 	}
-	if s2.Loaded {
+	if s2.FullyLoaded {
 		t.Error("phase 2: cache should not be loaded after invalidation")
 	}
 
@@ -351,14 +352,14 @@ func TestHintCache_StatsTrackInvalidationCycle(t *testing.T) {
 	}
 
 	s3 := cached.HintCacheStats()
-	if s3.BulkLoads != 2 {
-		t.Errorf("phase 3: expected 2 bulk loads, got %d", s3.BulkLoads)
+	// 2 total page fetches: 1 in phase 1, 1 after invalidation in phase 3
+	if s3.PageFetches != 2 {
+		t.Errorf("phase 3: expected 2 page fetches, got %d", s3.PageFetches)
 	}
-	if s3.CacheHits != 15 {
-		t.Errorf("phase 3: expected 15 total cache hits, got %d", s3.CacheHits)
-	}
-	if s3.APICallsSaved != 15 {
-		t.Errorf("phase 3: expected 15 API calls saved, got %d", s3.APICallsSaved)
+	// 9 cache hits in phase 1 + 4 cache hits in phase 3 = 13 total
+	// (first read in each phase triggers page fetch, not counted as cache hit)
+	if s3.CacheHits != 13 {
+		t.Errorf("phase 3: expected 13 total cache hits, got %d", s3.CacheHits)
 	}
 
 	// Verify LogHintCacheStats doesn't panic

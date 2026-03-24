@@ -1,6 +1,5 @@
 # ─── Config file generation ───────────────────────────────────────────────────
-# YAML configs for generated rules (hits). Written on first apply.
-# ignore_changes on content preserves user edits on subsequent applies.
+# YAML configs for generated rules (hits/imports). Written on first apply.
 # File names use source prefix: hits_, imported_ (manual rules have no prefix).
 
 locals {
@@ -59,31 +58,41 @@ locals {
       metadata              = try(local.all_rules[name].metadata, null)
     }
   }
+
+  # New files that need writing (don't exist on disk yet)
+  _new_configs = {
+    for r in var.generated_rules : r.name => {
+      dir  = trimprefix(r._config_dir, "./")
+      name = r.name
+    }
+    if !fileexists("${trimprefix(r._config_dir, "./")}/${r.name}.yaml")
+  }
+
+  # Shell command to write new YAML files. "true" when nothing to write.
+  _write_command = length(local._new_configs) > 0 ? join("\n", flatten([
+    for name, cfg in local._new_configs : [
+      "mkdir -p '${cfg.dir}'",
+      "cat > '${cfg.dir}/${name}.yaml' <<'YAMLEOF'",
+      templatefile("${path.module}/templates/rule_config.yaml.tftpl", local.yaml_template_vars[name]),
+      "YAMLEOF",
+    ]
+  ])) : "true"
 }
 
 # ─── Write YAML for generated rules (hits/imports) ──────────────────────────
+# Created once on init, stable in state. Provisioner command evaluated at plan
+# time — runs "true" (no-op) when no new files, writes YAMLs when new files detected.
+# The resource itself never changes (no triggers_replace).
 
-resource "local_file" "generated_config" {
-  for_each = { for r in var.generated_rules : r.name => trimprefix(r._config_dir, "./") }
-
-  filename        = "${each.value}/${each.key}.yaml"
-  file_permission = "0644"
-
-  content = templatefile("${path.module}/templates/rule_config.yaml.tftpl",
-    local.yaml_template_vars[each.key]
-  )
-
-  lifecycle {
-    ignore_changes = [content]
+resource "terraform_data" "write_configs" {
+  provisioner "local-exec" {
+    command = local._write_command
   }
 }
 
 # ─── Generate .action.yaml for each unique action directory ──────────────────
-# Extracts unique action scopes from generated rules and writes .action.yaml
-# so that wallarm_action.this picks them up on this or next apply.
 
 locals {
-  # Unique action directories from generated rules: config_dir → conditions
   generated_action_dirs = {
     for r in var.generated_rules :
     trimprefix(r._config_dir, "./") => {
@@ -92,19 +101,16 @@ locals {
       path            = try(r.path, "")
       domain          = try(r.domain, "")
       instance        = try(r.instance, "")
-    }...  # group by dir
+    }...
   }
-
 }
 
 # ─── Default action .action.yaml ─────────────────────────────────────────────
-# Always managed — no count toggle. Stable in state.
 
 resource "local_file" "default_action" {
   filename        = "${var.config_dirs[0]}/_default/.action.yaml"
   file_permission = "0644"
 
-  # SHA256("not_null") — the ConditionsHash for empty conditions
   content = yamlencode({
     conditions      = []
     conditions_hash = "5b8b61bd5ed79de9b3d130436a1e5a63ec663e224557ccb981bbb491a891b4dc"

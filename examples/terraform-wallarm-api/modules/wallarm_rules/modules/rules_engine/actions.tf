@@ -29,15 +29,16 @@ locals {
         dir_name   = "_default"
       }
     },
-    # Actions from hits/imports
-    {
-      for r in var.generated_rules :
-      r._action_hash => {
-        action_id  = null
-        conditions = r._action_conditions
-        dir_name   = basename(trimprefix(r._config_dir, "./"))
-      }
-      if r._action_hash != ""
+    # Actions from hits/imports — deduplicate by hash (multiple rules share same action)
+    { for hash, entries in {
+        for r in var.generated_rules :
+        r._action_hash => {
+          action_id  = null
+          conditions = r._action_conditions
+          dir_name   = basename(trimprefix(r._config_dir, "./"))
+        }...
+        if r._action_hash != ""
+      } : hash => entries[0]
     },
   )
 

@@ -12,7 +12,7 @@ variable "generated_rules" {
   type = list(object({
     name          = string
     resource_type = string
-    comment       = optional(string, "Managed by Terraform")
+    comment       = optional(string, "")
     path          = optional(string, "")
     domain        = optional(string, "")
     instance      = optional(string, "")
@@ -59,6 +59,7 @@ variable "generated_rules" {
     threshold             = optional(object({ count = number, period = number }))
     reaction              = optional(object({ block_by_session = optional(number), block_by_ip = optional(number), graylist_by_ip = optional(number) }))
     enumerated_parameters = optional(any)
+    variativity_disabled  = optional(bool, true)
     metadata              = optional(any)
     _config_dir           = string
     _action_conditions    = optional(list(object({ type = string, point = list(string), value = optional(string, "") })), [])

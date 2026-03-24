@@ -84,8 +84,8 @@ var (
 		"variativity_disabled": {
 			Type:        schema.TypeBool,
 			Optional:    true,
-			Default:     true,
-			Description: "Whether variativity is disabled. Always true for Terraform-managed rules.",
+			Computed:    true,
+			Description: "Whether variativity is disabled. Always set to true by the provider.",
 		},
 	}
 
@@ -264,9 +264,6 @@ func getCommonResourceRuleFieldsDTOFromResourceData(d *schema.ResourceData) Comm
 		return CommonResourceRuleFieldsDTO{}
 	}
 	comment, _ := d.Get("comment").(string)
-	if comment == "" {
-		comment = "Managed by Terraform"
-	}
 	set, _ := d.Get("set").(string)
 	title, _ := d.Get("title").(string)
 

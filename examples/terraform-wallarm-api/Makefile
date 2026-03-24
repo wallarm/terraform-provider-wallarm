@@ -2,13 +2,12 @@ LOG_FILES = ./*.log
 TMP_FILES = ./.DS_Store
 TF_DIR = ./.terraform*
 TF_STATE_FILE = ./terraform.tfstate*
-FP_RULES_DIR = ./rules_config/fp_rules
-IMPORT_RULES_DIR = ./rules_config/import_rules
+RULES_DIR = ./configs/**
 RULES_IMPORT_FILE = ./wallarm_rule_imports.tf
 APP_IMPORT_FILE = ./wallarm_application_imports.tf
 RESOURCES_FILE = ./imported_rules.tf
 
-FILES_DIRS_TO_CLEAN = ${LOG_FILES} ${TMP_FILES} ${TF_DIR} ${TF_STATE_FILE} ${FP_RULES_DIR} ${IMPORT_RULES_DIR} ${APP_IMPORT_FILE} ${RULES_IMPORT_FILE} ${RESOURCES_FILE}
+FILES_DIRS_TO_CLEAN = ${LOG_FILES} ${TMP_FILES} ${TF_DIR} ${TF_STATE_FILE} ${RULES_DIR} ${APP_IMPORT_FILE} ${RULES_IMPORT_FILE} ${RESOURCES_FILE}
 
 
 default: state

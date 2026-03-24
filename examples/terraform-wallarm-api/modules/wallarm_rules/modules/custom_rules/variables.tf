@@ -7,7 +7,7 @@ variable "rules" {
   type = list(object({
     name          = string
     resource_type = string
-    comment       = optional(string, "Managed by Terraform")
+    comment       = optional(string, "")
 
     # Detection point (required for most rule types)
     point = optional(list(list(string)))

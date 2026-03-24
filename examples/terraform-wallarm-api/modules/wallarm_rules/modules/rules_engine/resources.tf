@@ -9,7 +9,8 @@
 resource "wallarm_rule_binary_data" "this" {
   for_each        = { for n, rt in local.managed_rules : n => n if rt == "wallarm_rule_binary_data" }
   client_id       = var.client_id
-  comment         = local.rule_configs[each.key].comment
+  comment              = local.rule_configs[each.key].comment
+  variativity_disabled = local.rule_configs[each.key].variativity_disabled
   point           = local.rule_configs[each.key].point
   action_path     = local.rule_configs[each.key].path
   action_domain   = local.rule_configs[each.key].domain
@@ -36,7 +37,7 @@ resource "wallarm_rule_binary_data" "this" {
     }
   }
 
-  depends_on = [local_file.generated_config]
+  depends_on = [terraform_data.write_configs]
 }
 
 # ─── masking (sensitive_data) ─────────────────────────────────────────────────
@@ -44,7 +45,8 @@ resource "wallarm_rule_binary_data" "this" {
 resource "wallarm_rule_masking" "this" {
   for_each        = { for n, rt in local.managed_rules : n => n if rt == "wallarm_rule_masking" }
   client_id       = var.client_id
-  comment         = local.rule_configs[each.key].comment
+  comment              = local.rule_configs[each.key].comment
+  variativity_disabled = local.rule_configs[each.key].variativity_disabled
   point           = local.rule_configs[each.key].point
   action_path     = local.rule_configs[each.key].path
   action_domain   = local.rule_configs[each.key].domain
@@ -71,7 +73,7 @@ resource "wallarm_rule_masking" "this" {
     }
   }
 
-  depends_on = [local_file.generated_config]
+  depends_on = [terraform_data.write_configs]
 }
 
 # ─── disable_attack_type (expanded by attack_types) ──────────────────────────
@@ -80,7 +82,8 @@ resource "wallarm_rule_disable_attack_type" "this" {
   for_each        = { for k, v in local.attack_type_rules : k => v if v.resource_type == "wallarm_rule_disable_attack_type" }
   client_id       = var.client_id
   attack_type     = each.value.attack_type
-  comment         = local.rule_configs[each.value.config_name].comment
+  comment              = local.rule_configs[each.value.config_name].comment
+  variativity_disabled = local.rule_configs[each.value.config_name].variativity_disabled
   point           = local.rule_configs[each.value.config_name].point
   action_path     = local.rule_configs[each.value.config_name].path
   action_domain   = local.rule_configs[each.value.config_name].domain
@@ -107,7 +110,7 @@ resource "wallarm_rule_disable_attack_type" "this" {
     }
   }
 
-  depends_on = [local_file.generated_config]
+  depends_on = [terraform_data.write_configs]
 }
 
 # ─── disable_stamp (expanded by stamps) ──────────────────────────────────────
@@ -116,7 +119,8 @@ resource "wallarm_rule_disable_stamp" "this" {
   for_each        = local.stamp_rules
   client_id       = var.client_id
   stamp           = each.value.stamp
-  comment         = local.rule_configs[each.value.config_name].comment
+  comment              = local.rule_configs[each.value.config_name].comment
+  variativity_disabled = local.rule_configs[each.value.config_name].variativity_disabled
   point           = local.rule_configs[each.value.config_name].point
   action_path     = local.rule_configs[each.value.config_name].path
   action_domain   = local.rule_configs[each.value.config_name].domain
@@ -143,7 +147,7 @@ resource "wallarm_rule_disable_stamp" "this" {
     }
   }
 
-  depends_on = [local_file.generated_config]
+  depends_on = [terraform_data.write_configs]
 }
 
 # ─── vpatch (expanded by attack_types) ───────────────────────────────────────
@@ -152,7 +156,8 @@ resource "wallarm_rule_vpatch" "this" {
   for_each        = { for k, v in local.attack_type_rules : k => v if v.resource_type == "wallarm_rule_vpatch" }
   client_id       = var.client_id
   attack_type     = each.value.attack_type
-  comment         = local.rule_configs[each.value.config_name].comment
+  comment              = local.rule_configs[each.value.config_name].comment
+  variativity_disabled = local.rule_configs[each.value.config_name].variativity_disabled
   point           = local.rule_configs[each.value.config_name].point
   action_path     = local.rule_configs[each.value.config_name].path
   action_domain   = local.rule_configs[each.value.config_name].domain
@@ -179,7 +184,7 @@ resource "wallarm_rule_vpatch" "this" {
     }
   }
 
-  depends_on = [local_file.generated_config]
+  depends_on = [terraform_data.write_configs]
 }
 
 # ─── uploads (expanded by file_types OR single file_type) ────────────────────
@@ -187,7 +192,8 @@ resource "wallarm_rule_vpatch" "this" {
 resource "wallarm_rule_uploads" "expanded" {
   for_each        = local.file_type_rules
   client_id       = var.client_id
-  comment         = local.rule_configs[each.value.config_name].comment
+  comment              = local.rule_configs[each.value.config_name].comment
+  variativity_disabled = local.rule_configs[each.value.config_name].variativity_disabled
   file_type       = each.value.file_type
   point           = local.rule_configs[each.value.config_name].point
   action_path     = local.rule_configs[each.value.config_name].path
@@ -196,13 +202,14 @@ resource "wallarm_rule_uploads" "expanded" {
   action_method   = local.rule_configs[each.value.config_name].method
   action_scheme   = local.rule_configs[each.value.config_name].scheme
   action_proto    = local.rule_configs[each.value.config_name].proto
-  depends_on      = [local_file.generated_config]
+  depends_on      = [terraform_data.write_configs]
 }
 
 resource "wallarm_rule_uploads" "single" {
   for_each        = local.uploads_single
   client_id       = var.client_id
-  comment         = local.rule_configs[each.key].comment
+  comment              = local.rule_configs[each.key].comment
+  variativity_disabled = local.rule_configs[each.key].variativity_disabled
   file_type       = local.rule_configs[each.key].file_type
   point           = local.rule_configs[each.key].point
   action_path     = local.rule_configs[each.key].path
@@ -211,7 +218,7 @@ resource "wallarm_rule_uploads" "single" {
   action_method   = local.rule_configs[each.key].method
   action_scheme   = local.rule_configs[each.key].scheme
   action_proto    = local.rule_configs[each.key].proto
-  depends_on      = [local_file.generated_config]
+  depends_on      = [terraform_data.write_configs]
 }
 
 # ─── parser_state (expanded by parsers OR single parser) ─────────────────────
@@ -219,7 +226,8 @@ resource "wallarm_rule_uploads" "single" {
 resource "wallarm_rule_parser_state" "expanded" {
   for_each        = local.parser_rules
   client_id       = var.client_id
-  comment         = local.rule_configs[each.value.config_name].comment
+  comment              = local.rule_configs[each.value.config_name].comment
+  variativity_disabled = local.rule_configs[each.value.config_name].variativity_disabled
   parser          = each.value.parser
   state           = "disabled"
   point           = local.rule_configs[each.value.config_name].point
@@ -229,13 +237,14 @@ resource "wallarm_rule_parser_state" "expanded" {
   action_method   = local.rule_configs[each.value.config_name].method
   action_scheme   = local.rule_configs[each.value.config_name].scheme
   action_proto    = local.rule_configs[each.value.config_name].proto
-  depends_on      = [local_file.generated_config]
+  depends_on      = [terraform_data.write_configs]
 }
 
 resource "wallarm_rule_parser_state" "single" {
   for_each        = local.parser_state_single
   client_id       = var.client_id
-  comment         = local.rule_configs[each.key].comment
+  comment              = local.rule_configs[each.key].comment
+  variativity_disabled = local.rule_configs[each.key].variativity_disabled
   parser          = local.rule_configs[each.key].parser
   state           = try(local.rule_configs[each.key].state, "disabled")
   point           = local.rule_configs[each.key].point
@@ -245,7 +254,7 @@ resource "wallarm_rule_parser_state" "single" {
   action_method   = local.rule_configs[each.key].method
   action_scheme   = local.rule_configs[each.key].scheme
   action_proto    = local.rule_configs[each.key].proto
-  depends_on      = [local_file.generated_config]
+  depends_on      = [terraform_data.write_configs]
 }
 
 # ─── ignore_regex (disable_regex) ─────────────────────────────────────────────
@@ -253,7 +262,8 @@ resource "wallarm_rule_parser_state" "single" {
 resource "wallarm_rule_ignore_regex" "this" {
   for_each        = { for n, rt in local.managed_rules : n => n if rt == "wallarm_rule_ignore_regex" }
   client_id       = var.client_id
-  comment         = local.rule_configs[each.key].comment
+  comment              = local.rule_configs[each.key].comment
+  variativity_disabled = local.rule_configs[each.key].variativity_disabled
   point           = local.rule_configs[each.key].point
   action_path     = local.rule_configs[each.key].path
   action_domain   = local.rule_configs[each.key].domain
@@ -268,7 +278,7 @@ resource "wallarm_rule_ignore_regex" "this" {
     : try(local.rule_configs[each.key].regex_id, 0)
   )
 
-  depends_on = [wallarm_rule_regex.this, local_file.generated_config]
+  depends_on = [wallarm_rule_regex.this, terraform_data.write_configs]
 }
 
 # ─── regex ────────────────────────────────────────────────────────────────────
@@ -276,7 +286,8 @@ resource "wallarm_rule_ignore_regex" "this" {
 resource "wallarm_rule_regex" "this" {
   for_each        = { for n, rt in local.managed_rules : n => n if rt == "wallarm_rule_regex" }
   client_id       = var.client_id
-  comment         = local.rule_configs[each.key].comment
+  comment              = local.rule_configs[each.key].comment
+  variativity_disabled = local.rule_configs[each.key].variativity_disabled
   attack_type     = local.rule_configs[each.key].attack_type
   regex           = local.rule_configs[each.key].regex
   experimental    = local.rule_configs[each.key].experimental
@@ -287,7 +298,7 @@ resource "wallarm_rule_regex" "this" {
   action_method   = local.rule_configs[each.key].method
   action_scheme   = local.rule_configs[each.key].scheme
   action_proto    = local.rule_configs[each.key].proto
-  depends_on      = [local_file.generated_config]
+  depends_on      = [terraform_data.write_configs]
 }
 
 # ─── file_upload_size_limit ──────────────────────────────────────────────────
@@ -295,7 +306,8 @@ resource "wallarm_rule_regex" "this" {
 resource "wallarm_rule_file_upload_size_limit" "this" {
   for_each        = { for n, rt in local.managed_rules : n => n if rt == "wallarm_rule_file_upload_size_limit" }
   client_id       = var.client_id
-  comment         = local.rule_configs[each.key].comment
+  comment              = local.rule_configs[each.key].comment
+  variativity_disabled = local.rule_configs[each.key].variativity_disabled
   mode            = local.rule_configs[each.key].mode
   size            = local.rule_configs[each.key].size
   size_unit       = local.rule_configs[each.key].size_unit
@@ -306,7 +318,7 @@ resource "wallarm_rule_file_upload_size_limit" "this" {
   action_method   = local.rule_configs[each.key].method
   action_scheme   = local.rule_configs[each.key].scheme
   action_proto    = local.rule_configs[each.key].proto
-  depends_on      = [local_file.generated_config]
+  depends_on      = [terraform_data.write_configs]
 }
 
 # ─── rate_limit ──────────────────────────────────────────────────────────────
@@ -314,7 +326,8 @@ resource "wallarm_rule_file_upload_size_limit" "this" {
 resource "wallarm_rule_rate_limit" "this" {
   for_each        = { for n, rt in local.managed_rules : n => n if rt == "wallarm_rule_rate_limit" }
   client_id       = var.client_id
-  comment         = local.rule_configs[each.key].comment
+  comment              = local.rule_configs[each.key].comment
+  variativity_disabled = local.rule_configs[each.key].variativity_disabled
   delay           = local.rule_configs[each.key].delay
   burst           = local.rule_configs[each.key].burst
   rate            = local.rule_configs[each.key].rate
@@ -327,7 +340,7 @@ resource "wallarm_rule_rate_limit" "this" {
   action_method   = local.rule_configs[each.key].method
   action_scheme   = local.rule_configs[each.key].scheme
   action_proto    = local.rule_configs[each.key].proto
-  depends_on      = [local_file.generated_config]
+  depends_on      = [terraform_data.write_configs]
 }
 
 # ─── credential_stuffing_point ───────────────────────────────────────────────
@@ -335,7 +348,8 @@ resource "wallarm_rule_rate_limit" "this" {
 resource "wallarm_rule_credential_stuffing_point" "this" {
   for_each        = { for n, rt in local.managed_rules : n => n if rt == "wallarm_rule_credential_stuffing_point" }
   client_id       = var.client_id
-  comment         = local.rule_configs[each.key].comment
+  comment              = local.rule_configs[each.key].comment
+  variativity_disabled = local.rule_configs[each.key].variativity_disabled
   point           = local.rule_configs[each.key].point
   login_point     = local.rule_configs[each.key].login_point
   cred_stuff_type = local.rule_configs[each.key].cred_stuff_type
@@ -345,7 +359,7 @@ resource "wallarm_rule_credential_stuffing_point" "this" {
   action_method   = local.rule_configs[each.key].method
   action_scheme   = local.rule_configs[each.key].scheme
   action_proto    = local.rule_configs[each.key].proto
-  depends_on      = [local_file.generated_config]
+  depends_on      = [terraform_data.write_configs]
 }
 
 # ─── credential_stuffing_regex ───────────────────────────────────────────────
@@ -353,7 +367,8 @@ resource "wallarm_rule_credential_stuffing_point" "this" {
 resource "wallarm_rule_credential_stuffing_regex" "this" {
   for_each        = { for n, rt in local.managed_rules : n => n if rt == "wallarm_rule_credential_stuffing_regex" }
   client_id       = var.client_id
-  comment         = local.rule_configs[each.key].comment
+  comment              = local.rule_configs[each.key].comment
+  variativity_disabled = local.rule_configs[each.key].variativity_disabled
   regex           = local.rule_configs[each.key].regex
   login_regex     = local.rule_configs[each.key].login_regex
   case_sensitive  = local.rule_configs[each.key].case_sensitive
@@ -364,7 +379,7 @@ resource "wallarm_rule_credential_stuffing_regex" "this" {
   action_method   = local.rule_configs[each.key].method
   action_scheme   = local.rule_configs[each.key].scheme
   action_proto    = local.rule_configs[each.key].proto
-  depends_on      = [local_file.generated_config]
+  depends_on      = [terraform_data.write_configs]
 }
 
 # ─── mode ────────────────────────────────────────────────────────────────────
@@ -372,7 +387,8 @@ resource "wallarm_rule_credential_stuffing_regex" "this" {
 resource "wallarm_rule_mode" "this" {
   for_each        = { for n, rt in local.managed_rules : n => n if rt == "wallarm_rule_mode" }
   client_id       = var.client_id
-  comment         = local.rule_configs[each.key].comment
+  comment              = local.rule_configs[each.key].comment
+  variativity_disabled = local.rule_configs[each.key].variativity_disabled
   mode            = local.rule_configs[each.key].mode
   action_path     = local.rule_configs[each.key].path
   action_domain   = local.rule_configs[each.key].domain
@@ -399,7 +415,7 @@ resource "wallarm_rule_mode" "this" {
     }
   }
 
-  depends_on = [local_file.generated_config]
+  depends_on = [terraform_data.write_configs]
 }
 
 # ─── set_response_header ────────────────────────────────────────────────────
@@ -407,7 +423,8 @@ resource "wallarm_rule_mode" "this" {
 resource "wallarm_rule_set_response_header" "this" {
   for_each        = { for n, rt in local.managed_rules : n => n if rt == "wallarm_rule_set_response_header" }
   client_id       = var.client_id
-  comment         = local.rule_configs[each.key].comment
+  comment              = local.rule_configs[each.key].comment
+  variativity_disabled = local.rule_configs[each.key].variativity_disabled
   mode            = local.rule_configs[each.key].header_mode
   name            = local.rule_configs[each.key].header_name
   values          = try(toset(local.rule_configs[each.key].header_values), [])
@@ -417,7 +434,7 @@ resource "wallarm_rule_set_response_header" "this" {
   action_method   = local.rule_configs[each.key].method
   action_scheme   = local.rule_configs[each.key].scheme
   action_proto    = local.rule_configs[each.key].proto
-  depends_on      = [local_file.generated_config]
+  depends_on      = [terraform_data.write_configs]
 }
 
 # ─── overlimit_res_settings ─────────────────────────────────────────────────
@@ -425,7 +442,8 @@ resource "wallarm_rule_set_response_header" "this" {
 resource "wallarm_rule_overlimit_res_settings" "this" {
   for_each        = { for n, rt in local.managed_rules : n => n if rt == "wallarm_rule_overlimit_res_settings" }
   client_id       = var.client_id
-  comment         = local.rule_configs[each.key].comment
+  comment              = local.rule_configs[each.key].comment
+  variativity_disabled = local.rule_configs[each.key].variativity_disabled
   overlimit_time  = local.rule_configs[each.key].overlimit_time
   mode            = local.rule_configs[each.key].mode
   action_path     = local.rule_configs[each.key].path
@@ -434,7 +452,7 @@ resource "wallarm_rule_overlimit_res_settings" "this" {
   action_method   = local.rule_configs[each.key].method
   action_scheme   = local.rule_configs[each.key].scheme
   action_proto    = local.rule_configs[each.key].proto
-  depends_on      = [local_file.generated_config]
+  depends_on      = [terraform_data.write_configs]
 }
 
 # ─── graphql_detection ───────────────────────────────────────────────────────
@@ -457,7 +475,7 @@ resource "wallarm_rule_graphql_detection" "this" {
   action_method     = local.rule_configs[each.key].method
   action_scheme     = local.rule_configs[each.key].scheme
   action_proto      = local.rule_configs[each.key].proto
-  depends_on        = [local_file.generated_config]
+  depends_on        = [terraform_data.write_configs]
 }
 
 # ─── bruteforce_counter ─────────────────────────────────────────────────────
@@ -465,14 +483,15 @@ resource "wallarm_rule_graphql_detection" "this" {
 resource "wallarm_rule_bruteforce_counter" "this" {
   for_each        = { for n, rt in local.managed_rules : n => n if rt == "wallarm_rule_bruteforce_counter" }
   client_id       = var.client_id
-  comment         = local.rule_configs[each.key].comment
+  comment              = local.rule_configs[each.key].comment
+  variativity_disabled = local.rule_configs[each.key].variativity_disabled
   action_path     = local.rule_configs[each.key].path
   action_domain   = local.rule_configs[each.key].domain
   action_instance = local.rule_configs[each.key].instance
   action_method   = local.rule_configs[each.key].method
   action_scheme   = local.rule_configs[each.key].scheme
   action_proto    = local.rule_configs[each.key].proto
-  depends_on      = [local_file.generated_config]
+  depends_on      = [terraform_data.write_configs]
 }
 
 # ─── dirbust_counter ────────────────────────────────────────────────────────
@@ -480,14 +499,15 @@ resource "wallarm_rule_bruteforce_counter" "this" {
 resource "wallarm_rule_dirbust_counter" "this" {
   for_each        = { for n, rt in local.managed_rules : n => n if rt == "wallarm_rule_dirbust_counter" }
   client_id       = var.client_id
-  comment         = local.rule_configs[each.key].comment
+  comment              = local.rule_configs[each.key].comment
+  variativity_disabled = local.rule_configs[each.key].variativity_disabled
   action_path     = local.rule_configs[each.key].path
   action_domain   = local.rule_configs[each.key].domain
   action_instance = local.rule_configs[each.key].instance
   action_method   = local.rule_configs[each.key].method
   action_scheme   = local.rule_configs[each.key].scheme
   action_proto    = local.rule_configs[each.key].proto
-  depends_on      = [local_file.generated_config]
+  depends_on      = [terraform_data.write_configs]
 }
 
 # ─── bola_counter ───────────────────────────────────────────────────────────
@@ -495,14 +515,15 @@ resource "wallarm_rule_dirbust_counter" "this" {
 resource "wallarm_rule_bola_counter" "this" {
   for_each        = { for n, rt in local.managed_rules : n => n if rt == "wallarm_rule_bola_counter" }
   client_id       = var.client_id
-  comment         = local.rule_configs[each.key].comment
+  comment              = local.rule_configs[each.key].comment
+  variativity_disabled = local.rule_configs[each.key].variativity_disabled
   action_path     = local.rule_configs[each.key].path
   action_domain   = local.rule_configs[each.key].domain
   action_instance = local.rule_configs[each.key].instance
   action_method   = local.rule_configs[each.key].method
   action_scheme   = local.rule_configs[each.key].scheme
   action_proto    = local.rule_configs[each.key].proto
-  depends_on      = [local_file.generated_config]
+  depends_on      = [terraform_data.write_configs]
 }
 
 # ─── brute ───────────────────────────────────────────────────────────────────
@@ -510,7 +531,8 @@ resource "wallarm_rule_bola_counter" "this" {
 resource "wallarm_rule_brute" "this" {
   for_each        = { for n, rt in local.managed_rules : n => n if rt == "wallarm_rule_brute" }
   client_id       = var.client_id
-  comment         = local.rule_configs[each.key].comment
+  comment              = local.rule_configs[each.key].comment
+  variativity_disabled = local.rule_configs[each.key].variativity_disabled
   mode            = local.rule_configs[each.key].mode
   action_path     = local.rule_configs[each.key].path
   action_domain   = local.rule_configs[each.key].domain
@@ -553,7 +575,7 @@ resource "wallarm_rule_brute" "this" {
     }
   }
 
-  depends_on = [local_file.generated_config]
+  depends_on = [terraform_data.write_configs]
 }
 
 # ─── bola ────────────────────────────────────────────────────────────────────
@@ -561,7 +583,8 @@ resource "wallarm_rule_brute" "this" {
 resource "wallarm_rule_bola" "this" {
   for_each        = { for n, rt in local.managed_rules : n => n if rt == "wallarm_rule_bola" }
   client_id       = var.client_id
-  comment         = local.rule_configs[each.key].comment
+  comment              = local.rule_configs[each.key].comment
+  variativity_disabled = local.rule_configs[each.key].variativity_disabled
   mode            = local.rule_configs[each.key].mode
   action_path     = local.rule_configs[each.key].path
   action_domain   = local.rule_configs[each.key].domain
@@ -604,7 +627,7 @@ resource "wallarm_rule_bola" "this" {
     }
   }
 
-  depends_on = [local_file.generated_config]
+  depends_on = [terraform_data.write_configs]
 }
 
 # ─── enum ────────────────────────────────────────────────────────────────────
@@ -612,7 +635,8 @@ resource "wallarm_rule_bola" "this" {
 resource "wallarm_rule_enum" "this" {
   for_each        = { for n, rt in local.managed_rules : n => n if rt == "wallarm_rule_enum" }
   client_id       = var.client_id
-  comment         = local.rule_configs[each.key].comment
+  comment              = local.rule_configs[each.key].comment
+  variativity_disabled = local.rule_configs[each.key].variativity_disabled
   mode            = local.rule_configs[each.key].mode
   action_path     = local.rule_configs[each.key].path
   action_domain   = local.rule_configs[each.key].domain
@@ -655,7 +679,7 @@ resource "wallarm_rule_enum" "this" {
     }
   }
 
-  depends_on = [local_file.generated_config]
+  depends_on = [terraform_data.write_configs]
 }
 
 # ─── rate_limit_enum ─────────────────────────────────────────────────────────
@@ -663,7 +687,8 @@ resource "wallarm_rule_enum" "this" {
 resource "wallarm_rule_rate_limit_enum" "this" {
   for_each        = { for n, rt in local.managed_rules : n => n if rt == "wallarm_rule_rate_limit_enum" }
   client_id       = var.client_id
-  comment         = local.rule_configs[each.key].comment
+  comment              = local.rule_configs[each.key].comment
+  variativity_disabled = local.rule_configs[each.key].variativity_disabled
   mode            = local.rule_configs[each.key].mode
   action_path     = local.rule_configs[each.key].path
   action_domain   = local.rule_configs[each.key].domain
@@ -682,7 +707,7 @@ resource "wallarm_rule_rate_limit_enum" "this" {
     block_by_ip      = try(local.rule_configs[each.key].reaction.block_by_ip, 0)
   }
 
-  depends_on = [local_file.generated_config]
+  depends_on = [terraform_data.write_configs]
 }
 
 # ─── forced_browsing ─────────────────────────────────────────────────────────
@@ -690,7 +715,8 @@ resource "wallarm_rule_rate_limit_enum" "this" {
 resource "wallarm_rule_forced_browsing" "this" {
   for_each        = { for n, rt in local.managed_rules : n => n if rt == "wallarm_rule_forced_browsing" }
   client_id       = var.client_id
-  comment         = local.rule_configs[each.key].comment
+  comment              = local.rule_configs[each.key].comment
+  variativity_disabled = local.rule_configs[each.key].variativity_disabled
   mode            = local.rule_configs[each.key].mode
   action_path     = local.rule_configs[each.key].path
   action_domain   = local.rule_configs[each.key].domain
@@ -709,5 +735,5 @@ resource "wallarm_rule_forced_browsing" "this" {
     block_by_ip      = try(local.rule_configs[each.key].reaction.block_by_ip, 0)
   }
 
-  depends_on = [local_file.generated_config]
+  depends_on = [terraform_data.write_configs]
 }

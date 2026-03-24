@@ -4,16 +4,35 @@ output "rule_ids" {
 }
 
 output "config_files" {
-  description = "Paths to generated YAML config files (from hits)"
+  description = "Paths to generated YAML config files"
   value       = module.rules.config_files
 }
 
-output "import_blocks" {
-  description = "Import block content (written to wallarm_rule_imports.tf when is_importing=true)"
-  value       = module.import_generator.import_blocks
+output "hints_index" {
+  description = "Persistent rules index with is_managed computed from rule_ids"
+  value = {
+    for id, entry in module.hints_cache.hints_index :
+    id => merge(entry, {
+      is_managed = anytrue([
+        contains(keys(module.rules.rule_ids), "imported_${entry.terraform_resource}_${id}"),
+        contains(keys(module.rules.rule_ids), "imported_${entry.terraform_resource}_${id}_${try(entry.suffix, "")}"),
+      ])
+    })
+  }
 }
 
-output "moved_blocks" {
-  description = "Moved block content (written to wallarm_moved_blocks.tf when convert_imports=true)"
-  value       = module.import_generator.moved_blocks
+output "unmanaged_count" {
+  description = "Number of rules in API not yet managed by Terraform"
+  value = length([
+    for id, entry in module.hints_cache.hints_index : id
+    if !anytrue([
+      contains(keys(module.rules.rule_ids), "imported_${entry.terraform_resource}_${id}"),
+      contains(keys(module.rules.rule_ids), "imported_${entry.terraform_resource}_${id}_${try(entry.suffix, "")}"),
+    ])
+  ])
+}
+
+output "action_map" {
+  description = "Action map from rules_engine"
+  value       = module.rules.action_map
 }

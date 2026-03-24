@@ -353,7 +353,7 @@ locals {
       name                  = name
       resource_type         = rt
       client_id             = var.client_id
-      comment               = try(local.rule_configs[name].comment, "Managed by Terraform")
+      comment               = try(local.rule_configs[name].comment, "")
       attack_types          = try(local.rule_configs[name].attack_types, [])
       stamps                = try(local.rule_configs[name].stamps, [])
       attack_type           = try(local.rule_configs[name].attack_type, "")
@@ -417,7 +417,7 @@ resource "local_file" "rule_config" {
 resource "wallarm_rule_binary_data" "this" {
   for_each  = { for n, rt in local.managed_rules : n => n if rt == "wallarm_rule_binary_data" }
   client_id = var.client_id
-  comment   = try(local.rule_configs[each.key].comment, "Managed by Terraform")
+  comment   = try(local.rule_configs[each.key].comment, "")
   point     = try(local.rule_configs[each.key].point, [])
 
   dynamic "action" {
@@ -435,7 +435,7 @@ resource "wallarm_rule_binary_data" "this" {
 resource "wallarm_rule_masking" "this" {
   for_each  = { for n, rt in local.managed_rules : n => n if rt == "wallarm_rule_masking" }
   client_id = var.client_id
-  comment   = try(local.rule_configs[each.key].comment, "Managed by Terraform")
+  comment   = try(local.rule_configs[each.key].comment, "")
   point     = try(local.rule_configs[each.key].point, [])
 
   dynamic "action" {
@@ -454,7 +454,7 @@ resource "wallarm_rule_disable_attack_type" "this" {
   for_each    = { for k, v in local.attack_type_rules : k => v if v.resource_type == "wallarm_rule_disable_attack_type" }
   client_id   = var.client_id
   attack_type = each.value.attack_type
-  comment     = try(local.rule_configs[each.value.config_name].comment, "Managed by Terraform")
+  comment     = try(local.rule_configs[each.value.config_name].comment, "")
   point       = try(local.rule_configs[each.value.config_name].point, [])
 
   dynamic "action" {
@@ -473,7 +473,7 @@ resource "wallarm_rule_disable_stamp" "this" {
   for_each  = local.stamp_rules
   client_id = var.client_id
   stamp     = each.value.stamp
-  comment   = try(local.rule_configs[each.value.config_name].comment, "Managed by Terraform")
+  comment   = try(local.rule_configs[each.value.config_name].comment, "")
   point     = try(local.rule_configs[each.value.config_name].point, [])
 
   dynamic "action" {
@@ -492,7 +492,7 @@ resource "wallarm_rule_vpatch" "this" {
   for_each    = { for k, v in local.attack_type_rules : k => v if v.resource_type == "wallarm_rule_vpatch" }
   client_id   = var.client_id
   attack_type = each.value.attack_type
-  comment     = try(local.rule_configs[each.value.config_name].comment, "Managed by Terraform")
+  comment     = try(local.rule_configs[each.value.config_name].comment, "")
   point       = try(local.rule_configs[each.value.config_name].point, [])
 
   dynamic "action" {
@@ -510,7 +510,7 @@ resource "wallarm_rule_vpatch" "this" {
 resource "wallarm_rule_uploads" "this" {
   for_each  = { for n, rt in local.managed_rules : n => n if rt == "wallarm_rule_uploads" }
   client_id = var.client_id
-  comment   = try(local.rule_configs[each.key].comment, "Managed by Terraform")
+  comment   = try(local.rule_configs[each.key].comment, "")
   file_type = try(local.rule_configs[each.key].file_type, "")
   point     = try(local.rule_configs[each.key].point, [])
 
@@ -529,7 +529,7 @@ resource "wallarm_rule_uploads" "this" {
 resource "wallarm_rule_ignore_regex" "this" {
   for_each  = { for n, rt in local.managed_rules : n => n if rt == "wallarm_rule_ignore_regex" }
   client_id = var.client_id
-  comment   = try(local.rule_configs[each.key].comment, "Managed by Terraform")
+  comment   = try(local.rule_configs[each.key].comment, "")
   point     = try(local.rule_configs[each.key].point, [])
 
   # Resolve regex_id: by name reference (regex_rule) or explicit numeric ID (regex_id)
@@ -555,7 +555,7 @@ resource "wallarm_rule_ignore_regex" "this" {
 resource "wallarm_rule_parser_state" "this" {
   for_each  = { for n, rt in local.managed_rules : n => n if rt == "wallarm_rule_parser_state" }
   client_id = var.client_id
-  comment   = try(local.rule_configs[each.key].comment, "Managed by Terraform")
+  comment   = try(local.rule_configs[each.key].comment, "")
   parser    = try(local.rule_configs[each.key].parser, "")
   state     = try(local.rule_configs[each.key].state, "")
   point     = try(local.rule_configs[each.key].point, [])
@@ -575,7 +575,7 @@ resource "wallarm_rule_parser_state" "this" {
 resource "wallarm_rule_regex" "this" {
   for_each     = { for n, rt in local.managed_rules : n => n if rt == "wallarm_rule_regex" }
   client_id    = var.client_id
-  comment      = try(local.rule_configs[each.key].comment, "Managed by Terraform")
+  comment      = try(local.rule_configs[each.key].comment, "")
   attack_type  = try(local.rule_configs[each.key].attack_type, "")
   regex        = try(local.rule_configs[each.key].regex, "")
   experimental = try(local.rule_configs[each.key].experimental, false)
@@ -596,7 +596,7 @@ resource "wallarm_rule_regex" "this" {
 resource "wallarm_rule_file_upload_size_limit" "this" {
   for_each  = { for n, rt in local.managed_rules : n => n if rt == "wallarm_rule_file_upload_size_limit" }
   client_id = var.client_id
-  comment   = try(local.rule_configs[each.key].comment, "Managed by Terraform")
+  comment   = try(local.rule_configs[each.key].comment, "")
   mode      = try(local.rule_configs[each.key].mode, "")
   size      = try(local.rule_configs[each.key].size, 0)
   size_unit = try(local.rule_configs[each.key].size_unit, "")
@@ -617,7 +617,7 @@ resource "wallarm_rule_file_upload_size_limit" "this" {
 resource "wallarm_rule_rate_limit" "this" {
   for_each   = { for n, rt in local.managed_rules : n => n if rt == "wallarm_rule_rate_limit" }
   client_id  = var.client_id
-  comment    = try(local.rule_configs[each.key].comment, "Managed by Terraform")
+  comment    = try(local.rule_configs[each.key].comment, "")
   delay      = try(local.rule_configs[each.key].delay, 0)
   burst      = try(local.rule_configs[each.key].burst, 0)
   rate       = try(local.rule_configs[each.key].rate, 0)
@@ -640,7 +640,7 @@ resource "wallarm_rule_rate_limit" "this" {
 resource "wallarm_rule_credential_stuffing_point" "this" {
   for_each        = { for n, rt in local.managed_rules : n => n if rt == "wallarm_rule_credential_stuffing_point" }
   client_id       = var.client_id
-  comment         = try(local.rule_configs[each.key].comment, "Managed by Terraform")
+  comment         = try(local.rule_configs[each.key].comment, "")
   point           = try(local.rule_configs[each.key].point, [])
   login_point     = try(local.rule_configs[each.key].login_point, [])
   cred_stuff_type = try(local.rule_configs[each.key].cred_stuff_type, "default")
@@ -660,7 +660,7 @@ resource "wallarm_rule_credential_stuffing_point" "this" {
 resource "wallarm_rule_credential_stuffing_regex" "this" {
   for_each        = { for n, rt in local.managed_rules : n => n if rt == "wallarm_rule_credential_stuffing_regex" }
   client_id       = var.client_id
-  comment         = try(local.rule_configs[each.key].comment, "Managed by Terraform")
+  comment         = try(local.rule_configs[each.key].comment, "")
   regex           = try(local.rule_configs[each.key].regex, "")
   login_regex     = try(local.rule_configs[each.key].login_regex, "")
   case_sensitive  = try(local.rule_configs[each.key].case_sensitive, false)
@@ -681,7 +681,7 @@ resource "wallarm_rule_credential_stuffing_regex" "this" {
 resource "wallarm_rule_mode" "this" {
   for_each  = { for n, rt in local.managed_rules : n => n if rt == "wallarm_rule_mode" }
   client_id = var.client_id
-  comment   = try(local.rule_configs[each.key].comment, "Managed by Terraform")
+  comment   = try(local.rule_configs[each.key].comment, "")
   mode      = try(local.rule_configs[each.key].mode, "")
 
   dynamic "action" {
@@ -699,7 +699,7 @@ resource "wallarm_rule_mode" "this" {
 resource "wallarm_rule_set_response_header" "this" {
   for_each  = { for n, rt in local.managed_rules : n => n if rt == "wallarm_rule_set_response_header" }
   client_id = var.client_id
-  comment   = try(local.rule_configs[each.key].comment, "Managed by Terraform")
+  comment   = try(local.rule_configs[each.key].comment, "")
   mode      = try(local.rule_configs[each.key].header_mode, "")
   name      = try(local.rule_configs[each.key].header_name, "")
   values    = try(toset(local.rule_configs[each.key].header_values), [])
@@ -719,7 +719,7 @@ resource "wallarm_rule_set_response_header" "this" {
 resource "wallarm_rule_overlimit_res_settings" "this" {
   for_each       = { for n, rt in local.managed_rules : n => n if rt == "wallarm_rule_overlimit_res_settings" }
   client_id      = var.client_id
-  comment        = try(local.rule_configs[each.key].comment, "Managed by Terraform")
+  comment        = try(local.rule_configs[each.key].comment, "")
   overlimit_time = try(local.rule_configs[each.key].overlimit_time, 0)
   mode           = try(local.rule_configs[each.key].mode, "")
 
@@ -738,7 +738,7 @@ resource "wallarm_rule_overlimit_res_settings" "this" {
 resource "wallarm_rule_graphql_detection" "this" {
   for_each          = { for n, rt in local.managed_rules : n => n if rt == "wallarm_rule_graphql_detection" }
   client_id         = var.client_id
-  comment           = try(local.rule_configs[each.key].comment, "Managed by Terraform")
+  comment           = try(local.rule_configs[each.key].comment, "")
   mode              = try(local.rule_configs[each.key].mode, "")
   max_depth         = try(local.rule_configs[each.key].max_depth, 0)
   max_value_size_kb = try(local.rule_configs[each.key].max_value_size_kb, 0)
@@ -763,7 +763,7 @@ resource "wallarm_rule_graphql_detection" "this" {
 resource "wallarm_rule_bruteforce_counter" "this" {
   for_each  = { for n, rt in local.managed_rules : n => n if rt == "wallarm_rule_bruteforce_counter" }
   client_id = var.client_id
-  comment   = try(local.rule_configs[each.key].comment, "Managed by Terraform")
+  comment   = try(local.rule_configs[each.key].comment, "")
 
   dynamic "action" {
     for_each = try(local.rule_configs[each.key].action, [])
@@ -780,7 +780,7 @@ resource "wallarm_rule_bruteforce_counter" "this" {
 resource "wallarm_rule_dirbust_counter" "this" {
   for_each  = { for n, rt in local.managed_rules : n => n if rt == "wallarm_rule_dirbust_counter" }
   client_id = var.client_id
-  comment   = try(local.rule_configs[each.key].comment, "Managed by Terraform")
+  comment   = try(local.rule_configs[each.key].comment, "")
 
   dynamic "action" {
     for_each = try(local.rule_configs[each.key].action, [])
@@ -797,7 +797,7 @@ resource "wallarm_rule_dirbust_counter" "this" {
 resource "wallarm_rule_bola_counter" "this" {
   for_each  = { for n, rt in local.managed_rules : n => n if rt == "wallarm_rule_bola_counter" }
   client_id = var.client_id
-  comment   = try(local.rule_configs[each.key].comment, "Managed by Terraform")
+  comment   = try(local.rule_configs[each.key].comment, "")
 
   dynamic "action" {
     for_each = try(local.rule_configs[each.key].action, [])
@@ -814,7 +814,7 @@ resource "wallarm_rule_bola_counter" "this" {
 resource "wallarm_rule_enum" "this" {
   for_each  = { for n, rt in local.managed_rules : n => n if rt == "wallarm_rule_enum" }
   client_id = var.client_id
-  comment   = try(local.rule_configs[each.key].comment, "Managed by Terraform")
+  comment   = try(local.rule_configs[each.key].comment, "")
   mode      = try(local.rule_configs[each.key].mode, "")
 
   threshold {
@@ -868,7 +868,7 @@ resource "wallarm_rule_enum" "this" {
 resource "wallarm_rule_brute" "this" {
   for_each  = { for n, rt in local.managed_rules : n => n if rt == "wallarm_rule_brute" }
   client_id = var.client_id
-  comment   = try(local.rule_configs[each.key].comment, "Managed by Terraform")
+  comment   = try(local.rule_configs[each.key].comment, "")
   mode      = try(local.rule_configs[each.key].mode, "")
 
   threshold {
@@ -922,7 +922,7 @@ resource "wallarm_rule_brute" "this" {
 resource "wallarm_rule_bola" "this" {
   for_each  = { for n, rt in local.managed_rules : n => n if rt == "wallarm_rule_bola" }
   client_id = var.client_id
-  comment   = try(local.rule_configs[each.key].comment, "Managed by Terraform")
+  comment   = try(local.rule_configs[each.key].comment, "")
   mode      = try(local.rule_configs[each.key].mode, "")
 
   threshold {
@@ -976,7 +976,7 @@ resource "wallarm_rule_bola" "this" {
 resource "wallarm_rule_rate_limit_enum" "this" {
   for_each  = { for n, rt in local.managed_rules : n => n if rt == "wallarm_rule_rate_limit_enum" }
   client_id = var.client_id
-  comment   = try(local.rule_configs[each.key].comment, "Managed by Terraform")
+  comment   = try(local.rule_configs[each.key].comment, "")
   mode      = try(local.rule_configs[each.key].mode, "")
 
   threshold {
@@ -1005,7 +1005,7 @@ resource "wallarm_rule_rate_limit_enum" "this" {
 resource "wallarm_rule_forced_browsing" "this" {
   for_each  = { for n, rt in local.managed_rules : n => n if rt == "wallarm_rule_forced_browsing" }
   client_id = var.client_id
-  comment   = try(local.rule_configs[each.key].comment, "Managed by Terraform")
+  comment   = try(local.rule_configs[each.key].comment, "")
   mode      = try(local.rule_configs[each.key].mode, "")
 
   threshold {

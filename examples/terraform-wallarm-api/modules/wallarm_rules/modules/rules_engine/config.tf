@@ -67,9 +67,10 @@ locals {
   # ─── Normalize rule fields with defaults ────────────────────────────────
   rule_configs = {
     for name, r in local.all_rules : name => {
-      name          = name
-      resource_type = try(r.resource_type, "")
-      comment       = try(r.comment, "Managed by Terraform")
+      name                 = name
+      resource_type        = try(r.resource_type, "")
+      comment              = try(r.comment, "")
+      variativity_disabled = try(r.variativity_disabled, true)
 
       # Scope fields — passed directly to provider action_* fields
       path     = try(r.path, "")

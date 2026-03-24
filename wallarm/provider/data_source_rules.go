@@ -100,6 +100,9 @@ func dataSourceWallarmRules() *schema.Resource {
 						// Detection point as JSON
 						"point_json": {Type: schema.TypeString, Computed: true, Description: "Detection point as JSON"},
 
+						// Rule state
+						"variativity_disabled": {Type: schema.TypeBool, Computed: true},
+
 						// Rule-specific fields
 						"comment":        {Type: schema.TypeString, Computed: true},
 						"attack_type":    {Type: schema.TypeString, Computed: true},
@@ -273,8 +276,9 @@ func dataSourceWallarmRulesRead(_ context.Context, d *schema.ResourceData, m int
 			"scheme":   e.Scheme,
 			"proto":    e.Proto,
 
-			"conditions_hash": resourcerule.ConditionsHash(e.Action),
-			"action_dir_name": resourcerule.ActionDirName(e.Action),
+			"conditions_hash":      resourcerule.ConditionsHash(e.Action),
+			"action_dir_name":      resourcerule.ActionDirName(e.Action),
+			"variativity_disabled": e.VariativityDisabled,
 
 			"comment":        e.Comment,
 			"attack_type":    e.AttackType,

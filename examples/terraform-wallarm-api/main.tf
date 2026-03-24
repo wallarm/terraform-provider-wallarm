@@ -10,8 +10,7 @@ module "wallarm_rules" {
   requests          = var.requests
   hits_mode         = var.hits_mode
   fetch_hits        = var.fetch_hits
-  is_importing      = var.is_importing
-  convert_imports   = var.convert_imports
+  is_importing      = var.import_rules
   import_rule_types = var.import_rule_types
   discover_actions  = var.discover_actions
 }

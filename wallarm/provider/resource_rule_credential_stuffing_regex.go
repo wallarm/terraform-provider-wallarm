@@ -132,12 +132,8 @@ func resourceWallarmCredentialStuffingRegexRead(_ context.Context, d *schema.Res
 	d.Set("title", rule.Title)
 	d.Set("mitigation", rule.Mitigation)
 	d.Set("set", rule.Set)
-	d.Set("variativity_disabled", true)
-	if rule.Comment == "" {
-		d.Set("comment", "Managed by Terraform")
-	} else {
-		d.Set("comment", rule.Comment)
-	}
+	d.Set("variativity_disabled", rule.VariativityDisabled)
+	d.Set("comment", rule.Comment)
 	actionsSet := schema.Set{F: resourcerule.HashResponseActionDetails}
 	for _, a := range rule.Action {
 		acts, err := resourcerule.ActionDetailsToMap(a)

@@ -98,9 +98,7 @@ func ResourceRuleWallarmRead(d *schema.ResourceData, clientID int, cli wallarm.A
 	d.Set("title", updatedRule.Title)
 	d.Set("mitigation", updatedRule.Mitigation)
 	d.Set("set", updatedRule.Set)
-	// Return actual API values. Schema Defaults handle the enforcement:
-	// - variativity_disabled: Default=true → generated config gets "true" → diff if API has false → Update
-	// - comment: Default="Managed by Terraform" → generated config gets default → diff if API has "" → Update
+	// Return actual API values — no overrides.
 	d.Set("variativity_disabled", updatedRule.VariativityDisabled)
 	d.Set("comment", updatedRule.Comment)
 

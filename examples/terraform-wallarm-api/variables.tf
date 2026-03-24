@@ -26,7 +26,13 @@ variable "hits_mode" {
 variable "is_importing" {
   type        = bool
   default     = false
-  description = "Must be true to activate rules import functionality."
+  description = "Import IP lists, applications, and other non-rule resources."
+}
+
+variable "import_rules" {
+  type        = bool
+  default     = false
+  description = "Import rules from API via hints_cache."
 }
 
 variable "subnet_import_mode" {
@@ -38,12 +44,6 @@ variable "subnet_import_mode" {
 variable "import_rule_types" {
   type    = list(string)
   default = []
-}
-
-variable "convert_imports" {
-  type        = bool
-  default     = false
-  description = "Generate YAML configs + moved blocks for migrating imported rules to rules_engine."
 }
 
 variable "discover_actions" {

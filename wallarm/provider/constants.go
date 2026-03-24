@@ -12,11 +12,8 @@ const (
 	// APIListLimit is the default limit for paginated API list requests (rules, users, etc.).
 	APIListLimit = 500
 
-	// HintBulkFetchLimit is the number of hints fetched per API call during cache bulk loading.
+	// HintBulkFetchLimit is the number of hints fetched per page during cache lazy pagination.
 	HintBulkFetchLimit = 200
-
-	// HintMaxBulkFetchPages caps the number of paginated requests to prevent runaway fetches.
-	HintMaxBulkFetchPages = 500
 
 	// HitFetchBatchSize is the number of hits fetched per API call.
 	HitFetchBatchSize = 500

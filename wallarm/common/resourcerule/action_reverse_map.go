@@ -479,13 +479,6 @@ func ActionValueString(a wallarm.ActionDetails) string {
 	}
 }
 
-func defaultComment(comment string) string {
-	if comment == "" {
-		return "Managed by Terraform"
-	}
-	return comment
-}
-
 // --- Export helpers ---
 
 // APITypeToTerraformResource maps Wallarm API rule types to Terraform resource names.
@@ -543,6 +536,7 @@ type RuleExportEntry struct {
 	Headers              []HeaderParam                 `json:"headers,omitempty"`
 	Action               []wallarm.ActionDetails       `json:"action"`
 	Point                []interface{}                 `json:"point,omitempty"`
+	VariativityDisabled  bool                          `json:"variativity_disabled"`
 	Comment              string                        `json:"comment"`
 	AttackType           string                        `json:"attack_type,omitempty"`
 	Stamp                int                           `json:"stamp,omitempty"`
@@ -619,10 +613,11 @@ func ExportRules(rules []wallarm.ActionBody, clientID int) []RuleExportEntry {
 		entry := RuleExportEntry{
 			RuleID: rule.ID, ActionID: rule.ActionID, ClientID: clientID,
 			APIType: rule.Type, TerraformResource: tfResource, ImportID: importID,
-			Path: revMap.Path, Domain: revMap.Domain, Instance: revMap.Instance,
+			VariativityDisabled: rule.VariativityDisabled,
+			Path:                revMap.Path, Domain: revMap.Domain, Instance: revMap.Instance,
 			Method: revMap.Method, Scheme: revMap.Scheme, Proto: revMap.Proto,
 			Query: revMap.Query, Headers: revMap.Headers,
-			Action: rule.Action, Point: rule.Point, Comment: defaultComment(rule.Comment),
+			Action: rule.Action, Point: rule.Point, Comment: rule.Comment,
 			AttackType: rule.AttackType, Stamp: rule.Stamp, Mode: rule.Mode,
 			Regex: rule.Regex, RegexID: regexID,
 			Parser: rule.Parser, State: rule.State, FileType: rule.FileType,

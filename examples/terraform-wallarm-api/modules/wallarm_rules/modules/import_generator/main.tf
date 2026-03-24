@@ -218,7 +218,7 @@ locals {
     "imported_${r.terraform_resource}_${r.rule_id}" => {
       name          = "imported_${r.terraform_resource}_${r.rule_id}"
       resource_type = r.terraform_resource
-      comment       = coalesce(try(r.comment, ""), "Managed by Terraform")
+      comment       = try(r.comment, "")
       path          = r.path
       domain        = r.domain
       instance      = r.instance
@@ -246,7 +246,7 @@ locals {
     "imported_disable_stamp_${action_id}" => merge(local._defaults, {
       name          = "imported_disable_stamp_${action_id}"
       resource_type = "wallarm_rule_disable_stamp"
-      comment       = coalesce(try(rules[0].comment, ""), "Managed by Terraform")
+      comment       = try(rules[0].comment, "")
       path          = rules[0].path
       domain        = rules[0].domain
       instance      = rules[0].instance
@@ -270,7 +270,7 @@ locals {
     "imported_disable_attack_type_${action_id}" => merge(local._defaults, {
       name          = "imported_disable_attack_type_${action_id}"
       resource_type = "wallarm_rule_disable_attack_type"
-      comment       = coalesce(try(rules[0].comment, ""), "Managed by Terraform")
+      comment       = try(rules[0].comment, "")
       path          = rules[0].path
       domain        = rules[0].domain
       instance      = rules[0].instance
@@ -294,7 +294,7 @@ locals {
     "imported_vpatch_${action_id}" => merge(local._defaults, {
       name          = "imported_vpatch_${action_id}"
       resource_type = "wallarm_rule_vpatch"
-      comment       = coalesce(try(rules[0].comment, ""), "Managed by Terraform")
+      comment       = try(rules[0].comment, "")
       path          = rules[0].path
       domain        = rules[0].domain
       instance      = rules[0].instance
@@ -318,7 +318,7 @@ locals {
     "imported_uploads_${action_id}" => merge(local._defaults, {
       name          = "imported_uploads_${action_id}"
       resource_type = "wallarm_rule_uploads"
-      comment       = coalesce(try(rules[0].comment, ""), "Managed by Terraform")
+      comment       = try(rules[0].comment, "")
       path          = rules[0].path
       domain        = rules[0].domain
       instance      = rules[0].instance
@@ -342,7 +342,7 @@ locals {
     "imported_parser_state_${action_id}" => merge(local._defaults, {
       name          = "imported_parser_state_${action_id}"
       resource_type = "wallarm_rule_parser_state"
-      comment       = coalesce(try(rules[0].comment, ""), "Managed by Terraform")
+      comment       = try(rules[0].comment, "")
       path          = rules[0].path
       domain        = rules[0].domain
       instance      = rules[0].instance

@@ -32,8 +32,8 @@ output "rule_ids" {
 }
 
 output "config_files" {
-  description = "Paths to generated YAML config files"
-  value       = { for k, v in local_file.generated_config : k => v.filename }
+  description = "Paths to generated YAML config files (new files written this apply)"
+  value       = { for name, cfg in local._new_configs : name => "${cfg.dir}/${name}.yaml" }
 }
 
 output "action_map" {
