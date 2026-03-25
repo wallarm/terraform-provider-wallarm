@@ -98,7 +98,7 @@ locals {
 }
 
 resource "local_file" "deny_imports" {
-  filename = "${path.module}/wallarm_denylist_imports.tf"
+  filename = "./wallarm_denylist_imports.tf"
   content  = join("\n", concat(local.grouped_blocks, local.subnet_blocks))
 }
 ```

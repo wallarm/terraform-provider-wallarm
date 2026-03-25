@@ -43,7 +43,7 @@ func resourceWallarmRuleGenerator() *schema.Resource {
 			"requests_json": {
 				Type:      schema.TypeString,
 				Required:  true,
-				WriteOnly: true,
+				Sensitive: true,
 				Description: "JSON-encoded map of request_id → {hits, action_conditions} from data.wallarm_hits. " +
 					"Use jsonencode({for k in var.request_ids : k => {hits = ..., action_conditions = ...}}).",
 			},
@@ -59,20 +59,20 @@ func resourceWallarmRuleGenerator() *schema.Resource {
 			"resource_prefix": {
 				Type:        schema.TypeString,
 				Optional:    true,
-				Default:     "fp",
-				Description: "Prefix for resource and local names in generated HCL.",
+				Computed:    true,
+				Description: "Prefix for resource and local names in generated HCL. Defaults to 'fp'.",
 			},
 			"split": {
 				Type:        schema.TypeBool,
 				Optional:    true,
-				Default:     true,
-				Description: "When true, generate one file per rule. When false, all rules in one file.",
+				Computed:    true,
+				Description: "When true, generate one file per rule. When false, all rules in one file. Defaults to true.",
 			},
 			"comment": {
 				Type:        schema.TypeString,
 				Optional:    true,
-				Default:     "Managed by Terraform",
-				Description: "Comment for generated rule resources.",
+				Computed:    true,
+				Description: "Comment for generated rule resources. Defaults to 'Managed by Terraform'.",
 			},
 			"moved_from": {
 				Type:        schema.TypeString,
@@ -193,23 +193,36 @@ type requestEntry struct {
 
 func generateRuleFiles(d *schema.ResourceData, clientID int) ([]string, int, error) {
 	outputDir := d.Get("output_dir").(string)
-	prefix := d.Get("resource_prefix").(string)
 	ruleTypes := resolveRuleTypes(d)
-	comment := d.Get("comment").(string)
-	split := d.Get("split").(bool)
 	movedFrom, _ := d.Get("moved_from").(string)
+
+	// Apply defaults for Optional+Computed fields.
+	prefix := "fp"
+	if v, ok := d.GetOk("resource_prefix"); ok {
+		prefix = v.(string)
+	}
+	d.Set("resource_prefix", prefix)
+
+	comment := "Managed by Terraform"
+	if v, ok := d.GetOk("comment"); ok && v.(string) != "" {
+		comment = v.(string)
+	}
+	d.Set("comment", comment)
+
+	split := true
+	if v, ok := d.GetOk("split"); ok {
+		split = v.(bool)
+	}
+	d.Set("split", split)
 
 	if err := os.MkdirAll(outputDir, 0755); err != nil {
 		return nil, 0, fmt.Errorf("failed to create output directory %s: %w", outputDir, err)
 	}
 
-	// Parse requests_json from raw config (WriteOnly field).
-	rawConfig := d.GetRawConfig()
-	reqVal := rawConfig.GetAttr("requests_json")
-	if reqVal.IsNull() || !reqVal.IsKnown() {
+	reqJSON := d.Get("requests_json").(string)
+	if reqJSON == "" {
 		return nil, 0, fmt.Errorf("requests_json is required")
 	}
-	reqJSON := reqVal.AsString()
 
 	var requests map[string]requestEntry
 	if err := json.Unmarshal([]byte(reqJSON), &requests); err != nil {

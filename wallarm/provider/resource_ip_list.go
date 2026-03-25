@@ -61,7 +61,7 @@ func resourceWallarmIPList(listType wallarm.IPListType) *schema.Resource {
 				ConflictsWith: []string{"ip_range", "country", "datacenter"},
 				Elem: &schema.Schema{
 					Type:         schema.TypeString,
-					ValidateFunc: validation.StringInSlice([]string{"MIP", "PUB", "WEB", "SES", "TOR", "VPN"}, false),
+					ValidateFunc: validation.StringInSlice([]string{"DCH", "MIP", "PUB", "WEB", "SES", "TOR", "VPN"}, false),
 				},
 			},
 			"application": {
@@ -182,9 +182,12 @@ func resourceWallarmIPListCreate(listType wallarm.IPListType) schema.CreateConte
 			return diag.FromErr(err)
 		}
 
-		ruleType := ipListRuleTypes(rules)
-		valuesHash := ipListValuesHash(rules)
-		d.SetId(fmt.Sprintf("%d/%s/%s/%s", clientID, ipListFriendlyType(listType), ruleType, valuesHash))
+		// Only set ID on initial Create (not when called from Update's delete+recreate path).
+		if d.Id() == "" {
+			ruleType := ipListRuleTypes(rules)
+			valuesHash := ipListValuesHash(rules)
+			d.SetId(fmt.Sprintf("%d/%s/%s/%s", clientID, ipListFriendlyType(listType), ruleType, valuesHash))
+		}
 
 		// Collect config values and rule types for cache lookup.
 		var configValues []string
@@ -395,12 +398,7 @@ func ipListSubnetDiffUpdate(
 		cache.Invalidate(listType)
 	}
 
-	// Update resource ID hash since values changed.
-	rules, _ := buildRulesFromSchema(d)
-	valuesHash := ipListValuesHash(rules)
-	ruleType := ipListRuleTypes(rules)
-	d.SetId(fmt.Sprintf("%d/%s/%s/%s", clientID, ipListFriendlyType(listType), ruleType, valuesHash))
-
+	// Don't update resource ID — keep it stable from Create.
 	// Don't update address_id — next terraform plan refresh handles it via Read + cache.
 	return nil
 }
