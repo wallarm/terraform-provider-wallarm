@@ -32,8 +32,8 @@ output "rule_ids" {
 }
 
 output "config_files" {
-  description = "Paths to generated YAML config files (new files written this apply)"
-  value       = { for name, cfg in local._new_configs : name => "${cfg.dir}/${name}.yaml" }
+  description = "Paths to generated YAML config files"
+  value       = { for k, v in wallarm_config_file.rule_configs : k => v.path }
 }
 
 output "action_map" {

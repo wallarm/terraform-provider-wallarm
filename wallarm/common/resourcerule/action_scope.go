@@ -223,7 +223,7 @@ func ActionScopeCustomizeDiff(_ context.Context, d *schema.ResourceDiff, _ inter
 	// - value must be explicit string (not "" with Computed, which becomes "known after apply")
 	items := make([]interface{}, 0, len(actions))
 	for _, a := range actions {
-		items = append(items, actionDetailToSchemaItem(a))
+		items = append(items, ActionDetailToSchemaItem(a))
 	}
 
 	log.Printf("[DEBUG] ActionScopeCustomizeDiff: expanded %d action conditions from path=%q domain=%q",
@@ -369,10 +369,10 @@ func validateActionBlocks(d *schema.ResourceDiff) error {
 	return nil
 }
 
-// actionDetailToSchemaItem converts an ActionDetails to the map format expected by
+// ActionDetailToSchemaItem converts an ActionDetails to the map format expected by
 // ResourceDiff.SetNew for the action TypeSet. Uses map[string]interface{} for point
 // (not map[string]string) and explicit string values (not empty with Computed).
-func actionDetailToSchemaItem(a wallarm.ActionDetails) map[string]interface{} {
+func ActionDetailToSchemaItem(a wallarm.ActionDetails) map[string]interface{} {
 	pointKey := ActionPointKey(a)
 	value := ActionValueString(a)
 	condType := a.Type

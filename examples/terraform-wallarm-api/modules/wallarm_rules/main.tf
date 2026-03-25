@@ -67,28 +67,19 @@ module "rules" {
 
 # ─── Action .yaml from import ─────────────────────────────────────────────────
 # Write .action.yaml for each unique action directory from imported rules.
-# Single terraform_data — no for_each, fires only when new action dirs need writing.
+# wallarm_config_file: state-only delete → file persists on disk.
 
-locals {
-  _new_action_dirs = local._import_ready ? {
-    for hash, dir in module.hints_cache.action_dirs : hash => dir
-    if !fileexists("${var.configs_dir}/${dir.dir_name}/.action.yaml")
-  } : {}
-}
+resource "wallarm_config_file" "action_configs" {
+  for_each = local._import_ready ? module.hints_cache.action_dirs : {}
 
-resource "terraform_data" "write_action_configs" {
-  triggers_replace = length(local._new_action_dirs) > 0 ? join(",", sort(keys(local._new_action_dirs))) : "none"
+  path = "${var.configs_dir}/${each.value.dir_name}/.action.yaml"
+  content = yamlencode({
+    conditions_hash = each.value.conditions_hash
+    action_id       = each.value.action_id
+  })
 
-  provisioner "local-exec" {
-    command = length(local._new_action_dirs) > 0 ? join("\n", flatten([
-      for hash, dir in local._new_action_dirs : [
-        "mkdir -p '${var.configs_dir}/${dir.dir_name}'",
-        "cat > '${var.configs_dir}/${dir.dir_name}/.action.yaml' <<'YAMLEOF'",
-        "conditions_hash: \"${dir.conditions_hash}\"",
-        "action_id: ${dir.action_id}",
-        "YAMLEOF",
-      ]
-    ])) : "true"
+  lifecycle {
+    ignore_changes = [content]
   }
 }
 

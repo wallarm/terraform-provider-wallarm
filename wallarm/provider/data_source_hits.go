@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -101,6 +102,61 @@ func dataSourceWallarmHits() *schema.Resource {
 					},
 				},
 				Description: "Action conditions in API format (type/point/value list). Used for .action.yaml generation.",
+			},
+
+			"rules": {
+				Type:        schema.TypeList,
+				Computed:    true,
+				Description: "Pre-grouped rules ready for for_each. Each rule has key, resource_type, stamp/attack_type, point, and action blocks.",
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"key": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"resource_type": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"stamp": {
+							Type:     schema.TypeInt,
+							Computed: true,
+						},
+						"attack_type": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"point": {
+							Type:     schema.TypeList,
+							Computed: true,
+							Elem: &schema.Schema{
+								Type: schema.TypeList,
+								Elem: &schema.Schema{Type: schema.TypeString},
+							},
+						},
+						"action": {
+							Type:     schema.TypeList,
+							Computed: true,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"type": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+									"value": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+									"point": {
+										Type:     schema.TypeMap,
+										Computed: true,
+										Elem:     &schema.Schema{Type: schema.TypeString},
+									},
+								},
+							},
+						},
+					},
+				},
 			},
 
 			"hits": {
@@ -296,6 +352,9 @@ func dataSourceWallarmHitsRead(_ context.Context, d *schema.ResourceData, m inte
 	actionSet := actionToSchemaSet(action)
 	hitsForSchema := hitsToSchemaList(allHits)
 
+	// Group hits into rules and generate HCL.
+	rulesForSchema := buildRulesFromHits(allHits, actionDetails)
+
 	if err := d.Set("action", actionSet); err != nil {
 		return diag.FromErr(fmt.Errorf("error setting action: %s", err))
 	}
@@ -307,6 +366,9 @@ func dataSourceWallarmHitsRead(_ context.Context, d *schema.ResourceData, m inte
 	}
 	if err := d.Set("action_dir_name", actionDirName); err != nil {
 		return diag.FromErr(fmt.Errorf("error setting action_dir_name: %s", err))
+	}
+	if err := d.Set("rules", rulesForSchema); err != nil {
+		return diag.FromErr(fmt.Errorf("error setting rules: %s", err))
 	}
 	if err := d.Set("hits", hitsForSchema); err != nil {
 		return diag.FromErr(fmt.Errorf("error setting hits: %s", err))
@@ -720,4 +782,94 @@ func actionNameExtConditions(segment string) []map[string]interface{} {
 			"point": map[string]interface{}{"action_ext": ""},
 		},
 	}
+}
+
+// buildRulesFromHits groups hits by point and expands into individual rules.
+// Groups directly from []*wallarm.Hit without JSON round-trip.
+// Reuses expandRules from resource_rule_generator.go.
+func buildRulesFromHits(hits []*wallarm.Hit, actionDetails []wallarm.ActionDetails) []interface{} {
+	// Group hits by point_hash directly.
+	groups := make(map[string]*pointGroup)
+	for _, h := range hits {
+		ph := resourcerule.PointHash(h.Point)
+		if ph == "" {
+			continue
+		}
+
+		g, exists := groups[ph]
+		if !exists {
+			wrapped := resourcerule.WrapPointElements(h.Point)
+			pointStrs := make([][]string, 0, len(wrapped))
+			for _, inner := range wrapped {
+				pointStrs = append(pointStrs, inner)
+			}
+			g = &pointGroup{PointWrapped: pointStrs}
+			groups[ph] = g
+		}
+
+		// Merge stamps.
+		for _, s := range h.Stamps {
+			if s > 0 && !containsInt(g.Stamps, s) {
+				g.Stamps = append(g.Stamps, s)
+			}
+		}
+
+		// Merge attack types.
+		if h.Type != "" && !containsStr(g.AttackTypes, h.Type) {
+			g.AttackTypes = append(g.AttackTypes, h.Type)
+		}
+	}
+
+	// Sort for deterministic output.
+	for _, g := range groups {
+		sort.Ints(g.Stamps)
+		sort.Strings(g.AttackTypes)
+	}
+
+	allTypes := []string{"disable_stamp", "disable_attack_type"}
+	expanded := expandRules(groups, allTypes)
+	if len(expanded) == 0 {
+		return nil
+	}
+
+	// Convert action details to schema format for the action blocks output.
+	schemaActions := make([]interface{}, 0, len(actionDetails))
+	for _, ad := range actionDetails {
+		item := resourcerule.ActionDetailToSchemaItem(ad)
+		pointMap := make(map[string]interface{})
+		if pm, ok := item["point"].(map[string]interface{}); ok {
+			for k, v := range pm {
+				pointMap[k] = fmt.Sprintf("%v", v)
+			}
+		}
+		schemaActions = append(schemaActions, map[string]interface{}{
+			"type":  item["type"],
+			"value": item["value"],
+			"point": pointMap,
+		})
+	}
+
+	// Build output list.
+	result := make([]interface{}, 0, len(expanded))
+	for _, r := range expanded {
+		pointForSchema := make([]interface{}, 0, len(r.Point))
+		for _, inner := range r.Point {
+			innerList := make([]interface{}, 0, len(inner))
+			for _, s := range inner {
+				innerList = append(innerList, s)
+			}
+			pointForSchema = append(pointForSchema, innerList)
+		}
+
+		result = append(result, map[string]interface{}{
+			"key":           r.Key,
+			"resource_type": "wallarm_rule_" + r.RuleType,
+			"stamp":         r.Stamp,
+			"attack_type":   r.AttackType,
+			"point":         pointForSchema,
+			"action":        schemaActions,
+		})
+	}
+
+	return result
 }

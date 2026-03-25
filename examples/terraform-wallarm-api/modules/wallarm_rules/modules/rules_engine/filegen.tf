@@ -58,35 +58,20 @@ locals {
       metadata              = try(local.all_rules[name].metadata, null)
     }
   }
-
-  # New files that need writing (don't exist on disk yet)
-  _new_configs = {
-    for r in var.generated_rules : r.name => {
-      dir  = trimprefix(r._config_dir, "./")
-      name = r.name
-    }
-    if !fileexists("${trimprefix(r._config_dir, "./")}/${r.name}.yaml")
-  }
-
-  # Shell command to write new YAML files. "true" when nothing to write.
-  _write_command = length(local._new_configs) > 0 ? join("\n", flatten([
-    for name, cfg in local._new_configs : [
-      "mkdir -p '${cfg.dir}'",
-      "cat > '${cfg.dir}/${name}.yaml' <<'YAMLEOF'",
-      templatefile("${path.module}/templates/rule_config.yaml.tftpl", local.yaml_template_vars[name]),
-      "YAMLEOF",
-    ]
-  ])) : "true"
 }
 
 # ─── Write YAML for generated rules (hits/imports) ──────────────────────────
-# Created once on init, stable in state. Provisioner command evaluated at plan
-# time — runs "true" (no-op) when no new files, writes YAMLs when new files detected.
-# The resource itself never changes (no triggers_replace).
+# wallarm_config_file: state-only delete → file persists on disk after for_each
+# key disappears. fileset() discovers it → rules_engine continues to manage the rule.
 
-resource "terraform_data" "write_configs" {
-  provisioner "local-exec" {
-    command = local._write_command
+resource "wallarm_config_file" "rule_configs" {
+  for_each = { for r in var.generated_rules : r.name => trimprefix(r._config_dir, "./") }
+
+  path    = "${each.value}/${each.key}.yaml"
+  content = templatefile("${path.module}/templates/rule_config.yaml.tftpl", local.yaml_template_vars[each.key])
+
+  lifecycle {
+    ignore_changes = [content]
   }
 }
 

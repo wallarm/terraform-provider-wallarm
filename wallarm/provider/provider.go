@@ -130,6 +130,7 @@ func Provider() *schema.Provider {
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"wallarm_action":                         resourceWallarmAction(),
+			"wallarm_rule_generator":                 resourceWallarmRuleGenerator(),
 			"wallarm_tenant":                         resourceWallarmTenant(),
 			"wallarm_rules_settings":                 resourceWallarmRulesSettings(),
 			"wallarm_global_mode":                    resourceWallarmGlobalMode(),

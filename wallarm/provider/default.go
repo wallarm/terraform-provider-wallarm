@@ -84,8 +84,8 @@ var (
 		"variativity_disabled": {
 			Type:        schema.TypeBool,
 			Optional:    true,
-			Computed:    true,
-			Description: "Whether variativity is disabled. Always set to true by the provider.",
+			Default:     true,
+			Description: "Whether variativity is disabled for this rule. Defaults to true.",
 		},
 	}
 

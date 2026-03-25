@@ -37,7 +37,7 @@ resource "wallarm_rule_binary_data" "this" {
     }
   }
 
-  depends_on = [terraform_data.write_configs]
+  depends_on = [wallarm_config_file.rule_configs]
 }
 
 # ─── masking (sensitive_data) ─────────────────────────────────────────────────
@@ -73,7 +73,7 @@ resource "wallarm_rule_masking" "this" {
     }
   }
 
-  depends_on = [terraform_data.write_configs]
+  depends_on = [wallarm_config_file.rule_configs]
 }
 
 # ─── disable_attack_type (expanded by attack_types) ──────────────────────────
@@ -110,7 +110,7 @@ resource "wallarm_rule_disable_attack_type" "this" {
     }
   }
 
-  depends_on = [terraform_data.write_configs]
+  depends_on = [wallarm_config_file.rule_configs]
 }
 
 # ─── disable_stamp (expanded by stamps) ──────────────────────────────────────
@@ -147,7 +147,7 @@ resource "wallarm_rule_disable_stamp" "this" {
     }
   }
 
-  depends_on = [terraform_data.write_configs]
+  depends_on = [wallarm_config_file.rule_configs]
 }
 
 # ─── vpatch (expanded by attack_types) ───────────────────────────────────────
@@ -184,7 +184,7 @@ resource "wallarm_rule_vpatch" "this" {
     }
   }
 
-  depends_on = [terraform_data.write_configs]
+  depends_on = [wallarm_config_file.rule_configs]
 }
 
 # ─── uploads (expanded by file_types OR single file_type) ────────────────────
@@ -202,7 +202,7 @@ resource "wallarm_rule_uploads" "expanded" {
   action_method   = local.rule_configs[each.value.config_name].method
   action_scheme   = local.rule_configs[each.value.config_name].scheme
   action_proto    = local.rule_configs[each.value.config_name].proto
-  depends_on      = [terraform_data.write_configs]
+  depends_on      = [wallarm_config_file.rule_configs]
 }
 
 resource "wallarm_rule_uploads" "single" {
@@ -218,7 +218,7 @@ resource "wallarm_rule_uploads" "single" {
   action_method   = local.rule_configs[each.key].method
   action_scheme   = local.rule_configs[each.key].scheme
   action_proto    = local.rule_configs[each.key].proto
-  depends_on      = [terraform_data.write_configs]
+  depends_on      = [wallarm_config_file.rule_configs]
 }
 
 # ─── parser_state (expanded by parsers OR single parser) ─────────────────────
@@ -237,7 +237,7 @@ resource "wallarm_rule_parser_state" "expanded" {
   action_method   = local.rule_configs[each.value.config_name].method
   action_scheme   = local.rule_configs[each.value.config_name].scheme
   action_proto    = local.rule_configs[each.value.config_name].proto
-  depends_on      = [terraform_data.write_configs]
+  depends_on      = [wallarm_config_file.rule_configs]
 }
 
 resource "wallarm_rule_parser_state" "single" {
@@ -254,7 +254,7 @@ resource "wallarm_rule_parser_state" "single" {
   action_method   = local.rule_configs[each.key].method
   action_scheme   = local.rule_configs[each.key].scheme
   action_proto    = local.rule_configs[each.key].proto
-  depends_on      = [terraform_data.write_configs]
+  depends_on      = [wallarm_config_file.rule_configs]
 }
 
 # ─── ignore_regex (disable_regex) ─────────────────────────────────────────────
@@ -278,7 +278,7 @@ resource "wallarm_rule_ignore_regex" "this" {
     : try(local.rule_configs[each.key].regex_id, 0)
   )
 
-  depends_on = [wallarm_rule_regex.this, terraform_data.write_configs]
+  depends_on = [wallarm_rule_regex.this, wallarm_config_file.rule_configs]
 }
 
 # ─── regex ────────────────────────────────────────────────────────────────────
@@ -298,7 +298,7 @@ resource "wallarm_rule_regex" "this" {
   action_method   = local.rule_configs[each.key].method
   action_scheme   = local.rule_configs[each.key].scheme
   action_proto    = local.rule_configs[each.key].proto
-  depends_on      = [terraform_data.write_configs]
+  depends_on      = [wallarm_config_file.rule_configs]
 }
 
 # ─── file_upload_size_limit ──────────────────────────────────────────────────
@@ -318,7 +318,7 @@ resource "wallarm_rule_file_upload_size_limit" "this" {
   action_method   = local.rule_configs[each.key].method
   action_scheme   = local.rule_configs[each.key].scheme
   action_proto    = local.rule_configs[each.key].proto
-  depends_on      = [terraform_data.write_configs]
+  depends_on      = [wallarm_config_file.rule_configs]
 }
 
 # ─── rate_limit ──────────────────────────────────────────────────────────────
@@ -340,7 +340,7 @@ resource "wallarm_rule_rate_limit" "this" {
   action_method   = local.rule_configs[each.key].method
   action_scheme   = local.rule_configs[each.key].scheme
   action_proto    = local.rule_configs[each.key].proto
-  depends_on      = [terraform_data.write_configs]
+  depends_on      = [wallarm_config_file.rule_configs]
 }
 
 # ─── credential_stuffing_point ───────────────────────────────────────────────
@@ -359,7 +359,7 @@ resource "wallarm_rule_credential_stuffing_point" "this" {
   action_method   = local.rule_configs[each.key].method
   action_scheme   = local.rule_configs[each.key].scheme
   action_proto    = local.rule_configs[each.key].proto
-  depends_on      = [terraform_data.write_configs]
+  depends_on      = [wallarm_config_file.rule_configs]
 }
 
 # ─── credential_stuffing_regex ───────────────────────────────────────────────
@@ -379,7 +379,7 @@ resource "wallarm_rule_credential_stuffing_regex" "this" {
   action_method   = local.rule_configs[each.key].method
   action_scheme   = local.rule_configs[each.key].scheme
   action_proto    = local.rule_configs[each.key].proto
-  depends_on      = [terraform_data.write_configs]
+  depends_on      = [wallarm_config_file.rule_configs]
 }
 
 # ─── mode ────────────────────────────────────────────────────────────────────
@@ -415,7 +415,7 @@ resource "wallarm_rule_mode" "this" {
     }
   }
 
-  depends_on = [terraform_data.write_configs]
+  depends_on = [wallarm_config_file.rule_configs]
 }
 
 # ─── set_response_header ────────────────────────────────────────────────────
@@ -434,7 +434,7 @@ resource "wallarm_rule_set_response_header" "this" {
   action_method   = local.rule_configs[each.key].method
   action_scheme   = local.rule_configs[each.key].scheme
   action_proto    = local.rule_configs[each.key].proto
-  depends_on      = [terraform_data.write_configs]
+  depends_on      = [wallarm_config_file.rule_configs]
 }
 
 # ─── overlimit_res_settings ─────────────────────────────────────────────────
@@ -452,7 +452,7 @@ resource "wallarm_rule_overlimit_res_settings" "this" {
   action_method   = local.rule_configs[each.key].method
   action_scheme   = local.rule_configs[each.key].scheme
   action_proto    = local.rule_configs[each.key].proto
-  depends_on      = [terraform_data.write_configs]
+  depends_on      = [wallarm_config_file.rule_configs]
 }
 
 # ─── graphql_detection ───────────────────────────────────────────────────────
@@ -475,7 +475,7 @@ resource "wallarm_rule_graphql_detection" "this" {
   action_method     = local.rule_configs[each.key].method
   action_scheme     = local.rule_configs[each.key].scheme
   action_proto      = local.rule_configs[each.key].proto
-  depends_on        = [terraform_data.write_configs]
+  depends_on        = [wallarm_config_file.rule_configs]
 }
 
 # ─── bruteforce_counter ─────────────────────────────────────────────────────
@@ -491,7 +491,7 @@ resource "wallarm_rule_bruteforce_counter" "this" {
   action_method   = local.rule_configs[each.key].method
   action_scheme   = local.rule_configs[each.key].scheme
   action_proto    = local.rule_configs[each.key].proto
-  depends_on      = [terraform_data.write_configs]
+  depends_on      = [wallarm_config_file.rule_configs]
 }
 
 # ─── dirbust_counter ────────────────────────────────────────────────────────
@@ -507,7 +507,7 @@ resource "wallarm_rule_dirbust_counter" "this" {
   action_method   = local.rule_configs[each.key].method
   action_scheme   = local.rule_configs[each.key].scheme
   action_proto    = local.rule_configs[each.key].proto
-  depends_on      = [terraform_data.write_configs]
+  depends_on      = [wallarm_config_file.rule_configs]
 }
 
 # ─── bola_counter ───────────────────────────────────────────────────────────
@@ -523,7 +523,7 @@ resource "wallarm_rule_bola_counter" "this" {
   action_method   = local.rule_configs[each.key].method
   action_scheme   = local.rule_configs[each.key].scheme
   action_proto    = local.rule_configs[each.key].proto
-  depends_on      = [terraform_data.write_configs]
+  depends_on      = [wallarm_config_file.rule_configs]
 }
 
 # ─── brute ───────────────────────────────────────────────────────────────────
@@ -575,7 +575,7 @@ resource "wallarm_rule_brute" "this" {
     }
   }
 
-  depends_on = [terraform_data.write_configs]
+  depends_on = [wallarm_config_file.rule_configs]
 }
 
 # ─── bola ────────────────────────────────────────────────────────────────────
@@ -627,7 +627,7 @@ resource "wallarm_rule_bola" "this" {
     }
   }
 
-  depends_on = [terraform_data.write_configs]
+  depends_on = [wallarm_config_file.rule_configs]
 }
 
 # ─── enum ────────────────────────────────────────────────────────────────────
@@ -679,7 +679,7 @@ resource "wallarm_rule_enum" "this" {
     }
   }
 
-  depends_on = [terraform_data.write_configs]
+  depends_on = [wallarm_config_file.rule_configs]
 }
 
 # ─── rate_limit_enum ─────────────────────────────────────────────────────────
@@ -707,7 +707,7 @@ resource "wallarm_rule_rate_limit_enum" "this" {
     block_by_ip      = try(local.rule_configs[each.key].reaction.block_by_ip, 0)
   }
 
-  depends_on = [terraform_data.write_configs]
+  depends_on = [wallarm_config_file.rule_configs]
 }
 
 # ─── forced_browsing ─────────────────────────────────────────────────────────
@@ -735,5 +735,5 @@ resource "wallarm_rule_forced_browsing" "this" {
     block_by_ip      = try(local.rule_configs[each.key].reaction.block_by_ip, 0)
   }
 
-  depends_on = [terraform_data.write_configs]
+  depends_on = [wallarm_config_file.rule_configs]
 }
