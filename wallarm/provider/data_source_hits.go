@@ -159,6 +159,27 @@ func dataSourceWallarmHits() *schema.Resource {
 				},
 			},
 
+			"hits_count": {
+				Type:        schema.TypeInt,
+				Computed:    true,
+				Description: "Total number of hits fetched.",
+			},
+			"rules_count": {
+				Type:        schema.TypeInt,
+				Computed:    true,
+				Description: "Number of rules that will be generated from the hits.",
+			},
+			"rules_stamp_count": {
+				Type:        schema.TypeInt,
+				Computed:    true,
+				Description: "Number of disable_stamp rules.",
+			},
+			"rules_attack_type_count": {
+				Type:        schema.TypeInt,
+				Computed:    true,
+				Description: "Number of disable_attack_type rules.",
+			},
+
 			"hits": {
 				Type:     schema.TypeList,
 				Computed: true,
@@ -370,6 +391,23 @@ func dataSourceWallarmHitsRead(_ context.Context, d *schema.ResourceData, m inte
 	if err := d.Set("rules", rulesForSchema); err != nil {
 		return diag.FromErr(fmt.Errorf("error setting rules: %s", err))
 	}
+
+	// Set summary counts.
+	stampCount := 0
+	attackTypeCount := 0
+	for _, r := range rulesForSchema {
+		rm := r.(map[string]interface{})
+		switch rm["resource_type"] {
+		case "wallarm_rule_disable_stamp":
+			stampCount++
+		case "wallarm_rule_disable_attack_type":
+			attackTypeCount++
+		}
+	}
+	d.Set("hits_count", len(allHits))
+	d.Set("rules_count", len(rulesForSchema))
+	d.Set("rules_stamp_count", stampCount)
+	d.Set("rules_attack_type_count", attackTypeCount)
 	if err := d.Set("hits", hitsForSchema); err != nil {
 		return diag.FromErr(fmt.Errorf("error setting hits: %s", err))
 	}
@@ -549,6 +587,11 @@ func setEmptyHitsState(d *schema.ResourceData) diag.Diagnostics {
 	_ = d.Set("action_hash", "")
 	_ = d.Set("action_dir_name", "")
 	_ = d.Set("action_conditions", []interface{}{})
+	_ = d.Set("rules", []interface{}{})
+	_ = d.Set("hits_count", 0)
+	_ = d.Set("rules_count", 0)
+	_ = d.Set("rules_stamp_count", 0)
+	_ = d.Set("rules_attack_type_count", 0)
 	_ = d.Set("hits", []interface{}{})
 	return nil
 }

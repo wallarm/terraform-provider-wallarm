@@ -36,6 +36,7 @@ func resourceWallarmIPList(listType wallarm.IPListType) *schema.Resource {
 			"ip_range": {
 				Type:          schema.TypeList,
 				Optional:      true,
+				Computed:      true,
 				MaxItems:      IPListMaxSubnets,
 				Elem:          &schema.Schema{Type: schema.TypeString},
 				ConflictsWith: []string{"country", "datacenter", "proxy_type"},
@@ -43,12 +44,14 @@ func resourceWallarmIPList(listType wallarm.IPListType) *schema.Resource {
 			"country": {
 				Type:          schema.TypeList,
 				Optional:      true,
+				Computed:      true,
 				Elem:          &schema.Schema{Type: schema.TypeString},
 				ConflictsWith: []string{"ip_range", "datacenter", "proxy_type"},
 			},
 			"datacenter": {
 				Type:     schema.TypeList,
 				Optional: true,
+				Computed: true,
 				Elem: &schema.Schema{
 					Type:         schema.TypeString,
 					ValidateFunc: validation.StringInSlice([]string{"alibaba", "aws", "azure", "docean", "gce", "hetzner", "huawei", "ibm", "linode", "oracle", "ovh", "plusserver", "rackspace", "tencent"}, false),
@@ -58,6 +61,7 @@ func resourceWallarmIPList(listType wallarm.IPListType) *schema.Resource {
 			"proxy_type": {
 				Type:          schema.TypeList,
 				Optional:      true,
+				Computed:      true,
 				ConflictsWith: []string{"ip_range", "country", "datacenter"},
 				Elem: &schema.Schema{
 					Type:         schema.TypeString,

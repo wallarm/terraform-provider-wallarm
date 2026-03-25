@@ -189,6 +189,7 @@ func resolveGeneratorClientID(d *schema.ResourceData, m interface{}) (int, error
 type requestEntry struct {
 	Hits             json.RawMessage `json:"hits"`
 	ActionConditions json.RawMessage `json:"action_conditions"`
+	RuleTypes        []string        `json:"rule_types,omitempty"`
 }
 
 func generateRuleFiles(d *schema.ResourceData, clientID int) ([]string, int, error) {
@@ -257,7 +258,13 @@ func generateRuleFiles(d *schema.ResourceData, clientID int) ([]string, int, err
 			return nil, 0, fmt.Errorf("request %s: %w", reqID, err)
 		}
 
-		expanded := expandRules(groups, ruleTypes)
+		// Per-request rule_types override global rule_types.
+		effectiveRuleTypes := ruleTypes
+		if len(entry.RuleTypes) > 0 {
+			effectiveRuleTypes = entry.RuleTypes
+		}
+
+		expanded := expandRules(groups, effectiveRuleTypes)
 		if len(expanded) == 0 {
 			log.Printf("[WARN] wallarm_rule_generator: no rules for request %s", reqID)
 			continue
