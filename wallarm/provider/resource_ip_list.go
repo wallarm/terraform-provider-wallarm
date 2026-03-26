@@ -36,7 +36,6 @@ func resourceWallarmIPList(listType wallarm.IPListType) *schema.Resource {
 			"ip_range": {
 				Type:          schema.TypeList,
 				Optional:      true,
-				Computed:      true,
 				MaxItems:      IPListMaxSubnets,
 				Elem:          &schema.Schema{Type: schema.TypeString},
 				ConflictsWith: []string{"country", "datacenter", "proxy_type"},
@@ -44,14 +43,12 @@ func resourceWallarmIPList(listType wallarm.IPListType) *schema.Resource {
 			"country": {
 				Type:          schema.TypeList,
 				Optional:      true,
-				Computed:      true,
 				Elem:          &schema.Schema{Type: schema.TypeString},
 				ConflictsWith: []string{"ip_range", "datacenter", "proxy_type"},
 			},
 			"datacenter": {
 				Type:     schema.TypeList,
 				Optional: true,
-				Computed: true,
 				Elem: &schema.Schema{
 					Type:         schema.TypeString,
 					ValidateFunc: validation.StringInSlice([]string{"alibaba", "aws", "azure", "docean", "gce", "hetzner", "huawei", "ibm", "linode", "oracle", "ovh", "plusserver", "rackspace", "tencent"}, false),
@@ -61,7 +58,6 @@ func resourceWallarmIPList(listType wallarm.IPListType) *schema.Resource {
 			"proxy_type": {
 				Type:          schema.TypeList,
 				Optional:      true,
-				Computed:      true,
 				ConflictsWith: []string{"ip_range", "country", "datacenter"},
 				Elem: &schema.Schema{
 					Type:         schema.TypeString,
@@ -186,12 +182,9 @@ func resourceWallarmIPListCreate(listType wallarm.IPListType) schema.CreateConte
 			return diag.FromErr(err)
 		}
 
-		// Only set ID on initial Create (not when called from Update's delete+recreate path).
-		if d.Id() == "" {
-			ruleType := ipListRuleTypes(rules)
-			valuesHash := ipListValuesHash(rules)
-			d.SetId(fmt.Sprintf("%d/%s/%s/%s", clientID, ipListFriendlyType(listType), ruleType, valuesHash))
-		}
+		ruleType := ipListRuleTypes(rules)
+		valuesHash := ipListValuesHash(rules)
+		d.SetId(fmt.Sprintf("%d/%s/%s/%s", clientID, ipListFriendlyType(listType), ruleType, valuesHash))
 
 		// Collect config values and rule types for cache lookup.
 		var configValues []string
