@@ -42,7 +42,7 @@ func resourceWallarmDisableAttackType() *schema.Resource {
 	}
 }
 
-func resourceWallarmDisableAttackTypeCreate(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceWallarmDisableAttackTypeCreate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	client := apiClient(m)
 	clientID, err := retrieveClientID(d, m)
 	if err != nil {
@@ -93,7 +93,7 @@ func resourceWallarmDisableAttackTypeCreate(_ context.Context, d *schema.Resourc
 	resID := fmt.Sprintf("%d/%d/%d", clientID, actionResp.Body.ActionID, actionResp.Body.ID)
 	d.SetId(resID)
 
-	return resourceWallarmDisableAttackTypeRead(context.TODO(), d, m)
+	return resourceWallarmDisableAttackTypeRead(ctx, d, m)
 }
 
 func resourceWallarmDisableAttackTypeRead(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {

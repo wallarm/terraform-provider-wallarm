@@ -104,7 +104,7 @@ func resourceWallarmTelegram() *schema.Resource {
 	}
 }
 
-func resourceWallarmTelegramCreate(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceWallarmTelegramCreate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	client := apiClient(m)
 	clientID, err := retrieveClientID(d, m)
 	if err != nil {
@@ -140,7 +140,7 @@ func resourceWallarmTelegramCreate(_ context.Context, d *schema.ResourceData, m 
 		return diag.FromErr(err)
 	}
 
-	return resourceWallarmTelegramRead(context.TODO(), d, m)
+	return resourceWallarmTelegramRead(ctx, d, m)
 }
 
 func resourceWallarmTelegramRead(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
@@ -168,7 +168,7 @@ func resourceWallarmTelegramRead(_ context.Context, d *schema.ResourceData, m in
 	return nil
 }
 
-func resourceWallarmTelegramUpdate(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceWallarmTelegramUpdate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	client := apiClient(m)
 	clientID, err := retrieveClientID(d, m)
 	if err != nil {
@@ -204,7 +204,7 @@ func resourceWallarmTelegramUpdate(_ context.Context, d *schema.ResourceData, m 
 		d.SetId(resID)
 	}
 
-	return resourceWallarmTelegramRead(context.TODO(), d, m)
+	return resourceWallarmTelegramRead(ctx, d, m)
 }
 
 func resourceWallarmTelegramDelete(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {

@@ -56,7 +56,7 @@ func resourceWallarmCredentialStuffingRegex() *schema.Resource {
 	}
 }
 
-func resourceWallarmCredentialStuffingRegexCreate(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceWallarmCredentialStuffingRegexCreate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	client := apiClient(m)
 	clientID, err := retrieveClientID(d, m)
 	if err != nil {
@@ -99,7 +99,7 @@ func resourceWallarmCredentialStuffingRegexCreate(_ context.Context, d *schema.R
 	d.Set("action_id", resp.Body.ActionID)
 	d.Set("rule_id", resp.Body.ID)
 
-	return resourceWallarmCredentialStuffingRegexRead(context.TODO(), d, m)
+	return resourceWallarmCredentialStuffingRegexRead(ctx, d, m)
 }
 
 func resourceWallarmCredentialStuffingRegexRead(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {

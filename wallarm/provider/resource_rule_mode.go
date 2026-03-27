@@ -40,7 +40,7 @@ func resourceWallarmMode() *schema.Resource {
 	}
 }
 
-func resourceWallarmModeCreate(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceWallarmModeCreate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	if d.IsNewResource() {
 		existingID, exists, err := existsAction(d, m, "wallarm_mode")
 		if err != nil {
@@ -88,7 +88,7 @@ func resourceWallarmModeCreate(_ context.Context, d *schema.ResourceData, m inte
 	resID := fmt.Sprintf("%d/%d/%d/%s", clientID, actionResp.Body.ActionID, actionResp.Body.ID, actionResp.Body.Mode)
 	d.SetId(resID)
 
-	return resourceWallarmModeRead(context.TODO(), d, m)
+	return resourceWallarmModeRead(ctx, d, m)
 }
 
 func resourceWallarmModeRead(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {

@@ -104,7 +104,7 @@ func resourceWallarmSumologic() *schema.Resource {
 	}
 }
 
-func resourceWallarmSumologicCreate(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceWallarmSumologicCreate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	client := apiClient(m)
 	clientID, err := retrieveClientID(d, m)
 	if err != nil {
@@ -134,7 +134,7 @@ func resourceWallarmSumologicCreate(_ context.Context, d *schema.ResourceData, m
 	resID := fmt.Sprintf("%d/%s/%d", clientID, createRes.Body.Type, createRes.Body.ID)
 	d.SetId(resID)
 
-	return resourceWallarmSumologicRead(context.TODO(), d, m)
+	return resourceWallarmSumologicRead(ctx, d, m)
 }
 
 func resourceWallarmSumologicRead(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
@@ -162,7 +162,7 @@ func resourceWallarmSumologicRead(_ context.Context, d *schema.ResourceData, m i
 	return nil
 }
 
-func resourceWallarmSumologicUpdate(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceWallarmSumologicUpdate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	client := apiClient(m)
 	clientID, err := retrieveClientID(d, m)
 	if err != nil {
@@ -216,7 +216,7 @@ func resourceWallarmSumologicUpdate(_ context.Context, d *schema.ResourceData, m
 		}
 	}
 
-	return resourceWallarmSumologicRead(context.TODO(), d, m)
+	return resourceWallarmSumologicRead(ctx, d, m)
 }
 
 func resourceWallarmSumologicDelete(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {

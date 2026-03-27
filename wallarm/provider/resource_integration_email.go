@@ -88,7 +88,7 @@ func resourceWallarmEmail() *schema.Resource {
 	}
 }
 
-func resourceWallarmEmailCreate(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceWallarmEmailCreate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	client := apiClient(m)
 	clientID, err := retrieveClientID(d, m)
 	if err != nil {
@@ -118,7 +118,7 @@ func resourceWallarmEmailCreate(_ context.Context, d *schema.ResourceData, m int
 	resID := fmt.Sprintf("%d/%s/%d", clientID, createRes.Body.Type, createRes.Body.ID)
 	d.SetId(resID)
 
-	return resourceWallarmEmailRead(context.TODO(), d, m)
+	return resourceWallarmEmailRead(ctx, d, m)
 }
 
 func resourceWallarmEmailRead(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
@@ -146,7 +146,7 @@ func resourceWallarmEmailRead(_ context.Context, d *schema.ResourceData, m inter
 	return nil
 }
 
-func resourceWallarmEmailUpdate(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceWallarmEmailUpdate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	client := apiClient(m)
 	clientID, err := retrieveClientID(d, m)
 	if err != nil {
@@ -203,7 +203,7 @@ func resourceWallarmEmailUpdate(_ context.Context, d *schema.ResourceData, m int
 	resID := fmt.Sprintf("%d/%s/%d", clientID, updateRes.Body.Type, updateRes.Body.ID)
 	d.SetId(resID)
 
-	return resourceWallarmEmailRead(context.TODO(), d, m)
+	return resourceWallarmEmailRead(ctx, d, m)
 }
 
 func resourceWallarmEmailDelete(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {

@@ -62,7 +62,7 @@ func resourceWallarmGlobalMode() *schema.Resource {
 	}
 }
 
-func resourceWallarmGlobalModeCreate(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceWallarmGlobalModeCreate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	client := apiClient(m)
 	clientID, err := retrieveClientID(d, m)
 	if err != nil {
@@ -97,7 +97,7 @@ func resourceWallarmGlobalModeCreate(_ context.Context, d *schema.ResourceData, 
 	d.SetId(fmt.Sprintf("%d/global_mode", clientID))
 	d.Set("client_id", clientID)
 
-	return resourceWallarmGlobalModeRead(context.TODO(), d, m)
+	return resourceWallarmGlobalModeRead(ctx, d, m)
 }
 
 func resourceWallarmGlobalModeRead(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
@@ -161,7 +161,7 @@ func resourceWallarmGlobalModeRead(_ context.Context, d *schema.ResourceData, m 
 	return nil
 }
 
-func resourceWallarmGlobalModeUpdate(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceWallarmGlobalModeUpdate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	client := apiClient(m)
 	clientID, err := retrieveClientID(d, m)
 	if err != nil {
@@ -196,7 +196,7 @@ func resourceWallarmGlobalModeUpdate(_ context.Context, d *schema.ResourceData, 
 		}
 	}
 
-	return resourceWallarmGlobalModeRead(context.TODO(), d, m)
+	return resourceWallarmGlobalModeRead(ctx, d, m)
 }
 
 func resourceWallarmGlobalModeDelete(_ context.Context, _ *schema.ResourceData, _ interface{}) diag.Diagnostics {

@@ -113,7 +113,9 @@ func resourceWallarmRuleGeneratorCreate(_ context.Context, d *schema.ResourceDat
 	id := fmt.Sprintf("%d/%s", clientID, hashString(outputDir))
 	d.SetId(id)
 	d.Set("client_id", clientID)
-	d.Set("generated_files", files)
+	if err := d.Set("generated_files", files); err != nil {
+		return diag.FromErr(err)
+	}
 	d.Set("rules_count", rulesCount)
 
 	log.Printf("[INFO] wallarm_rule_generator: created %d files (%d rules) in %s", len(files), rulesCount, outputDir)
@@ -155,7 +157,9 @@ func resourceWallarmRuleGeneratorUpdate(_ context.Context, d *schema.ResourceDat
 		return diag.FromErr(err)
 	}
 
-	d.Set("generated_files", files)
+	if err := d.Set("generated_files", files); err != nil {
+		return diag.FromErr(err)
+	}
 	d.Set("rules_count", rulesCount)
 
 	log.Printf("[INFO] wallarm_rule_generator: updated %d files (%d rules)", len(files), rulesCount)

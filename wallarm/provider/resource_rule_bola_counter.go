@@ -40,7 +40,7 @@ func resourceWallarmBolaCounter() *schema.Resource {
 	}
 }
 
-func resourceWallarmBolaCounterCreate(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceWallarmBolaCounterCreate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	client := apiClient(m)
 	clientID, err := retrieveClientID(d, m)
 	if err != nil {
@@ -77,7 +77,7 @@ func resourceWallarmBolaCounterCreate(_ context.Context, d *schema.ResourceData,
 	resID := fmt.Sprintf("%d/%d/%d", clientID, actionResp.Body.ActionID, actionResp.Body.ID)
 	d.SetId(resID)
 
-	return resourceWallarmBolaCounterRead(context.TODO(), d, m)
+	return resourceWallarmBolaCounterRead(ctx, d, m)
 }
 
 func resourceWallarmBolaCounterRead(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {

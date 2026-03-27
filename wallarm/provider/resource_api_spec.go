@@ -84,7 +84,7 @@ func resourceWallarmAPISpec() *schema.Resource {
 	}
 }
 
-func resourceWallarmAPISpecCreate(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceWallarmAPISpecCreate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	client := apiClient(m)
 
 	apiSpecBody := wallarm.ApiSpecCreate{
@@ -106,7 +106,7 @@ func resourceWallarmAPISpecCreate(_ context.Context, d *schema.ResourceData, m i
 	d.Set("api_spec_id", createRes.Body.ID)
 	d.SetId(strconv.Itoa(createRes.Body.ID))
 
-	return resourceWallarmAPISpecRead(context.TODO(), d, m)
+	return resourceWallarmAPISpecRead(ctx, d, m)
 }
 
 func resourceWallarmAPISpecRead(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {

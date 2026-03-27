@@ -582,18 +582,27 @@ func hitKey(h *wallarm.Hit) string {
 
 // setEmptyHitsState sets empty values for all computed fields.
 func setEmptyHitsState(d *schema.ResourceData) diag.Diagnostics {
-	_ = d.Set("action", schema.NewSet(schema.HashResource(
-		resourcerule.ScopeActionSchema().Elem.(*schema.Resource)), []interface{}{}))
-	_ = d.Set("action_hash", "")
-	_ = d.Set("action_dir_name", "")
-	_ = d.Set("action_conditions", []interface{}{})
-	_ = d.Set("rules", []interface{}{})
-	_ = d.Set("hits_count", 0)
-	_ = d.Set("rules_count", 0)
-	_ = d.Set("rules_stamp_count", 0)
-	_ = d.Set("rules_attack_type_count", 0)
-	_ = d.Set("hits", []interface{}{})
-	return nil
+	var diags diag.Diagnostics
+	if err := d.Set("action", schema.NewSet(schema.HashResource(
+		resourcerule.ScopeActionSchema().Elem.(*schema.Resource)), []interface{}{})); err != nil {
+		diags = append(diags, diag.FromErr(err)...)
+	}
+	d.Set("action_hash", "")
+	d.Set("action_dir_name", "")
+	if err := d.Set("action_conditions", []interface{}{}); err != nil {
+		diags = append(diags, diag.FromErr(err)...)
+	}
+	if err := d.Set("rules", []interface{}{}); err != nil {
+		diags = append(diags, diag.FromErr(err)...)
+	}
+	d.Set("hits_count", 0)
+	d.Set("rules_count", 0)
+	d.Set("rules_stamp_count", 0)
+	d.Set("rules_attack_type_count", 0)
+	if err := d.Set("hits", []interface{}{}); err != nil {
+		diags = append(diags, diag.FromErr(err)...)
+	}
+	return diags
 }
 
 // schemaActionToDetails converts []map[string]interface{} (schema format) to []ActionDetails

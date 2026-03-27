@@ -42,7 +42,7 @@ func resourceWallarmCredentialStuffingPoint() *schema.Resource {
 	}
 }
 
-func resourceWallarmCredentialStuffingPointCreate(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceWallarmCredentialStuffingPointCreate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	client := apiClient(m)
 	clientID, err := retrieveClientID(d, m)
 	if err != nil {
@@ -93,7 +93,7 @@ func resourceWallarmCredentialStuffingPointCreate(_ context.Context, d *schema.R
 	d.Set("action_id", resp.Body.ActionID)
 	d.Set("rule_id", resp.Body.ID)
 
-	return resourceWallarmCredentialStuffingPointRead(context.TODO(), d, m)
+	return resourceWallarmCredentialStuffingPointRead(ctx, d, m)
 }
 
 func resourceWallarmCredentialStuffingPointRead(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {

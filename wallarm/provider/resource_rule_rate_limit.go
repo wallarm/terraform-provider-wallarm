@@ -70,7 +70,7 @@ func resourceWallarmRateLimit() *schema.Resource {
 	}
 }
 
-func resourceWallarmRateLimitCreate(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceWallarmRateLimitCreate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	client := apiClient(m)
 	clientID, err := retrieveClientID(d, m)
 	if err != nil {
@@ -129,7 +129,7 @@ func resourceWallarmRateLimitCreate(_ context.Context, d *schema.ResourceData, m
 	resID := fmt.Sprintf("%d/%d/%d", clientID, actionID, actionResp.Body.ID)
 	d.SetId(resID)
 
-	return resourceWallarmRateLimitRead(context.TODO(), d, m)
+	return resourceWallarmRateLimitRead(ctx, d, m)
 }
 
 func resourceWallarmRateLimitRead(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {

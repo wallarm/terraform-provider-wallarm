@@ -40,7 +40,7 @@ func resourceWallarmIgnoreRegex() *schema.Resource {
 	}
 }
 
-func resourceWallarmIgnoreRegexCreate(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceWallarmIgnoreRegexCreate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	client := apiClient(m)
 	clientID, err := retrieveClientID(d, m)
 	if err != nil {
@@ -91,7 +91,7 @@ func resourceWallarmIgnoreRegexCreate(_ context.Context, d *schema.ResourceData,
 	resID := fmt.Sprintf("%d/%d/%d/%s", clientID, actionResp.Body.ActionID, actionResp.Body.ID, actionResp.Body.Type)
 	d.SetId(resID)
 
-	return resourceWallarmIgnoreRegexRead(context.TODO(), d, m)
+	return resourceWallarmIgnoreRegexRead(ctx, d, m)
 }
 
 func resourceWallarmIgnoreRegexRead(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {

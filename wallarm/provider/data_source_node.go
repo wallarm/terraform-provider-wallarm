@@ -87,8 +87,9 @@ func dataSourceWallarmNode() *schema.Resource {
 							Computed: true,
 						},
 						"token": {
-							Type:     schema.TypeString,
-							Computed: true,
+							Type:      schema.TypeString,
+							Computed:  true,
+							Sensitive: true,
 						},
 						"requests_amount": {
 							Type:     schema.TypeInt,

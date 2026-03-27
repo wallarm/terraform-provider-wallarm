@@ -110,7 +110,7 @@ func resourceWallarmInsightConnect() *schema.Resource {
 	}
 }
 
-func resourceWallarmInsightConnectCreate(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceWallarmInsightConnectCreate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	client := apiClient(m)
 	clientID, err := retrieveClientID(d, m)
 	if err != nil {
@@ -144,7 +144,7 @@ func resourceWallarmInsightConnectCreate(_ context.Context, d *schema.ResourceDa
 	resID := fmt.Sprintf("%d/%s/%d", clientID, createRes.Body.Type, createRes.Body.ID)
 	d.SetId(resID)
 
-	return resourceWallarmInsightConnectRead(context.TODO(), d, m)
+	return resourceWallarmInsightConnectRead(ctx, d, m)
 }
 
 func resourceWallarmInsightConnectRead(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
@@ -172,7 +172,7 @@ func resourceWallarmInsightConnectRead(_ context.Context, d *schema.ResourceData
 	return nil
 }
 
-func resourceWallarmInsightConnectUpdate(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceWallarmInsightConnectUpdate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	client := apiClient(m)
 	clientID, err := retrieveClientID(d, m)
 	if err != nil {
@@ -232,7 +232,7 @@ func resourceWallarmInsightConnectUpdate(_ context.Context, d *schema.ResourceDa
 		}
 	}
 
-	return resourceWallarmInsightConnectRead(context.TODO(), d, m)
+	return resourceWallarmInsightConnectRead(ctx, d, m)
 }
 
 func resourceWallarmInsightConnectDelete(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {

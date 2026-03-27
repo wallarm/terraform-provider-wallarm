@@ -84,7 +84,7 @@ func resourceWallarmUser() *schema.Resource {
 	}
 }
 
-func resourceWallarmUserCreate(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceWallarmUserCreate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	client := apiClient(m)
 	clientID, err := retrieveClientID(d, m)
 	if err != nil {
@@ -133,7 +133,7 @@ func resourceWallarmUserCreate(_ context.Context, d *schema.ResourceData, m inte
 	resID := fmt.Sprintf("%d/%d", clientID, userID)
 	d.SetId(resID)
 
-	return resourceWallarmUserRead(context.TODO(), d, m)
+	return resourceWallarmUserRead(ctx, d, m)
 }
 func resourceWallarmUserRead(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	client := apiClient(m)
@@ -215,7 +215,7 @@ func resourceWallarmUserUpdate(ctx context.Context, d *schema.ResourceData, m in
 		}
 	}
 
-	return resourceWallarmUserRead(context.TODO(), d, m)
+	return resourceWallarmUserRead(ctx, d, m)
 }
 
 func resourceWallarmUserDelete(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {

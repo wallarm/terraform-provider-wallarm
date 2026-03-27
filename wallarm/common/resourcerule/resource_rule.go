@@ -168,19 +168,34 @@ func ResourceRuleWallarmCreate(
 	}
 
 	enumeratedParametersFromState := GetValueWithTypeCastingOrDefault[[]interface{}](d, "enumerated_parameters")
-	enumeratedParameters := tftoapi.EnumeratedParameters(enumeratedParametersFromState)
+	enumeratedParameters, err := tftoapi.EnumeratedParameters(enumeratedParametersFromState)
+	if err != nil {
+		return diag.FromErr(err)
+	}
 
 	reactionFromState := GetValueWithTypeCastingOrDefault[[]interface{}](d, "reaction")
-	reaction := tftoapi.Reaction(reactionFromState)
+	reaction, err := tftoapi.Reaction(reactionFromState)
+	if err != nil {
+		return diag.FromErr(err)
+	}
 
 	thresholdFromState := GetValueWithTypeCastingOrDefault[[]interface{}](d, "threshold")
-	threshold := tftoapi.Threshold(thresholdFromState)
+	threshold, err := tftoapi.Threshold(thresholdFromState)
+	if err != nil {
+		return diag.FromErr(err)
+	}
 
 	advancedConditionsFromState := GetValueWithTypeCastingOrDefault[[]interface{}](d, "advanced_conditions")
-	advancedConditions := tftoapi.AdvancedConditions(advancedConditionsFromState)
+	advancedConditions, err := tftoapi.AdvancedConditions(advancedConditionsFromState)
+	if err != nil {
+		return diag.FromErr(err)
+	}
 
 	arbitraryConditionsFromState := GetValueWithTypeCastingOrDefault[[]interface{}](d, "arbitrary_conditions")
-	arbitraryConditions := tftoapi.ArbitraryConditionsReq(arbitraryConditionsFromState)
+	arbitraryConditions, err := tftoapi.ArbitraryConditionsReq(arbitraryConditionsFromState)
+	if err != nil {
+		return diag.FromErr(err)
+	}
 
 	pointFromState := GetValueWithTypeCastingOrDefault[[]interface{}](d, "point")
 	points, err := ExpandPointsToTwoDimensionalArray(pointFromState)

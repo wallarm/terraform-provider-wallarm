@@ -35,7 +35,7 @@ func resourceWallarmSensitiveData() *schema.Resource {
 }
 
 // nolint:dupl
-func resourceWallarmSensitiveDataCreate(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceWallarmSensitiveDataCreate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	client := apiClient(m)
 	clientID, err := retrieveClientID(d, m)
 	if err != nil {
@@ -84,7 +84,7 @@ func resourceWallarmSensitiveDataCreate(_ context.Context, d *schema.ResourceDat
 	resID := fmt.Sprintf("%d/%d/%d", clientID, actionResp.Body.ActionID, actionResp.Body.ID)
 	d.SetId(resID)
 
-	return resourceWallarmSensitiveDataRead(context.TODO(), d, m)
+	return resourceWallarmSensitiveDataRead(ctx, d, m)
 }
 
 // nolint:dupl

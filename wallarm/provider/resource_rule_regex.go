@@ -56,7 +56,7 @@ func resourceWallarmRegex() *schema.Resource {
 	}
 }
 
-func resourceWallarmRegexCreate(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceWallarmRegexCreate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	experimental := d.Get("experimental").(bool)
 	var actionType string
 	if experimental {
@@ -117,7 +117,7 @@ func resourceWallarmRegexCreate(_ context.Context, d *schema.ResourceData, m int
 	resID := fmt.Sprintf("%d/%d/%d/%s", clientID, regexResp.Body.ActionID, regexResp.Body.ID, regexResp.Body.Type)
 	d.SetId(resID)
 
-	return resourceWallarmRegexRead(context.TODO(), d, m)
+	return resourceWallarmRegexRead(ctx, d, m)
 }
 
 func resourceWallarmRegexRead(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {

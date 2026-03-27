@@ -42,7 +42,7 @@ func resourceWallarmUploads() *schema.Resource {
 	}
 }
 
-func resourceWallarmUploadsCreate(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceWallarmUploadsCreate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	client := apiClient(m)
 	clientID, err := retrieveClientID(d, m)
 	if err != nil {
@@ -93,7 +93,7 @@ func resourceWallarmUploadsCreate(_ context.Context, d *schema.ResourceData, m i
 	resID := fmt.Sprintf("%d/%d/%d", clientID, actionResp.Body.ActionID, actionResp.Body.ID)
 	d.SetId(resID)
 
-	return resourceWallarmUploadsRead(context.TODO(), d, m)
+	return resourceWallarmUploadsRead(ctx, d, m)
 }
 
 func resourceWallarmUploadsRead(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {

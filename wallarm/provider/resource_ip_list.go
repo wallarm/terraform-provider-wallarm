@@ -206,7 +206,9 @@ func resourceWallarmIPListCreate(listType wallarm.IPListType) schema.CreateConte
 		}
 		d.Set("entry_count", len(configValues)-len(missing))
 		d.Set("untracked_count", len(missing))
-		d.Set("untracked_ips", missing)
+		if err := d.Set("untracked_ips", missing); err != nil {
+			return diag.FromErr(err)
+		}
 		d.Set("client_id", clientID)
 
 		if len(missing) > 0 {
@@ -259,7 +261,9 @@ func resourceWallarmIPListRead(listType wallarm.IPListType) schema.ReadContextFu
 		}
 		d.Set("entry_count", len(configValues)-len(missing))
 		d.Set("untracked_count", len(missing))
-		d.Set("untracked_ips", missing)
+		if err := d.Set("untracked_ips", missing); err != nil {
+			return diag.FromErr(fmt.Errorf("cannot set untracked_ips: %v", err))
+		}
 		d.Set("client_id", clientID)
 
 		return nil

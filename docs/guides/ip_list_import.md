@@ -84,22 +84,32 @@ locals {
     exp => [for e in local.deny_entries : e if e.rule_type == "subnet" && e.expired_at == exp]
   }
 
-  subnet_blocks = flatten([
+  subnet_chunks = flatten([
     for exp, entries in local.subnets_by_expiry : [
-      for idx in range(ceil(length(entries) / local.max_subnets_per_resource)) :
-      <<-EOT
-      import {
-        to = wallarm_denylist.import_subnet_${exp}${idx > 0 ? "_${idx}" : ""}
-        id = "${local.client_id}/subnet/${exp}${idx > 0 ? "/${idx}" : ""}"
+      for idx in range(ceil(length(entries) / local.max_subnets_per_resource)) : {
+        # When total entries fit in one chunk, use the simple format (no chunk index).
+        # When multiple chunks are needed, ALL chunks get an index — including chunk 0.
+        needs_chunking = length(entries) > local.max_subnets_per_resource
+        exp            = exp
+        idx            = idx
       }
-      EOT
     ]
   ])
+
+  subnet_import_blocks = [
+    for s in local.subnet_chunks :
+    <<-EOT
+    import {
+      to = wallarm_denylist.import_subnet_${s.exp}${s.needs_chunking ? "_${s.idx}" : ""}
+      id = "${local.client_id}/subnet/${s.exp}${s.needs_chunking ? "/${s.idx}" : ""}"
+    }
+    EOT
+  ]
 }
 
 resource "local_file" "deny_imports" {
   filename = "./wallarm_denylist_imports.tf"
-  content  = join("\n", concat(local.grouped_blocks, local.subnet_blocks))
+  content  = join("\n", concat(local.grouped_blocks, local.subnet_import_blocks))
 }
 ```
 

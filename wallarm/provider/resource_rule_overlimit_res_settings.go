@@ -47,7 +47,7 @@ func resourceWallarmOverlimitResSettings() *schema.Resource {
 	}
 }
 
-func resourceWallarmOverlimitResSettingsCreate(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceWallarmOverlimitResSettingsCreate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	client := apiClient(m)
 	clientID, err := retrieveClientID(d, m)
 	if err != nil {
@@ -91,7 +91,7 @@ func resourceWallarmOverlimitResSettingsCreate(_ context.Context, d *schema.Reso
 	resID := fmt.Sprintf("%d/%d/%d", clientID, actionID, actionResp.Body.ID)
 	d.SetId(resID)
 
-	return resourceWallarmOverlimitResSettingsRead(context.TODO(), d, m)
+	return resourceWallarmOverlimitResSettingsRead(ctx, d, m)
 }
 
 func resourceWallarmOverlimitResSettingsRead(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {

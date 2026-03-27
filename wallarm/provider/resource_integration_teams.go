@@ -95,7 +95,7 @@ func resourceWallarmTeams() *schema.Resource {
 	}
 }
 
-func resourceWallarmTeamsCreate(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceWallarmTeamsCreate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	client := apiClient(m)
 	clientID, err := retrieveClientID(d, m)
 	if err != nil {
@@ -125,7 +125,7 @@ func resourceWallarmTeamsCreate(_ context.Context, d *schema.ResourceData, m int
 	resID := fmt.Sprintf("%d/%s/%d", clientID, createRes.Body.Type, createRes.Body.ID)
 	d.SetId(resID)
 
-	return resourceWallarmTeamsRead(context.TODO(), d, m)
+	return resourceWallarmTeamsRead(ctx, d, m)
 }
 
 func resourceWallarmTeamsRead(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
@@ -152,7 +152,7 @@ func resourceWallarmTeamsRead(_ context.Context, d *schema.ResourceData, m inter
 	return nil
 }
 
-func resourceWallarmTeamsUpdate(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceWallarmTeamsUpdate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	client := apiClient(m)
 	clientID, err := retrieveClientID(d, m)
 	if err != nil {
@@ -206,7 +206,7 @@ func resourceWallarmTeamsUpdate(_ context.Context, d *schema.ResourceData, m int
 		}
 	}
 
-	return resourceWallarmTeamsRead(context.TODO(), d, m)
+	return resourceWallarmTeamsRead(ctx, d, m)
 }
 
 func resourceWallarmTeamsDelete(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {

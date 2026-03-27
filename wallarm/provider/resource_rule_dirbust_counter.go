@@ -39,7 +39,7 @@ func resourceWallarmDirbustCounter() *schema.Resource {
 	}
 }
 
-func resourceWallarmDirbustCounterCreate(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceWallarmDirbustCounterCreate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	client := apiClient(m)
 	clientID, err := retrieveClientID(d, m)
 	if err != nil {
@@ -76,7 +76,7 @@ func resourceWallarmDirbustCounterCreate(_ context.Context, d *schema.ResourceDa
 	resID := fmt.Sprintf("%d/%d/%d", clientID, actionResp.Body.ActionID, actionResp.Body.ID)
 	d.SetId(resID)
 
-	return resourceWallarmDirbustCounterRead(context.TODO(), d, m)
+	return resourceWallarmDirbustCounterRead(ctx, d, m)
 }
 
 func resourceWallarmDirbustCounterRead(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {

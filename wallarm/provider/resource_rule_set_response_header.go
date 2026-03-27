@@ -53,7 +53,7 @@ func resourceWallarmSetResponseHeader() *schema.Resource {
 	}
 }
 
-func resourceWallarmSetResponseHeaderCreate(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceWallarmSetResponseHeaderCreate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	client := apiClient(m)
 	clientID, err := retrieveClientID(d, m)
 	if err != nil {
@@ -102,7 +102,7 @@ func resourceWallarmSetResponseHeaderCreate(_ context.Context, d *schema.Resourc
 	resID := fmt.Sprintf("%d/%d/%d", clientID, actionResp.Body.ActionID, actionResp.Body.ID)
 	d.SetId(resID)
 
-	return resourceWallarmSetResponseHeaderRead(context.TODO(), d, m)
+	return resourceWallarmSetResponseHeaderRead(ctx, d, m)
 }
 
 func resourceWallarmSetResponseHeaderRead(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {

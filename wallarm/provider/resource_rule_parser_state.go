@@ -49,7 +49,7 @@ func resourceWallarmParserState() *schema.Resource {
 	}
 }
 
-func resourceWallarmParserStateCreate(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceWallarmParserStateCreate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	client := apiClient(m)
 	clientID, err := retrieveClientID(d, m)
 	if err != nil {
@@ -102,7 +102,7 @@ func resourceWallarmParserStateCreate(_ context.Context, d *schema.ResourceData,
 	resID := fmt.Sprintf("%d/%d/%d", clientID, actionResp.Body.ActionID, actionResp.Body.ID)
 	d.SetId(resID)
 
-	return resourceWallarmParserStateRead(context.TODO(), d, m)
+	return resourceWallarmParserStateRead(ctx, d, m)
 }
 
 func resourceWallarmParserStateRead(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {

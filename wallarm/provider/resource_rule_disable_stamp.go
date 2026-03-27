@@ -42,7 +42,7 @@ func resourceWallarmDisableStamp() *schema.Resource {
 	}
 }
 
-func resourceWallarmDisableStampCreate(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceWallarmDisableStampCreate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	client := apiClient(m)
 	clientID, err := retrieveClientID(d, m)
 	if err != nil {
@@ -93,7 +93,7 @@ func resourceWallarmDisableStampCreate(_ context.Context, d *schema.ResourceData
 	resID := fmt.Sprintf("%d/%d/%d", clientID, actionResp.Body.ActionID, actionResp.Body.ID)
 	d.SetId(resID)
 
-	return resourceWallarmDisableStampRead(context.TODO(), d, m)
+	return resourceWallarmDisableStampRead(ctx, d, m)
 }
 
 func resourceWallarmDisableStampRead(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {

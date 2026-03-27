@@ -34,7 +34,7 @@ func resourceWallarmBinaryData() *schema.Resource {
 	}
 }
 
-func resourceWallarmBinaryDataCreate(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceWallarmBinaryDataCreate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	client := apiClient(m)
 	clientID, err := retrieveClientID(d, m)
 	if err != nil {
@@ -84,7 +84,7 @@ func resourceWallarmBinaryDataCreate(_ context.Context, d *schema.ResourceData, 
 	resID := fmt.Sprintf("%d/%d/%d", clientID, actionResp.Body.ActionID, actionResp.Body.ID)
 	d.SetId(resID)
 
-	return resourceWallarmBinaryDataRead(context.TODO(), d, m)
+	return resourceWallarmBinaryDataRead(ctx, d, m)
 }
 
 func resourceWallarmBinaryDataRead(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {

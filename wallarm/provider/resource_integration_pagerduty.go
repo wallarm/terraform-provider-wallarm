@@ -95,7 +95,7 @@ func resourceWallarmPagerDuty() *schema.Resource {
 	}
 }
 
-func resourceWallarmPagerDutyCreate(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceWallarmPagerDutyCreate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	client := apiClient(m)
 	clientID, err := retrieveClientID(d, m)
 	if err != nil {
@@ -125,7 +125,7 @@ func resourceWallarmPagerDutyCreate(_ context.Context, d *schema.ResourceData, m
 	resID := fmt.Sprintf("%d/%s/%d", clientID, createRes.Body.Type, createRes.Body.ID)
 	d.SetId(resID)
 
-	return resourceWallarmPagerDutyRead(context.TODO(), d, m)
+	return resourceWallarmPagerDutyRead(ctx, d, m)
 }
 
 func resourceWallarmPagerDutyRead(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
@@ -153,7 +153,7 @@ func resourceWallarmPagerDutyRead(_ context.Context, d *schema.ResourceData, m i
 	return nil
 }
 
-func resourceWallarmPagerDutyUpdate(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceWallarmPagerDutyUpdate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	client := apiClient(m)
 	clientID, err := retrieveClientID(d, m)
 	if err != nil {
@@ -207,7 +207,7 @@ func resourceWallarmPagerDutyUpdate(_ context.Context, d *schema.ResourceData, m
 		}
 	}
 
-	return resourceWallarmPagerDutyRead(context.TODO(), d, m)
+	return resourceWallarmPagerDutyRead(ctx, d, m)
 }
 
 func resourceWallarmPagerDutyDelete(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {

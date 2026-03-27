@@ -40,7 +40,7 @@ func resourceWallarmVpatch() *schema.Resource {
 	}
 }
 
-func resourceWallarmVpatchCreate(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceWallarmVpatchCreate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	client := apiClient(m)
 	clientID, err := retrieveClientID(d, m)
 	if err != nil {
@@ -93,7 +93,7 @@ func resourceWallarmVpatchCreate(_ context.Context, d *schema.ResourceData, m in
 	resID := fmt.Sprintf("%d/%d/%d", clientID, actionResp.Body.ActionID, actionResp.Body.ID)
 	d.SetId(resID)
 
-	return resourceWallarmVpatchRead(context.TODO(), d, m)
+	return resourceWallarmVpatchRead(ctx, d, m)
 }
 
 func resourceWallarmVpatchRead(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
