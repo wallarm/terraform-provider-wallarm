@@ -525,26 +525,65 @@ func resourceWallarmIPListDelete(listType wallarm.IPListType) schema.DeleteConte
 	}
 }
 
+// appIDsKey returns a canonical string key for a set of application IDs.
+// Sorted numerically, comma-separated. Empty or [0] → "all".
+func appIDsKey(ids []int) string {
+	if len(ids) == 0 || (len(ids) == 1 && ids[0] == 0) {
+		return "all"
+	}
+	sorted := make([]int, len(ids))
+	copy(sorted, ids)
+	sort.Ints(sorted)
+	parts := make([]string, len(sorted))
+	for i, id := range sorted {
+		parts[i] = strconv.Itoa(id)
+	}
+	return strings.Join(parts, ",")
+}
+
+// parseAppIDsKey parses a canonical app IDs string back to a sorted int slice.
+// "all" → nil (no app filter).
+func parseAppIDsKey(s string) ([]int, error) {
+	if s == "all" {
+		return nil, nil
+	}
+	parts := strings.Split(s, ",")
+	ids := make([]int, 0, len(parts))
+	for _, p := range parts {
+		id, err := strconv.Atoi(strings.TrimSpace(p))
+		if err != nil {
+			return nil, fmt.Errorf("invalid app ID %q: %w", p, err)
+		}
+		ids = append(ids, id)
+	}
+	sort.Ints(ids)
+	return ids, nil
+}
+
 // resourceWallarmIPListImport handles terraform import for IP list resources.
 //
-// Two import ID formats:
+// Import ID formats:
 //
-//	{clientID}/{groupID}           — import a single grouped entry (country/datacenter/proxy/single subnet)
-//	{clientID}/subnet/{expiredAt}             — import all subnet entries with this expiration as one resource
-//	{clientID}/subnet/{expiredAt}/{chunkIdx}  — import chunk N (0-indexed, 1000 per chunk) of subnets with this expiration
+//	{clientID}/{groupID}                                — import a single grouped entry (country/datacenter/proxy/single subnet)
+//	{clientID}/subnet/{expiredAt}                       — import all subnets with this expiration (must all share same app scope)
+//	{clientID}/subnet/{expiredAt}/{chunkIdx}            — chunk N (0-indexed, 1000 per chunk) of subnets with this expiration
+//	{clientID}/subnet/{expiredAt}/apps/{appIDs}         — subnets with this expiration AND these app IDs (e.g. "1,3" or "all")
+//	{clientID}/subnet/{expiredAt}/apps/{appIDs}/{chunk} — chunked version of the above
 //
 // Examples:
 //
 //	terraform import wallarm_denylist.countries 8649/52000393
 //	terraform import wallarm_denylist.ips 8649/subnet/1804809600
-//	terraform import wallarm_denylist.ips_chunk1 8649/subnet/1804809600/1
+//	terraform import wallarm_denylist.ips_app1 8649/subnet/1804809600/apps/1,3
+//	terraform import wallarm_denylist.ips_all 8649/subnet/1804809600/apps/all
+//	terraform import wallarm_denylist.ips_chunk1 8649/subnet/1804809600/apps/1,3/0
 func resourceWallarmIPListImport(listType wallarm.IPListType) schema.StateContextFunc {
 	return func(_ context.Context, d *schema.ResourceData, m interface{}) ([]*schema.ResourceData, error) {
 		client := apiClient(m)
 
-		parts := strings.SplitN(d.Id(), "/", 4)
+		parts := strings.SplitN(d.Id(), "/", 6)
 		if len(parts) < 2 {
-			return nil, fmt.Errorf("invalid import ID %q, expected {clientID}/{groupID} or {clientID}/subnet/{expiredAt}[/{chunkIdx}]", d.Id())
+			return nil, fmt.Errorf("invalid import ID %q, expected {clientID}/{groupID} or {clientID}/subnet/{expiredAt}[/apps/{appIDs}][/{chunkIdx}]", d.Id())
 		}
 
 		clientID, err := strconv.Atoi(parts[0])
@@ -559,25 +598,45 @@ func resourceWallarmIPListImport(listType wallarm.IPListType) schema.StateContex
 			return nil, fmt.Errorf("failed to read IP lists: %w", err)
 		}
 
-		// Mode 1: {clientID}/subnet/{expiredAt}[/{chunkIdx}] — merge subnets by expiry, optionally chunked.
-		if (len(parts) == 3 || len(parts) == 4) && parts[1] == ruleTypeSubnet {
+		// Mode 1: {clientID}/subnet/{expiredAt}[/apps/{appIDs}][/{chunkIdx}]
+		if len(parts) >= 3 && parts[1] == ruleTypeSubnet {
 			expiredAt, err := strconv.Atoi(parts[2])
 			if err != nil {
 				return nil, fmt.Errorf("invalid expired_at %q: %w", parts[2], err)
 			}
 
-			chunkIdx := -1 // -1 means no chunking (import all)
-			if len(parts) == 4 {
-				chunkIdx, err = strconv.Atoi(parts[3])
+			// Parse optional /apps/{appIDs} and /{chunkIdx}.
+			var filterAppsKey string // empty = no app filter (old format)
+			chunkIdx := -1           // -1 = no chunking
+			remaining := parts[3:]   // after {clientID}/subnet/{expiredAt}
+
+			if len(remaining) >= 2 && remaining[0] == "apps" {
+				// New format: /apps/{appIDs}[/{chunkIdx}]
+				filterAppsKey = remaining[1]
+				if _, err := parseAppIDsKey(filterAppsKey); err != nil {
+					return nil, fmt.Errorf("invalid app IDs %q: %w", filterAppsKey, err)
+				}
+				if len(remaining) == 3 {
+					chunkIdx, err = strconv.Atoi(remaining[2])
+					if err != nil {
+						return nil, fmt.Errorf("invalid chunk_idx %q: %w", remaining[2], err)
+					}
+					if chunkIdx < 0 {
+						return nil, fmt.Errorf("chunk_idx must be >= 0, got %d", chunkIdx)
+					}
+				}
+			} else if len(remaining) == 1 {
+				// Old format: /{chunkIdx}
+				chunkIdx, err = strconv.Atoi(remaining[0])
 				if err != nil {
-					return nil, fmt.Errorf("invalid chunk_idx %q: %w", parts[3], err)
+					return nil, fmt.Errorf("invalid chunk_idx %q: %w", remaining[0], err)
 				}
 				if chunkIdx < 0 {
 					return nil, fmt.Errorf("chunk_idx must be >= 0, got %d", chunkIdx)
 				}
 			}
 
-			// Collect all subnets with this expiration, sorted for deterministic chunking.
+			// Collect all subnets with this expiration.
 			type subnetEntry struct {
 				ip     string
 				addrID map[string]interface{}
@@ -587,6 +646,10 @@ func resourceWallarmIPListImport(listType wallarm.IPListType) schema.StateContex
 			var allEntries []subnetEntry
 			for _, g := range allGroups {
 				if g.RuleType != ruleTypeSubnet || g.ExpiredAt != expiredAt {
+					continue
+				}
+				// If app filter is set, only include entries with matching app IDs.
+				if filterAppsKey != "" && appIDsKey(g.ApplicationIDs) != filterAppsKey {
 					continue
 				}
 				for _, v := range g.Values {
@@ -604,7 +667,33 @@ func resourceWallarmIPListImport(listType wallarm.IPListType) schema.StateContex
 			}
 
 			if len(allEntries) == 0 {
+				if filterAppsKey != "" {
+					return nil, fmt.Errorf("no subnet entries found with expired_at=%d and apps=%s", expiredAt, filterAppsKey)
+				}
 				return nil, fmt.Errorf("no subnet entries found with expired_at=%d", expiredAt)
+			}
+
+			// If no app filter was specified (old format), verify all entries share the same app scope.
+			if filterAppsKey == "" {
+				firstKey := appIDsKey(allEntries[0].apps)
+				for _, e := range allEntries[1:] {
+					if appIDsKey(e.apps) != firstKey {
+						// Collect distinct app scopes for the error message.
+						scopes := map[string]int{}
+						for _, e := range allEntries {
+							scopes[appIDsKey(e.apps)]++
+						}
+						scopeList := make([]string, 0, len(scopes))
+						for k, cnt := range scopes {
+							scopeList = append(scopeList, fmt.Sprintf("apps/%s (%d IPs)", k, cnt))
+						}
+						sort.Strings(scopeList)
+						return nil, fmt.Errorf(
+							"found %d subnets with expired_at=%d but different application scopes: %s — "+
+								"use {clientID}/subnet/{expiredAt}/apps/{appIDs} to import each scope separately",
+							len(allEntries), expiredAt, strings.Join(scopeList, ", "))
+					}
+				}
 			}
 
 			// Sort by IP string for deterministic chunk boundaries.
@@ -629,7 +718,7 @@ func resourceWallarmIPListImport(listType wallarm.IPListType) schema.StateContex
 				totalChunks := (len(allEntries) + IPListMaxSubnets - 1) / IPListMaxSubnets
 				return nil, fmt.Errorf(
 					"found %d subnets with expired_at=%d, exceeds max %d per resource — "+
-						"use chunked import with {clientID}/subnet/{expiredAt}/{chunkIdx} (chunks 0..%d)",
+						"use chunked import with {clientID}/subnet/{expiredAt}/apps/{appIDs}/{chunkIdx} (chunks 0..%d)",
 					len(allEntries), expiredAt, IPListMaxSubnets, totalChunks-1)
 			}
 

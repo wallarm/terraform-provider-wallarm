@@ -12,17 +12,19 @@ IP list entries created via the Console UI or API can be imported into Terraform
 
 ## Import ID Formats
 
-IP list resources support three import ID formats depending on the entry type:
+IP list resources support these import ID formats depending on the entry type:
 
 | Format | Use case | Example |
 |--------|----------|---------|
 | `{clientID}/{groupID}` | Country, datacenter, proxy type | `8649/52000393` |
-| `{clientID}/subnet/{expiredAt}` | All subnets with same expiration (<=1000) | `8649/subnet/1804809600` |
-| `{clientID}/subnet/{expiredAt}/{chunkIdx}` | Chunked import for large subnet sets (>1000) | `8649/subnet/1804809600/0` |
+| `{clientID}/subnet/{expiredAt}` | All subnets with same expiration and same app scope | `8649/subnet/1804809600` |
+| `{clientID}/subnet/{expiredAt}/apps/{appIDs}` | Subnets filtered by application scope | `8649/subnet/1804809600/apps/1,3` |
+| `{clientID}/subnet/{expiredAt}/apps/{appIDs}/{chunkIdx}` | Chunked import for large subnet sets (>1000) | `8649/subnet/1804809600/apps/all/0` |
 
 - **Grouped types** (country/datacenter/proxy) — the API stores all values of the same type as a single group with one ID. Importing by group ID brings in all values at once.
-- **Subnets** — each IP is a separate API group. The `subnet/{expiredAt}` format merges all IPs with the same expiration timestamp into one resource.
-- **Chunked subnets** — when a single expiration group contains more than 1000 IPs, use the `/{chunkIdx}` suffix (0-indexed) to import in batches of 1000. IPs are sorted lexicographically for deterministic chunk boundaries.
+- **Subnets** — each IP is a separate API group. The `subnet/{expiredAt}` format merges all IPs with the same expiration timestamp into one resource. If subnets with the same expiration have **different application scopes**, use the `/apps/{appIDs}` format to import each scope separately.
+- **Application scopes** — `{appIDs}` is a sorted, comma-separated list of application IDs (e.g. `1,3`) or `all` for entries without application filtering. The importer errors if the simple format is used but entries have mixed app scopes.
+- **Chunked subnets** — when a single group contains more than 1000 IPs, use the `/{chunkIdx}` suffix (0-indexed) to import in batches of 1000. IPs are sorted lexicographically for deterministic chunk boundaries.
 
 Refer to the individual resource documentation for import command examples:
 [`wallarm_allowlist`](../resources/allowlist),
@@ -73,24 +75,36 @@ locals {
     if contains(["location", "datacenter", "proxy_type"], e.rule_type)
   ]
 
-  # Subnets: merge by expired_at, chunk into max 1000 per resource
-  subnet_expiries = distinct([
-    for e in local.deny_entries : e.expired_at
+  # Subnets: group by (expired_at, application_ids), chunk into max 1000 per resource.
+  # Entries with the same expiration but different application scopes become separate resources.
+
+  # Build a canonical app_ids key for grouping: sorted IDs joined by comma, or "all".
+  subnet_entries_with_key = [
+    for e in local.deny_entries : merge(e, {
+      app_key = length(e.application_ids) == 0 ? "all" : join(",", sort(e.application_ids))
+    })
     if e.rule_type == "subnet"
+  ]
+
+  # Unique (expired_at, app_key) pairs.
+  subnet_group_keys = distinct([
+    for e in local.subnet_entries_with_key : "${e.expired_at}/${e.app_key}"
   ])
 
-  subnets_by_expiry = {
-    for exp in local.subnet_expiries :
-    exp => [for e in local.deny_entries : e if e.rule_type == "subnet" && e.expired_at == exp]
+  # Group entries by the composite key.
+  subnets_by_scope = {
+    for key in local.subnet_group_keys :
+    key => [for e in local.subnet_entries_with_key : e if "${e.expired_at}/${e.app_key}" == key]
   }
 
   subnet_chunks = flatten([
-    for exp, entries in local.subnets_by_expiry : [
+    for key, entries in local.subnets_by_scope : [
       for idx in range(ceil(length(entries) / local.max_subnets_per_resource)) : {
         # When total entries fit in one chunk, use the simple format (no chunk index).
         # When multiple chunks are needed, ALL chunks get an index — including chunk 0.
         needs_chunking = length(entries) > local.max_subnets_per_resource
-        exp            = exp
+        exp            = entries[0].expired_at
+        app_key        = entries[0].app_key
         idx            = idx
       }
     ]
@@ -100,8 +114,8 @@ locals {
     for s in local.subnet_chunks :
     <<-EOT
     import {
-      to = wallarm_denylist.import_subnet_${s.exp}${s.needs_chunking ? "_${s.idx}" : ""}
-      id = "${local.client_id}/subnet/${s.exp}${s.needs_chunking ? "/${s.idx}" : ""}"
+      to = wallarm_denylist.import_subnet_${s.exp}_${replace(s.app_key, ",", "_")}${s.needs_chunking ? "_${s.idx}" : ""}
+      id = "${local.client_id}/subnet/${s.exp}/apps/${s.app_key}${s.needs_chunking ? "/${s.idx}" : ""}"
     }
     EOT
   ]
