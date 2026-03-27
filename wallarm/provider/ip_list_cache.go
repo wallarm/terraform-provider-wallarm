@@ -15,9 +15,10 @@ var allRuleTypes = []string{ruleTypeSubnet, "location", "datacenter", "proxy_typ
 
 // IPCacheEntry stores the API group ID and metadata for a single IP list value.
 type IPCacheEntry struct {
-	GroupID  int
-	RuleType string
-	RawValue string // API value (e.g. "1.2.3.4/32")
+	GroupID        int
+	RuleType       string
+	RawValue       string // API value (e.g. "1.2.3.4/32")
+	ApplicationIDs []int  // Application IDs assigned to this entry
 }
 
 // IPListCache provides a shared, thread-safe map of IP list values to their API group IDs.
@@ -144,9 +145,10 @@ func (c *IPListCache) RefreshUntilFound(
 		}
 		for _, group := range groups {
 			entry := IPCacheEntry{
-				GroupID:  group.ID,
-				RuleType: group.RuleType,
-				RawValue: group.Values[0],
+				GroupID:        group.ID,
+				RuleType:       group.RuleType,
+				RawValue:       group.Values[0],
+				ApplicationIDs: group.ApplicationIDs,
 			}
 			if m != nil {
 				m[val] = entry
@@ -249,8 +251,9 @@ func (c *IPListCache) loadRuleTypesLocked(client wallarm.API, listType wallarm.I
 	typeCounts := make(map[string]int)
 	for _, group := range groups {
 		entry := IPCacheEntry{
-			GroupID:  group.ID,
-			RuleType: group.RuleType,
+			GroupID:        group.ID,
+			RuleType:       group.RuleType,
+			ApplicationIDs: group.ApplicationIDs,
 		}
 		typeCounts[group.RuleType]++
 		for _, val := range group.Values {
@@ -278,8 +281,8 @@ func (c *IPListCache) loadRuleTypesLocked(client wallarm.API, listType wallarm.I
 
 	// Dump full map at DEBUG level (visible with TF_LOG=DEBUG).
 	for key, entry := range m {
-		log.Printf("[DEBUG] IPListCache:   %q → group_id=%d rule_type=%s raw=%s",
-			key, entry.GroupID, entry.RuleType, entry.RawValue)
+		log.Printf("[DEBUG] IPListCache:   %q → group_id=%d rule_type=%s raw=%s app_ids=%v",
+			key, entry.GroupID, entry.RuleType, entry.RawValue, entry.ApplicationIDs)
 	}
 
 	return nil
@@ -306,7 +309,7 @@ func (c *IPListCache) DumpEntries(listType wallarm.IPListType) {
 
 	log.Printf("[DEBUG] IPListCache dump: list=%s — %d map entries", string(listType), len(m))
 	for key, entry := range m {
-		log.Printf("[DEBUG]   %q → group_id=%d rule_type=%s raw=%s",
-			key, entry.GroupID, entry.RuleType, entry.RawValue)
+		log.Printf("[DEBUG]   %q → group_id=%d rule_type=%s raw=%s app_ids=%v",
+			key, entry.GroupID, entry.RuleType, entry.RawValue, entry.ApplicationIDs)
 	}
 }
