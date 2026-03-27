@@ -276,6 +276,12 @@ func (c *IPListCache) loadRuleTypesLocked(client wallarm.API, listType wallarm.I
 	log.Printf("[INFO] IPListCache: loaded %d groups (%d map entries) for list=%s [%s] in %s",
 		len(groups), len(m), string(listType), strings.Join(breakdown, ", "), time.Since(startTime).Round(time.Millisecond))
 
+	// Dump full map at DEBUG level (visible with TF_LOG=DEBUG).
+	for key, entry := range m {
+		log.Printf("[DEBUG] IPListCache:   %q → group_id=%d rule_type=%s raw=%s",
+			key, entry.GroupID, entry.RuleType, entry.RawValue)
+	}
+
 	return nil
 }
 
@@ -284,4 +290,23 @@ func (c *IPListCache) EntryCount(listType wallarm.IPListType) int {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	return len(c.entries[listType])
+}
+
+// DumpEntries logs every cache entry at DEBUG level for the given list type.
+// Call with TF_LOG=DEBUG to see output.
+func (c *IPListCache) DumpEntries(listType wallarm.IPListType) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	m := c.entries[listType]
+	if m == nil {
+		log.Printf("[DEBUG] IPListCache dump: list=%s — empty (not loaded)", string(listType))
+		return
+	}
+
+	log.Printf("[DEBUG] IPListCache dump: list=%s — %d map entries", string(listType), len(m))
+	for key, entry := range m {
+		log.Printf("[DEBUG]   %q → group_id=%d rule_type=%s raw=%s",
+			key, entry.GroupID, entry.RuleType, entry.RawValue)
+	}
 }
