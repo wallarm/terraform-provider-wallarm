@@ -13,7 +13,6 @@ import (
 	stderrors "errors"
 	"net/http"
 
-	"github.com/pkg/errors"
 	"github.com/wallarm/terraform-provider-wallarm/wallarm/common/resourcerule"
 	"github.com/wallarm/wallarm-go"
 
@@ -507,20 +506,4 @@ func existsHint(d *schema.ResourceData, m interface{}, actionID int, hintType st
 // Generally, ID is something like `/6039/4123/93830`
 func ImportAsExistsError(resourceName, id string) error {
 	return fmt.Errorf("the resource with the ID %q already exists - to be managed via Terraform this resource needs to be imported into the State. Please see the resource documentation for %q for more information", id, resourceName)
-}
-
-// findCredentialStuffingRule fetches credential stuffing configs via the v4 API
-// and returns the one matching ruleID.
-// API: GET /v4/clients/{clientID}/credential_stuffing/configs
-func findCredentialStuffingRule(client wallarm.API, clientID, ruleID int) (*wallarm.ActionBody, error) {
-	configs, err := client.CredentialStuffingConfigsRead(clientID)
-	if err != nil {
-		return nil, errors.WithMessagef(err, "on CredentialStuffingConfigsRead, client ID %d", clientID)
-	}
-	for i := range configs {
-		if configs[i].ID == ruleID {
-			return &configs[i], nil
-		}
-	}
-	return nil, &ruleNotFoundError{clientID: clientID, ruleID: ruleID}
 }

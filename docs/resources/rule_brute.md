@@ -117,5 +117,7 @@ $ terraform import wallarm_rule_brute.wallarm_rule_brute_regexp 6039/563854/1108
 
 For automated bulk import using the `wallarm_rules` data source, see the [Rules Import Guide](../guides/rules_import).
 
+This resource is a **mitigation control**. For an overview of all mitigation controls and their parameter mapping, see the [Mitigation Controls Guide](../guides/mitigation_controls).
+
 [1]: https://docs.wallarm.com/api-protection/enumeration-attack-protection/#mitigation-controls
 [2]: https://docs.wallarm.com/installation/multi-tenant/overview/

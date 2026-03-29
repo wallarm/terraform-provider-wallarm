@@ -15,6 +15,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
+	"github.com/wallarm/terraform-provider-wallarm/wallarm/common/resourcerule"
+	wallarm "github.com/wallarm/wallarm-go"
 )
 
 var validRuleTypes = []string{"disable_stamp", "disable_attack_type"}
@@ -40,12 +42,24 @@ func resourceWallarmRuleGenerator() *schema.Resource {
 				ForceNew:    true,
 				Description: "Directory to write generated .tf files.",
 			},
+			"output_filename": {
+				Type:        schema.TypeString,
+				Optional:    true,
+				Description: "Filename for the generated .tf file (used when split = false). Defaults to '{prefix}_rules.tf'.",
+			},
 			"requests_json": {
 				Type:      schema.TypeString,
-				Required:  true,
+				Optional:  true,
 				Sensitive: true,
 				Description: "JSON-encoded map of request_id → {hits, action_conditions} from data.wallarm_hits. " +
-					"Use jsonencode({for k in var.request_ids : k => {hits = ..., action_conditions = ...}}).",
+					"Required when source = 'hits'. Not used when source = 'api'.",
+			},
+			"source": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Default:      "hits",
+				ValidateFunc: validation.StringInSlice([]string{"hits", "api"}, false),
+				Description:  "Source of rules: 'hits' (from data.wallarm_hits via requests_json) or 'api' (fetch existing rules from Wallarm API).",
 			},
 			"rule_types": {
 				Type:     schema.TypeList,
@@ -65,8 +79,8 @@ func resourceWallarmRuleGenerator() *schema.Resource {
 			"split": {
 				Type:        schema.TypeBool,
 				Optional:    true,
-				Computed:    true,
-				Description: "When true, generate one file per rule. When false, all rules in one file. Defaults to true.",
+				Default:     false,
+				Description: "When true, generate one file per rule. When false, all rules in one file. Defaults to false.",
 			},
 			"comment": {
 				Type:        schema.TypeString,
@@ -104,7 +118,7 @@ func resourceWallarmRuleGeneratorCreate(_ context.Context, d *schema.ResourceDat
 		return diag.FromErr(err)
 	}
 
-	files, rulesCount, err := generateRuleFiles(d, clientID)
+	files, rulesCount, err := generateRuleFiles(d, clientID, m)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -152,7 +166,7 @@ func resourceWallarmRuleGeneratorUpdate(_ context.Context, d *schema.ResourceDat
 		return diag.FromErr(err)
 	}
 
-	files, rulesCount, err := generateRuleFiles(d, clientID)
+	files, rulesCount, err := generateRuleFiles(d, clientID, m)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -196,13 +210,17 @@ type requestEntry struct {
 	RuleTypes        []string        `json:"rule_types,omitempty"`
 }
 
-func generateRuleFiles(d *schema.ResourceData, clientID int) ([]string, int, error) {
+func generateRuleFiles(d *schema.ResourceData, clientID int, m interface{}) ([]string, int, error) {
 	outputDir := d.Get("output_dir").(string)
 	ruleTypes := resolveRuleTypes(d)
 	movedFrom, _ := d.Get("moved_from").(string)
 
 	// Apply defaults for Optional+Computed fields.
+	source, _ := d.Get("source").(string)
 	prefix := "fp"
+	if source == "api" {
+		prefix = "import"
+	}
 	if v, ok := d.GetOk("resource_prefix"); ok {
 		prefix = v.(string)
 	}
@@ -214,19 +232,34 @@ func generateRuleFiles(d *schema.ResourceData, clientID int) ([]string, int, err
 	}
 	d.Set("comment", comment)
 
-	split := true
-	if v, ok := d.GetOk("split"); ok {
-		split = v.(bool)
-	}
+	split := d.Get("split").(bool)
 	d.Set("split", split)
+
+	filename := fmt.Sprintf("%s_rules.tf", prefix)
+	if v, ok := d.GetOk("output_filename"); ok && v.(string) != "" {
+		filename = v.(string)
+	}
 
 	if err := os.MkdirAll(outputDir, 0755); err != nil {
 		return nil, 0, fmt.Errorf("failed to create output directory %s: %w", outputDir, err)
 	}
 
+	if source == "" {
+		source = "hits"
+	}
+
+	if source == "api" {
+		return generateFromAPI(m, clientID, outputDir, prefix, filename, comment, ruleTypes, split, movedFrom)
+	}
+
+	return generateFromHits(d, clientID, outputDir, prefix, filename, comment, ruleTypes, split, movedFrom)
+}
+
+// generateFromHits generates HCL from data.wallarm_hits (requests_json input).
+func generateFromHits(d *schema.ResourceData, clientID int, outputDir, prefix, filename, comment string, ruleTypes []string, split bool, movedFrom string) ([]string, int, error) {
 	reqJSON := d.Get("requests_json").(string)
 	if reqJSON == "" {
-		return nil, 0, fmt.Errorf("requests_json is required")
+		return nil, 0, fmt.Errorf("requests_json is required when source = 'hits'")
 	}
 
 	var requests map[string]requestEntry
@@ -234,11 +267,9 @@ func generateRuleFiles(d *schema.ResourceData, clientID int) ([]string, int, err
 		return nil, 0, fmt.Errorf("failed to parse requests_json: %w", err)
 	}
 
-	// Process each request.
 	var allFiles []string
 	totalRules := 0
 
-	// Sort request IDs for deterministic output.
 	reqIDs := make([]string, 0, len(requests))
 	for id := range requests {
 		reqIDs = append(reqIDs, id)
@@ -250,19 +281,16 @@ func generateRuleFiles(d *schema.ResourceData, clientID int) ([]string, int, err
 		short := reqID[:min(8, len(reqID))]
 		filePrefix := fmt.Sprintf("%s_%s", prefix, short)
 
-		// Parse action conditions for this request.
 		actions, err := parseActionConditionsJSON(entry.ActionConditions)
 		if err != nil {
 			return nil, 0, fmt.Errorf("request %s: %w", reqID, err)
 		}
 
-		// Parse and group hits.
 		groups, err := groupHitsByPoint(string(entry.Hits))
 		if err != nil {
 			return nil, 0, fmt.Errorf("request %s: %w", reqID, err)
 		}
 
-		// Per-request rule_types override global rule_types.
 		effectiveRuleTypes := ruleTypes
 		if len(entry.RuleTypes) > 0 {
 			effectiveRuleTypes = entry.RuleTypes
@@ -274,8 +302,7 @@ func generateRuleFiles(d *schema.ResourceData, clientID int) ([]string, int, err
 			continue
 		}
 
-		// Generate static HCL files.
-		files, err := generateStaticFiles(outputDir, filePrefix, clientID, comment, actions, expanded, split, movedFrom)
+		files, err := generateStaticFiles(outputDir, filePrefix, filename, clientID, comment, actions, expanded, split, movedFrom)
 		if err != nil {
 			return nil, 0, fmt.Errorf("request %s: %w", reqID, err)
 		}
@@ -285,6 +312,182 @@ func generateRuleFiles(d *schema.ResourceData, clientID int) ([]string, int, err
 	}
 
 	return allFiles, totalRules, nil
+}
+
+// generateFromAPI fetches existing rules from the Wallarm API and generates HCL configs.
+// Each rule becomes a standalone resource block with its point, action conditions, and rule-specific fields.
+func generateFromAPI(m interface{}, clientID int, outputDir, prefix, filename, comment string, ruleTypes []string, split bool, movedFrom string) ([]string, int, error) {
+	client := apiClient(m)
+
+	// Map API rule types to internal types used by the generator.
+	apiTypeMap := map[string]string{
+		"disable_stamp":       "disable_stamp",
+		"disable_attack_type": "disable_attack_type",
+	}
+
+	// Build the filter for HintRead.
+	systemFalse := false
+	var allRules []wallarm.ActionBody
+
+	for page, offset := 0, 0; page < 200; page++ {
+		resp, err := client.HintRead(&wallarm.HintRead{
+			Limit:     APIListLimit,
+			Offset:    offset,
+			OrderBy:   "id",
+			OrderDesc: true,
+			Filter: &wallarm.HintFilter{
+				Clientid: []int{clientID},
+				System:   &systemFalse,
+			},
+		})
+		if err != nil {
+			return nil, 0, fmt.Errorf("failed to fetch rules from API: %w", err)
+		}
+		if resp.Body == nil || len(*resp.Body) == 0 {
+			break
+		}
+		allRules = append(allRules, *resp.Body...)
+		if len(*resp.Body) < APIListLimit {
+			break
+		}
+		offset += APIListLimit
+	}
+
+	log.Printf("[INFO] wallarm_rule_generator (api): fetched %d rules for client %d", len(allRules), clientID)
+
+	// Filter by requested rule types and convert to expandedRule.
+	rtSet := make(map[string]bool, len(ruleTypes))
+	for _, rt := range ruleTypes {
+		rtSet[rt] = true
+	}
+
+	// Group rules by action_id for shared action conditions.
+	type actionGroup struct {
+		conditions []ActionCondition
+		rules      []expandedRule
+	}
+	groups := make(map[int]*actionGroup)
+
+	for _, rule := range allRules {
+		internalType, ok := apiTypeMap[rule.Type]
+		if !ok {
+			continue
+		}
+		if len(rtSet) > 0 && !rtSet[internalType] {
+			continue
+		}
+
+		// Convert point.
+		point := convertAPIPoint(rule.Point)
+
+		// Build expanded rule.
+		er := expandedRule{
+			Key:      fmt.Sprintf("%d", rule.ID),
+			RuleType: internalType,
+			Point:    point,
+		}
+		switch internalType {
+		case "disable_stamp":
+			er.Stamp = rule.Stamp
+		case "disable_attack_type":
+			er.AttackType = rule.AttackType
+		}
+
+		// Get or create action group.
+		ag, exists := groups[rule.ActionID]
+		if !exists {
+			// Parse action conditions from the rule's action field.
+			var conditions []ActionCondition
+			if len(rule.Action) > 0 {
+				for _, ac := range rule.Action {
+					point := make([]string, len(ac.Point))
+					for i, p := range ac.Point {
+						point[i] = fmt.Sprintf("%v", p)
+					}
+					c := ActionCondition{
+						Type:  ac.Type,
+						Point: point,
+					}
+					if ac.Value != nil {
+						c.Value = fmt.Sprintf("%v", ac.Value)
+					}
+					conditions = append(conditions, c)
+				}
+			}
+			ag = &actionGroup{conditions: conditions}
+			groups[rule.ActionID] = ag
+		}
+		ag.rules = append(ag.rules, er)
+	}
+
+	// Sort action IDs for deterministic output.
+	actionIDs := make([]int, 0, len(groups))
+	for id := range groups {
+		actionIDs = append(actionIDs, id)
+	}
+	sort.Ints(actionIDs)
+
+	var allFiles []string
+	totalRules := 0
+
+	if !split {
+		// Single file: merge all action groups into one HCL file.
+		f := hclwrite.NewEmptyFile()
+		for _, actionID := range actionIDs {
+			ag := groups[actionID]
+			for _, r := range ag.rules {
+				name := fmt.Sprintf("%s_%s", prefix, r.Key)
+				cfg := StaticRuleConfig{
+					ClientID:   clientID,
+					Comment:    comment,
+					Point:      r.Point,
+					Actions:    ag.conditions,
+					Stamp:      r.Stamp,
+					AttackType: r.AttackType,
+				}
+				switch r.RuleType {
+				case "disable_stamp":
+					generateStaticDisableStamp(f, name, cfg)
+				case "disable_attack_type":
+					generateStaticDisableAttackType(f, name, cfg)
+				}
+				totalRules++
+			}
+		}
+		filePath := filepath.Join(outputDir, filename)
+		if err := writeHCLFile(filePath, f); err != nil {
+			return nil, 0, err
+		}
+		allFiles = append(allFiles, filePath)
+	} else {
+		// Split: one file per rule.
+		for _, actionID := range actionIDs {
+			ag := groups[actionID]
+			files, err := generateStaticFiles(outputDir, prefix, filename, clientID, comment, ag.conditions, ag.rules, true, movedFrom)
+			if err != nil {
+				return nil, 0, fmt.Errorf("action %d: %w", actionID, err)
+			}
+			allFiles = append(allFiles, files...)
+			totalRules += len(ag.rules)
+		}
+	}
+
+	log.Printf("[INFO] wallarm_rule_generator (api): generated %d files with %d rules", len(allFiles), totalRules)
+	return allFiles, totalRules, nil
+}
+
+// convertAPIPoint converts the API's flat point []interface{} to wrapped [][]string.
+func convertAPIPoint(point []interface{}) [][]string {
+	wrapped := resourcerule.WrapPointElements(point)
+	result := make([][]string, 0, len(wrapped))
+	for _, inner := range wrapped {
+		row := make([]string, 0, len(inner))
+		for _, v := range inner {
+			row = append(row, fmt.Sprintf("%v", v))
+		}
+		result = append(result, row)
+	}
+	return result
 }
 
 // ─── Hit parsing & grouping ─────────────────────────────────────────────────────
@@ -409,7 +612,7 @@ func expandRules(groups map[string]*pointGroup, ruleTypes []string) []expandedRu
 
 // ─── File generation ─────────────────────────────────────────────────────────────
 
-func generateStaticFiles(outputDir, prefix string, clientID int, comment string, actions []ActionCondition, rules []expandedRule, split bool, movedFrom string) ([]string, error) {
+func generateStaticFiles(outputDir, prefix, filename string, clientID int, comment string, actions []ActionCondition, rules []expandedRule, split bool, movedFrom string) ([]string, error) {
 	if !split {
 		// All in one file.
 		f := hclwrite.NewEmptyFile()
@@ -434,7 +637,7 @@ func generateStaticFiles(outputDir, prefix string, clientID int, comment string,
 				writeMovedBlock(f, resourceType, movedFrom, r.Key, name)
 			}
 		}
-		filePath := filepath.Join(outputDir, fmt.Sprintf("%s_rules.tf", prefix))
+		filePath := filepath.Join(outputDir, filename)
 		if err := writeHCLFile(filePath, f); err != nil {
 			return nil, err
 		}

@@ -255,5 +255,6 @@ func ProviderConfigure(_ context.Context, d *schema.ResourceData, p *schema.Prov
 		DefaultClientID:         defaultClientID,
 		RequireExplicitClientID: d.Get("require_explicit_client_id").(bool),
 		IPListCache:             NewIPListCache(),
+		CredentialStuffingCache: NewCredentialStuffingCache(),
 	}, nil
 }

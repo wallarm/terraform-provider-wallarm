@@ -8,49 +8,92 @@ description: |-
 
 # Importing Wallarm IP Lists
 
-IP list entries created via the Console UI or API can be imported into Terraform. This guide covers the import ID formats, API grouping behavior, and automated import using the `wallarm_ip_lists` data source.
+IP list entries created via the Console UI or API can be imported into Terraform.
 
-## Import ID Formats
+## Quick Start
 
-IP list resources support these import ID formats depending on the entry type:
+### Import blocked countries
+
+Countries are stored as a single API group. Find the group ID in the Wallarm Console or via the `wallarm_ip_lists` data source, then import by group ID:
+
+```bash
+terraform import wallarm_denylist.countries 8649/52000393
+```
+
+Write the matching resource:
+
+```hcl
+resource "wallarm_denylist" "countries" {
+  country     = ["CN", "RU"]
+  reason      = "Block by country"
+  time_format = "Forever"
+}
+```
+
+Run `terraform plan` to verify — no changes expected.
+
+### Import blocked IPs
+
+Subnets are imported by expiration timestamp. All IPs with the same `expired_at` are merged into one resource:
+
+```bash
+terraform import wallarm_denylist.ips 8649/subnet/1804809600
+```
+
+Write the matching resource:
+
+```hcl
+resource "wallarm_denylist" "ips" {
+  ip_range    = ["1.1.1.1", "2.2.2.0/24", "3.3.3.3"]
+  reason      = "Blocked IPs"
+  time_format = "RFC3339"
+  time        = "2027-03-15T00:00:00+00:00"
+}
+```
+
+Or let Terraform generate the config automatically:
+
+```bash
+terraform plan -generate-config-out=generated.tf
+```
+
+### Import IPs scoped to specific applications
+
+If IPs with the same expiration are assigned to different applications, import each scope separately using the `/apps/{appIDs}` format:
+
+```bash
+# IPs scoped to applications 1 and 3
+terraform import wallarm_denylist.ips_app1 8649/subnet/1804809600/apps/1,3
+
+# IPs with no application filter
+terraform import wallarm_denylist.ips_all 8649/subnet/1804809600/apps/all
+```
+
+## Import ID Reference
 
 | Format | Use case | Example |
 |--------|----------|---------|
 | `{clientID}/{groupID}` | Country, datacenter, proxy type | `8649/52000393` |
-| `{clientID}/subnet/{expiredAt}` | All subnets with same expiration and same app scope | `8649/subnet/1804809600` |
+| `{clientID}/subnet/{expiredAt}` | Subnets with same expiration and same app scope | `8649/subnet/1804809600` |
 | `{clientID}/subnet/{expiredAt}/apps/{appIDs}` | Subnets filtered by application scope | `8649/subnet/1804809600/apps/1,3` |
-| `{clientID}/subnet/{expiredAt}/apps/{appIDs}/{chunkIdx}` | Chunked import for large subnet sets (>1000) | `8649/subnet/1804809600/apps/all/0` |
+| `{clientID}/subnet/{expiredAt}/apps/{appIDs}/{chunkIdx}` | Chunked import for >1000 subnets | `8649/subnet/1804809600/apps/all/0` |
 
-- **Grouped types** (country/datacenter/proxy) — the API stores all values of the same type as a single group with one ID. Importing by group ID brings in all values at once.
-- **Subnets** — each IP is a separate API group. The `subnet/{expiredAt}` format merges all IPs with the same expiration timestamp into one resource. If subnets with the same expiration have **different application scopes**, use the `/apps/{appIDs}` format to import each scope separately.
-- **Application scopes** — `{appIDs}` is a sorted, comma-separated list of application IDs (e.g. `1,3`) or `all` for entries without application filtering. The importer errors if the simple format is used but entries have mixed app scopes.
-- **Chunked subnets** — when a single group contains more than 1000 IPs, use the `/{chunkIdx}` suffix (0-indexed) to import in batches of 1000. IPs are sorted lexicographically for deterministic chunk boundaries.
+Notes:
+- **Grouped types** (country/datacenter/proxy) — the API stores all values of the same type as a single group with one ID.
+- **Subnets** — each IP is a separate API group. The importer merges all IPs with the same expiration into one resource.
+- **Application scopes** — `{appIDs}` is sorted comma-separated IDs (e.g. `1,3`) or `all`. If the simple format is used but entries have mixed app scopes, the importer errors with guidance.
+- **Chunking** — when a group exceeds 1000 IPs, use `/{chunkIdx}` (0-indexed, 1000 per chunk). IPs are sorted lexicographically for deterministic boundaries.
 
-Refer to the individual resource documentation for import command examples:
+Resource documentation:
 [`wallarm_allowlist`](../resources/allowlist),
 [`wallarm_denylist`](../resources/denylist),
 [`wallarm_graylist`](../resources/graylist).
 
-## API Grouping Behavior
+## Automated Bulk Import
 
-Understanding how the API groups entries is important for planning your import:
+For large IP lists, use the [`wallarm_ip_lists`](../data-sources/ip_lists) data source to discover all entries and generate import blocks automatically.
 
-| Rule type | API grouping | Terraform resource |
-|-----------|-------------|-------------------|
-| `location` (country) | All values in **1 group** | 1 resource per group |
-| `datacenter` | All values in **1 group** | 1 resource per group |
-| `proxy_type` | All values in **1 group** | 1 resource per group |
-| `subnet` (IPs) | **1 group per IP** | Merged by expiration — all IPs with same `expired_at` become one resource |
-
-Subnet resources are limited to **1000 IPs per resource**. If a non-chunked import finds more than 1000 subnets with the same expiration, it returns an error with instructions to use the chunked format.
-
-## Automated Import with the IP Lists Data Source
-
-The [`wallarm_ip_lists`](../data-sources/ip_lists) data source discovers all existing entries for a given list type. This enables generating import blocks automatically.
-
-### Example: Import All Denylist Entries
-
-**1. Create a discovery configuration:**
+The example below handles all entry types — countries, datacenters, proxy types, and subnets — with proper grouping by expiration, application scope, and chunking for large sets.
 
 ```hcl
 data "wallarm_ip_lists" "deny" {
@@ -127,42 +170,12 @@ resource "local_file" "deny_imports" {
 }
 ```
 
-**2. Apply to generate the import file:**
+**Steps:**
 
-```
-$ terraform apply
-```
-
-**3. Copy the generated import file to your target configuration directory, then generate resource configs:**
-
-```
-$ terraform plan -generate-config-out=generated.tf
-```
-
-Terraform reads the import blocks and writes matching resource configurations into `generated.tf`. For example, the generated output might look like:
-
-```hcl
-# generated.tf
-
-resource "wallarm_denylist" "import_subnet_1804809600" {
-  ip_range    = ["1.1.1.1", "2.2.2.0/24", "3.3.3.3"]
-  reason      = "Blocked IPs"
-  time_format = "RFC3339"
-  time        = "2027-03-15T00:00:00+00:00"
-}
-
-resource "wallarm_denylist" "import_location_52000393" {
-  country     = ["CN", "RU"]
-  reason      = "Block by country"
-  time_format = "Forever"
-}
-```
-
-**4. Review the generated resources** — adjust names, reasons, or grouping as needed, then apply:
-
-```
-$ terraform apply
-```
+1. `terraform apply` — generates `wallarm_denylist_imports.tf` with import blocks
+2. Copy the file to your target configuration directory
+3. `terraform plan -generate-config-out=generated.tf` — generates resource configs
+4. Review and adjust the generated resources, then `terraform apply`
 
 ### Import All Three List Types
 
@@ -186,12 +199,10 @@ Apply the same grouping logic from the example above to each list type.
 
 ## Grouping Recommendations
 
-When writing IP list resources (manually or after import), follow these grouping guidelines:
-
 - **One entry type per resource** — `ip_range`, `country`, `datacenter`, and `proxy_type` are mutually exclusive
 - **Group subnets by expiration** — IPs with the same lifetime naturally belong in one resource
-- **Stay within the 1000 IP limit** — split large sets into multiple resources
 - **Separate by application scope** — IPs scoped to different applications should be separate resources
+- **Stay within the 1000 IP limit** — split large sets into multiple resources
 
 ### Example: Well-structured IP list config
 

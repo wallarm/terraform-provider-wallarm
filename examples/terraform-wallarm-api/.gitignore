@@ -1,9 +1,0 @@
-.DS_Store
-.claude/
-.vscode/
-.idea/
-.terraform/
-terraform.tfstate*
-*.lock.hcl
-*.auto.tfvars
-*.log

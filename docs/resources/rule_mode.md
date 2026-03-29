@@ -68,5 +68,7 @@ $ terraform import wallarm_rule_mode.api_mode 6039/563855/11086881/monitoring
 
 For automated bulk import using the `wallarm_rules` data source, see the [Rules Import Guide](../guides/rules_import).
 
+This resource is a **mitigation control**. For an overview of all mitigation controls and their parameter mapping, see the [Mitigation Controls Guide](../guides/mitigation_controls).
+
 [1]: https://docs.wallarm.com/user-guides/rules/wallarm-mode-rule/
 [2]: https://docs.wallarm.com/installation/multi-tenant/overview/

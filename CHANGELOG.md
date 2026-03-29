@@ -1,3 +1,49 @@
+# v2.2.0 (Mar 27, 2026)
+
+## FEATURES:
+
+* **New resource: `wallarm_rule_generator`** — generates Terraform rule files from `wallarm_hits` data source output for automated false positive suppression
+* **New resource: `wallarm_action`** — read-only resource for manual action scope tracking
+* **New data source: `wallarm_actions`** — discovers all non-empty action scopes with pagination
+* **IP list import by application scope** — new import ID format `{clientID}/subnet/{expiredAt}/apps/{appIDs}` groups subnets by both expiration and application IDs, preventing accidental merging of entries with different app scopes
+
+## IMPROVEMENTS:
+
+* Implemented IP list cache at `ProviderMeta` level — eliminates per-value API scanning during Read, shared across all IP list resources
+* Centralized API pagination and batch size limits into `constants.go`
+* Hint cache: lazy pagination fetches only pages needed to resolve managed rule IDs
+* Hint cache: `HintCreate`/`HintUpdateV3` insert directly into cache (no re-fetch)
+* IP list cache: per-rule-type fetching — Create for subnets only fetches subnet groups, preserving other cached entries
+* IP list cache: per-list-type Create serialization prevents concurrent race conditions
+* IP list cache: debug dump of full internal map at `TF_LOG=DEBUG` including application IDs
+* Added `ApplicationIDs` to IP list cache entries for accurate app scope tracking
+* Ruby-compatible `ConditionsHash` and `PointHash` for action matching and directory naming
+* Action directory naming with 64-char filesystem-safe names
+* Action scope validation in `CustomizeDiff` (valid point keys, URI mutual exclusivity)
+* Rules engine module: pure local `action_map` — zero API calls on steady-state plans
+* Hints cache module: persistent index with suffix lookup for import workflows
+* Updated README with full resource listing, correct requirements, authentication guide, and CI badges
+
+## SECURITY:
+
+* Added `Sensitive: true` to node `token` field in resource and data source
+* Added `Sensitive: true` to webhook integration `headers` field
+* Safe type assertions in `tftoapi` mapper — returns errors instead of panicking on corrupted state
+
+## BUG FIXES:
+
+* Fixed IP list import merging entries with different application scopes into one resource
+* Fixed IP list import chunk index: chunk 0 now correctly includes `/0` suffix when chunking is needed
+* Fixed `context.TODO()` in 52 CRUD functions — now passes actual `ctx` for proper timeout/cancel propagation
+* Fixed unchecked `d.Set()` on aggregate types in `data_source_hits`, `resource_rule_generator`, `resource_ip_list`
+* Fixed hint cache pagination: `response.Body.Objects = nil` before each `json.Unmarshal` prevents slice reuse bugs
+* Simplified rule delete to direct `HintDelete` only — removed dead `ActionList` → `ActionDelete` branch
+
+## DOCUMENTATION:
+
+* Updated IP list import guide with application scope grouping and chunked import examples
+* Updated README with correct Go/Terraform requirements, resource catalog, and authentication guide
+
 # v2.1.0 (Mar 17, 2026)
 
 ## NOTES:

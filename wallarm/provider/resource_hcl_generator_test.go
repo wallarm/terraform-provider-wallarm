@@ -177,7 +177,7 @@ func TestGenerateStaticHCL(t *testing.T) {
 		{Key: "aabbccdd_sqli", RuleType: "disable_attack_type", Point: [][]string{{"header", "X-API-Key"}}, AttackType: "sqli"},
 	}
 
-	files, err := generateStaticFiles(dir, "fp", 8649, "Managed by Terraform", actions, rules, false, "")
+	files, err := generateStaticFiles(dir, "fp", "fp_rules.tf", 8649, "Managed by Terraform", actions, rules, false, "")
 	if err != nil {
 		t.Fatalf("generateStaticFiles failed: %v", err)
 	}
@@ -230,7 +230,7 @@ func TestSplitStaticFiles(t *testing.T) {
 		{Key: "aabb_sqli", RuleType: "disable_attack_type", Point: [][]string{{"header", "X-Key"}}, AttackType: "sqli"},
 	}
 
-	files, err := generateStaticFiles(dir, "fp", 8649, "Test", actions, rules, true, "")
+	files, err := generateStaticFiles(dir, "fp", "fp_rules.tf", 8649, "Test", actions, rules, true, "")
 	if err != nil {
 		t.Fatalf("generateStaticFiles split failed: %v", err)
 	}
@@ -264,7 +264,7 @@ func TestGenerateStaticWithMovedBlocks(t *testing.T) {
 		{Key: "aabb_sqli", RuleType: "disable_attack_type", Point: [][]string{{"header", "X-Key"}}, AttackType: "sqli"},
 	}
 
-	files, err := generateStaticFiles(dir, "fp", 8649, "Test", actions, rules, false, "fp")
+	files, err := generateStaticFiles(dir, "fp", "fp_rules.tf", 8649, "Test", actions, rules, false, "fp")
 	if err != nil {
 		t.Fatalf("generateStaticFiles with moved failed: %v", err)
 	}
@@ -314,7 +314,7 @@ func TestGenerateStaticWithMovedBlocks_Split(t *testing.T) {
 		{Key: "aabb_111", RuleType: "disable_stamp", Point: [][]string{{"header", "X-Key"}}, Stamp: 111},
 	}
 
-	files, err := generateStaticFiles(dir, "fp", 8649, "Test", actions, rules, true, "old_name")
+	files, err := generateStaticFiles(dir, "fp", "fp_rules.tf", 8649, "Test", actions, rules, true, "old_name")
 	if err != nil {
 		t.Fatalf("generateStaticFiles split+moved failed: %v", err)
 	}

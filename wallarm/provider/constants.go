@@ -13,7 +13,7 @@ const (
 	APIListLimit = 500
 
 	// HintBulkFetchLimit is the number of hints fetched per page during cache lazy pagination.
-	HintBulkFetchLimit = 200
+	HintBulkFetchLimit = 500
 
 	// HitFetchBatchSize is the number of hits fetched per API call.
 	HitFetchBatchSize = 500

@@ -180,8 +180,8 @@ func dataSourceWallarmRulesRead(_ context.Context, d *schema.ResourceData, m int
 		log.Printf("[INFO] wallarm_rules data source: got %d rules from cache for client %d", len(allRules), clientID)
 	} else {
 		// Fallback: paginate directly when caching is disabled.
-		const batchSize = 200
-		const maxPages = 500
+		const batchSize = 500
+		const maxPages = 200
 		systemFalse := false
 
 		for page, offset := 0, 0; page < maxPages; page++ {
@@ -217,7 +217,8 @@ func dataSourceWallarmRulesRead(_ context.Context, d *schema.ResourceData, m int
 
 	// Fetch credential stuffing configs from the v4 API — they are not
 	// returned by HintRead, so we merge them into the common list.
-	credConfigs, err := client.CredentialStuffingConfigsRead(clientID)
+	csCache := m.(*ProviderMeta).CredentialStuffingCache
+	credConfigs, err := csCache.LoadAll(client, clientID)
 	if err != nil {
 		log.Printf("[WARN] wallarm_rules data source: failed to read credential stuffing configs: %s", err)
 	} else {

@@ -2,6 +2,7 @@ package wallarm
 
 import (
 	"bytes"
+	"compress/gzip"
 	"fmt"
 	"io"
 	"log"
@@ -36,8 +37,25 @@ func (t *loggingTransport) RoundTrip(req *http.Request) (*http.Response, error) 
 		return resp, err
 	}
 
-	respBody, _ := io.ReadAll(resp.Body)
-	resp.Body = io.NopCloser(bytes.NewReader(respBody))
+	// Decompress gzip before reading body for logging.
+	var respBody []byte
+	if resp.Header.Get("Content-Encoding") == "gzip" {
+		reader, err := gzip.NewReader(resp.Body)
+		if err == nil {
+			respBody, _ = io.ReadAll(reader)
+			reader.Close()
+			resp.Body.Close()
+			resp.Body = io.NopCloser(bytes.NewReader(respBody))
+			resp.Header.Del("Content-Encoding")
+			resp.ContentLength = int64(len(respBody))
+		} else {
+			respBody, _ = io.ReadAll(resp.Body)
+			resp.Body = io.NopCloser(bytes.NewReader(respBody))
+		}
+	} else {
+		respBody, _ = io.ReadAll(resp.Body)
+		resp.Body = io.NopCloser(bytes.NewReader(respBody))
+	}
 	t.logResponse(resp, respBody)
 
 	return resp, nil

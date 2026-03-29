@@ -93,6 +93,8 @@ func resourceWallarmCredentialStuffingPointCreate(ctx context.Context, d *schema
 	d.Set("action_id", resp.Body.ActionID)
 	d.Set("rule_id", resp.Body.ID)
 
+	// Invalidate so the following Read re-fetches from the v4 API and picks up the new rule.
+	m.(*ProviderMeta).CredentialStuffingCache.Invalidate()
 	return resourceWallarmCredentialStuffingPointRead(ctx, d, m)
 }
 
@@ -104,7 +106,7 @@ func resourceWallarmCredentialStuffingPointRead(_ context.Context, d *schema.Res
 	}
 	ruleID := d.Get("rule_id").(int)
 
-	rule, err := findCredentialStuffingRule(client, clientID, ruleID)
+	rule, err := m.(*ProviderMeta).CredentialStuffingCache.GetOrFetch(client, clientID, ruleID)
 	if !d.IsNewResource() {
 		if _, ok := err.(*ruleNotFoundError); ok {
 			log.Printf("[WARN] Rule %s not found, removing from state", d.Id())
@@ -164,6 +166,7 @@ func resourceWallarmCredentialStuffingPointDelete(_ context.Context, d *schema.R
 		return diag.FromErr(err)
 	}
 
+	m.(*ProviderMeta).CredentialStuffingCache.Invalidate()
 	return nil
 }
 
@@ -198,7 +201,7 @@ func resourceWallarmCredentialStuffingPointImport(_ context.Context, d *schema.R
 		return nil, err
 	}
 
-	rule, err := findCredentialStuffingRule(client, clientID, ruleID)
+	rule, err := m.(*ProviderMeta).CredentialStuffingCache.GetOrFetch(client, clientID, ruleID)
 	if err != nil {
 		return nil, err
 	}

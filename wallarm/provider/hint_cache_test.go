@@ -72,8 +72,8 @@ func TestHintCache_BulkLoadReducesAPICalls(t *testing.T) {
 	mock := &mockHintAPI{hints: hints}
 	cached := NewCachedClient(mock)
 
-	// Read 250 hints individually — should trigger 1 bulk load (2 pages of 200)
-	// then all reads served from cache.
+	// Read 250 hints individually — should trigger 1 page fetch (all 250 fit
+	// in one page with HintBulkFetchLimit=500), then all reads served from cache.
 	for _, h := range hints {
 		body := &wallarm.HintRead{
 			Limit:     APIListLimit,
@@ -97,29 +97,24 @@ func TestHintCache_BulkLoadReducesAPICalls(t *testing.T) {
 		}
 	}
 
-	// With 250 hints and batch size 200, bulk load should make 2 API calls
-	// (200 + 50). All 250 individual reads come from cache.
+	// With 250 hints and page size 500, all hints fit on 1 page.
 	calls := int(mock.callCount.Load())
-	if calls != 2 {
-		t.Errorf("expected 2 API calls for bulk load, got %d", calls)
+	if calls != 1 {
+		t.Errorf("expected 1 API call for bulk load, got %d", calls)
 	}
 
 	// Verify stats
 	stats := cached.HintCacheStats()
-	// 250 hints read, but 2 were found during page fetches (not cache hits):
-	// first read triggers page 1 (200 hints), ID 1200 triggers page 2 (50 hints)
-	if stats.CacheHits != 248 {
-		t.Errorf("expected 248 cache hits, got %d", stats.CacheHits)
+	// 250 hints read: first triggers page fetch (finds hint), remaining 249 from cache.
+	if stats.CacheHits != 249 {
+		t.Errorf("expected 249 cache hits, got %d", stats.CacheHits)
 	}
-	// 2 page fetches: page 1 (200 hints at offset 0), page 2 (50 hints at offset 200)
-	if stats.PageFetches != 2 {
-		t.Errorf("expected 2 page fetches, got %d", stats.PageFetches)
+	if stats.PageFetches != 1 {
+		t.Errorf("expected 1 page fetch, got %d", stats.PageFetches)
 	}
 	if stats.HintCount != 250 {
 		t.Errorf("expected 250 hints in cache, got %d", stats.HintCount)
 	}
-	// Note: cache may not be FullyLoaded because page 2 found the hint
-	// and returned early before checking if it was the last page.
 }
 
 func TestHintCache_ConcurrentReads(t *testing.T) {

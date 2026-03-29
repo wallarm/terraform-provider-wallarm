@@ -98,7 +98,6 @@ func ResourceRuleWallarmRead(d *schema.ResourceData, clientID int, cli wallarm.A
 	d.Set("title", updatedRule.Title)
 	d.Set("mitigation", updatedRule.Mitigation)
 	d.Set("set", updatedRule.Set)
-	// Return actual API values — no overrides.
 	d.Set("variativity_disabled", updatedRule.VariativityDisabled)
 	d.Set("comment", updatedRule.Comment)
 

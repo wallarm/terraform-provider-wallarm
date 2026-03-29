@@ -17,6 +17,7 @@ type ProviderMeta struct {
 	DefaultClientID         int
 	RequireExplicitClientID bool
 	IPListCache             *IPListCache
+	CredentialStuffingCache *CredentialStuffingCache
 }
 
 // RetrieveClientID returns the client_id from the resource if set,
