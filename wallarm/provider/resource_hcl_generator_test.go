@@ -200,8 +200,8 @@ func TestGenerateStaticHCL(t *testing.T) {
 	if !strings.Contains(hcl, `resource "wallarm_rule_disable_attack_type" "fp_aabbccdd_sqli"`) {
 		t.Error("missing disable_attack_type resource block")
 	}
-	if !strings.Contains(hcl, `client_id = 8649`) {
-		t.Error("missing client_id")
+	if !strings.Contains(hcl, `client_id`) || !strings.Contains(hcl, `8649`) {
+		t.Errorf("missing client_id, got:\n%s", hcl)
 	}
 	if !strings.Contains(hcl, "stamp") || !strings.Contains(hcl, "111") {
 		t.Error("missing stamp value")

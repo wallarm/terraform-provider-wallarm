@@ -252,7 +252,7 @@ func (c *HintCache) Stats() CacheStats {
 //
 // Mutating methods:
 //   - HintCreate, HintUpdateV3: Insert into cache (no invalidation)
-//   - HintDelete: Invalidate cache (hint removed)
+//   - HintDelete: Delegates to underlying API (no caching)
 type CachedClient struct {
 	wallarm.API
 	hintCache *HintCache
@@ -344,9 +344,7 @@ func (c *CachedClient) HintCreate(body *wallarm.ActionCreate) (*wallarm.ActionCr
 	return resp, nil
 }
 
-// HintDelete delegates to the underlying API. Cache is not invalidated per-delete
-// (during bulk destroy, the cache is empty after the first invalidation and no
-// Reads follow). Invalidation happens naturally on the next plan cycle.
+// HintDelete delegates to the underlying API.
 func (c *CachedClient) HintDelete(body *wallarm.HintDelete) error {
 	return c.API.HintDelete(body)
 }
