@@ -151,7 +151,7 @@ func resourceWallarmRateLimitDelete(_ context.Context, d *schema.ResourceData, m
 	h := &wallarm.HintDelete{
 		Filter: &wallarm.HintDeleteFilter{
 			Clientid: []int{clientID},
-			ID:       ruleID,
+			ID:       []int{ruleID},
 		},
 	}
 

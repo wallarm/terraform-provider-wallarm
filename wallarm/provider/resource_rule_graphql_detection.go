@@ -103,7 +103,7 @@ func resourceWallarmGraphqlDetectionDelete(_ context.Context, d *schema.Resource
 	h := &wallarm.HintDelete{
 		Filter: &wallarm.HintDeleteFilter{
 			Clientid: []int{clientID},
-			ID:       ruleID,
+			ID:       []int{ruleID},
 		},
 	}
 	if err := client.HintDelete(h); err != nil {

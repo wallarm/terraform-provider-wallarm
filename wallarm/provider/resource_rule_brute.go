@@ -81,7 +81,7 @@ func resourceWallarmBruteDelete(_ context.Context, d *schema.ResourceData, m int
 	h := &wallarm.HintDelete{
 		Filter: &wallarm.HintDeleteFilter{
 			Clientid: []int{clientID},
-			ID:       ruleID,
+			ID:       []int{ruleID},
 		},
 	}
 	if err := client.HintDelete(h); err != nil {

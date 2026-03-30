@@ -292,7 +292,8 @@ func (c *CachedClient) LogHintCacheStats() {
 		total, s.CacheHits, hitRate, s.PageFetches, s.Passthroughs, s.Invalidations, s.HintCount)
 }
 
-// HintRead overrides the embedded API's HintRead. For single-ID lookups,
+// HintRead overrides the embedded API's HintRead. Flushes pending deletes first.
+// For single-ID lookups,
 // it serves from the lazily-paginated cache. For all other query patterns,
 // it passes through to the underlying API.
 func (c *CachedClient) HintRead(body *wallarm.HintRead) (*wallarm.HintReadResp, error) {
@@ -343,13 +344,11 @@ func (c *CachedClient) HintCreate(body *wallarm.ActionCreate) (*wallarm.ActionCr
 	return resp, nil
 }
 
-// HintDelete delegates to the underlying API and invalidates the cache.
+// HintDelete delegates to the underlying API. Cache is not invalidated per-delete
+// (during bulk destroy, the cache is empty after the first invalidation and no
+// Reads follow). Invalidation happens naturally on the next plan cycle.
 func (c *CachedClient) HintDelete(body *wallarm.HintDelete) error {
-	if err := c.API.HintDelete(body); err != nil {
-		return err
-	}
-	c.hintCache.Invalidate("HintDelete")
-	return nil
+	return c.API.HintDelete(body)
 }
 
 // HintUpdateV3 delegates to the underlying API and updates the cache entry.

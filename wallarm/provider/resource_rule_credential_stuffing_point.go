@@ -159,7 +159,7 @@ func resourceWallarmCredentialStuffingPointDelete(_ context.Context, d *schema.R
 	err = client.HintDelete(&wallarm.HintDelete{
 		Filter: &wallarm.HintDeleteFilter{
 			Clientid: []int{clientID},
-			ID:       ruleID,
+			ID:       []int{ruleID},
 		},
 	})
 	if err != nil {

@@ -219,7 +219,7 @@ func generateRuleFiles(d *schema.ResourceData, clientID int, m interface{}) ([]s
 	source, _ := d.Get("source").(string)
 	prefix := "fp"
 	if source == "api" {
-		prefix = "import"
+		prefix = "rule"
 	}
 	if v, ok := d.GetOk("resource_prefix"); ok {
 		prefix = v.(string)

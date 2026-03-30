@@ -34,6 +34,7 @@ func generateStaticDisableStamp(f *hclwrite.File, name string, cfg StaticRuleCon
 
 	body.SetAttributeValue("client_id", cty.NumberIntVal(int64(cfg.ClientID)))
 	body.SetAttributeValue("comment", cty.StringVal(cfg.Comment))
+	body.SetAttributeValue("variativity_disabled", cty.True)
 	body.SetAttributeValue("stamp", cty.NumberIntVal(int64(cfg.Stamp)))
 	body.AppendNewline()
 	writePointAttribute(body, cfg.Point)
@@ -50,6 +51,7 @@ func generateStaticDisableAttackType(f *hclwrite.File, name string, cfg StaticRu
 
 	body.SetAttributeValue("client_id", cty.NumberIntVal(int64(cfg.ClientID)))
 	body.SetAttributeValue("comment", cty.StringVal(cfg.Comment))
+	body.SetAttributeValue("variativity_disabled", cty.True)
 	body.SetAttributeValue("attack_type", cty.StringVal(cfg.AttackType))
 	body.AppendNewline()
 	writePointAttribute(body, cfg.Point)

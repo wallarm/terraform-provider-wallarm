@@ -113,7 +113,7 @@ func resourceWallarmOverlimitResSettingsDelete(_ context.Context, d *schema.Reso
 	h := &wallarm.HintDelete{
 		Filter: &wallarm.HintDeleteFilter{
 			Clientid: []int{clientID},
-			ID:       ruleID,
+			ID:       []int{ruleID},
 		},
 	}
 

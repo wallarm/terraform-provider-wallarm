@@ -125,7 +125,7 @@ func resourceWallarmSetResponseHeaderDelete(_ context.Context, d *schema.Resourc
 	h := &wallarm.HintDelete{
 		Filter: &wallarm.HintDeleteFilter{
 			Clientid: []int{clientID},
-			ID:       ruleID,
+			ID:       []int{ruleID},
 		},
 	}
 
