@@ -479,27 +479,29 @@ func fetchRelatedHitsByAttackIDs(
 	refDomain, refPath string,
 	refPoolID int,
 ) ([]*wallarm.Hit, error) {
-	// Collect unique attack IDs.
-	attackIDSet := make(map[string]bool)
+	// Collect unique attack IDs. Each hit's AttackID is ["index_name", "actual_id"].
+	// The API filter expects [][]string: [["index","id1"],["index","id2"]].
+	// Deduplicate by the actual ID (last element).
+	seen := make(map[string]bool)
+	var attackIDs [][]string
 	for _, h := range directHits {
-		for _, aid := range h.AttackID {
-			if aid != "" {
-				attackIDSet[aid] = true
-			}
+		if len(h.AttackID) < 2 {
+			continue
 		}
+		actualID := h.AttackID[len(h.AttackID)-1]
+		if actualID == "" || seen[actualID] {
+			continue
+		}
+		seen[actualID] = true
+		attackIDs = append(attackIDs, h.AttackID)
 	}
 
-	if len(attackIDSet) == 0 {
+	if len(attackIDs) == 0 {
 		log.Printf("[DEBUG] No attack_ids found in direct hits, skipping related hits fetch")
 		return nil, nil
 	}
 
-	attackIDs := make([]string, 0, len(attackIDSet))
-	for aid := range attackIDSet {
-		attackIDs = append(attackIDs, aid)
-	}
-
-	log.Printf("[INFO] Fetching related hits for %d attack_ids: %v", len(attackIDs), attackIDs)
+	log.Printf("[INFO] Fetching related hits for %d attack_ids", len(seen))
 
 	// Fetch in batches.
 	var allRelated []*wallarm.Hit

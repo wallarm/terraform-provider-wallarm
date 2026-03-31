@@ -1,39 +1,57 @@
-# Import Wallarm Rules and Sync Status Check
+# Import Wallarm Rules
 #
-# Imports existing Wallarm rules into Terraform. Generated resource configs
-# and state live in this directory.
+# Imports existing Wallarm rules into Terraform. Two import cases are supported:
 #
-# Import all rules:
+# ─── Case 1: Native import (all rules) ─────────────────────────────────────
+#
+# Uses Terraform's built-in -generate-config-out to create resource configs.
+# Works for most rule types. Steps:
+#
 #   1. terraform apply -var='import_rules=true'
-#   2. terraform output -raw import_blocks > import_rule_blocks.tf
-#   3. terraform plan -generate-config-out=import_rule_configs.tf
-#   4. terraform apply
-#
-# Import via local_file (alternative — uncomment Method 1, comment Method 2):
-#   1. terraform apply -var='import_rules=true'
-#      -> Writes import blocks via local_file resource
+#      -> Fetches rules from API, writes import blocks (local_file + output)
 #   2. terraform plan -generate-config-out=import_rule_configs.tf
-#   3. terraform apply
+#      -> Terraform generates resource HCL from import blocks
+#   3. Fix generated configs (set defaults, remove nulls):
+#      sed -E \
+#        -e 's/(variativity_disabled[[:space:]]*)=[[:space:]]*false/\1= true/' \
+#        -e 's/(comment[[:space:]]*)=[[:space:]]*null/\1= "Managed by Terraform"/' \
+#        -e '/=[[:space:]]*null/d' \
+#        import_rule_configs.tf > import_rule_configs.tf.tmp && \
+#        mv import_rule_configs.tf.tmp import_rule_configs.tf
+#   4. terraform apply
+#      -> Imports all rules into state
 #
-# Import specific rule types:
-#   terraform apply -var='import_rules=true' -var='rule_types=["wallarm_mode","disable_stamp"]'
+# ─── Case 2: Native import + custom generator for stamps ───────────────────
 #
-# Import all except specific types:
-#   terraform apply -var='import_rules=true' -var='exclude_rule_types=["disable_stamp"]'
+# For disable_stamp rules with complex point values (e.g. XML namespace URIs),
+# -generate-config-out may fail to generate the point field. Use the custom
+# wallarm_rule_generator as a fallback for stamps, native import for the rest.
 #
-# Check sync status (API vs state, no changes made):
-#   terraform apply -var='sync_status=true'
+#   1. Import all rules EXCEPT stamps:
+#      terraform apply -var='import_rules=true' -var='exclude_rule_types=["disable_stamp"]'
+#      terraform plan -generate-config-out=import_rule_configs.tf
+#      (fix configs with sed as in Case 1)
+#      terraform apply
 #
-# Generate HCL configs for rules with complex points (fallback):
-#   terraform apply -var='generate_configs=true'
-#   -> Fetches rules from API and generates correct HCL with properly escaped
-#      point values. Use when `terraform plan -generate-config-out` fails to
-#      generate the point field (e.g. rules with XML namespace URIs).
-#   terraform apply -var='generate_configs=true' -var='generate_rule_types=["disable_stamp","disable_attack_type"]'
+#   2. Generate stamp configs via wallarm_rule_generator:
+#      terraform apply -var='generate_configs=true' -var='import_rules=true' -var='rule_types=["disable_stamp"]'
+#      -> Writes import_rule_stamp_configs.tf (via rule_generator, handles complex points)
+#      -> Writes import_rule_blocks.tf (import blocks for stamps only)
+#      terraform apply
+#      -> Imports stamp rules using the generated configs
+#
+# ─── Other operations ──────────────────────────────────────────────────────
+#
+# Import specific rule types only:
+#   terraform apply -var='import_rules=true' -var='rule_types=["wallarm_mode"]'
+#
+# Check sync status (API vs state, read-only):
+#   terraform plan -refresh=false -var='sync_status=true'
+#
 # Re-importing existing resources is safe — Terraform generates configs
 # only for resources not already in state.
 #
-# Check the Makefile for shorthand commands for all rules import operations.
+# See the Makefile for shorthand commands for all operations.
 
 terraform {
   required_providers {
@@ -50,7 +68,7 @@ variable "api_token" {
 
 variable "api_host" {
   type    = string
-  default = "https://us1.api.wallarm.com"
+  default = "https://api.wallarm.com"
 }
 
 provider "wallarm" {
@@ -127,32 +145,28 @@ data "wallarm_rules" "all" {
 
 # ─── Generate import blocks ─────────────────────────────────────────────────
 #
-# Method 1: via local_file (uncomment to use instead of Method 2)
+# Method 1: via local_file
 #
-# locals {
-#   import_blocks = var.import_rules ? join("\n", [
-#     for rule in data.wallarm_rules.all[0].rules :
-#     "import {\n  to = ${rule.terraform_resource}.rule_${rule.rule_id}\n  id = \"${rule.import_id}\"\n}"
-#     if !contains(var.exclude_rule_types, rule.type)
-#   ]) : null
-# }
-#
-# resource "local_file" "imports" {
-#   filename        = "${path.root}/import_rule_blocks.tf"
-#   content         = local.import_blocks
-#   file_permission = "0644"
-#   count           = var.import_rules ? 1 : 0
-# }
-
-# Method 2: via output (active)
-
-output "import_blocks" {
-  value = var.import_rules ? join("\n", [
+locals {
+  import_blocks = var.import_rules ? join("\n", [
     for rule in data.wallarm_rules.all[0].rules :
     "import {\n  to = ${rule.terraform_resource}.rule_${rule.rule_id}\n  id = \"${rule.import_id}\"\n}"
     if !contains(var.exclude_rule_types, rule.type)
   ]) : null
-  description = "Import blocks for all existing rules"
+}
+
+resource "local_file" "imports" {
+  filename        = "${path.root}/import_rule_blocks.tf"
+  content         = local.import_blocks
+  file_permission = "0644"
+  count           = var.import_rules ? 1 : 0
+}
+
+# Method 2: via output (active)
+
+output "import_blocks" {
+  value       = local.import_blocks
+  description = "Import blocks for existing rules"
 }
 
 # ─── Generate HCL configs via rule_generator (fallback) ───────────────────────
@@ -166,18 +180,13 @@ variable "generate_configs" {
   description = "Generate HCL configs via wallarm_rule_generator. Use as fallback when -generate-config-out fails on complex point values."
 }
 
-variable "generate_rule_types" {
-  type        = list(string)
-  default     = ["disable_stamp"]
-  description = "Rule types to generate configs for. Supports: disable_stamp, disable_attack_type."
-}
-
 resource "wallarm_rule_generator" "from_api" {
-  count      = var.generate_configs ? 1 : 0
-  source     = "api"
-  output_dir = "./"
-  rule_types = var.generate_rule_types
-  split      = false
+  count           = var.generate_configs ? 1 : 0
+  source          = "api"
+  output_dir      = "./"
+  output_filename = "import_rule_stamp_configs.tf"
+  rule_types      = ["disable_stamp"]
+  split           = false
 }
 
 # ─── Output Sync Status ────────────────────────────────────────────────────────────────
