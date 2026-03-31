@@ -17,6 +17,9 @@
 # Add more request_ids later — just add to tfvars and apply.
 # Only new entries trigger API calls.
 #
+# Generate HCL config files (optional, for reference or migration):
+#   terraform apply -var='generate_configs=true'
+#
 # Per-request config via JSON:
 #   request_ids = {
 #     "abc123" = "{}"                                       # defaults
@@ -60,6 +63,17 @@ variable "request_ids" {
 variable "default_mode" {
   type    = string
   default = "request"
+}
+
+variable "generate_configs" {
+  type        = bool
+  default     = false
+  description = "Generate HCL config files on disk for reference or migration."
+}
+
+variable "output_dir" {
+  type    = string
+  default = "./generated_rules"
 }
 
 # ─── Hits index (tracks cached request_ids) ─────────────────────────────────
@@ -163,6 +177,21 @@ resource "wallarm_rule_disable_attack_type" "this" {
       point = action.value.point
     }
   }
+}
+
+# ─── Optional: generate HCL configs ────────────────────────────────────────
+
+resource "wallarm_rule_generator" "configs" {
+  count     = var.generate_configs && length(local._all_rules) > 0 ? 1 : 0
+  source    = "hits"
+  client_id = var.client_id
+  requests_json = jsonencode({
+    for req_id in keys(var.request_ids) : req_id => {
+      hits              = try(jsonencode(data.wallarm_hits.new[req_id].hits), "[]")
+      action_conditions = try(jsonencode(data.wallarm_hits.new[req_id].action_conditions), "[]")
+    }
+  })
+  output_dir = var.output_dir
 }
 
 # ─── Outputs ────────────────────────────────────────────────────────────────

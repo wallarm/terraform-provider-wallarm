@@ -351,21 +351,18 @@ func dataSourceWallarmHitsRead(_ context.Context, d *schema.ResourceData, m inte
 			apiHash := resourcerule.ConditionsHash(apiResp.Body.Conditions)
 
 			if apiHash != actionHash {
-				log.Printf("[ERROR] wallarm_hits: action conditions mismatch for hit %v", directHits[0].ID)
-				log.Printf("[ERROR]   provider hash=%s, API hash=%s", actionHash[:16], apiHash[:16])
-				log.Printf("[ERROR]   provider conditions (%d):", len(actionDetails))
+				var msg strings.Builder
+				fmt.Fprintf(&msg, "wallarm_hits: action conditions mismatch for hit %v\n", directHits[0].ID)
+				fmt.Fprintf(&msg, "  provider hash=%s, API hash=%s\n", actionHash[:16], apiHash[:16])
+				fmt.Fprintf(&msg, "  provider conditions (%d):\n", len(actionDetails))
 				for i, c := range actionDetails {
-					log.Printf("[ERROR]     [%d] type=%q point=%v value=%v (value_type=%T)", i, c.Type, c.Point, c.Value, c.Value)
+					fmt.Fprintf(&msg, "    [%d] type=%q point=%v value=%v\n", i, c.Type, c.Point, c.Value)
 				}
-				log.Printf("[ERROR]   API conditions (%d):", len(apiResp.Body.Conditions))
+				fmt.Fprintf(&msg, "  API conditions (%d):\n", len(apiResp.Body.Conditions))
 				for i, c := range apiResp.Body.Conditions {
-					log.Printf("[ERROR]     [%d] type=%q point=%v value=%v (value_type=%T)", i, c.Type, c.Point, c.Value, c.Value)
+					fmt.Fprintf(&msg, "    [%d] type=%q point=%v value=%v\n", i, c.Type, c.Point, c.Value)
 				}
-				return diag.Errorf(
-					"wallarm_hits: action conditions mismatch — provider hash=%s, API hash=%s for hit %v. "+
-						"Run with TF_LOG=DEBUG to see both condition sets.",
-					actionHash[:16], apiHash[:16], directHits[0].ID,
-				)
+				return diag.Errorf("%s", msg.String())
 			}
 			log.Printf("[DEBUG] wallarm_hits: action hash validated against API: %s", actionHash[:8])
 		}
@@ -537,8 +534,13 @@ func fetchRelatedHitsByAttackIDs(
 		}
 
 		// Filter by matching action (domain + path + poolid).
+		// When refPath is "[multiple]", the attack spans multiple paths — match on domain + poolid only.
 		for _, h := range resp {
-			if h.Domain == refDomain && h.Path == refPath && h.PoolID == refPoolID {
+			pathMatch := refPath == "[multiple]" || h.Path == refPath
+			if h.Domain == refDomain && pathMatch && h.PoolID == refPoolID {
+				if refPath == "[multiple]" && h.Path != "[multiple]" {
+					log.Printf("[DEBUG] Including related hit %v with path=%s (refPath=[multiple], domain+poolid match)", h.ID, h.Path)
+				}
 				allRelated = append(allRelated, h)
 			} else {
 				discarded++
@@ -747,7 +749,13 @@ func buildActionFromHit(domain, urlPath string, poolID int, includeInstance bool
 		})
 	}
 
-	conditions = append(conditions, locationToConditions(urlPath)...)
+	// "[multiple]" means the attack spans multiple paths — no path/action_name/action_ext
+	// conditions, producing a /**/*.* wildcard scope (HOST header only).
+	if urlPath == "[multiple]" {
+		log.Printf("[INFO] wallarm_hits: path=[multiple] — skipping path/action_name/action_ext conditions (wildcard scope)")
+	} else {
+		conditions = append(conditions, locationToConditions(urlPath)...)
+	}
 
 	return conditions
 }
