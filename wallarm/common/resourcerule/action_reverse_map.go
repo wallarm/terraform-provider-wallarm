@@ -9,6 +9,30 @@ import (
 	wallarm "github.com/wallarm/wallarm-go"
 )
 
+// String constants for action point keys and condition types used across
+// action_reverse_map.go and action_dir.go.
+const (
+	pointKeyActionExt  = "action_ext"
+	pointKeyActionName = "action_name"
+	pointKeyGet        = "get"
+	pointKeyHeader     = "header"
+	pointKeyInstance   = "instance"
+	pointKeyMethod     = "method"
+	pointKeyPath       = "path"
+	pointKeyProto      = "proto"
+	pointKeyScheme     = "scheme"
+	pointKeyURI        = "uri"
+
+	condTypeAbsent = "absent"
+	condTypeEqual  = "equal"
+
+	// pathGlobalWildcard is the path representing "match everything" (no path conditions).
+	pathGlobalWildcard = "/**/*.*"
+
+	// defaultActionDir is the directory name for actions with empty conditions.
+	defaultActionDir = "_default"
+)
+
 // ReverseMapResult contains the extracted path/domain/etc. from action conditions.
 type ReverseMapResult struct {
 	Path     string
@@ -76,7 +100,7 @@ func ReverseMapActions(actions []wallarm.ActionDetails) ReverseMapResult {
 		value := ActionValueString(a)
 
 		switch pointKey {
-		case "header":
+		case pointKeyHeader:
 			headerName := ActionPointSecond(a)
 			if strings.EqualFold(headerName, "HOST") {
 				result.Domain = value
@@ -88,19 +112,19 @@ func ReverseMapActions(actions []wallarm.ActionDetails) ReverseMapResult {
 				})
 			}
 
-		case "instance":
+		case pointKeyInstance:
 			result.Instance = value
 
-		case "method":
+		case pointKeyMethod:
 			result.Method = value
 
-		case "scheme":
+		case pointKeyScheme:
 			result.Scheme = value
 
-		case "proto":
+		case pointKeyProto:
 			result.Proto = value
 
-		case "get":
+		case pointKeyGet:
 			paramName := ActionPointSecond(a)
 			result.Query = append(result.Query, QueryParam{
 				Key:   paramName,
@@ -108,30 +132,30 @@ func ReverseMapActions(actions []wallarm.ActionDetails) ReverseMapResult {
 				Type:  condType,
 			})
 
-		case "action_name":
+		case pointKeyActionName:
 			actionName = value
 			actionNameFound = true
 
-		case "action_ext":
+		case pointKeyActionExt:
 			actionExtFound = true
-			if condType == "absent" {
+			if condType == condTypeAbsent {
 				actionExtAbsent = true
 			} else {
 				actionExt = value
 			}
 
-		case "path":
+		case pointKeyPath:
 			idx := ActionPointIndex(a)
 			if idx < 0 {
 				continue
 			}
-			if condType == "absent" {
+			if condType == condTypeAbsent {
 				limiterIndex = idx
 			} else {
 				pathSegments[idx] = value
 			}
 
-		case "uri":
+		case pointKeyURI:
 			hasURI = true
 			uriValue = value
 		}
@@ -146,7 +170,7 @@ func ReverseMapActions(actions []wallarm.ActionDetails) ReverseMapResult {
 	// No path-related conditions at all -> match everything: /**/*.*
 	hasAnyPathInfo := actionNameFound || actionExtFound || len(pathSegments) > 0 || limiterIndex >= 0
 	if !hasAnyPathInfo {
-		result.Path = "/**/*.*"
+		result.Path = pathGlobalWildcard
 		return result
 	}
 
@@ -218,12 +242,12 @@ func buildPathFromComponents(
 	if actionExtFound {
 		if !actionExtAbsent && actionExt != "" {
 			// Specific extension
-			lastSegment = lastSegment + "." + actionExt
+			lastSegment += "." + actionExt
 		}
 		// actionExtAbsent -> no extension (don't add dot)
 	} else {
 		// action_ext missing from conditions entirely -> wildcard .* (match any extension)
-		lastSegment = lastSegment + ".*"
+		lastSegment += ".*"
 	}
 
 	parts = append(parts, lastSegment)
@@ -237,14 +261,15 @@ func buildPathFromComponents(
 // This is the forward mapping -- the inverse of ReverseMapActions.
 // Used by CustomizeDiff to compute action conditions from scope fields.
 func ExpandPathToActions(path, domain, instance, method, scheme, proto string, query []QueryParam, headers []HeaderParam) []wallarm.ActionDetails {
-	var actions []wallarm.ActionDetails
+	// Pre-allocate with estimated capacity: 1 each for instance/domain/method/scheme/proto + headers + query + path segments.
+	actions := make([]wallarm.ActionDetails, 0, 5+len(headers)+len(query))
 
 	// Instance
 	if instance != "" {
 		actions = append(actions, wallarm.ActionDetails{
-			Type:  "equal",
+			Type:  condTypeEqual,
 			Value: instance,
-			Point: []interface{}{"instance"},
+			Point: []interface{}{pointKeyInstance},
 		})
 	}
 
@@ -253,7 +278,7 @@ func ExpandPathToActions(path, domain, instance, method, scheme, proto string, q
 		actions = append(actions, wallarm.ActionDetails{
 			Type:  "iequal",
 			Value: domain,
-			Point: []interface{}{"header", "HOST"},
+			Point: []interface{}{pointKeyHeader, "HOST"},
 		})
 	}
 
@@ -261,12 +286,12 @@ func ExpandPathToActions(path, domain, instance, method, scheme, proto string, q
 	for _, h := range headers {
 		t := h.Type
 		if t == "" {
-			t = "equal"
+			t = condTypeEqual
 		}
 		actions = append(actions, wallarm.ActionDetails{
 			Type:  t,
 			Value: h.Value,
-			Point: []interface{}{"header", strings.ToUpper(h.Name)},
+			Point: []interface{}{pointKeyHeader, strings.ToUpper(h.Name)},
 		})
 	}
 
@@ -276,23 +301,23 @@ func ExpandPathToActions(path, domain, instance, method, scheme, proto string, q
 	// Method, scheme, proto
 	if method != "" {
 		actions = append(actions, wallarm.ActionDetails{
-			Type:  "equal",
+			Type:  condTypeEqual,
 			Value: method,
-			Point: []interface{}{"method"},
+			Point: []interface{}{pointKeyMethod},
 		})
 	}
 	if scheme != "" {
 		actions = append(actions, wallarm.ActionDetails{
-			Type:  "equal",
+			Type:  condTypeEqual,
 			Value: scheme,
-			Point: []interface{}{"scheme"},
+			Point: []interface{}{pointKeyScheme},
 		})
 	}
 	if proto != "" {
 		actions = append(actions, wallarm.ActionDetails{
-			Type:  "equal",
+			Type:  condTypeEqual,
 			Value: proto,
-			Point: []interface{}{"proto"},
+			Point: []interface{}{pointKeyProto},
 		})
 	}
 
@@ -300,12 +325,12 @@ func ExpandPathToActions(path, domain, instance, method, scheme, proto string, q
 	for _, q := range query {
 		t := q.Type
 		if t == "" {
-			t = "equal"
+			t = condTypeEqual
 		}
 		actions = append(actions, wallarm.ActionDetails{
 			Type:  t,
 			Value: q.Value,
-			Point: []interface{}{"get", q.Key},
+			Point: []interface{}{pointKeyGet, q.Key},
 		})
 	}
 
@@ -319,16 +344,16 @@ func expandPath(path string) []wallarm.ActionDetails {
 	}
 
 	// Global wildcard: /**/*.* -> no conditions (match everything)
-	if path == "/**/*.*" {
+	if path == pathGlobalWildcard {
 		return nil
 	}
 
 	// Root path "/"
 	if path == "/" {
 		return []wallarm.ActionDetails{
-			{Type: "equal", Value: "", Point: []interface{}{"action_name"}},
-			{Type: "absent", Value: nil, Point: []interface{}{"action_ext"}},
-			{Type: "absent", Value: nil, Point: []interface{}{"path", float64(0)}},
+			{Type: condTypeEqual, Value: "", Point: []interface{}{pointKeyActionName}},
+			{Type: condTypeAbsent, Value: nil, Point: []interface{}{pointKeyActionExt}},
+			{Type: condTypeAbsent, Value: nil, Point: []interface{}{pointKeyPath, float64(0)}},
 		}
 	}
 
@@ -361,9 +386,9 @@ func expandPath(path string) []wallarm.ActionDetails {
 	// action_name -- skip when wildcard *
 	if !actionNameIsWildcard {
 		actions = append(actions, wallarm.ActionDetails{
-			Type:  "equal",
+			Type:  condTypeEqual,
 			Value: actionName,
-			Point: []interface{}{"action_name"},
+			Point: []interface{}{pointKeyActionName},
 		})
 	}
 
@@ -372,18 +397,18 @@ func expandPath(path string) []wallarm.ActionDetails {
 		if !actionExtIsWildcard {
 			// Specific extension
 			actions = append(actions, wallarm.ActionDetails{
-				Type:  "equal",
+				Type:  condTypeEqual,
 				Value: actionExt,
-				Point: []interface{}{"action_ext"},
+				Point: []interface{}{pointKeyActionExt},
 			})
 		}
 		// Wildcard extension *.* -> skip action_ext condition
 	} else {
 		// No dot -> extension is absent
 		actions = append(actions, wallarm.ActionDetails{
-			Type:  "absent",
+			Type:  condTypeAbsent,
 			Value: nil,
-			Point: []interface{}{"action_ext"},
+			Point: []interface{}{pointKeyActionExt},
 		})
 	}
 
@@ -391,9 +416,9 @@ func expandPath(path string) []wallarm.ActionDetails {
 	for i, seg := range dirSegments {
 		if seg != "*" {
 			actions = append(actions, wallarm.ActionDetails{
-				Type:  "equal",
+				Type:  condTypeEqual,
 				Value: seg,
-				Point: []interface{}{"path", float64(i)},
+				Point: []interface{}{pointKeyPath, float64(i)},
 			})
 		}
 	}
@@ -402,9 +427,9 @@ func expandPath(path string) []wallarm.ActionDetails {
 	if !hasGlobstar {
 		limiterIdx := len(dirSegments)
 		actions = append(actions, wallarm.ActionDetails{
-			Type:  "absent",
+			Type:  condTypeAbsent,
 			Value: nil,
-			Point: []interface{}{"path", float64(limiterIdx)},
+			Point: []interface{}{pointKeyPath, float64(limiterIdx)},
 		})
 	}
 

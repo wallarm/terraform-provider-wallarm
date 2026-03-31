@@ -123,7 +123,7 @@ func dataSourceWallarmNodeRead(_ context.Context, d *schema.ResourceData, m inte
 	// Prepare the filters to be applied to the search
 	filter := expandWallarmNode(d.Get("filter"))
 	if filter.Type == "" {
-		filter.Type = "all"
+		filter.Type = "all" //nolint:goconst // different semantic contexts
 	}
 
 	nodes := make([]interface{}, 0)

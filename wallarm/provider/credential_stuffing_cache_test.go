@@ -15,7 +15,7 @@ type mockCredStuffAPI struct {
 	callCount atomic.Int32
 }
 
-func (m *mockCredStuffAPI) CredentialStuffingConfigsRead(clientID int) ([]wallarm.ActionBody, error) {
+func (m *mockCredStuffAPI) CredentialStuffingConfigsRead(_ int) ([]wallarm.ActionBody, error) {
 	m.callCount.Add(1)
 	return m.configs, nil
 }
@@ -269,7 +269,7 @@ type mockCredStuffAPIDynamic struct {
 	callCount atomic.Int32
 }
 
-func (m *mockCredStuffAPIDynamic) CredentialStuffingConfigsRead(clientID int) ([]wallarm.ActionBody, error) {
+func (m *mockCredStuffAPIDynamic) CredentialStuffingConfigsRead(_ int) ([]wallarm.ActionBody, error) {
 	m.callCount.Add(1)
 	return m.configs, nil
 }
@@ -294,6 +294,6 @@ type mockCredStuffAPIWithError struct {
 	err error
 }
 
-func (m *mockCredStuffAPIWithError) CredentialStuffingConfigsRead(clientID int) ([]wallarm.ActionBody, error) {
+func (m *mockCredStuffAPIWithError) CredentialStuffingConfigsRead(_ int) ([]wallarm.ActionBody, error) {
 	return nil, m.err
 }

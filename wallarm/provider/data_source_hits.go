@@ -16,6 +16,17 @@ import (
 	wallarm "github.com/wallarm/wallarm-go"
 )
 
+// String constants used throughout data_source_hits.go.
+const (
+	hitsPointKeyActionName = "action_name"
+	hitsPointKeyHeader     = "header"
+	hitsPointKeyInstance   = "instance"
+	hitsCondTypeAbsent     = "absent"
+	hitsPathMultiple       = "[multiple]"
+	hitsResDisableStamp    = "wallarm_rule_disable_stamp"
+	hitsResDisableAttack   = "wallarm_rule_disable_attack_type"
+)
+
 var defaultAllowedAttackTypes = []string{
 	"xss", "sqli", "rce", "ptrav", "crlf", "redir",
 	"nosqli", "ldapi", "scanner", "mass_assignment", "ssrf",
@@ -396,9 +407,9 @@ func dataSourceWallarmHitsRead(_ context.Context, d *schema.ResourceData, m inte
 	for _, r := range rulesForSchema {
 		rm := r.(map[string]interface{})
 		switch rm["resource_type"] {
-		case "wallarm_rule_disable_stamp":
+		case hitsResDisableStamp:
 			stampCount++
-		case "wallarm_rule_disable_attack_type":
+		case hitsResDisableAttack:
 			attackTypeCount++
 		}
 	}
@@ -481,7 +492,7 @@ func fetchRelatedHitsByAttackIDs(
 	// The API filter expects [][]string: [["index","id1"],["index","id2"]].
 	// Deduplicate by the actual ID (last element).
 	seen := make(map[string]bool)
-	var attackIDs [][]string
+	attackIDs := make([][]string, 0, len(directHits))
 	for _, h := range directHits {
 		if len(h.AttackID) < 2 {
 			continue
@@ -534,11 +545,11 @@ func fetchRelatedHitsByAttackIDs(
 		}
 
 		// Filter by matching action (domain + path + poolid).
-		// When refPath is "[multiple]", the attack spans multiple paths — match on domain + poolid only.
+		// When refPath is hitsPathMultiple, the attack spans multiple paths — match on domain + poolid only.
 		for _, h := range resp {
-			pathMatch := refPath == "[multiple]" || h.Path == refPath
+			pathMatch := refPath == hitsPathMultiple || h.Path == refPath
 			if h.Domain == refDomain && pathMatch && h.PoolID == refPoolID {
-				if refPath == "[multiple]" && h.Path != "[multiple]" {
+				if refPath == hitsPathMultiple && h.Path != hitsPathMultiple {
 					log.Printf("[DEBUG] Including related hit %v with path=%s (refPath=[multiple], domain+poolid match)", h.ID, h.Path)
 				}
 				allRelated = append(allRelated, h)
@@ -626,20 +637,20 @@ func schemaActionToDetails(action []map[string]interface{}) []wallarm.ActionDeta
 		for key, val := range pointMap {
 			valStr, _ := val.(string)
 			switch key {
-			case "header", "query":
+			case hitsPointKeyHeader, "query":
 				point = []interface{}{key, valStr}
 				value = condValue
 			case "path":
 				idx, _ := strconv.Atoi(valStr)
 				point = []interface{}{key, float64(idx)}
-				if condType == "absent" {
+				if condType == hitsCondTypeAbsent {
 					value = nil
 				} else {
 					value = condValue
 				}
-			case "instance", "action_name", "action_ext", "method", "proto", "scheme", "uri":
+			case hitsPointKeyInstance, hitsPointKeyActionName, "action_ext", "method", "proto", "scheme", "uri":
 				point = []interface{}{key}
-				if condType == "absent" {
+				if condType == hitsCondTypeAbsent {
 					value = nil
 				} else {
 					value = valStr
@@ -736,7 +747,7 @@ func buildActionFromHit(domain, urlPath string, poolID int, includeInstance bool
 		conditions = append(conditions, map[string]interface{}{
 			"type":  "equal",
 			"value": "",
-			"point": map[string]interface{}{"instance": strconv.Itoa(poolID)},
+			"point": map[string]interface{}{hitsPointKeyInstance: strconv.Itoa(poolID)},
 		})
 	}
 
@@ -745,13 +756,13 @@ func buildActionFromHit(domain, urlPath string, poolID int, includeInstance bool
 		conditions = append(conditions, map[string]interface{}{
 			"type":  "iequal",
 			"value": domain,
-			"point": map[string]interface{}{"header": "HOST"},
+			"point": map[string]interface{}{hitsPointKeyHeader: "HOST"},
 		})
 	}
 
-	// "[multiple]" means the attack spans multiple paths — no path/action_name/action_ext
+	// hitsPathMultiple means the attack spans multiple paths — no path/action_name/action_ext
 	// conditions, producing a /**/*.* wildcard scope (HOST header only).
-	if urlPath == "[multiple]" {
+	if urlPath == hitsPathMultiple {
 		log.Printf("[INFO] wallarm_hits: path=[multiple] — skipping path/action_name/action_ext conditions (wildcard scope)")
 	} else {
 		conditions = append(conditions, locationToConditions(urlPath)...)
@@ -777,10 +788,10 @@ func locationToConditions(location string) []map[string]interface{} {
 			{
 				"type":  "equal",
 				"value": "",
-				"point": map[string]interface{}{"action_name": ""},
+				"point": map[string]interface{}{hitsPointKeyActionName: ""},
 			},
 			{
-				"type":  "absent",
+				"type":  hitsCondTypeAbsent,
 				"value": "",
 				"point": map[string]interface{}{"path": "0"},
 			},
@@ -805,7 +816,7 @@ func locationToConditions(location string) []map[string]interface{} {
 
 	// Terminating absent — fixes the length of the path chain.
 	conditions = append(conditions, map[string]interface{}{
-		"type":  "absent",
+		"type":  hitsCondTypeAbsent,
 		"value": "",
 		"point": map[string]interface{}{"path": strconv.Itoa(len(pathParts))},
 	})
@@ -823,7 +834,7 @@ func actionNameExtConditions(segment string) []map[string]interface{} {
 			{
 				"type":  "equal",
 				"value": "",
-				"point": map[string]interface{}{"action_name": name},
+				"point": map[string]interface{}{hitsPointKeyActionName: name},
 			},
 			{
 				"type":  "equal",
@@ -837,10 +848,10 @@ func actionNameExtConditions(segment string) []map[string]interface{} {
 		{
 			"type":  "equal",
 			"value": "",
-			"point": map[string]interface{}{"action_name": segment},
+			"point": map[string]interface{}{hitsPointKeyActionName: segment},
 		},
 		{
-			"type":  "absent",
+			"type":  hitsCondTypeAbsent,
 			"value": "",
 			"point": map[string]interface{}{"action_ext": ""},
 		},
@@ -863,9 +874,7 @@ func buildRulesFromHits(hits []*wallarm.Hit, actionDetails []wallarm.ActionDetai
 		if !exists {
 			wrapped := resourcerule.WrapPointElements(h.Point)
 			pointStrs := make([][]string, 0, len(wrapped))
-			for _, inner := range wrapped {
-				pointStrs = append(pointStrs, inner)
-			}
+			pointStrs = append(pointStrs, wrapped...)
 			g = &pointGroup{PointWrapped: pointStrs}
 			groups[ph] = g
 		}

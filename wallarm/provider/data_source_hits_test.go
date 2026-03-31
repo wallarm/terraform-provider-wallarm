@@ -170,7 +170,7 @@ func TestLocationToConditions_SimplePath(t *testing.T) {
 	}
 
 	pm0, _ := result[0]["point"].(map[string]interface{})
-	if v, _ := pm0["action_name"]; v != "api" {
+	if v := pm0["action_name"]; v != "api" {
 		t.Errorf("expected action_name=api, got %v", v)
 	}
 
@@ -196,12 +196,12 @@ func TestLocationToConditions_MultiSegment(t *testing.T) {
 	}
 
 	pm0, _ := result[0]["point"].(map[string]interface{})
-	if v, _ := pm0["action_name"]; v != "users" {
+	if v := pm0["action_name"]; v != "users" {
 		t.Errorf("expected action_name=users, got %v", v)
 	}
 
 	pm2, _ := result[2]["point"].(map[string]interface{})
-	if v, _ := pm2["path"]; v != "0" {
+	if v := pm2["path"]; v != "0" {
 		t.Errorf("expected path index 0, got %v", v)
 	}
 	if result[2]["value"] != "api" {
@@ -209,7 +209,7 @@ func TestLocationToConditions_MultiSegment(t *testing.T) {
 	}
 
 	pm3, _ := result[3]["point"].(map[string]interface{})
-	if v, _ := pm3["path"]; v != "1" {
+	if v := pm3["path"]; v != "1" {
 		t.Errorf("expected path index 1, got %v", v)
 	}
 	if result[3]["value"] != "v1" {
@@ -230,11 +230,11 @@ func TestLocationToConditions_PathWithExtension(t *testing.T) {
 	}
 
 	pm0, _ := result[0]["point"].(map[string]interface{})
-	if v, _ := pm0["action_name"]; v != "data" {
+	if v := pm0["action_name"]; v != "data" {
 		t.Errorf("expected action_name=data, got %v", v)
 	}
 	pm1, _ := result[1]["point"].(map[string]interface{})
-	if v, _ := pm1["action_ext"]; v != "json" {
+	if v := pm1["action_ext"]; v != "json" {
 		t.Errorf("expected action_ext=json, got %v", v)
 	}
 }
@@ -248,7 +248,7 @@ func TestLocationToConditions_PathNoExtension(t *testing.T) {
 	}
 
 	pm0, _ := result[0]["point"].(map[string]interface{})
-	if v, _ := pm0["action_name"]; v != "login" {
+	if v := pm0["action_name"]; v != "login" {
 		t.Errorf("expected action_name=login, got %v", v)
 	}
 	if result[1]["type"] != "absent" {
@@ -264,7 +264,7 @@ func TestActionNameExtConditions_WithExtension(t *testing.T) {
 	}
 
 	pm0, _ := result[0]["point"].(map[string]interface{})
-	if v, _ := pm0["action_name"]; v != "file" {
+	if v := pm0["action_name"]; v != "file" {
 		t.Errorf("expected action_name=file, got %v", v)
 	}
 	if result[0]["type"] != "equal" {
@@ -272,7 +272,7 @@ func TestActionNameExtConditions_WithExtension(t *testing.T) {
 	}
 
 	pm1, _ := result[1]["point"].(map[string]interface{})
-	if v, _ := pm1["action_ext"]; v != "json" {
+	if v := pm1["action_ext"]; v != "json" {
 		t.Errorf("expected action_ext=json, got %v", v)
 	}
 	if result[1]["type"] != "equal" {
@@ -288,7 +288,7 @@ func TestActionNameExtConditions_WithoutExtension(t *testing.T) {
 	}
 
 	pm0, _ := result[0]["point"].(map[string]interface{})
-	if v, _ := pm0["action_name"]; v != "login" {
+	if v := pm0["action_name"]; v != "login" {
 		t.Errorf("expected action_name=login, got %v", v)
 	}
 

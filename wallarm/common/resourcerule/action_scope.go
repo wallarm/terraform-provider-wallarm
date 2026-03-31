@@ -337,7 +337,7 @@ func validateActionBlocks(d *schema.ResourceDiff) error {
 			}
 
 			// Track URI vs path/name/ext/query for conflict check.
-			if key == "uri" {
+			if key == pointKeyURI {
 				hasURI = true
 			}
 			if uriConflictPoints[key] {
@@ -345,17 +345,17 @@ func validateActionBlocks(d *schema.ResourceDiff) error {
 			}
 
 			// Instance requires type = "".
-			if key == "instance" && condType != "" {
+			if key == pointKeyInstance && condType != "" {
 				return fmt.Errorf("action condition with point \"instance\" requires type = \"\", got %q", condType)
 			}
 
 			// Point-value points require value = "".
-			if pointValuePoints[key] && condType != "absent" && condValue != "" {
+			if pointValuePoints[key] && condType != condTypeAbsent && condValue != "" {
 				return fmt.Errorf("action condition with point %q: the value goes in the point map, \"value\" field must be empty", key)
 			}
 
 			// Header and query require non-empty value (it's the matched content).
-			if (key == "header" || key == "query") && condType != "absent" && condValue == "" {
+			if (key == pointKeyHeader || key == "query") && condType != condTypeAbsent && condValue == "" {
 				return fmt.Errorf("action condition with point %q requires a non-empty \"value\" (the content to match)", key)
 			}
 		}
@@ -380,33 +380,33 @@ func ActionDetailToSchemaItem(a wallarm.ActionDetails) map[string]interface{} {
 	pointMap := map[string]interface{}{}
 
 	switch pointKey {
-	case "header":
-		pointMap["header"] = strings.ToUpper(ActionPointSecond(a))
-	case "get":
+	case pointKeyHeader:
+		pointMap[pointKeyHeader] = strings.ToUpper(ActionPointSecond(a))
+	case pointKeyGet:
 		pointMap["query"] = ActionPointSecond(a)
-	case "path":
-		pointMap["path"] = fmt.Sprintf("%d", ActionPointIndex(a))
-	case "instance":
-		pointMap["instance"] = value
+	case pointKeyPath:
+		pointMap[pointKeyPath] = fmt.Sprintf("%d", ActionPointIndex(a))
+	case pointKeyInstance:
+		pointMap[pointKeyInstance] = value
 		value = ""
 		condType = ""
-	case "action_name":
-		pointMap["action_name"] = value
+	case pointKeyActionName:
+		pointMap[pointKeyActionName] = value
 		value = ""
-	case "action_ext":
-		pointMap["action_ext"] = value
+	case pointKeyActionExt:
+		pointMap[pointKeyActionExt] = value
 		value = ""
-	case "method":
-		pointMap["method"] = value
+	case pointKeyMethod:
+		pointMap[pointKeyMethod] = value
 		value = ""
-	case "scheme":
-		pointMap["scheme"] = value
+	case pointKeyScheme:
+		pointMap[pointKeyScheme] = value
 		value = ""
-	case "proto":
-		pointMap["proto"] = value
+	case pointKeyProto:
+		pointMap[pointKeyProto] = value
 		value = ""
-	case "uri":
-		pointMap["uri"] = value
+	case pointKeyURI:
+		pointMap[pointKeyURI] = value
 		value = ""
 	}
 

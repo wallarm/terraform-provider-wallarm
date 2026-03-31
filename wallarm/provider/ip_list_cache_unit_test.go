@@ -247,7 +247,7 @@ func TestIPListCache_EntryCount(t *testing.T) {
 	}
 }
 
-func TestIPListCache_LockCreate_UnlockCreate(t *testing.T) {
+func TestIPListCache_LockCreate_UnlockCreate(_ *testing.T) {
 	cache := NewIPListCache()
 
 	// Test that Lock/Unlock works without deadlock for each list type.

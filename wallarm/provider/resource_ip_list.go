@@ -577,7 +577,9 @@ func parseAppIDsKey(s string) ([]int, error) {
 //	terraform import wallarm_denylist.ips_app1 8649/subnet/1804809600/apps/1,3
 //	terraform import wallarm_denylist.ips_all 8649/subnet/1804809600/apps/all
 //	terraform import wallarm_denylist.ips_chunk1 8649/subnet/1804809600/apps/1,3/0
-func resourceWallarmIPListImport(listType wallarm.IPListType) schema.StateContextFunc {
+//
+// TODO: refactor to reduce cyclomatic complexity — extract subnet/grouped type handling into separate functions.
+func resourceWallarmIPListImport(listType wallarm.IPListType) schema.StateContextFunc { //nolint:gocyclo // complex import logic, refactor planned
 	return func(_ context.Context, d *schema.ResourceData, m interface{}) ([]*schema.ResourceData, error) {
 		client := apiClient(m)
 

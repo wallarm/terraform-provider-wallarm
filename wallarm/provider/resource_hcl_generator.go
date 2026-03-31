@@ -19,7 +19,15 @@ import (
 	wallarm "github.com/wallarm/wallarm-go"
 )
 
-var validRuleTypes = []string{"disable_stamp", "disable_attack_type"}
+// Rule type and source constants for the HCL generator.
+const (
+	ruleTypeDisableStamp      = "disable_stamp"
+	ruleTypeDisableAttackType = "disable_attack_type"
+	generatorSourceAPI        = "api"
+	generatorSourceHits       = "hits"
+)
+
+var validRuleTypes = []string{ruleTypeDisableStamp, ruleTypeDisableAttackType}
 
 func resourceWallarmRuleGenerator() *schema.Resource {
 	return &schema.Resource{
@@ -57,8 +65,8 @@ func resourceWallarmRuleGenerator() *schema.Resource {
 			"source": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				Default:      "hits",
-				ValidateFunc: validation.StringInSlice([]string{"hits", "api"}, false),
+				Default:      generatorSourceHits,
+				ValidateFunc: validation.StringInSlice([]string{generatorSourceHits, generatorSourceAPI}, false),
 				Description:  "Source of rules: 'hits' (from data.wallarm_hits via requests_json) or 'api' (fetch existing rules from Wallarm API).",
 			},
 			"rule_types": {
@@ -218,7 +226,7 @@ func generateRuleFiles(d *schema.ResourceData, clientID int, m interface{}) ([]s
 	// Apply defaults for Optional+Computed fields.
 	source, _ := d.Get("source").(string)
 	prefix := "fp"
-	if source == "api" {
+	if source == generatorSourceAPI {
 		prefix = "rule"
 	}
 	if v, ok := d.GetOk("resource_prefix"); ok {
@@ -245,10 +253,10 @@ func generateRuleFiles(d *schema.ResourceData, clientID int, m interface{}) ([]s
 	}
 
 	if source == "" {
-		source = "hits"
+		source = generatorSourceHits
 	}
 
-	if source == "api" {
+	if source == generatorSourceAPI {
 		return generateFromAPI(m, clientID, outputDir, prefix, filename, comment, ruleTypes, split, movedFrom)
 	}
 
@@ -321,8 +329,8 @@ func generateFromAPI(m interface{}, clientID int, outputDir, prefix, filename, c
 
 	// Map API rule types to internal types used by the generator.
 	apiTypeMap := map[string]string{
-		"disable_stamp":       "disable_stamp",
-		"disable_attack_type": "disable_attack_type",
+		ruleTypeDisableStamp:      ruleTypeDisableStamp,
+		ruleTypeDisableAttackType: ruleTypeDisableAttackType,
 	}
 
 	// Build the filter for HintRead.
@@ -387,9 +395,9 @@ func generateFromAPI(m interface{}, clientID int, outputDir, prefix, filename, c
 			Point:    point,
 		}
 		switch internalType {
-		case "disable_stamp":
+		case ruleTypeDisableStamp:
 			er.Stamp = rule.Stamp
-		case "disable_attack_type":
+		case ruleTypeDisableAttackType:
 			er.AttackType = rule.AttackType
 		}
 
@@ -446,9 +454,9 @@ func generateFromAPI(m interface{}, clientID int, outputDir, prefix, filename, c
 					AttackType: r.AttackType,
 				}
 				switch r.RuleType {
-				case "disable_stamp":
+				case ruleTypeDisableStamp:
 					generateStaticDisableStamp(f, name, cfg)
-				case "disable_attack_type":
+				case ruleTypeDisableAttackType:
 					generateStaticDisableAttackType(f, name, cfg)
 				}
 				totalRules++
@@ -559,7 +567,7 @@ func groupHitsByPoint(hitsJSONStr string) (map[string]*pointGroup, error) {
 // expandedRule is a single expanded rule ready for HCL generation.
 type expandedRule struct {
 	Key        string // for_each key or resource name suffix
-	RuleType   string // "disable_stamp" or "disable_attack_type"
+	RuleType   string // ruleTypeDisableStamp or ruleTypeDisableAttackType
 	Point      [][]string
 	Stamp      int
 	AttackType string
@@ -584,22 +592,22 @@ func expandRules(groups map[string]*pointGroup, ruleTypes []string) []expandedRu
 		g := groups[ph]
 		prefix := ph[:min(8, len(ph))]
 
-		if rtSet["disable_stamp"] {
+		if rtSet[ruleTypeDisableStamp] {
 			for _, s := range g.Stamps {
 				rules = append(rules, expandedRule{
 					Key:      fmt.Sprintf("%s_%d", prefix, s),
-					RuleType: "disable_stamp",
+					RuleType: ruleTypeDisableStamp,
 					Point:    g.PointWrapped,
 					Stamp:    s,
 				})
 			}
 		}
 
-		if rtSet["disable_attack_type"] {
+		if rtSet[ruleTypeDisableAttackType] {
 			for _, at := range g.AttackTypes {
 				rules = append(rules, expandedRule{
 					Key:        fmt.Sprintf("%s_%s", prefix, at),
-					RuleType:   "disable_attack_type",
+					RuleType:   ruleTypeDisableAttackType,
 					Point:      g.PointWrapped,
 					AttackType: at,
 				})
@@ -628,9 +636,9 @@ func generateStaticFiles(outputDir, prefix, filename string, clientID int, comme
 			}
 			resourceType := "wallarm_rule_" + r.RuleType
 			switch r.RuleType {
-			case "disable_stamp":
+			case ruleTypeDisableStamp:
 				generateStaticDisableStamp(f, name, cfg)
-			case "disable_attack_type":
+			case ruleTypeDisableAttackType:
 				generateStaticDisableAttackType(f, name, cfg)
 			}
 			if movedFrom != "" {
@@ -645,7 +653,7 @@ func generateStaticFiles(outputDir, prefix, filename string, clientID int, comme
 	}
 
 	// Split: one file per rule.
-	var files []string
+	files := make([]string, 0, len(rules))
 	for _, r := range rules {
 		f := hclwrite.NewEmptyFile()
 		name := fmt.Sprintf("%s_%s", prefix, r.Key)
@@ -659,9 +667,9 @@ func generateStaticFiles(outputDir, prefix, filename string, clientID int, comme
 		}
 		resourceType := "wallarm_rule_" + r.RuleType
 		switch r.RuleType {
-		case "disable_stamp":
+		case ruleTypeDisableStamp:
 			generateStaticDisableStamp(f, name, cfg)
-		case "disable_attack_type":
+		case ruleTypeDisableAttackType:
 			generateStaticDisableAttackType(f, name, cfg)
 		}
 		if movedFrom != "" {
@@ -689,7 +697,7 @@ func resolveRuleTypes(d *schema.ResourceData) []string {
 			return types
 		}
 	}
-	return []string{"disable_stamp", "disable_attack_type"}
+	return []string{ruleTypeDisableStamp, ruleTypeDisableAttackType}
 }
 
 func parseActionConditionsJSON(raw json.RawMessage) ([]ActionCondition, error) {
@@ -734,7 +742,7 @@ func writeHCLFile(path string, f *hclwrite.File) error {
 	}
 
 	content := hclwrite.Format(f.Bytes())
-	if err := os.WriteFile(path, content, 0644); err != nil {
+	if err := os.WriteFile(path, content, 0600); err != nil {
 		return fmt.Errorf("failed to write file %s: %w", path, err)
 	}
 

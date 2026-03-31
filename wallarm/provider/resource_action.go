@@ -257,7 +257,7 @@ func expandActionConditions(raw []interface{}) []wallarm.ActionDetails {
 		var value interface{}
 		if v, ok := m["value"]; ok && v.(string) != "" {
 			value = v.(string)
-		} else if condType != "absent" && condType != "" {
+		} else if condType != hitsCondTypeAbsent && condType != "" {
 			value = ""
 		}
 		// For absent type, value stays nil.

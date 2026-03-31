@@ -86,7 +86,9 @@ resource "wallarm_hits_index" "this" {
 # ─── Detect new request_ids ─────────────────────────────────────────────────
 
 locals {
-  _cached = toset(compact(split(",", wallarm_hits_index.this.cached_request_ids)))
+  # coalescelist: on first plan cached_request_ids is unknown → falls back to [""]
+  # which never matches a real request_id → all are "new" → single apply works.
+  _cached = toset(coalescelist(tolist([""]), tolist(compact(split(",", wallarm_hits_index.this.cached_request_ids)))))
 
   _new_request_ids = toset([
     for id in keys(var.request_ids) : id
@@ -182,13 +184,14 @@ resource "wallarm_rule_disable_attack_type" "this" {
 # ─── Optional: generate HCL configs ────────────────────────────────────────
 
 resource "wallarm_rule_generator" "configs" {
-  count     = var.generate_configs && length(local._all_rules) > 0 ? 1 : 0
-  source    = "hits"
-  client_id = var.client_id
+  count      = var.generate_configs && length(local._all_rules) > 0 ? 1 : 0
+  source     = "hits"
+  client_id  = var.client_id
+  moved_from = "this"
   requests_json = jsonencode({
     for req_id in keys(var.request_ids) : req_id => {
-      hits              = try(jsonencode(data.wallarm_hits.new[req_id].hits), "[]")
-      action_conditions = try(jsonencode(data.wallarm_hits.new[req_id].action_conditions), "[]")
+      hits              = try(data.wallarm_hits.new[req_id].hits, [])
+      action_conditions = try(data.wallarm_hits.new[req_id].action_conditions, [])
     }
   })
   output_dir = var.output_dir

@@ -227,7 +227,7 @@ func dataSourceWallarmRulesRead(_ context.Context, d *schema.ResourceData, m int
 	}
 
 	// Filter rules by type.
-	var filteredRules []wallarm.ActionBody
+	filteredRules := make([]wallarm.ActionBody, 0, len(allRules))
 	for _, rule := range allRules {
 		if _, known := resourcerule.APITypeToTerraformResource[rule.Type]; !known {
 			continue

@@ -25,7 +25,7 @@ const (
 // Max 64 chars. Prefix truncated at last "_" boundary if needed.
 func ActionDirName(conditions []wallarm.ActionDetails) string {
 	if len(conditions) == 0 {
-		return "_default"
+		return defaultActionDir
 	}
 
 	rev := ReverseMapActions(conditions)
@@ -81,7 +81,7 @@ func buildDirPrefix(instance, domain, path string) string {
 //	"/api/**/*.*" → "api_.._._."
 //	"*" → ".", "**" → ".."
 func sanitizePath(path string) string {
-	if path == "" || path == "/**/*.*" {
+	if path == "" || path == pathGlobalWildcard {
 		return ""
 	}
 	if path == "/" {
