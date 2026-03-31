@@ -343,7 +343,6 @@ func dataSourceWallarmHitsRead(_ context.Context, d *schema.ResourceData, m inte
 	actionDirName := resourcerule.ActionDirName(actionDetails)
 
 	// Phase 5c: Validate action conditions against API (ActionReadByHitID).
-	// Compare exactly what we produce against what the API returns.
 	if len(directHits[0].ID) >= 2 {
 		apiResp, err := client.ActionReadByHitID(directHits[0].ID)
 		if err != nil {
@@ -352,17 +351,19 @@ func dataSourceWallarmHitsRead(_ context.Context, d *schema.ResourceData, m inte
 			apiHash := resourcerule.ConditionsHash(apiResp.Body.Conditions)
 
 			if apiHash != actionHash {
-				log.Printf("[DEBUG] wallarm_hits: provider conditions (%d):", len(actionDetails))
+				log.Printf("[ERROR] wallarm_hits: action conditions mismatch for hit %v", directHits[0].ID)
+				log.Printf("[ERROR]   provider hash=%s, API hash=%s", actionHash[:16], apiHash[:16])
+				log.Printf("[ERROR]   provider conditions (%d):", len(actionDetails))
 				for i, c := range actionDetails {
-					log.Printf("[DEBUG]   [%d] type=%q point=%v value=%v (value_type=%T)", i, c.Type, c.Point, c.Value, c.Value)
+					log.Printf("[ERROR]     [%d] type=%q point=%v value=%v (value_type=%T)", i, c.Type, c.Point, c.Value, c.Value)
 				}
-				log.Printf("[DEBUG] wallarm_hits: API conditions (%d):", len(apiResp.Body.Conditions))
+				log.Printf("[ERROR]   API conditions (%d):", len(apiResp.Body.Conditions))
 				for i, c := range apiResp.Body.Conditions {
-					log.Printf("[DEBUG]   [%d] type=%q point=%v value=%v (value_type=%T)", i, c.Type, c.Point, c.Value, c.Value)
+					log.Printf("[ERROR]     [%d] type=%q point=%v value=%v (value_type=%T)", i, c.Type, c.Point, c.Value, c.Value)
 				}
 				return diag.Errorf(
 					"wallarm_hits: action conditions mismatch — provider hash=%s, API hash=%s for hit %v. "+
-						"If the difference is instance (pool ID), check include_instance setting and client's instance mode.",
+						"Run with TF_LOG=DEBUG to see both condition sets.",
 					actionHash[:16], apiHash[:16], directHits[0].ID,
 				)
 			}
