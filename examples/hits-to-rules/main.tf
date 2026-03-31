@@ -1,22 +1,27 @@
 # Hits to Rules
 #
 # Creates false positive suppression rules from Wallarm hit data.
-# Single terraform apply — no filesystem dependency, state-only.
+# Single terraform apply — state-only, no filesystem dependency.
+#
+# How it works:
+#   - wallarm_hits_index tracks which request_ids are cached
+#   - data.wallarm_hits fetches ONLY for new (uncached) request_ids
+#   - terraform_data.rules_cache persists rules per request_id (ignore_changes)
+#   - After first apply, cached_request_ids matches request_ids → no more fetches
+#   - Rules survive in state even after hits expire from the API
 #
 # Usage:
 #   1. Add request_ids to terraform.tfvars
 #   2. terraform apply
 #
-# With attack mode (expand to related hits by attack_id):
-#   terraform apply -var='mode=attack'
+# Add more request_ids later — just add to tfvars and apply.
+# Only new entries trigger API calls.
 #
-# Generate HCL config files (optional, for reference or migration):
-#   terraform apply -var='generate_configs=true'
-#
-# Example request_ids in terraform.tfvars:
+# Per-request config via JSON:
 #   request_ids = {
-#     "abc123def456" = []                   # all rule types
-#     "789ghi012jkl" = ["disable_stamp"]    # stamp rules only
+#     "abc123" = "{}"                                       # defaults
+#     "def456" = "{\"mode\":\"attack\"}"                    # attack mode
+#     "ghi789" = "{\"rule_types\":[\"disable_stamp\"]}"     # stamp only
 #   }
 
 terraform {
@@ -48,65 +53,77 @@ variable "client_id" {
 }
 
 variable "request_ids" {
-  type        = map(list(string))
-  description = "Map of request_id → rule_types filter. Empty list = all types (disable_stamp + disable_attack_type)."
+  type        = map(string)
+  description = "Map of request_id → config JSON. Empty object {} = defaults."
 }
 
-variable "mode" {
-  type        = string
-  default     = "request"
-  description = "Fetch mode: 'request' (direct hits) or 'attack' (expand to related hits by attack_id)."
+variable "default_mode" {
+  type    = string
+  default = "request"
 }
 
-variable "generate_configs" {
-  type        = bool
-  default     = false
-  description = "Generate HCL config files on disk for reference or migration."
+# ─── Hits index (tracks cached request_ids) ─────────────────────────────────
+
+resource "wallarm_hits_index" "this" {
+  client_id   = var.client_id
+  request_ids = keys(var.request_ids)
 }
 
-variable "output_dir" {
-  type        = string
-  default     = "./generated_rules"
-  description = "Output directory for generated HCL configs."
+# ─── Detect new request_ids ─────────────────────────────────────────────────
+
+locals {
+  _cached = toset(compact(split(",", wallarm_hits_index.this.cached_request_ids)))
+
+  _new_request_ids = toset([
+    for id in keys(var.request_ids) : id
+    if !contains(local._cached, id)
+  ])
+
+  _request_configs = {
+    for id, cfg_json in var.request_ids :
+    id => jsondecode(cfg_json)
+  }
 }
 
-# ─── Fetch hits ─────────────────────────────────────────────────────────────
+# ─── Fetch hits ONLY for new request_ids ────────────────────────────────────
 
-data "wallarm_hits" "this" {
-  for_each   = var.request_ids
+data "wallarm_hits" "new" {
+  for_each   = local._new_request_ids
   client_id  = var.client_id
   request_id = each.key
-  mode       = var.mode
+  mode       = try(local._request_configs[each.key].mode, var.default_mode)
+}
+
+# ─── Persist rules in state (hits are ephemeral) ──────────────────────────
+
+resource "terraform_data" "rules_cache" {
+  for_each = var.request_ids
+  input = try(jsonencode([
+    for rule in data.wallarm_hits.new[each.key].rules : merge(rule, {
+      key = "${substr(each.key, 0, 8)}_${rule.key}"
+    })
+  ]), null)
+  lifecycle {
+    ignore_changes = [input]
+  }
 }
 
 # ─── Build rule maps ────────────────────────────────────────────────────────
 
 locals {
-  _rules_per_request = {
-    for req_id, filter in var.request_ids :
-    req_id => [
-      for rule in data.wallarm_hits.this[req_id].rules : {
-        key           = "${req_id}_${rule.key}"
-        resource_type = rule.resource_type
-        stamp         = rule.stamp
-        attack_type   = rule.attack_type
-        point         = rule.point
-        action        = rule.action
-      }
-      if length(filter) == 0 || contains(filter, replace(rule.resource_type, "wallarm_rule_", ""))
-    ]
-  }
-
-  all_rules = flatten(values(local._rules_per_request))
+  _all_rules = flatten([
+    for req_id in keys(var.request_ids) :
+    try(jsondecode(terraform_data.rules_cache[req_id].input), [])
+  ])
 
   stamp_rules = {
-    for r in local.all_rules : r.key => r
-    if r.resource_type == "wallarm_rule_disable_stamp"
+    for rule in local._all_rules : rule.key => rule
+    if rule.resource_type == "wallarm_rule_disable_stamp"
   }
 
   attack_type_rules = {
-    for r in local.all_rules : r.key => r
-    if r.resource_type == "wallarm_rule_disable_attack_type"
+    for rule in local._all_rules : rule.key => rule
+    if rule.resource_type == "wallarm_rule_disable_attack_type"
   }
 }
 
@@ -148,28 +165,13 @@ resource "wallarm_rule_disable_attack_type" "this" {
   }
 }
 
-# ─── Optional: generate HCL configs ────────────────────────────────────────
-
-resource "wallarm_rule_generator" "configs" {
-  count  = var.generate_configs ? 1 : 0
-  source = "hits"
-  requests_json = jsonencode({
-    for req_id, filter in var.request_ids : req_id => {
-      hits              = jsonencode(data.wallarm_hits.this[req_id].hits)
-      action_conditions = jsonencode(data.wallarm_hits.this[req_id].action_conditions)
-      rule_types        = filter
-    }
-  })
-  output_dir = var.output_dir
-}
-
 # ─── Outputs ────────────────────────────────────────────────────────────────
 
 output "rules_created" {
   value = {
     disable_stamp       = length(local.stamp_rules)
     disable_attack_type = length(local.attack_type_rules)
-    total               = length(local.all_rules)
+    total               = length(local._all_rules)
   }
 }
 
