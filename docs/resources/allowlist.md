@@ -73,7 +73,7 @@ One of `ip_range`, `country`, `datacenter`, or `proxy_type` is required. They ar
 * `datacenter` - (optional) List of datacenter providers.
   Valid values: `alibaba`, `aws`, `azure`, `docean`, `gce`, `hetzner`, `huawei`, `ibm`, `linode`, `oracle`, `ovh`, `plusserver`, `rackspace`, `tencent`
 * `proxy_type` - (optional) List of proxy types.
-  Valid values: `MIP`, `PUB`, `WEB`, `SES`, `TOR`, `VPN`
+  Valid values: `DCH`, `MIP`, `PUB`, `WEB`, `SES`, `TOR`, `VPN`
 * `time_format` - (**required**) Time format for the entry duration.
   - `Minutes` - Time in minutes (e.g. `60`)
   - `Hours` - Time in hours (e.g. `5`)
@@ -103,17 +103,27 @@ One of `ip_range`, `country`, `datacenter`, or `proxy_type` is required. They ar
 # Grouped types (country/datacenter/proxy): import by group ID
 $ terraform import wallarm_allowlist.countries 8649/52000393
 
-# Subnets: import all IPs with same expiration as one resource
+# Subnets: import all IPs with same expiration
 $ terraform import wallarm_allowlist.ips 8649/subnet/1804809600
 
-# Subnets (chunked): import chunk 0 (first 1000 IPs) when >1000 share the same expiration
-$ terraform import wallarm_allowlist.ips_0 8649/subnet/1804809600/0
+# Subnets scoped to specific applications
+$ terraform import wallarm_allowlist.ips_app 8649/subnet/1804809600/apps/1,3
+
+# Subnets with no application filter
+$ terraform import wallarm_allowlist.ips_all 8649/subnet/1804809600/apps/all
+
+# Subnets (chunked): when >1000 IPs share the same expiration + app scope
+$ terraform import wallarm_allowlist.ips_0 8649/subnet/1804809600/apps/all/0
 ```
 
-* `8649` - Client ID.
-* `52000393` - API group ID (for grouped types).
-* `subnet/1804809600` - Entry type and expiration unix timestamp (for subnets).
-* `subnet/1804809600/0` - Entry type, expiration, and chunk index (0-indexed, 1000 per chunk).
+| Format | Use case |
+|--------|----------|
+| `{clientID}/{groupID}` | Country, datacenter, proxy type |
+| `{clientID}/subnet/{expiredAt}` | Subnets with same expiration and same app scope |
+| `{clientID}/subnet/{expiredAt}/apps/{appIDs}` | Subnets filtered by application scope (`1,3` or `all`) |
+| `{clientID}/subnet/{expiredAt}/apps/{appIDs}/{chunkIdx}` | Chunked import for >1000 subnets (0-indexed) |
+
+If the simple format (`subnet/{expiredAt}`) is used but entries have mixed application scopes, the import will error with guidance to use the `/apps/{appIDs}` format.
 
 For automated bulk import using the `wallarm_ip_lists` data source, see the [IP List Import Guide](../guides/ip_list_import).
 

@@ -9,7 +9,7 @@ description: |-
 
 The `action` argument defines the scope (conditions) for where a rule applies. There are two ways to define action conditions:
 
-## Option 1: Scope fields (recommended)
+## Option 1: Scope fields (simplified)
 
 Use `action_path`, `action_domain`, and other scope fields to define conditions. The provider automatically expands them into the correct action conditions.
 
@@ -58,7 +58,7 @@ Path wildcards:
 - `*` as filename — matches any endpoint: `/articles/*`
 - `*.*` — matches any file with any extension: `/**/*.*`
 
-## Option 2: Explicit action blocks
+## Option 2: Explicit action blocks (standard)
 
 Use `action {}` blocks to define conditions directly. This gives full control over condition types and values.
 

@@ -87,6 +87,26 @@ data "wallarm_rules" "vpatch_only" {
 
 See the [`wallarm_rules` data source documentation](../data-sources/rules) for the full list of valid type values.
 
+## Sync Status
+
+Check how many API rules are not yet managed by Terraform — a read-only operation that makes no changes:
+
+```bash
+terraform plan -refresh=false -var='sync_status=true'
+```
+
+This compares rule IDs in the API against rule IDs in Terraform state and outputs the difference:
+
+```
+sync_status = {
+  total_in_api = 142
+  in_state     = 98
+  unmanaged    = 44
+}
+```
+
+Use this to track import progress or detect rules created outside of Terraform. The `sync_status` variable is available in the `examples/import-rules` example module. You can also filter by rule type using `exclude_rule_types` to ignore types you don't plan to manage.
+
 ## Important Notes
 
 - **Plan after import:** Always run `terraform plan` after importing to verify the configuration matches actual state. Adjust your HCL until the plan shows no changes.

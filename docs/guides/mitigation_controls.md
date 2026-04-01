@@ -113,16 +113,7 @@ arbitrary_conditions {
 
 Available on: `rule_brute`, `rule_bola`, `rule_enum`, `rule_forced_browsing`, `rule_rate_limit_enum`.
 
-### Title
+### Title and Comment
 
-The UI "Title" maps to the `comment` attribute. Defaults to `"Managed by Terraform"` when not specified.
+The `title` and `comment` are independent fields. In the Wallarm Console UI, "Title" corresponds to the `title` attribute and "Description" corresponds to `comment`. Both are optional. `comment` defaults to `"Managed by Terraform"` when not specified.
 
-## Counter Resources
-
-Some mitigation controls use counter resources to define what is being counted:
-
-| Counter resource | Used by | Purpose |
-|-----------------|---------|---------|
-| [`wallarm_rule_bruteforce_counter`](../resources/rule_bruteforce_counter) | `rule_brute` | Defines parameters to count for brute force detection |
-| [`wallarm_rule_dirbust_counter`](../resources/rule_dirbust_counter) | `rule_forced_browsing` | Defines parameters to count for forced browsing detection |
-| [`wallarm_rule_bola_counter`](../resources/rule_bola_counter) | `rule_bola` | Defines parameters to count for BOLA detection |
