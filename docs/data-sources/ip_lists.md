@@ -1,7 +1,7 @@
 ---
 layout: "wallarm"
 page_title: "Wallarm: wallarm_ip_lists"
-subcategory: "Data Source"
+subcategory: "IP Lists"
 description: |-
   Reads existing IP list entries from the Wallarm API.
 ---

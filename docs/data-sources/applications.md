@@ -1,7 +1,7 @@
 ---
 layout: "wallarm"
 page_title: "Wallarm: wallarm_applications"
-subcategory: "Data Source"
+subcategory: "Common"
 description: |-
   Reads existing application pools from the Wallarm API.
 ---

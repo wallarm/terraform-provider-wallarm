@@ -1,7 +1,7 @@
 ---
 layout: "wallarm"
 page_title: "Wallarm: wallarm_rule_credential_stuffing_regex"
-subcategory: "Rule"
+subcategory: "Rules"
 description: |-
   Provides the "Authentication endpoints by regular expression in Credential Stuffing" rule resource.
 ---

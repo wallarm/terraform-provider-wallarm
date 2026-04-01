@@ -1,7 +1,7 @@
 ---
 layout: "wallarm"
 page_title: "Wallarm: wallarm_rule_vpatch"
-subcategory: "Rule"
+subcategory: "Rules"
 description: |-
   Provides the "Create a virtual patch" rule resource.
 ---

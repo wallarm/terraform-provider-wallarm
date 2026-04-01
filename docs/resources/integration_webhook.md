@@ -1,7 +1,7 @@
 ---
 layout: "wallarm"
 page_title: "Wallarm: wallarm_integration_webhook"
-subcategory: "Integration"
+subcategory: "Integrations"
 description: |-
   Provides the resource to manage Webhook integrations.
 ---

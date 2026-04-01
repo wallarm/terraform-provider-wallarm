@@ -1,3 +1,11 @@
+# v2.2.1 (Apr 2, 2026)
+
+## DOCUMENTATION:
+
+* Reorganized registry sidebar: resources and data sources grouped into Common, Integrations, IP Lists, and Rules subcategories
+* Fixed guide page titles for registry display (`action` → "Wallarm Rule Action", `point` → "Wallarm Rule Point")
+* Removed redundant "Guide" subcategory from guides
+
 # v2.2.0 (Apr 1, 2026)
 
 ## FEATURES:

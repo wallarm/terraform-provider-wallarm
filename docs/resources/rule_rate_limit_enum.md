@@ -1,7 +1,7 @@
 ---
 layout: "wallarm"
 page_title: "Wallarm: wallarm_rule_rate_limit_enum"
-subcategory: "Rule"
+subcategory: "Rules"
 description: |-
   Provides the "DoS protection" mitigation control resource.
 ---

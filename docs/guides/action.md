@@ -1,6 +1,6 @@
 ---
 layout: "wallarm"
-page_title: "Wallarm: action"
+page_title: "Wallarm Rule Action"
 description: |-
   Describes the action argument shared across Wallarm rule resources.
 ---

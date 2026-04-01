@@ -1,7 +1,7 @@
 ---
 layout: "wallarm"
 page_title: "Wallarm: wallarm_rule_bola"
-subcategory: "Rule"
+subcategory: "Rules"
 description: |-
   Provides the "BOLA protection" mitigation control resource.
 ---

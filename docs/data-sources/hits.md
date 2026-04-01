@@ -1,7 +1,7 @@
 ---
 layout: "wallarm"
 page_title: "Wallarm: wallarm_hits"
-subcategory: "Data Source"
+subcategory: "Common"
 description: |-
   Fetches attack hits from the Wallarm API for a given request ID.
 ---

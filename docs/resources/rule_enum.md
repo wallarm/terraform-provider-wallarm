@@ -1,7 +1,7 @@
 ---
 layout: "wallarm"
 page_title: "Wallarm: wallarm_rule_enum"
-subcategory: "Rule"
+subcategory: "Rules"
 description: |-
   Provides the "Enumeration attack protection" mitigation control resource.
 ---

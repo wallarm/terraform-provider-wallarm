@@ -1,7 +1,7 @@
 ---
 layout: "wallarm"
 page_title: "Wallarm: wallarm_rule_disable_stamp"
-subcategory: "Rule"
+subcategory: "Rules"
 description: |-
   Provides the "Disable specific attack stamp" rule resource.
 ---

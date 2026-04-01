@@ -1,7 +1,6 @@
 ---
 layout: "wallarm"
 page_title: "Importing Wallarm Rules"
-subcategory: "Guide"
 description: |-
   How to import existing Wallarm rules into Terraform.
 ---

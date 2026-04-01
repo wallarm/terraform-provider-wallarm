@@ -1,7 +1,6 @@
 ---
 layout: "wallarm"
 page_title: "Creating Rules from Hits"
-subcategory: "Guide"
 description: |-
   How to create false positive suppression rules from Wallarm hit data using Terraform.
 ---

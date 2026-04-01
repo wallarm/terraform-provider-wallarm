@@ -1,7 +1,7 @@
 ---
 layout: "wallarm"
 page_title: "Wallarm: wallarm_rule_file_upload_size_limit"
-subcategory: "Rule"
+subcategory: "Rules"
 description: |-
   Provides the "File upload restriction policy" rule resource.
 ---

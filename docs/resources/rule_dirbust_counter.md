@@ -1,7 +1,7 @@
 ---
 layout: "wallarm"
 page_title: "Wallarm: wallarm_rule_dirbust_counter"
-subcategory: "Rule"
+subcategory: "Rules"
 description: |-
   Provides the "Define force browsing attacks counter" rule resource.
 ---
