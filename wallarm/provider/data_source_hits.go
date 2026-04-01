@@ -860,7 +860,7 @@ func actionNameExtConditions(segment string) []map[string]interface{} {
 
 // buildRulesFromHits groups hits by point and expands into individual rules.
 // Groups directly from []*wallarm.Hit without JSON round-trip.
-// Reuses expandRules from resource_rule_generator.go.
+// Reuses expandRules from resource_hcl_generator.go.
 func buildRulesFromHits(hits []*wallarm.Hit, actionDetails []wallarm.ActionDetails) []interface{} {
 	// Group hits by point_hash directly.
 	groups := make(map[string]*pointGroup)

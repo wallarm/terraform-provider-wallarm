@@ -2,10 +2,11 @@ api_token = "your-api-token"
 api_host  = "https://us1.api.wallarm.com"
 
 # Map of request_id → config JSON.
-# Empty string "" = all rule types, request mode.
+# Empty JSON object "{}" = all rule types, request mode.
 # Specify mode and/or rule_types per request_id as JSON.
-
-
+#
+# First apply: leave request_ids empty (or omit this file) to initialize state.
+# Second apply: add request_ids below and apply.
 request_ids = {
   "4666dee205d69757fd45cf94d2f0d7eb" = "{}"
   # "another_request_id" = "{\"mode\":\"attack\"}"

@@ -1,12 +1,12 @@
 ---
 layout: "wallarm"
-page_title: "Wallarm: wallarm_integration_ms_teams"
+page_title: "Wallarm: wallarm_integration_teams"
 subcategory: "Integration"
 description: |-
   Provides the resource to manage MS Teams integrations.
 ---
 
-# wallarm_integration_ms_teams
+# wallarm_integration_teams
 
 Provides the resource to manage [integrations via MS Teams][1].
 
@@ -20,7 +20,7 @@ The types of events available to be sent via MS Teams:
 ```hcl
 # Creates an integration to send notifications via MS Teams
 
-resource "wallarm_integration_ms_teams" "teams_integration" {
+resource "wallarm_integration_teams" "teams_integration" {
   name = "New Terraform MS Teams Integration"
   webhook_url = "https://gar8347sk.webhook.office.com/webhookb2/a92734837"
   active = true

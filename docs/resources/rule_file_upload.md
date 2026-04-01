@@ -1,12 +1,12 @@
 ---
 layout: "wallarm"
-page_title: "Wallarm: wallarm_rule_file_upload"
+page_title: "Wallarm: wallarm_rule_file_upload_size_limit"
 subcategory: "Rule"
 description: |-
   Provides the "File upload restriction policy" rule resource.
 ---
 
-# wallarm_rule_file_upload
+# wallarm_rule_file_upload_size_limit
 
 Provides the resource to manage mitigation control with the "[File upload restriction policy][1]" action type. This control enforces strict limits on the total request size and/or the size of individual parameters (such as specific file upload fields or JSON payload elements). Additionally, you can configure this rule to limit the maximum size of any header. This capability reduces an attacker's potential to inject payloads or exploit Buffer Overflow vulnerabilities.
 
@@ -38,7 +38,7 @@ resource "wallarm_rule_file_upload_size_limit" "file_upload_restriction" {
 * `client_id` - (optional) ID of the client to apply the rules to. The value is required for [multi-tenant scenarios][2].
 * `action` - (optional) rule conditions. See the [Action Guide](../guides/action) for full documentation on action conditions, point types, and usage examples.
 * `point` - (**required**) request parts to apply the rules to. See the [Point Guide](../guides/point) for the full list of possible values and examples.
-* `size` - (**required**) maximum allowed size of uploading data.
+* `size` - (optional) maximum allowed size of uploading data.
 * `size_unit` - (**required**) dimension of uploading data. Possible values (`b`, `kb`, `mb`, `gb`, `tb`).
 * `mode` - (**required**) protection behaviour which will be applied to the detected attack. Possible values: `monitoring`, `block`, `off`, `default`.
 

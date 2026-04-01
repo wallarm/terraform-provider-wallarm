@@ -164,3 +164,18 @@ The Wallarm API reuses Actions (scope definitions). If two rules have identical 
 - Creating a rule with the same conditions as an existing one will not create a duplicate Action.
 - The provider checks for existing Actions before creating (the `existsAction` check).
 - If the Action already exists, the provider returns an error suggesting to import the existing resource.
+
+## Common fields on all rule resources
+
+In addition to `action` and resource-specific fields, all rule resources support these common arguments:
+
+* `client_id` - (Optional) Client ID. Defaults to the provider's client ID.
+* `comment` - (Optional) Comment stored with the rule. Default: `"Managed by Terraform"`. On import, the provider sets this default, which may trigger an update if the existing rule has a different comment.
+* `variativity_disabled` - (Optional) Disable variativity for the rule. Default: `true`. On import, the provider sets this default, which may trigger an update if the existing rule has variativity enabled.
+
+Common computed attributes:
+
+* `rule_id` - ID of the created rule.
+* `action_id` - The action ID (scope conditions).
+* `rule_type` - Type of the created rule.
+* `mitigation` - Type of the created mitigation (for mitigation controls only).

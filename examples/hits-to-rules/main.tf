@@ -1,18 +1,18 @@
 # Hits to Rules
 #
 # Creates false positive suppression rules from Wallarm hit data.
-# Single terraform apply — state-only, no filesystem dependency.
+# State-only, no filesystem dependency. Rules persist even after hits expire.
 #
 # How it works:
-#   - wallarm_hits_index tracks which request_ids are cached
+#   - wallarm_hits_index tracks which request_ids have been fetched
 #   - data.wallarm_hits fetches ONLY for new (uncached) request_ids
 #   - terraform_data.rules_cache persists rules per request_id (ignore_changes)
-#   - After first apply, cached_request_ids matches request_ids → no more fetches
-#   - Rules survive in state even after hits expire from the API
+#   - After apply, cached_request_ids matches request_ids → no more API calls
 #
-# Usage:
-#   1. Add request_ids to terraform.tfvars
-#   2. terraform apply
+# First-time setup (two applies required):
+#   1. terraform apply                    — initializes state (no request_ids yet)
+#   2. Add request_ids to terraform.tfvars
+#   3. terraform apply                    — fetches hits, creates rules
 #
 # Add more request_ids later — just add to tfvars and apply.
 # Only new entries trigger API calls.
@@ -57,7 +57,8 @@ variable "client_id" {
 
 variable "request_ids" {
   type        = map(string)
-  description = "Map of request_id → config JSON. Empty object {} = defaults."
+  default     = {}
+  description = "Map of request_id → config JSON. Empty object {} = defaults. Leave empty on first apply to initialize state."
 }
 
 variable "default_mode" {
@@ -86,9 +87,7 @@ resource "wallarm_hits_index" "this" {
 # ─── Detect new request_ids ─────────────────────────────────────────────────
 
 locals {
-  # coalescelist: on first plan cached_request_ids is unknown → falls back to [""]
-  # which never matches a real request_id → all are "new" → single apply works.
-  _cached = toset(coalescelist(tolist([""]), tolist(compact(split(",", wallarm_hits_index.this.cached_request_ids)))))
+  _cached = toset(compact(split(",", wallarm_hits_index.this.cached_request_ids)))
 
   _new_request_ids = toset([
     for id in keys(var.request_ids) : id
