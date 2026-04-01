@@ -1,7 +1,7 @@
 ---
 layout: "wallarm"
 page_title: "Wallarm: wallarm_rule_brute"
-subcategory: "Rule"
+subcategory: "Rules"
 description: |-
   Provides the "Brute force protection" mitigation control resource.
 ---

@@ -1,7 +1,7 @@
 ---
 layout: "wallarm"
 page_title: "Wallarm: wallarm_rule_bruteforce_counter"
-subcategory: "Rule"
+subcategory: "Rules"
 description: |-
   Provides the "Define brute-force attacks counter" rule resource.
 ---

@@ -1,7 +1,7 @@
 ---
 layout: "wallarm"
 page_title: "Wallarm: wallarm_rule_ignore_regex"
-subcategory: "Rule"
+subcategory: "Rules"
 description: |-
   Provides the "Disable regexp-based attack detection" rule resource.
 ---

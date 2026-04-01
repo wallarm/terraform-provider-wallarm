@@ -1,7 +1,7 @@
 ---
 layout: "wallarm"
 page_title: "Wallarm: wallarm_rule_disable_attack_type"
-subcategory: "Rule"
+subcategory: "Rules"
 description: |-
   Provides the "Ignore certain attack types" rule resource.
 ---

@@ -1,7 +1,7 @@
 ---
 layout: "wallarm"
 page_title: "Wallarm: wallarm_rule_regex"
-subcategory: "Rule"
+subcategory: "Rules"
 description: |-
   Provides the "Create regexp-based attack indicator" rule resource.
 ---

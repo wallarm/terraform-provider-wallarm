@@ -1,7 +1,7 @@
 ---
 layout: "wallarm"
 page_title: "Wallarm: wallarm_rule_uploads"
-subcategory: "Rule"
+subcategory: "Rules"
 description: |-
   Provides the "Allow certain file types" rule resource.
 ---

@@ -1,7 +1,7 @@
 ---
 layout: "wallarm"
 page_title: "Wallarm: wallarm_rules"
-subcategory: "Data Source"
+subcategory: "Rules"
 description: |-
   Reads existing Wallarm rules from the API.
 ---

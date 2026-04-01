@@ -1,7 +1,6 @@
 ---
 layout: "wallarm"
 page_title: "Importing Wallarm IP Lists"
-subcategory: "Guide"
 description: |-
   How to import existing Wallarm IP list entries into Terraform.
 ---

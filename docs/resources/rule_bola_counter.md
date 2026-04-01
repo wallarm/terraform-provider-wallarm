@@ -1,7 +1,7 @@
 ---
 layout: "wallarm"
 page_title: "Wallarm: wallarm_rule_bola_counter"
-subcategory: "Rule"
+subcategory: "Rules"
 description: |-
   Provides the resource to manage BOLA (IDOR) counter rules.
 ---

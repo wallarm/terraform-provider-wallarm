@@ -1,7 +1,7 @@
 ---
 layout: "wallarm"
 page_title: "Wallarm: wallarm_rule_set_response_header"
-subcategory: "Rule"
+subcategory: "Rules"
 description: |-
   Provides the "Change server response headers" rule resource.
 ---

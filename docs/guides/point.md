@@ -1,6 +1,6 @@
 ---
 layout: "wallarm"
-page_title: "Wallarm: point"
+page_title: "Wallarm Rule Point"
 description: |-
   Provides examples of the point argument.
 ---

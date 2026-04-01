@@ -1,7 +1,7 @@
 ---
 layout: "wallarm"
 page_title: "Wallarm: wallarm_rule_overlimit_res_settings"
-subcategory: "Rule"
+subcategory: "Rules"
 description: |-
   Provides the "Overlimit Res Settings" rule resource.
 ---

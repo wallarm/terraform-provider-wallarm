@@ -1,7 +1,7 @@
 ---
 layout: "wallarm"
 page_title: "Wallarm: wallarm_api_spec"
-subcategory: "API Specification"
+subcategory: "Common"
 description: |-
   Provides the resource to manage API Specs[1] in Wallarm.
 ---

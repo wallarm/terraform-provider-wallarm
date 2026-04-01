@@ -1,7 +1,7 @@
 ---
 layout: "wallarm"
 page_title: "Wallarm: wallarm_rule_masking"
-subcategory: "Rule"
+subcategory: "Rules"
 description: |-
   Provides the "Mask sensitive data" rule resource.
 ---

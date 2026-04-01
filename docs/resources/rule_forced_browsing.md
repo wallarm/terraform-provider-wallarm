@@ -1,7 +1,7 @@
 ---
 layout: "wallarm"
 page_title: "Wallarm: wallarm_rule_forced_browsing"
-subcategory: "Rule"
+subcategory: "Rules"
 description: |-
   Provides the "Forced browsing protection" mitigation control resource.
 ---

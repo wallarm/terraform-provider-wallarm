@@ -1,7 +1,6 @@
 ---
 layout: "wallarm"
 page_title: "Mitigation Controls"
-subcategory: "Guide"
 description: |-
   Overview of Wallarm mitigation controls available as Terraform resources.
 ---

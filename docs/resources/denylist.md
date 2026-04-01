@@ -1,7 +1,7 @@
 ---
 layout: "wallarm"
 page_title: "Wallarm: wallarm_denylist"
-subcategory: "Common"
+subcategory: "IP Lists"
 description: |-
   Provides the resource to manage denylist in the account.
 ---

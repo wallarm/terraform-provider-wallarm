@@ -1,7 +1,7 @@
 ---
 layout: "wallarm"
 page_title: "Wallarm: wallarm_rule_mode"
-subcategory: "Rule"
+subcategory: "Rules"
 description: |-
   Provides the "Set filtration mode" rule resource.
 ---
