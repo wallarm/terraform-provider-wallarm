@@ -260,11 +260,11 @@ func generateRuleFiles(d *schema.ResourceData, clientID int, m interface{}) ([]s
 		return generateFromAPI(m, clientID, outputDir, prefix, filename, comment, ruleTypes, split, movedFrom)
 	}
 
-	return generateFromHits(d, clientID, outputDir, prefix, filename, comment, ruleTypes, split, movedFrom)
+	return generateFromHits(d, clientID, outputDir, prefix, comment, ruleTypes, split, movedFrom)
 }
 
 // generateFromHits generates HCL from data.wallarm_hits (requests_json input).
-func generateFromHits(d *schema.ResourceData, clientID int, outputDir, prefix, filename, comment string, ruleTypes []string, split bool, movedFrom string) ([]string, int, error) {
+func generateFromHits(d *schema.ResourceData, clientID int, outputDir, prefix, comment string, ruleTypes []string, split bool, movedFrom string) ([]string, int, error) {
 	reqJSON := d.Get("requests_json").(string)
 	if reqJSON == "" {
 		return nil, 0, fmt.Errorf("requests_json is required when source = 'hits'")
@@ -310,7 +310,9 @@ func generateFromHits(d *schema.ResourceData, clientID int, outputDir, prefix, f
 			continue
 		}
 
-		files, err := generateStaticFiles(outputDir, filePrefix, filename, clientID, comment, actions, expanded, split, movedFrom, short)
+		// Per-request filename when split=false to avoid overwriting across request_ids.
+		reqFilename := fmt.Sprintf("%s_rules.tf", filePrefix)
+		files, err := generateStaticFiles(outputDir, filePrefix, reqFilename, clientID, comment, actions, expanded, split, movedFrom, short)
 		if err != nil {
 			return nil, 0, fmt.Errorf("request %s: %w", reqID, err)
 		}

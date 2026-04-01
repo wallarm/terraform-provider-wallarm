@@ -12,7 +12,9 @@ The hits-to-rules workflow creates false positive suppression rules directly fro
 
 ## Overview
 
-Wallarm hits are **ephemeral** -- they have a retention period and can be dropped from the API at any time. This module fetches hit data once, caches it in Terraform state, and creates rules that survive independently of the source hits.
+Wallarm hits are **ephemeral** -- they have a retention period and can be dropped from the API at any time. The `data.wallarm_hits` data source should only be called once per request ID to perform the initial fetch. After that, the rules data must be cached in Terraform state so that subsequent plans do not re-fetch from the API. If hits have expired, re-fetching would return empty results and Terraform would destroy the rules.
+
+This module handles this automatically: `data.wallarm_hits` is gated to only fetch **new** (uncached) request IDs, and `terraform_data.rules_cache` with `ignore_changes` persists the rules in state permanently.
 
 Two rule types are supported:
 

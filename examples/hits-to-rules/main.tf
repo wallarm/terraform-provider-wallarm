@@ -187,6 +187,7 @@ resource "wallarm_rule_generator" "configs" {
   source     = "hits"
   client_id  = var.client_id
   moved_from = "this"
+  split      = true
   requests_json = jsonencode({
     for req_id in keys(var.request_ids) : req_id => {
       hits              = try(data.wallarm_hits.new[req_id].hits, [])
