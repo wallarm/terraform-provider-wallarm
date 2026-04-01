@@ -11,10 +11,11 @@ description: |-
 Provides the resource to manage integrations to send [notifications to Sumo Logic][1].
 
 The types of events available to be sent to Sumo Logic:
-- Detected hits
-- System related: newly added users, deleted or disabled integration
-- Detected vulnerabilities
-- Changes in exposed assets: updates in hosts, services, and domains
+- SIEM events (detected hits and related data)
+- System related: newly added users, deleted or disabled integrations
+- Rule and trigger changes
+- Security issues (critical, high, medium, low, info)
+- Request volume monitoring
 
 ## Example Usage
 
@@ -26,23 +27,24 @@ resource "wallarm_integration_sumologic" "sumologic_integration" {
   sumologic_url = "https://endpoint6.collection.us2.sumologic.com/receiver/v1/http/ZaVnC4dhaV123gN3o--AIj3q8y9GrwxSrAgcOJMvltRVnEIAIyR001VBlDsTYGBpieGxBxyJZA1eFIZcuyJ_ivkjPZ6Ynl8x3kLBJi4arZ479cD8ePJsqA=="
 
   event {
-    event_type = "hit"
+    event_type = "siem"
     active = true
-  }
-
-  event {
-    event_type = "scope"
-    active = true
+    with_headers = true
   }
 
   event {
     event_type = "system"
-    active = false
+    active = true
   }
-  
+
   event {
-    event_type = "vuln_high"
-    active = false
+    event_type = "rules_and_triggers"
+    active = true
+  }
+
+  event {
+    event_type = "security_issue_critical"
+    active = true
   }
 }
 ```
@@ -60,16 +62,24 @@ resource "wallarm_integration_sumologic" "sumologic_integration" {
 ## Event
 
 `event` are events for integration to monitor. Can be:
+```
+event {
 
-* `event_type` - (optional) event type. Can be:
-  - `hit` - detected hits
-  - `vuln` - detected vulnerabilities
-  - `system` - system related
-  - `scope` - scope changes
+* `event_type`: (optional) event type. Options:
+  - `siem` - SIEM events: Detected hits, original request data, and malicious payloads.
+  - `rules_and_triggers` - rule and trigger changes
+  - `number_of_requests_per_hour` - number of requests per hour
+  - `security_issue_critical` - critical security issues
+  - `security_issue_high` - high severity security issues
+  - `security_issue_medium` - medium severity security issues
+  - `security_issue_low` - low severity security issues
+  - `security_issue_info` - informational security issues
+  - `system` - system related (newly added users, deleted or disabled integrations)
+* `with_headers`: (Optional) Include request headers in event data (for `siem` event type only). Can be `true` or `false`. Default: `false`.
+* `active`: `true` for active events (notifications sent), `false` for disabled events (no notifications). Default: `true`.
 
-  Default: `vuln`
-* `active` - (optional) indicator of the event type status. Can be: `true` for active events and `false` for disabled events (notifications are not sent). 
-Default: `true`
+}
+```
 
 
 Example:
@@ -78,22 +88,23 @@ Example:
   # ... omitted
 
   event {
-    event_type = "hit"
+    event_type = "siem"
     active = true
-  }
-
-  event {
-    event_type = "scope"
-    active = false
+    with_headers = true
   }
 
   event {
     event_type = "system"
+    active = false
+  }
+
+  event {
+    event_type = "rules_and_triggers"
     active = true
   }
-  
+
   event {
-    event_type = "vuln_high"
+    event_type = "security_issue_critical"
     active = false
   }
 

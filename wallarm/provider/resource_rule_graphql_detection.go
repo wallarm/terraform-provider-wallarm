@@ -18,7 +18,7 @@ import (
 // nolint:dupl
 func resourceWallarmGraphqlDetection() *schema.Resource {
 	fields := map[string]*schema.Schema{
-		"action": defaultResourceRuleActionSchema,
+		"action": resourcerule.ScopeActionSchema(),
 		"mode": {
 			Type:         schema.TypeString,
 			Required:     true,
@@ -61,7 +61,7 @@ func resourceWallarmGraphqlDetection() *schema.Resource {
 			ForceNew: true,
 		},
 	}
-	sh := lo.Assign(fields, commonResourceRuleFields)
+	sh := lo.Assign(fields, commonResourceRuleFields, resourcerule.ActionScopeFields)
 
 	return &schema.Resource{
 		CreateContext: resourceWallarmGraphqlDetectionCreate,
@@ -71,7 +71,8 @@ func resourceWallarmGraphqlDetection() *schema.Resource {
 		Importer: &schema.ResourceImporter{
 			StateContext: resourceWallarmGraphqlDetectionImport,
 		},
-		Schema: sh,
+		CustomizeDiff: resourcerule.ActionScopeCustomizeDiff,
+		Schema:        sh,
 	}
 }
 
@@ -98,38 +99,15 @@ func resourceWallarmGraphqlDetectionDelete(_ context.Context, d *schema.Resource
 	if err != nil {
 		return diag.FromErr(err)
 	}
-	actionID := d.Get("action_id").(int)
-
-	rule := &wallarm.ActionRead{
-		Filter: &wallarm.ActionFilter{
-			HintType: []string{"graphql_detection"},
+	ruleID := d.Get("rule_id").(int)
+	h := &wallarm.HintDelete{
+		Filter: &wallarm.HintDeleteFilter{
 			Clientid: []int{clientID},
-			ID:       []int{actionID},
+			ID:       []int{ruleID},
 		},
-		Limit:  DefaultAPIListLimit,
-		Offset: 0,
 	}
-	respRules, err := client.RuleRead(rule)
-	if err != nil {
+	if err := client.HintDelete(h); err != nil {
 		return diag.FromErr(err)
-	}
-
-	if len(respRules.Body) == 1 && respRules.Body[0].Hints == 1 && respRules.Body[0].GroupedHintsCount == 1 {
-		if err = client.ActionDelete(actionID); err != nil {
-			return diag.FromErr(err)
-		}
-	} else {
-		ruleID := d.Get("rule_id").(int)
-		h := &wallarm.HintDelete{
-			Filter: &wallarm.HintDeleteFilter{
-				Clientid: []int{clientID},
-				ID:       ruleID,
-			},
-		}
-
-		if err = client.HintDelete(h); err != nil {
-			return diag.FromErr(err)
-		}
 	}
 	return nil
 }

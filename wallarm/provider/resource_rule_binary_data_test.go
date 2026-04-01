@@ -116,7 +116,7 @@ func TestAccRuleBinaryDataCreate_FullSettings(t *testing.T) {
 			{
 				Config: testWallarmRuleBinaryDataFullSettingsConfig(rnd, rule),
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr(name, "action.#", "10"),
+					resource.TestCheckResourceAttr(name, "action.#", "9"),
 					resource.TestCheckResourceAttr(name, "point.#", "4"),
 					resource.TestCheckResourceAttr(name, "point.0.#", "1"),
 					resource.TestCheckResourceAttr(name, "point.0.0", "post"),
@@ -249,13 +249,6 @@ resource "wallarm_rule_binary_data" "%[7]s" {
 
 	action {
 		type = "%[3]s"
-		point = {
-		  uri = "/api/token[0-9A-Za-z]+"
-		}
-	}
-
-	action {
-		type = "%[3]s"
 		value = "%[5]s"
 		point = {
 		  header = "HOST"
@@ -284,7 +277,7 @@ func testAccCheckWallarmRuleBinaryDataDestroy(s *terraform.State) error {
 		}
 
 		hint := &wallarm.HintRead{
-			Limit:     DefaultAPIListLimit,
+			Limit:     APIListLimit,
 			Offset:    0,
 			OrderBy:   "updated_at",
 			OrderDesc: true,

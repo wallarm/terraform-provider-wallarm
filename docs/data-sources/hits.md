@@ -10,6 +10,8 @@ description: |-
 
 Fetches attack hits from the Wallarm API and provides them in an aggregated, rule-ready structure. Used to build automatic false-positive suppression rules.
 
+~> **Important:** Hits are **ephemeral** — they have a retention period and can be dropped from the API at any time. This data source should only be used for the initial fetch. Rules derived from hits must be cached in Terraform state (e.g., via `terraform_data` with `ignore_changes`) to survive after the source hits expire. Re-fetching on every plan will cause rules to be destroyed when hits are no longer available. See the [Hits to Rules Guide](../guides/hits_to_rules) for the recommended caching pattern.
+
 A single HTTP request can generate multiple hits when different attack vectors are detected in different parts of the request. All hits for a request share the same action conditions (Host header + URI path).
 
 ## Example Usage

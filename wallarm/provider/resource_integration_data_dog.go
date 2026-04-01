@@ -109,7 +109,7 @@ func resourceWallarmDataDog() *schema.Resource {
 	}
 }
 
-func resourceWallarmDataDogCreate(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceWallarmDataDogCreate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	client := apiClient(m)
 	clientID, err := retrieveClientID(d, m)
 	if err != nil {
@@ -143,7 +143,7 @@ func resourceWallarmDataDogCreate(_ context.Context, d *schema.ResourceData, m i
 	resID := fmt.Sprintf("%d/%s/%d", clientID, createRes.Body.Type, createRes.Body.ID)
 	d.SetId(resID)
 
-	return resourceWallarmDataDogRead(context.TODO(), d, m)
+	return resourceWallarmDataDogRead(ctx, d, m)
 }
 
 func resourceWallarmDataDogRead(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
@@ -171,7 +171,7 @@ func resourceWallarmDataDogRead(_ context.Context, d *schema.ResourceData, m int
 	return nil
 }
 
-func resourceWallarmDataDogUpdate(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceWallarmDataDogUpdate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	client := apiClient(m)
 	clientID, err := retrieveClientID(d, m)
 	if err != nil {
@@ -231,7 +231,7 @@ func resourceWallarmDataDogUpdate(_ context.Context, d *schema.ResourceData, m i
 		}
 	}
 
-	return resourceWallarmDataDogRead(context.TODO(), d, m)
+	return resourceWallarmDataDogRead(ctx, d, m)
 }
 
 func resourceWallarmDataDogDelete(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {

@@ -1,49 +1,47 @@
 ---
 layout: "wallarm"
-page_title: "Wallarm: wallarm_integration_ms_teams"
+page_title: "Wallarm: wallarm_integration_teams"
 subcategory: "Integration"
 description: |-
   Provides the resource to manage MS Teams integrations.
 ---
 
-# wallarm_integration_ms_teams
+# wallarm_integration_teams
 
 Provides the resource to manage [integrations via MS Teams][1].
 
 The types of events available to be sent via MS Teams:
-- Detected hits
-- System related: newly added users, deleted or disabled integration
-- Detected vulnerabilities
-- Changes in exposed assets: updates in hosts, services, and domains
+- System related: newly added users, deleted or disabled integrations
+- Rule and trigger changes
+- Security issues (critical, high, medium, low, info)
 
 ## Example Usage
 
 ```hcl
-# Creates an integration to send notifications via
-# MS Teams to the provided URL and corresponding HTTP method
+# Creates an integration to send notifications via MS Teams
 
-resource "wallarm_integration_ms_teams" "teams_integration" {
+resource "wallarm_integration_teams" "teams_integration" {
   name = "New Terraform MS Teams Integration"
   webhook_url = "https://gar8347sk.webhook.office.com/webhookb2/a92734837"
   active = true
-  
-  event {
-    event_type = "hit"
-    active = true
-  }
-
-  event {
-    event_type = "scope"
-    active = true
-  }
 
   event {
     event_type = "system"
     active = true
   }
-  
+
   event {
-    event_type = "vuln_high"
+    event_type = "rules_and_triggers"
+    active = true
+  }
+
+  event {
+    event_type = "security_issue_critical"
+    active = true
+  }
+
+  event {
+    event_type = "security_issue_high"
     active = true
   }
 }
@@ -57,20 +55,22 @@ resource "wallarm_integration_ms_teams" "teams_integration" {
 
   Default: `false`
 * `name` - (optional) integration name.
-Default: `POST`
 * `webhook_url` - (required) MS Teams URL with the schema (https://).
+
 ## Event
 
 `event` are events for integration to monitor. Can be:
 
 * `event_type` - (optional) event type. Can be:
-  - `hit` - detected hits
-  - `vuln` - detected vulnerabilities
-  - `system` - system related
-  - `scope` - scope changes
+  - `system` - system related (newly added users, deleted or disabled integrations)
+  - `rules_and_triggers` - rule and trigger changes
+  - `security_issue_critical` - critical security issues
+  - `security_issue_high` - high severity security issues
+  - `security_issue_medium` - medium severity security issues
+  - `security_issue_low` - low severity security issues
+  - `security_issue_info` - informational security issues
 
-  Default: `vuln`
-* `active` - (optional) indicator of the event type status. Can be: `true` for active events and `false` for disabled events (notifications are not sent). 
+* `active` - (optional) indicator of the event type status. Can be: `true` for active events and `false` for disabled events (notifications are not sent).
 Default: `true`
 
 
@@ -80,22 +80,22 @@ Example:
   # ... omitted
 
   event {
-    event_type = "hit"
+    event_type = "system"
     active = true
   }
 
   event {
-    event_type = "scope"
+    event_type = "rules_and_triggers"
+    active = true
+  }
+
+  event {
+    event_type = "security_issue_critical"
     active = false
   }
 
   event {
-    event_type = "system"
-    active = true
-  }
-  
-  event {
-    event_type = "vuln_high"
+    event_type = "security_issue_high"
     active = false
   }
 

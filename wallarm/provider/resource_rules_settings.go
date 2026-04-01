@@ -228,7 +228,7 @@ func resourceWallarmRulesSettingsRead(_ context.Context, d *schema.ResourceData,
 	return nil
 }
 
-func resourceWallarmRulesSettingsCreate(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceWallarmRulesSettingsCreate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	clientID, err := retrieveClientID(d, m)
 	if err != nil {
 		return diag.FromErr(err)
@@ -239,14 +239,14 @@ func resourceWallarmRulesSettingsCreate(_ context.Context, d *schema.ResourceDat
 	}
 
 	d.SetId(fmt.Sprintf("%d/rules_settings", clientID))
-	return resourceWallarmRulesSettingsRead(context.TODO(), d, m)
+	return resourceWallarmRulesSettingsRead(ctx, d, m)
 }
 
-func resourceWallarmRulesSettingsUpdate(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceWallarmRulesSettingsUpdate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	if err := updateRulesSettings(d, m); err != nil {
 		return diag.FromErr(err)
 	}
-	return resourceWallarmRulesSettingsRead(context.TODO(), d, m)
+	return resourceWallarmRulesSettingsRead(ctx, d, m)
 }
 
 func resourceWallarmRulesSettingsDelete(_ context.Context, _ *schema.ResourceData, _ interface{}) diag.Diagnostics {

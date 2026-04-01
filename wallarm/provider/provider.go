@@ -69,7 +69,7 @@ func Provider() *schema.Provider {
 			"retries": {
 				Type:        schema.TypeInt,
 				Optional:    true,
-				DefaultFunc: schema.EnvDefaultFunc("WALLARM_API_RETRIES", 3),
+				DefaultFunc: schema.EnvDefaultFunc("WALLARM_API_RETRIES", 12),
 				Description: "Maximum number of retries to perform when an API request fails",
 			},
 			"min_backoff": {
@@ -120,6 +120,7 @@ func Provider() *schema.Provider {
 			},
 		},
 		DataSourcesMap: map[string]*schema.Resource{
+			"wallarm_actions":         dataSourceWallarmActions(),
 			"wallarm_node":            dataSourceWallarmNode(),
 			"wallarm_security_issues": dataSourceWallarmSecurityIssues(),
 			"wallarm_hits":            dataSourceWallarmHits(),
@@ -128,13 +129,19 @@ func Provider() *schema.Provider {
 			"wallarm_rules":           dataSourceWallarmRules(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
-			"wallarm_user":                           resourceWallarmUser(),
-			"wallarm_denylist":                       resourceWallarmDenylist(),
-			"wallarm_allowlist":                      resourceWallarmAllowlist(),
-			"wallarm_graylist":                       resourceWallarmGraylist(),
+			"wallarm_action":                         resourceWallarmAction(),
+			"wallarm_rule_generator":                 resourceWallarmRuleGenerator(),
+			"wallarm_hits_index":                     resourceWallarmHitsIndex(),
+			"wallarm_tenant":                         resourceWallarmTenant(),
+			"wallarm_rules_settings":                 resourceWallarmRulesSettings(),
 			"wallarm_global_mode":                    resourceWallarmGlobalMode(),
 			"wallarm_node":                           resourceWallarmNode(),
 			"wallarm_application":                    resourceWallarmApp(),
+			"wallarm_user":                           resourceWallarmUser(),
+			"wallarm_api_spec":                       resourceWallarmAPISpec(),
+			"wallarm_denylist":                       resourceWallarmDenylist(),
+			"wallarm_allowlist":                      resourceWallarmAllowlist(),
+			"wallarm_graylist":                       resourceWallarmGraylist(),
 			"wallarm_integration_email":              resourceWallarmEmail(),
 			"wallarm_integration_opsgenie":           resourceWallarmOpsGenie(),
 			"wallarm_integration_slack":              resourceWallarmSlack(),
@@ -166,9 +173,6 @@ func Provider() *schema.Provider {
 			"wallarm_rule_rate_limit":                resourceWallarmRateLimit(),
 			"wallarm_rule_rate_limit_enum":           resourceWallarmRateLimitEnum(),
 			"wallarm_rule_uploads":                   resourceWallarmUploads(),
-			"wallarm_rules_settings":                 resourceWallarmRulesSettings(),
-			"wallarm_tenant":                         resourceWallarmTenant(),
-			"wallarm_api_spec":                       resourceWallarmAPISpec(),
 			"wallarm_rule_credential_stuffing_regex": resourceWallarmCredentialStuffingRegex(),
 			"wallarm_rule_credential_stuffing_point": resourceWallarmCredentialStuffingPoint(),
 			"wallarm_rule_overlimit_res_settings":    resourceWallarmOverlimitResSettings(),
@@ -251,5 +255,7 @@ func ProviderConfigure(_ context.Context, d *schema.ResourceData, p *schema.Prov
 		Client:                  client,
 		DefaultClientID:         defaultClientID,
 		RequireExplicitClientID: d.Get("require_explicit_client_id").(bool),
+		IPListCache:             NewIPListCache(),
+		CredentialStuffingCache: NewCredentialStuffingCache(),
 	}, nil
 }

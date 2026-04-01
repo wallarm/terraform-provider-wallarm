@@ -19,7 +19,7 @@ import (
 // nolint:dupl
 func resourceWallarmRateLimitEnum() *schema.Resource {
 	fields := map[string]*schema.Schema{
-		"action":    defaultResourceRuleActionSchema,
+		"action":    resourcerule.ScopeActionSchema(),
 		"threshold": thresholdSchema,
 		"reaction":  reactionSchema,
 		"mode": {
@@ -31,7 +31,7 @@ func resourceWallarmRateLimitEnum() *schema.Resource {
 		"advanced_conditions":  advancedConditionsSchema,
 		"arbitrary_conditions": arbitraryConditionsSchema,
 	}
-	sh := lo.Assign(fields, commonResourceRuleFields)
+	sh := lo.Assign(fields, commonResourceRuleFields, resourcerule.ActionScopeFields)
 
 	return &schema.Resource{
 		CreateContext: resourceWallarmRateLimitEnumCreate,
@@ -41,7 +41,8 @@ func resourceWallarmRateLimitEnum() *schema.Resource {
 		Importer: &schema.ResourceImporter{
 			StateContext: resourceWallarmRateLimitEnumImport,
 		},
-		Schema: sh,
+		CustomizeDiff: resourcerule.ActionScopeCustomizeDiff,
+		Schema:        sh,
 	}
 }
 
@@ -74,38 +75,15 @@ func resourceWallarmRateLimitEnumDelete(_ context.Context, d *schema.ResourceDat
 	if err != nil {
 		return diag.FromErr(err)
 	}
-	actionID := d.Get("action_id").(int)
-
-	rule := &wallarm.ActionRead{
-		Filter: &wallarm.ActionFilter{
-			HintType: []string{"rate_limit_enum"},
+	ruleID := d.Get("rule_id").(int)
+	h := &wallarm.HintDelete{
+		Filter: &wallarm.HintDeleteFilter{
 			Clientid: []int{clientID},
-			ID:       []int{actionID},
+			ID:       []int{ruleID},
 		},
-		Limit:  DefaultAPIListLimit,
-		Offset: 0,
 	}
-	respRules, err := client.RuleRead(rule)
-	if err != nil {
+	if err := client.HintDelete(h); err != nil {
 		return diag.FromErr(err)
-	}
-
-	if len(respRules.Body) == 1 && respRules.Body[0].Hints == 1 && respRules.Body[0].GroupedHintsCount == 1 {
-		if err = client.ActionDelete(actionID); err != nil {
-			return diag.FromErr(err)
-		}
-	} else {
-		ruleID := d.Get("rule_id").(int)
-		h := &wallarm.HintDelete{
-			Filter: &wallarm.HintDeleteFilter{
-				Clientid: []int{clientID},
-				ID:       ruleID,
-			},
-		}
-
-		if err = client.HintDelete(h); err != nil {
-			return diag.FromErr(err)
-		}
 	}
 	return nil
 }

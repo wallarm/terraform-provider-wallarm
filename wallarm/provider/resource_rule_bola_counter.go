@@ -23,7 +23,7 @@ func resourceWallarmBolaCounter() *schema.Resource {
 			Computed: true,
 		},
 
-		"action": defaultResourceRuleActionSchema,
+		"action": resourcerule.ScopeActionSchema(),
 	}
 
 	return &schema.Resource{
@@ -35,11 +35,12 @@ func resourceWallarmBolaCounter() *schema.Resource {
 			StateContext: resourceWallarmBolaCounterImport,
 		},
 
-		Schema: lo.Assign(fields, commonResourceRuleFields),
+		CustomizeDiff: resourcerule.ActionScopeCustomizeDiff,
+		Schema:        lo.Assign(fields, commonResourceRuleFields, resourcerule.ActionScopeFields),
 	}
 }
 
-func resourceWallarmBolaCounterCreate(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceWallarmBolaCounterCreate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	client := apiClient(m)
 	clientID, err := retrieveClientID(d, m)
 	if err != nil {
@@ -76,7 +77,7 @@ func resourceWallarmBolaCounterCreate(_ context.Context, d *schema.ResourceData,
 	resID := fmt.Sprintf("%d/%d/%d", clientID, actionResp.Body.ActionID, actionResp.Body.ID)
 	d.SetId(resID)
 
-	return resourceWallarmBolaCounterRead(context.TODO(), d, m)
+	return resourceWallarmBolaCounterRead(ctx, d, m)
 }
 
 func resourceWallarmBolaCounterRead(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
@@ -93,37 +94,15 @@ func resourceWallarmBolaCounterDelete(_ context.Context, d *schema.ResourceData,
 	if err != nil {
 		return diag.FromErr(err)
 	}
-	actionID := d.Get("action_id").(int)
-
-	rule := &wallarm.ActionRead{
-		Filter: &wallarm.ActionFilter{
-			HintType: []string{"bola_counter"},
+	ruleID := d.Get("rule_id").(int)
+	h := &wallarm.HintDelete{
+		Filter: &wallarm.HintDeleteFilter{
 			Clientid: []int{clientID},
-			ID:       []int{actionID},
+			ID:       []int{ruleID},
 		},
-		Limit:  DefaultAPIListLimit,
-		Offset: 0,
 	}
-	respRules, err := client.RuleRead(rule)
-	if err != nil {
+	if err := client.HintDelete(h); err != nil {
 		return diag.FromErr(err)
-	}
-
-	if len(respRules.Body) == 1 && respRules.Body[0].Hints == 1 && respRules.Body[0].GroupedHintsCount == 1 {
-		if err := client.ActionDelete(actionID); err != nil {
-			return diag.FromErr(err)
-		}
-	} else {
-		ruleID := d.Get("rule_id").(int)
-		h := &wallarm.HintDelete{
-			Filter: &wallarm.HintDeleteFilter{
-				Clientid: []int{clientID},
-				ID:       ruleID,
-			},
-		}
-		if err := client.HintDelete(h); err != nil {
-			return diag.FromErr(err)
-		}
 	}
 
 	return nil

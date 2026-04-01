@@ -87,8 +87,9 @@ func dataSourceWallarmNode() *schema.Resource {
 							Computed: true,
 						},
 						"token": {
-							Type:     schema.TypeString,
-							Computed: true,
+							Type:      schema.TypeString,
+							Computed:  true,
+							Sensitive: true,
 						},
 						"requests_amount": {
 							Type:     schema.TypeInt,
@@ -122,7 +123,7 @@ func dataSourceWallarmNodeRead(_ context.Context, d *schema.ResourceData, m inte
 	// Prepare the filters to be applied to the search
 	filter := expandWallarmNode(d.Get("filter"))
 	if filter.Type == "" {
-		filter.Type = "all"
+		filter.Type = "all" //nolint:goconst // different semantic contexts
 	}
 
 	nodes := make([]interface{}, 0)
@@ -130,7 +131,7 @@ func dataSourceWallarmNodeRead(_ context.Context, d *schema.ResourceData, m inte
 	var nodePOST *wallarm.NodeReadPOST
 	nodeReadBody := wallarm.NodeReadByFilter{
 		Filter:    &wallarm.NodeFilter{},
-		Limit:     DefaultAPIListLimit,
+		Limit:     APIListLimit,
 		Offset:    0,
 		OrderBy:   "id",
 		OrderDesc: false,

@@ -172,7 +172,7 @@ provider "" {
 
 
 # #
-# # WAF mode rule section
+# # Wallarm mode rule section
 # #
 # resource "wallarm_rule_mode" "tiredful_api_mode" {
 #   mode =  "monitoring"

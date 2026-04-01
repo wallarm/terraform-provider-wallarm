@@ -17,7 +17,7 @@ import (
 
 func resourceWallarmBinaryData() *schema.Resource {
 	fields := map[string]*schema.Schema{
-		"action": defaultResourceRuleActionSchema,
+		"action": resourcerule.ScopeActionSchema(),
 		"point":  defaultPointSchema,
 	}
 
@@ -29,11 +29,12 @@ func resourceWallarmBinaryData() *schema.Resource {
 			StateContext: resourceWallarmBinaryDataImport,
 		},
 		UpdateContext: resourceWallarmBinaryDataUpdate,
-		Schema:        lo.Assign(fields, commonResourceRuleFields),
+		CustomizeDiff: resourcerule.ActionScopeCustomizeDiff,
+		Schema:        lo.Assign(fields, commonResourceRuleFields, resourcerule.ActionScopeFields),
 	}
 }
 
-func resourceWallarmBinaryDataCreate(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceWallarmBinaryDataCreate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	client := apiClient(m)
 	clientID, err := retrieveClientID(d, m)
 	if err != nil {
@@ -46,7 +47,7 @@ func resourceWallarmBinaryDataCreate(_ context.Context, d *schema.ResourceData, 
 		return diag.FromErr(fmt.Errorf("error setting point: %w", err))
 	}
 
-	points, err := expandPointsToTwoDimensionalArray(ps)
+	points, err := resourcerule.ExpandPointsToTwoDimensionalArray(ps)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -83,7 +84,7 @@ func resourceWallarmBinaryDataCreate(_ context.Context, d *schema.ResourceData, 
 	resID := fmt.Sprintf("%d/%d/%d", clientID, actionResp.Body.ActionID, actionResp.Body.ID)
 	d.SetId(resID)
 
-	return resourceWallarmBinaryDataRead(context.TODO(), d, m)
+	return resourceWallarmBinaryDataRead(ctx, d, m)
 }
 
 func resourceWallarmBinaryDataRead(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
@@ -100,38 +101,15 @@ func resourceWallarmBinaryDataDelete(_ context.Context, d *schema.ResourceData, 
 	if err != nil {
 		return diag.FromErr(err)
 	}
-	actionID := d.Get("action_id").(int)
-
-	rule := &wallarm.ActionRead{
-		Filter: &wallarm.ActionFilter{
-			HintType: []string{"binary_data"},
+	ruleID := d.Get("rule_id").(int)
+	h := &wallarm.HintDelete{
+		Filter: &wallarm.HintDeleteFilter{
 			Clientid: []int{clientID},
-			ID:       []int{actionID},
+			ID:       []int{ruleID},
 		},
-		Limit:  DefaultAPIListLimit,
-		Offset: 0,
 	}
-	respRules, err := client.RuleRead(rule)
-	if err != nil {
+	if err := client.HintDelete(h); err != nil {
 		return diag.FromErr(err)
-	}
-
-	if len(respRules.Body) == 1 && respRules.Body[0].Hints == 1 && respRules.Body[0].GroupedHintsCount == 1 {
-		if err = client.ActionDelete(actionID); err != nil {
-			return diag.FromErr(err)
-		}
-	} else {
-		ruleID := d.Get("rule_id").(int)
-		h := &wallarm.HintDelete{
-			Filter: &wallarm.HintDeleteFilter{
-				Clientid: []int{clientID},
-				ID:       ruleID,
-			},
-		}
-
-		if err = client.HintDelete(h); err != nil {
-			return diag.FromErr(err)
-		}
 	}
 	return nil
 }

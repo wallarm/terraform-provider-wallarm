@@ -25,7 +25,7 @@ func resourceWallarmMode() *schema.Resource {
 			ForceNew:     true,
 		},
 
-		"action": defaultResourceRuleActionSchema,
+		"action": resourcerule.ScopeActionSchema(),
 	}
 	return &schema.Resource{
 		CreateContext: resourceWallarmModeCreate,
@@ -35,11 +35,12 @@ func resourceWallarmMode() *schema.Resource {
 		Importer: &schema.ResourceImporter{
 			StateContext: resourceWallarmModeImport,
 		},
-		Schema: lo.Assign(fields, commonResourceRuleFields),
+		CustomizeDiff: resourcerule.ActionScopeCustomizeDiff,
+		Schema:        lo.Assign(fields, commonResourceRuleFields, resourcerule.ActionScopeFields),
 	}
 }
 
-func resourceWallarmModeCreate(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceWallarmModeCreate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	if d.IsNewResource() {
 		existingID, exists, err := existsAction(d, m, "wallarm_mode")
 		if err != nil {
@@ -87,7 +88,7 @@ func resourceWallarmModeCreate(_ context.Context, d *schema.ResourceData, m inte
 	resID := fmt.Sprintf("%d/%d/%d/%s", clientID, actionResp.Body.ActionID, actionResp.Body.ID, actionResp.Body.Mode)
 	d.SetId(resID)
 
-	return resourceWallarmModeRead(context.TODO(), d, m)
+	return resourceWallarmModeRead(ctx, d, m)
 }
 
 func resourceWallarmModeRead(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
@@ -104,37 +105,15 @@ func resourceWallarmModeDelete(_ context.Context, d *schema.ResourceData, m inte
 	if err != nil {
 		return diag.FromErr(err)
 	}
-	actionID := d.Get("action_id").(int)
-
-	rule := &wallarm.ActionRead{
-		Filter: &wallarm.ActionFilter{
-			HintType: []string{"wallarm_mode"},
+	ruleID := d.Get("rule_id").(int)
+	h := &wallarm.HintDelete{
+		Filter: &wallarm.HintDeleteFilter{
 			Clientid: []int{clientID},
-			ID:       []int{actionID},
+			ID:       []int{ruleID},
 		},
-		Limit:  DefaultAPIListLimit,
-		Offset: 0,
 	}
-	respRules, err := client.RuleRead(rule)
-	if err != nil {
+	if err := client.HintDelete(h); err != nil {
 		return diag.FromErr(err)
-	}
-
-	if len(respRules.Body) == 1 && respRules.Body[0].Hints == 1 && respRules.Body[0].GroupedHintsCount == 1 {
-		if err = client.ActionDelete(actionID); err != nil {
-			return diag.FromErr(err)
-		}
-	} else {
-		ruleID := d.Get("rule_id").(int)
-		h := &wallarm.HintDelete{
-			Filter: &wallarm.HintDeleteFilter{
-				Clientid: []int{clientID},
-				ID:       ruleID,
-			},
-		}
-		if err := client.HintDelete(h); err != nil {
-			return diag.FromErr(err)
-		}
 	}
 
 	return nil

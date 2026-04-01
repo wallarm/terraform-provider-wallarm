@@ -12,8 +12,9 @@ Provides the resource to manage integrations to send [email notifications][1].
 
 The types of events available to be sent via email:
 - System related: newly added users, deleted or disabled integrations
-- Detected vulnerabilities
-- Changes in exposed assets: updates in hosts, services, and domains
+- Security issues discovered by the platform
+- API discovery reports (hourly and daily changes)
+- Scheduled reports (daily, weekly, monthly)
 
 ## Example Usage
 
@@ -24,14 +25,14 @@ resource "wallarm_integration_email" "email_integration" {
   name = "New Email Terraform Integration"
   active = true
   emails = ["test@wallarm.com", "test2@wallarm.com"]
-  
+
   event {
-    event_type = "report_monthly"
+    event_type = "system"
     active = true
   }
-  
+
   event {
-    event_type = "report_weekly"
+    event_type = "aasm_report"
     active = true
   }
 
@@ -41,17 +42,22 @@ resource "wallarm_integration_email" "email_integration" {
   }
 
   event {
-    event_type = "system"
+    event_type = "report_weekly"
     active = true
   }
 
   event {
-    event_type = "scope"
+    event_type = "report_monthly"
     active = true
   }
-  
+
   event {
-    event_type = "vuln_high"
+    event_type = "api_discovery_hourly_changes_report"
+    active = true
+  }
+
+  event {
+    event_type = "api_discovery_daily_changes_report"
     active = true
   }
 }
@@ -71,16 +77,17 @@ resource "wallarm_integration_email" "email_integration" {
 
 `event` are events for integration to monitor. Can be:
 
-* `event_type` - (optional) event type. Can be:
-  - `vuln` - detected vulnerabilities
-  - `system` - system related
-  - `scope` - scope changes
+* `event_type` - (**required**) event type. Can be:
+  - `system` - system related (newly added users, deleted or disabled integrations)
+  - `aasm_report` - automated attack summary report
+  - `api_discovery_hourly_changes_report` - hourly API discovery changes report
+  - `api_discovery_daily_changes_report` - daily API discovery changes report
   - `report_daily` - daily report
   - `report_weekly` - weekly report
   - `report_monthly` - monthly report
 
-  Default: `vuln`
-* `active` - (optional) indicator of the event type status. Can be: `true` for active events and `false` for disabled events (notifications are not sent). 
+  MaxItems: 7
+* `active` - (optional) indicator of the event type status. Can be: `true` for active events and `false` for disabled events (notifications are not sent).
 Default: `true`
 
 
@@ -90,32 +97,17 @@ Example:
   # ... omitted
 
   event {
-    event_type = "report_monthly"
-    active = true
-  }
-  
-  event {
-    event_type = "report_weekly"
-    active = true
-  }
-
-  event {
-    event_type = "report_daily"
-    active = true
-  }
-
-  event {
     event_type = "system"
     active = true
   }
 
   event {
-    event_type = "scope"
+    event_type = "aasm_report"
     active = true
   }
-  
+
   event {
-    event_type = "vuln_high"
+    event_type = "report_daily"
     active = true
   }
 

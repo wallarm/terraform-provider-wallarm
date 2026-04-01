@@ -38,7 +38,7 @@ func resourceWallarmSetResponseHeader() *schema.Resource {
 			Elem:     &schema.Schema{Type: schema.TypeString},
 		},
 
-		"action": defaultResourceRuleActionSchema,
+		"action": resourcerule.ScopeActionSchema(),
 	}
 	return &schema.Resource{
 		CreateContext: resourceWallarmSetResponseHeaderCreate,
@@ -48,11 +48,12 @@ func resourceWallarmSetResponseHeader() *schema.Resource {
 		Importer: &schema.ResourceImporter{
 			StateContext: resourceWallarmSetResponseHeaderImport,
 		},
-		Schema: lo.Assign(fields, commonResourceRuleFields),
+		CustomizeDiff: resourcerule.ActionScopeCustomizeDiff,
+		Schema:        lo.Assign(fields, commonResourceRuleFields, resourcerule.ActionScopeFields),
 	}
 }
 
-func resourceWallarmSetResponseHeaderCreate(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceWallarmSetResponseHeaderCreate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	client := apiClient(m)
 	clientID, err := retrieveClientID(d, m)
 	if err != nil {
@@ -101,7 +102,7 @@ func resourceWallarmSetResponseHeaderCreate(_ context.Context, d *schema.Resourc
 	resID := fmt.Sprintf("%d/%d/%d", clientID, actionResp.Body.ActionID, actionResp.Body.ID)
 	d.SetId(resID)
 
-	return resourceWallarmSetResponseHeaderRead(context.TODO(), d, m)
+	return resourceWallarmSetResponseHeaderRead(ctx, d, m)
 }
 
 func resourceWallarmSetResponseHeaderRead(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
@@ -124,7 +125,7 @@ func resourceWallarmSetResponseHeaderDelete(_ context.Context, d *schema.Resourc
 	h := &wallarm.HintDelete{
 		Filter: &wallarm.HintDeleteFilter{
 			Clientid: []int{clientID},
-			ID:       ruleID,
+			ID:       []int{ruleID},
 		},
 	}
 

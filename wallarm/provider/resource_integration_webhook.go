@@ -141,15 +141,16 @@ func resourceWallarmWebhook() *schema.Resource {
 			},
 
 			"headers": {
-				Type:     schema.TypeMap,
-				Optional: true,
-				Elem:     &schema.Schema{Type: schema.TypeString},
+				Type:      schema.TypeMap,
+				Optional:  true,
+				Sensitive: true,
+				Elem:      &schema.Schema{Type: schema.TypeString},
 			},
 		},
 	}
 }
 
-func resourceWallarmWebhookCreate(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceWallarmWebhookCreate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	client := apiClient(m)
 	clientID, err := retrieveClientID(d, m)
 	if err != nil {
@@ -197,7 +198,7 @@ func resourceWallarmWebhookCreate(_ context.Context, d *schema.ResourceData, m i
 	resID := fmt.Sprintf("%d/%s/%d", clientID, createRes.Body.Type, createRes.Body.ID)
 	d.SetId(resID)
 
-	return resourceWallarmWebhookRead(context.TODO(), d, m)
+	return resourceWallarmWebhookRead(ctx, d, m)
 }
 
 func resourceWallarmWebhookRead(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
@@ -225,7 +226,7 @@ func resourceWallarmWebhookRead(_ context.Context, d *schema.ResourceData, m int
 	return nil
 }
 
-func resourceWallarmWebhookUpdate(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceWallarmWebhookUpdate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	client := apiClient(m)
 	clientID, err := retrieveClientID(d, m)
 	if err != nil {
@@ -299,7 +300,7 @@ func resourceWallarmWebhookUpdate(_ context.Context, d *schema.ResourceData, m i
 		}
 	}
 
-	return resourceWallarmWebhookRead(context.TODO(), d, m)
+	return resourceWallarmWebhookRead(ctx, d, m)
 }
 
 func resourceWallarmWebhookDelete(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {

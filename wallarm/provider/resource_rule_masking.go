@@ -17,7 +17,7 @@ import (
 
 func resourceWallarmSensitiveData() *schema.Resource {
 	fields := map[string]*schema.Schema{
-		"action": defaultResourceRuleActionSchema,
+		"action": resourcerule.ScopeActionSchema(),
 
 		"point": defaultPointSchema,
 	}
@@ -29,12 +29,13 @@ func resourceWallarmSensitiveData() *schema.Resource {
 		Importer: &schema.ResourceImporter{
 			StateContext: resourceWallarmSensitiveDataImport,
 		},
-		Schema: lo.Assign(fields, commonResourceRuleFields),
+		CustomizeDiff: resourcerule.ActionScopeCustomizeDiff,
+		Schema:        lo.Assign(fields, commonResourceRuleFields, resourcerule.ActionScopeFields),
 	}
 }
 
 // nolint:dupl
-func resourceWallarmSensitiveDataCreate(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceWallarmSensitiveDataCreate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	client := apiClient(m)
 	clientID, err := retrieveClientID(d, m)
 	if err != nil {
@@ -47,7 +48,7 @@ func resourceWallarmSensitiveDataCreate(_ context.Context, d *schema.ResourceDat
 		return diag.FromErr(fmt.Errorf("error setting point: %w", err))
 	}
 
-	points, err := expandPointsToTwoDimensionalArray(ps)
+	points, err := resourcerule.ExpandPointsToTwoDimensionalArray(ps)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -83,7 +84,7 @@ func resourceWallarmSensitiveDataCreate(_ context.Context, d *schema.ResourceDat
 	resID := fmt.Sprintf("%d/%d/%d", clientID, actionResp.Body.ActionID, actionResp.Body.ID)
 	d.SetId(resID)
 
-	return resourceWallarmSensitiveDataRead(context.TODO(), d, m)
+	return resourceWallarmSensitiveDataRead(ctx, d, m)
 }
 
 // nolint:dupl
@@ -101,39 +102,15 @@ func resourceWallarmSensitiveDataDelete(_ context.Context, d *schema.ResourceDat
 	if err != nil {
 		return diag.FromErr(err)
 	}
-	actionID := d.Get("action_id").(int)
 	ruleID := d.Get("rule_id").(int)
-
-	rule := &wallarm.ActionRead{
-		Filter: &wallarm.ActionFilter{
-			HintType: []string{"sensitive_data"},
+	h := &wallarm.HintDelete{
+		Filter: &wallarm.HintDeleteFilter{
 			Clientid: []int{clientID},
 			ID:       []int{ruleID},
 		},
-		Limit:  DefaultAPIListLimit,
-		Offset: 0,
 	}
-	respRules, err := client.RuleRead(rule)
-	if err != nil {
+	if err := client.HintDelete(h); err != nil {
 		return diag.FromErr(err)
-	}
-
-	if len(respRules.Body) == 1 && respRules.Body[0].Hints == 1 && respRules.Body[0].GroupedHintsCount == 1 {
-		if err := client.ActionDelete(actionID); err != nil {
-			return diag.FromErr(err)
-		}
-	} else {
-		ruleID := d.Get("rule_id").(int)
-		h := &wallarm.HintDelete{
-			Filter: &wallarm.HintDeleteFilter{
-				Clientid: []int{clientID},
-				ID:       ruleID,
-			},
-		}
-
-		if err := client.HintDelete(h); err != nil {
-			return diag.FromErr(err)
-		}
 	}
 	return nil
 }

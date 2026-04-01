@@ -111,7 +111,7 @@ func resourceWallarmSplunk() *schema.Resource {
 	}
 }
 
-func resourceWallarmSplunkCreate(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceWallarmSplunkCreate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	client := apiClient(m)
 	clientID, err := retrieveClientID(d, m)
 	if err != nil {
@@ -145,7 +145,7 @@ func resourceWallarmSplunkCreate(_ context.Context, d *schema.ResourceData, m in
 	resID := fmt.Sprintf("%d/%s/%d", clientID, createRes.Body.Type, createRes.Body.ID)
 	d.SetId(resID)
 
-	return resourceWallarmSplunkRead(context.TODO(), d, m)
+	return resourceWallarmSplunkRead(ctx, d, m)
 }
 
 func resourceWallarmSplunkRead(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
@@ -172,7 +172,7 @@ func resourceWallarmSplunkRead(_ context.Context, d *schema.ResourceData, m inte
 	return nil
 }
 
-func resourceWallarmSplunkUpdate(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceWallarmSplunkUpdate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	client := apiClient(m)
 	clientID, err := retrieveClientID(d, m)
 	if err != nil {
@@ -232,7 +232,7 @@ func resourceWallarmSplunkUpdate(_ context.Context, d *schema.ResourceData, m in
 		}
 	}
 
-	return resourceWallarmSplunkRead(context.TODO(), d, m)
+	return resourceWallarmSplunkRead(ctx, d, m)
 }
 
 func resourceWallarmSplunkDelete(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {

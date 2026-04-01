@@ -26,7 +26,7 @@ func resourceWallarmRegex() *schema.Resource {
 			ForceNew: true,
 		},
 
-		"action": defaultResourceRuleActionSchema,
+		"action": resourcerule.ScopeActionSchema(),
 
 		"regex": {
 			Type:     schema.TypeString,
@@ -51,11 +51,12 @@ func resourceWallarmRegex() *schema.Resource {
 		Importer: &schema.ResourceImporter{
 			StateContext: resourceWallarmRegexImport,
 		},
-		Schema: lo.Assign(fields, commonResourceRuleFields),
+		CustomizeDiff: resourcerule.ActionScopeCustomizeDiff,
+		Schema:        lo.Assign(fields, commonResourceRuleFields, resourcerule.ActionScopeFields),
 	}
 }
 
-func resourceWallarmRegexCreate(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceWallarmRegexCreate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	experimental := d.Get("experimental").(bool)
 	var actionType string
 	if experimental {
@@ -78,7 +79,7 @@ func resourceWallarmRegexCreate(_ context.Context, d *schema.ResourceData, m int
 		return diag.FromErr(fmt.Errorf("error setting point: %w", err))
 	}
 
-	points, err := expandPointsToTwoDimensionalArray(ps)
+	points, err := resourcerule.ExpandPointsToTwoDimensionalArray(ps)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -116,7 +117,7 @@ func resourceWallarmRegexCreate(_ context.Context, d *schema.ResourceData, m int
 	resID := fmt.Sprintf("%d/%d/%d/%s", clientID, regexResp.Body.ActionID, regexResp.Body.ID, regexResp.Body.Type)
 	d.SetId(resID)
 
-	return resourceWallarmRegexRead(context.TODO(), d, m)
+	return resourceWallarmRegexRead(ctx, d, m)
 }
 
 func resourceWallarmRegexRead(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
@@ -138,7 +139,7 @@ func resourceWallarmRegexDelete(_ context.Context, d *schema.ResourceData, m int
 	h := &wallarm.HintDelete{
 		Filter: &wallarm.HintDeleteFilter{
 			Clientid: []int{clientID},
-			ID:       ruleID,
+			ID:       []int{ruleID},
 		},
 	}
 

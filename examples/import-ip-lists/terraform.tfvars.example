@@ -1,0 +1,8 @@
+api_token = "your-api-token"
+api_host  = "https://us1.api.wallarm.com"
+
+# Import all three list types (default).
+# list_types = ["denylist", "allowlist", "graylist"]
+
+# Or import a single list type:
+# list_types = ["denylist"]

@@ -10,90 +10,78 @@ import (
 	wallarm "github.com/wallarm/wallarm-go"
 )
 
-const (
-	// defaultBulkFetchLimit is the number of hints fetched per API call during bulk loading.
-	defaultBulkFetchLimit = 200
-	// maxBulkFetchPages caps the number of paginated requests to prevent runaway fetches.
-	maxBulkFetchPages = 500
-)
-
 // CacheStats provides a snapshot of the cache's operational state.
 type CacheStats struct {
-	Loaded        bool          `json:"loaded"`
-	HintCount     int           `json:"hint_count"`
-	CacheHits     int64         `json:"cache_hits"`
-	CacheMisses   int64         `json:"cache_misses"`
-	Passthroughs  int64         `json:"passthroughs"`
-	BulkLoads     int64         `json:"bulk_loads"`
-	Invalidations int64         `json:"invalidations"`
-	APICallsSaved int64         `json:"api_calls_saved"`
-	LastLoadTime  time.Duration `json:"last_load_time"`
-	LastLoadAt    time.Time     `json:"last_load_at"`
+	FullyLoaded   bool      `json:"fully_loaded"`
+	HintCount     int       `json:"hint_count"`
+	CacheHits     int64     `json:"cache_hits"`
+	PageFetches   int64     `json:"page_fetches"`
+	Passthroughs  int64     `json:"passthroughs"`
+	Invalidations int64     `json:"invalidations"`
+	LastFetchAt   time.Time `json:"last_fetch_at"`
 }
 
-// HintCache provides a thread-safe, bulk-loaded cache of hints keyed by hint ID.
-// It is designed to reduce API calls during terraform plan/refresh, where Terraform
-// calls ReadContext on every rule resource individually.
+// HintCache provides a thread-safe, lazily-paginated cache of hints keyed by hint ID.
 //
-// The cache is populated lazily on first access for a given clientID, fetching all
-// hints in paginated batches. Subsequent reads are served from memory.
-// Any mutating operation (create/update/delete) invalidates the cache so the next
-// read cycle re-fetches fresh data.
+// Instead of bulk-loading all hints upfront, it fetches pages on demand:
+// - First Read for ID 123 → fetch page 1 (200 hints) → cache all → check for 123
+// - Next Read for ID 456 → check cache → hit (was on page 1) → return
+// - Next Read for ID 999 → check cache → miss → fetch page 2 → check → found
+//
+// This minimizes API calls: if 5 managed rules are all on page 1, only 1 API call.
 type HintCache struct {
-	mu     sync.Mutex
-	hints  map[int]*wallarm.ActionBody // keyed by hint ID
-	loaded bool
+	mu          sync.Mutex
+	hints       map[int]*wallarm.ActionBody
+	nextOffset  int  // next page offset to fetch
+	fullyLoaded bool // all pages have been fetched
+	clientID    int  // set on first fetch, used for consistency
 
-	// stats counters (updated under mu)
+	// stats
 	cacheHits     int64
-	cacheMisses   int64
+	pageFetches   int64
 	passthroughs  int64
-	bulkLoads     int64
 	invalidations int64
-	lastLoadTime  time.Duration
-	lastLoadAt    time.Time
+	lastFetchAt   time.Time
 }
 
-// NewHintCache creates an empty, unloaded HintCache.
+// NewHintCache creates an empty HintCache.
 func NewHintCache() *HintCache {
 	return &HintCache{
 		hints: make(map[int]*wallarm.ActionBody),
 	}
 }
 
-// ensureLoaded populates the cache if it hasn't been loaded yet.
-// Only the first goroutine to arrive performs the bulk fetch; others block
-// briefly on the mutex and then find loaded=true.
-func (c *HintCache) ensureLoaded(clientID int, api wallarm.API) error {
+// GetOrFetch returns a cached hint by ID. If not cached, fetches pages lazily
+// until the hint is found or all pages are exhausted.
+func (c *HintCache) GetOrFetch(hintID, clientID int, api wallarm.API) (*wallarm.ActionBody, error) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
-	if c.loaded {
-		return nil
+	// Already cached?
+	if h, ok := c.hints[hintID]; ok {
+		c.cacheHits++
+		return h, nil
 	}
 
-	if err := c.bulkLoad(clientID, api); err != nil {
-		return err
+	// Already fetched everything? Not found.
+	if c.fullyLoaded {
+		log.Printf("[DEBUG] HintCache: MISS hint_id=%d (fully loaded, %d hints cached — rule may be deleted)", hintID, len(c.hints))
+		return nil, nil
 	}
-	c.loaded = true
-	return nil
-}
 
-// bulkLoad fetches all hints for a client in paginated batches.
-// Must be called while holding c.mu.
-func (c *HintCache) bulkLoad(clientID int, api wallarm.API) error {
-	c.hints = make(map[int]*wallarm.ActionBody)
-	offset := 0
-	totalFetched := 0
-	startTime := time.Now()
+	// Set clientID on first fetch
+	if c.clientID == 0 {
+		c.clientID = clientID
+	}
 
-	log.Printf("[INFO] HintCache: starting bulk load for client %d (batch size: %d, system=false)", clientID, defaultBulkFetchLimit)
+	// Paginate until found or exhausted
 	systemFalse := false
+	for {
+		log.Printf("[DEBUG] HintCache: fetching page offset=%d limit=%d for hint_id=%d", c.nextOffset, HintBulkFetchLimit, hintID)
 
-	for page := 0; page < maxBulkFetchPages; page++ {
 		resp, err := api.HintRead(&wallarm.HintRead{
-			Limit:     defaultBulkFetchLimit,
-			Offset:    offset,
+			Limit:     HintBulkFetchLimit,
+			Offset:    c.nextOffset,
 			OrderBy:   "id",
 			OrderDesc: true,
 			Filter: &wallarm.HintFilter{
@@ -102,8 +90,69 @@ func (c *HintCache) bulkLoad(clientID int, api wallarm.API) error {
 			},
 		})
 		if err != nil {
-			return fmt.Errorf("HintCache bulk load failed at offset %d: %w", offset, err)
+			return nil, fmt.Errorf("HintCache: page fetch failed at offset %d: %w", c.nextOffset, err)
 		}
+
+		c.pageFetches++
+		c.lastFetchAt = time.Now()
+
+		if resp.Body == nil || len(*resp.Body) == 0 {
+			c.fullyLoaded = true
+			log.Printf("[DEBUG] HintCache: fully loaded — %d hints cached, hint_id=%d not found", len(c.hints), hintID)
+			return nil, nil
+		}
+
+		batch := *resp.Body
+		for i := range batch {
+			c.hints[batch[i].ID] = &batch[i]
+		}
+
+		c.nextOffset += HintBulkFetchLimit
+
+		// Found it?
+		if h, ok := c.hints[hintID]; ok {
+			log.Printf("[DEBUG] HintCache: found hint_id=%d after fetching page (cache size: %d)", hintID, len(c.hints))
+			return h, nil
+		}
+
+		// Last page?
+		if len(batch) < HintBulkFetchLimit {
+			c.fullyLoaded = true
+			log.Printf("[DEBUG] HintCache: fully loaded — %d hints cached, hint_id=%d not found", len(c.hints), hintID)
+			return nil, nil
+		}
+	}
+}
+
+// LoadAll fetches ALL hints into cache. Used by data.wallarm_rules which needs
+// the complete set. After this call, fullyLoaded is true.
+func (c *HintCache) LoadAll(clientID int, api wallarm.API) error {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	if c.fullyLoaded {
+		return nil
+	}
+
+	// Continue from where we left off (may already have some pages cached)
+	systemFalse := false
+	for {
+		resp, err := api.HintRead(&wallarm.HintRead{
+			Limit:     HintBulkFetchLimit,
+			Offset:    c.nextOffset,
+			OrderBy:   "id",
+			OrderDesc: true,
+			Filter: &wallarm.HintFilter{
+				Clientid: []int{clientID},
+				System:   &systemFalse,
+			},
+		})
+		if err != nil {
+			return fmt.Errorf("HintCache: LoadAll failed at offset %d: %w", c.nextOffset, err)
+		}
+
+		c.pageFetches++
+		c.lastFetchAt = time.Now()
 
 		if resp.Body == nil || len(*resp.Body) == 0 {
 			break
@@ -113,68 +162,25 @@ func (c *HintCache) bulkLoad(clientID int, api wallarm.API) error {
 		for i := range batch {
 			c.hints[batch[i].ID] = &batch[i]
 		}
-		totalFetched += len(batch)
 
-		if len(batch) < defaultBulkFetchLimit {
-			break // last page
+		c.nextOffset += HintBulkFetchLimit
+
+		if len(batch) < HintBulkFetchLimit {
+			break
 		}
-		offset += defaultBulkFetchLimit
 	}
 
-	loadDuration := time.Since(startTime)
-	apiCalls := (offset / defaultBulkFetchLimit) + 1
-
-	c.bulkLoads++
-	c.lastLoadTime = loadDuration
-	c.lastLoadAt = time.Now()
-
-	log.Printf("[INFO] HintCache: loaded %d hints for client %d in %s (%d API calls) — subsequent single-hint reads will be served from cache",
-		totalFetched, clientID, loadDuration.Round(time.Millisecond), apiCalls)
-
+	c.fullyLoaded = true
+	log.Printf("[INFO] HintCache: LoadAll complete — %d hints cached", len(c.hints))
 	return nil
 }
 
-// Get returns a cached hint by ID. Returns nil, false if not found.
-// Tracks hit/miss stats and logs at DEBUG level.
-func (c *HintCache) Get(hintID int) (*wallarm.ActionBody, bool) {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-	h, ok := c.hints[hintID]
-	if ok {
-		c.cacheHits++
-		log.Printf("[DEBUG] HintCache: HIT hint_id=%d (hits=%d misses=%d saved=%d)", hintID, c.cacheHits, c.cacheMisses, c.cacheHits)
-	} else {
-		c.cacheMisses++
-		log.Printf("[DEBUG] HintCache: MISS hint_id=%d — falling back to API (hits=%d misses=%d)", hintID, c.cacheHits, c.cacheMisses)
-	}
-	return h, ok
-}
-
-// Invalidate clears the cache so the next read triggers a fresh bulk load.
-// caller identifies which method triggered the invalidation for debugging.
-func (c *HintCache) Invalidate(caller string) {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-	prevCount := len(c.hints)
-	c.hints = make(map[int]*wallarm.ActionBody)
-	c.loaded = false
-	c.invalidations++
-	log.Printf("[INFO] HintCache: INVALIDATED by %s — cleared %d cached hints (invalidation #%d, total hits before clear: %d)", caller, prevCount, c.invalidations, c.cacheHits)
-}
-
-// trackPassthrough increments the passthrough counter for non-cacheable queries.
-func (c *HintCache) trackPassthrough() {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-	c.passthroughs++
-}
-
-// All returns a copy of all cached hints sorted by ID descending (highest first).
-// Returns nil if the cache is not loaded.
+// All returns all cached hints sorted by ID descending.
+// Returns nil if not fully loaded.
 func (c *HintCache) All() []wallarm.ActionBody {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	if !c.loaded {
+	if !c.fullyLoaded {
 		return nil
 	}
 	result := make([]wallarm.ActionBody, 0, len(c.hints))
@@ -187,35 +193,66 @@ func (c *HintCache) All() []wallarm.ActionBody {
 	return result
 }
 
+// Insert adds or updates a single hint in the cache without invalidating.
+// Used by HintCreate and HintUpdateV3 to keep the cache warm during batch operations.
+func (c *HintCache) Insert(hint *wallarm.ActionBody) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if c.hints == nil {
+		c.hints = make(map[int]*wallarm.ActionBody)
+	}
+	c.hints[hint.ID] = hint
+	log.Printf("[DEBUG] HintCache: INSERT hint_id=%d (cache size: %d)", hint.ID, len(c.hints))
+}
+
+// Invalidate clears the cache and resets pagination state.
+func (c *HintCache) Invalidate(caller string) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	prevCount := len(c.hints)
+	c.hints = make(map[int]*wallarm.ActionBody)
+	c.fullyLoaded = false
+	c.nextOffset = 0
+	c.invalidations++
+	log.Printf("[INFO] HintCache: INVALIDATED by %s — cleared %d cached hints (invalidation #%d)", caller, prevCount, c.invalidations)
+}
+
+// trackPassthrough increments the passthrough counter for non-cacheable queries.
+func (c *HintCache) trackPassthrough() {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.passthroughs++
+}
+
 // Stats returns a snapshot of the cache's operational statistics.
 func (c *HintCache) Stats() CacheStats {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	return CacheStats{
-		Loaded:        c.loaded,
+		FullyLoaded:   c.fullyLoaded,
 		HintCount:     len(c.hints),
 		CacheHits:     c.cacheHits,
-		CacheMisses:   c.cacheMisses,
+		PageFetches:   c.pageFetches,
 		Passthroughs:  c.passthroughs,
-		BulkLoads:     c.bulkLoads,
 		Invalidations: c.invalidations,
-		APICallsSaved: c.cacheHits,
-		LastLoadTime:  c.lastLoadTime,
-		LastLoadAt:    c.lastLoadAt,
+		LastFetchAt:   c.lastFetchAt,
 	}
 }
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// CachedClient
+// ═══════════════════════════════════════════════════════════════════════════════
 
 // CachedClient wraps a wallarm.API and overrides HintRead with a cache-backed
 // implementation. All other API methods delegate to the embedded client.
 //
 // HintRead is overridden so that single-ID lookups (the pattern used by every
-// rule resource's Read function) are served from a bulk-loaded cache.
+// rule resource's Read function) are served from the lazily-paginated cache.
 // Multi-ID or complex filter queries pass through to the underlying API.
 //
-// Mutating methods (HintCreate, HintDelete, HintUpdateV3, ActionDelete) invalidate
-// the cache AFTER the mutation succeeds, so:
-//   - Failed mutations don't unnecessarily clear the cache
-//   - Post-mutation reads (e.g. Create calling Read at the end) get fresh data
+// Mutating methods:
+//   - HintCreate, HintUpdateV3: Insert into cache (no invalidation)
+//   - HintDelete: Delegates to underlying API (no caching)
 type CachedClient struct {
 	wallarm.API
 	hintCache *HintCache
@@ -229,10 +266,10 @@ func NewCachedClient(api wallarm.API) *CachedClient {
 	}
 }
 
-// AllRules ensures the cache is loaded and returns all cached hints.
-// Used by the wallarm_rules data source to share the same cache as individual rule reads.
+// AllRules loads all hints into cache and returns them.
+// Used by data.wallarm_rules which needs the complete set.
 func (c *CachedClient) AllRules(clientID int) ([]wallarm.ActionBody, error) {
-	if err := c.hintCache.ensureLoaded(clientID, c.API); err != nil {
+	if err := c.hintCache.LoadAll(clientID, c.API); err != nil {
 		return nil, err
 	}
 	return c.hintCache.All(), nil
@@ -246,21 +283,20 @@ func (c *CachedClient) HintCacheStats() CacheStats {
 // LogHintCacheStats logs a summary of cache performance.
 func (c *CachedClient) LogHintCacheStats() {
 	s := c.hintCache.Stats()
-	total := s.CacheHits + s.CacheMisses + s.Passthroughs
+	total := s.CacheHits + s.PageFetches + s.Passthroughs
 	hitRate := float64(0)
-	if s.CacheHits+s.CacheMisses > 0 {
-		hitRate = float64(s.CacheHits) / float64(s.CacheHits+s.CacheMisses) * 100
+	if s.CacheHits+s.PageFetches > 0 {
+		hitRate = float64(s.CacheHits) / float64(s.CacheHits+s.PageFetches) * 100
 	}
-	log.Printf("[INFO] HintCache stats: %d total reads | %d hits (%.1f%%) | %d misses | %d passthroughs | %d bulk loads | %d invalidations | %d API calls saved | %d hints cached",
-		total, s.CacheHits, hitRate, s.CacheMisses, s.Passthroughs, s.BulkLoads, s.Invalidations, s.APICallsSaved, s.HintCount)
+	log.Printf("[INFO] HintCache stats: %d total | %d hits (%.1f%%) | %d page fetches | %d passthroughs | %d invalidations | %d hints cached",
+		total, s.CacheHits, hitRate, s.PageFetches, s.Passthroughs, s.Invalidations, s.HintCount)
 }
 
-// HintRead overrides the embedded API's HintRead. For single-ID lookups
-// (the common Read pattern), it serves from the bulk cache. For all other
-// query patterns, it passes through to the underlying API.
+// HintRead overrides the embedded API's HintRead. Flushes pending deletes first.
+// For single-ID lookups,
+// it serves from the lazily-paginated cache. For all other query patterns,
+// it passes through to the underlying API.
 func (c *CachedClient) HintRead(body *wallarm.HintRead) (*wallarm.HintReadResp, error) {
-	// Only use cache for single-ID, single-client lookups — the pattern used
-	// by ResourceRuleWallarmRead: Filter{Clientid: []int{cid}, ID: []int{hid}}
 	if body.Filter != nil &&
 		len(body.Filter.ID) == 1 &&
 		len(body.Filter.Clientid) == 1 &&
@@ -270,15 +306,18 @@ func (c *CachedClient) HintRead(body *wallarm.HintRead) (*wallarm.HintReadResp, 
 		clientID := body.Filter.Clientid[0]
 		hintID := body.Filter.ID[0]
 
-		if err := c.hintCache.ensureLoaded(clientID, c.API); err != nil {
-			log.Printf("[WARN] HintCache: bulk load failed, falling back to direct API call: %s", err)
+		hint, err := c.hintCache.GetOrFetch(hintID, clientID, c.API)
+		if err != nil {
+			log.Printf("[WARN] HintCache: GetOrFetch failed, falling back to direct API call: %s", err)
 			return c.API.HintRead(body)
 		}
 
-		hint, ok := c.hintCache.Get(hintID)
-		if !ok {
-			// Not in cache — could be newly created after cache load.
-			return c.API.HintRead(body)
+		if hint == nil {
+			// Not found — return empty response (rule may be deleted)
+			return &wallarm.HintReadResp{
+				Status: 200,
+				Body:   &[]wallarm.ActionBody{},
+			}, nil
 		}
 
 		return &wallarm.HintReadResp{
@@ -293,41 +332,31 @@ func (c *CachedClient) HintRead(body *wallarm.HintRead) (*wallarm.HintReadResp, 
 	return c.API.HintRead(body)
 }
 
-// HintCreate delegates to the underlying API and invalidates the cache AFTER success.
-// Retries (including HTTP 423) are handled at the wallarm-go transport level.
+// HintCreate delegates to the underlying API and inserts the new hint into cache.
 func (c *CachedClient) HintCreate(body *wallarm.ActionCreate) (*wallarm.ActionCreateResp, error) {
 	resp, err := c.API.HintCreate(body)
 	if err != nil {
 		return resp, err
 	}
-	c.hintCache.Invalidate("HintCreate")
+	if resp != nil && resp.Body != nil {
+		c.hintCache.Insert(resp.Body)
+	}
 	return resp, nil
 }
 
-// HintDelete delegates to the underlying API and invalidates the cache AFTER success.
+// HintDelete delegates to the underlying API.
 func (c *CachedClient) HintDelete(body *wallarm.HintDelete) error {
-	if err := c.API.HintDelete(body); err != nil {
-		return err
-	}
-	c.hintCache.Invalidate("HintDelete")
-	return nil
+	return c.API.HintDelete(body)
 }
 
-// ActionDelete delegates to the underlying API and invalidates the cache AFTER success.
-func (c *CachedClient) ActionDelete(actionID int) error {
-	if err := c.API.ActionDelete(actionID); err != nil {
-		return err
-	}
-	c.hintCache.Invalidate("ActionDelete")
-	return nil
-}
-
-// HintUpdateV3 delegates to the underlying API and invalidates the cache AFTER success.
+// HintUpdateV3 delegates to the underlying API and updates the cache entry.
 func (c *CachedClient) HintUpdateV3(ruleID int, body *wallarm.HintUpdateV3Params) (*wallarm.ActionCreateResp, error) {
 	resp, err := c.API.HintUpdateV3(ruleID, body)
 	if err != nil {
 		return resp, err
 	}
-	c.hintCache.Invalidate("HintUpdateV3")
+	if resp != nil && resp.Body != nil {
+		c.hintCache.Insert(resp.Body)
+	}
 	return resp, nil
 }

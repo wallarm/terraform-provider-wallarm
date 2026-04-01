@@ -24,7 +24,7 @@ func resourceWallarmVpatch() *schema.Resource {
 			Description: `Possible values: "any", "sqli", "rce", "crlf", "nosqli", "ptrav",
 				"xxe", "xss", "scanner", "redir", "ldapi"`,
 		},
-		"action": defaultResourceRuleActionSchema,
+		"action": resourcerule.ScopeActionSchema(),
 		"point":  defaultPointSchema,
 	}
 	return &schema.Resource{
@@ -35,11 +35,12 @@ func resourceWallarmVpatch() *schema.Resource {
 		Importer: &schema.ResourceImporter{
 			StateContext: resourceWallarmVpatchImport,
 		},
-		Schema: lo.Assign(fields, commonResourceRuleFields),
+		CustomizeDiff: resourcerule.ActionScopeCustomizeDiff,
+		Schema:        lo.Assign(fields, commonResourceRuleFields, resourcerule.ActionScopeFields),
 	}
 }
 
-func resourceWallarmVpatchCreate(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceWallarmVpatchCreate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	client := apiClient(m)
 	clientID, err := retrieveClientID(d, m)
 	if err != nil {
@@ -53,7 +54,7 @@ func resourceWallarmVpatchCreate(_ context.Context, d *schema.ResourceData, m in
 		return diag.FromErr(fmt.Errorf("error setting point: %w", err))
 	}
 
-	points, err := expandPointsToTwoDimensionalArray(ps)
+	points, err := resourcerule.ExpandPointsToTwoDimensionalArray(ps)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -92,7 +93,7 @@ func resourceWallarmVpatchCreate(_ context.Context, d *schema.ResourceData, m in
 	resID := fmt.Sprintf("%d/%d/%d", clientID, actionResp.Body.ActionID, actionResp.Body.ID)
 	d.SetId(resID)
 
-	return resourceWallarmVpatchRead(context.TODO(), d, m)
+	return resourceWallarmVpatchRead(ctx, d, m)
 }
 
 func resourceWallarmVpatchRead(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
@@ -110,38 +111,15 @@ func resourceWallarmVpatchDelete(_ context.Context, d *schema.ResourceData, m in
 	if err != nil {
 		return diag.FromErr(err)
 	}
-	actionID := d.Get("action_id").(int)
-
-	rule := &wallarm.ActionRead{
-		Filter: &wallarm.ActionFilter{
-			HintType: []string{"vpatch"},
+	ruleID := d.Get("rule_id").(int)
+	h := &wallarm.HintDelete{
+		Filter: &wallarm.HintDeleteFilter{
 			Clientid: []int{clientID},
-			ID:       []int{actionID},
+			ID:       []int{ruleID},
 		},
-		Limit:  DefaultAPIListLimit,
-		Offset: 0,
 	}
-	respRules, err := client.RuleRead(rule)
-	if err != nil {
+	if err := client.HintDelete(h); err != nil {
 		return diag.FromErr(err)
-	}
-
-	if len(respRules.Body) == 1 && respRules.Body[0].Hints == 1 && respRules.Body[0].GroupedHintsCount == 1 {
-		if err := client.ActionDelete(actionID); err != nil {
-			return diag.FromErr(err)
-		}
-	} else {
-		ruleID := d.Get("rule_id").(int)
-		h := &wallarm.HintDelete{
-			Filter: &wallarm.HintDeleteFilter{
-				Clientid: []int{clientID},
-				ID:       ruleID,
-			},
-		}
-
-		if err := client.HintDelete(h); err != nil {
-			return diag.FromErr(err)
-		}
 	}
 	return nil
 }

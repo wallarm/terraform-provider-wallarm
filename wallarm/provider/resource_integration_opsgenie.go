@@ -101,7 +101,7 @@ func resourceWallarmOpsGenie() *schema.Resource {
 	}
 }
 
-func resourceWallarmOpsGenieCreate(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceWallarmOpsGenieCreate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	client := apiClient(m)
 	clientID, err := retrieveClientID(d, m)
 	if err != nil {
@@ -135,7 +135,7 @@ func resourceWallarmOpsGenieCreate(_ context.Context, d *schema.ResourceData, m 
 	resID := fmt.Sprintf("%d/%s/%d", clientID, createRes.Body.Type, createRes.Body.ID)
 	d.SetId(resID)
 
-	return resourceWallarmOpsGenieRead(context.TODO(), d, m)
+	return resourceWallarmOpsGenieRead(ctx, d, m)
 }
 
 func resourceWallarmOpsGenieRead(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
@@ -163,7 +163,7 @@ func resourceWallarmOpsGenieRead(_ context.Context, d *schema.ResourceData, m in
 	return nil
 }
 
-func resourceWallarmOpsGenieUpdate(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceWallarmOpsGenieUpdate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	client := apiClient(m)
 	clientID, err := retrieveClientID(d, m)
 	if err != nil {
@@ -223,7 +223,7 @@ func resourceWallarmOpsGenieUpdate(_ context.Context, d *schema.ResourceData, m 
 		}
 	}
 
-	return resourceWallarmOpsGenieRead(context.TODO(), d, m)
+	return resourceWallarmOpsGenieRead(ctx, d, m)
 }
 
 func resourceWallarmOpsGenieDelete(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {

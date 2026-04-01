@@ -1,3 +1,51 @@
+# v2.2.0 (Apr 1, 2026)
+
+## FEATURES:
+
+* **New resource: `wallarm_rule_generator`** — generates Terraform rule files from `wallarm_hits` data source output or existing API rules (`source = "hits"` / `source = "api"`)
+* **New resource: `wallarm_action`** — read-only resource for manual action scope tracking
+* **New resource: `wallarm_hits_index`** — persistent index for tracking fetched request IDs, enables hits-to-rules caching workflow
+* **New data source: `wallarm_actions`** — discovers all non-empty action scopes with pagination
+* **New example: `hits-to-rules`** — creates false positive suppression rules from hit data with persistent state caching
+* **New example: `import-ip-lists`** — imports all existing IP list entries into Terraform state
+* **IP list import by application scope** — new import ID format `{clientID}/subnet/{expiredAt}/apps/{appIDs}` groups subnets by both expiration and application IDs
+* **Credential stuffing cache** — shared cache at `ProviderMeta` level, eliminates redundant API calls
+* **Gzip compression** — all API requests use `Accept-Encoding: gzip` (~19x payload reduction)
+
+## IMPROVEMENTS:
+
+* IP list cache at `ProviderMeta` level with per-rule-type fetching and Create serialization
+* Centralized API limits in `constants.go`
+* Action scope validation in `CustomizeDiff`
+* `variativity_disabled` changed to `Optional+Default:true` for consistent import behavior
+* `[multiple]` path handling — hits spanning multiple paths produce HOST-header-only scope
+* Action conditions mismatch error prints both condition sets inline
+* Lint fixes: extracted string constants, pre-allocated slices, checked `d.Set()` returns
+
+## SECURITY:
+
+* Added `Sensitive: true` to node `token` field in resource and data source
+* Added `Sensitive: true` to webhook integration `headers` field
+* Safe type assertions in `tftoapi` mapper — returns errors instead of panicking on corrupted state
+
+## BUG FIXES:
+
+* Fixed IP list import merging entries with different application scopes into one resource
+* Fixed IP list import chunk index: chunk 0 now correctly includes `/0` suffix when chunking is needed
+* Fixed `context.TODO()` in 52 CRUD functions — now passes actual `ctx`
+* Fixed unchecked `d.Set()` on aggregate types
+* Fixed hint cache pagination slice reuse bug
+* Fixed `HitFilter.AttackID` type from `[]string` to `[][]string`
+
+## DOCUMENTATION:
+
+* New guide: `docs/guides/hits_to_rules.md`
+* New docs: `hits_index`, `rule_generator` resources
+* Added ephemeral hits warning to `data.wallarm_hits` doc
+* Added common fields section to action guide
+* Fixed `integration_ms_teams.md` resource name, `rule_file_upload.md` name and field optionality
+* Rewrote `global_mode.md` and `rules_settings.md` with complete field references
+
 # v2.1.0 (Mar 17, 2026)
 
 ## NOTES:

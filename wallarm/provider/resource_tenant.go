@@ -109,7 +109,7 @@ func resourceWallarmTenantImport(_ context.Context, d *schema.ResourceData, m in
 	return []*schema.ResourceData{d}, nil
 }
 
-func resourceWallarmTenantCreate(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceWallarmTenantCreate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	client := apiClient(m)
 	meta := m.(*ProviderMeta)
 
@@ -147,7 +147,7 @@ func resourceWallarmTenantCreate(_ context.Context, d *schema.ResourceData, m in
 	d.SetId(strconv.Itoa(res.Body.ID))
 	d.Set("client_id", res.Body.ID)
 
-	return resourceWallarmTenantRead(context.TODO(), d, m)
+	return resourceWallarmTenantRead(ctx, d, m)
 }
 
 func resourceWallarmTenantRead(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
@@ -178,7 +178,7 @@ func resourceWallarmTenantRead(_ context.Context, d *schema.ResourceData, m inte
 	return nil
 }
 
-func resourceWallarmTenantUpdate(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceWallarmTenantUpdate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	client := apiClient(m)
 
 	tenantClientID, err := strconv.Atoi(d.Id())
@@ -195,7 +195,7 @@ func resourceWallarmTenantUpdate(_ context.Context, d *schema.ResourceData, m in
 		}
 	}
 
-	return resourceWallarmTenantRead(context.TODO(), d, m)
+	return resourceWallarmTenantRead(ctx, d, m)
 }
 
 func resourceWallarmTenantDelete(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {

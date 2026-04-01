@@ -11,8 +11,9 @@ description: |-
 Provides the resource to manage integrations to send [notifications to OpsGenie][1].
 
 The types of events available to be sent to OpsGenie:
-- Detected hits
-- Detected vulnerabilities
+- System related: newly added users, deleted or disabled integrations
+- Rule and trigger changes
+- Security issues (critical, high, medium, low, info)
 
 ## Example Usage
 
@@ -26,12 +27,17 @@ resource "wallarm_integration_opsgenie" "opsgenie_integration" {
   active = true
 
   event {
-    event_type = "hit"
+    event_type = "system"
     active = true
   }
-  
+
   event {
-    event_type = "vuln_high"
+    event_type = "rules_and_triggers"
+    active = true
+  }
+
+  event {
+    event_type = "security_issue_critical"
     active = true
   }
 }
@@ -53,11 +59,15 @@ resource "wallarm_integration_opsgenie" "opsgenie_integration" {
 `event` are events for integration to monitor. Can be:
 
 * `event_type` - (optional) event type. Can be:
-  - `hit` - detected hits
-  - `vuln` - detected vulnerabilities
+  - `system` - system related (newly added users, deleted or disabled integrations)
+  - `rules_and_triggers` - rule and trigger changes
+  - `security_issue_critical` - critical security issues
+  - `security_issue_high` - high severity security issues
+  - `security_issue_medium` - medium severity security issues
+  - `security_issue_low` - low severity security issues
+  - `security_issue_info` - informational security issues
 
-  Default: `vuln`
-* `active` - (optional) indicator of the event type status. Can be: `true` for active events and `false` for disabled events (notifications are not sent). 
+* `active` - (optional) indicator of the event type status. Can be: `true` for active events and `false` for disabled events (notifications are not sent).
 Default: `true`
 
 
@@ -67,13 +77,18 @@ Example:
   # ... omitted
 
   event {
-    event_type = "hit"
+    event_type = "system"
+    active = true
+  }
+
+  event {
+    event_type = "rules_and_triggers"
     active = false
   }
-  
+
   event {
-    event_type = "vuln_high"
-    active = false
+    event_type = "security_issue_critical"
+    active = true
   }
 
   # ... omitted

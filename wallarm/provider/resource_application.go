@@ -45,7 +45,7 @@ func resourceWallarmApp() *schema.Resource {
 	}
 }
 
-func resourceWallarmAppCreate(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceWallarmAppCreate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	client := apiClient(m)
 	clientID, err := retrieveClientID(d, m)
 	if err != nil {
@@ -73,7 +73,7 @@ func resourceWallarmAppCreate(_ context.Context, d *schema.ResourceData, m inter
 	resID := fmt.Sprintf("%d/%d", clientID, appID)
 	d.SetId(resID)
 
-	return resourceWallarmAppRead(context.TODO(), d, m)
+	return resourceWallarmAppRead(ctx, d, m)
 }
 
 func resourceWallarmAppRead(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
@@ -85,7 +85,7 @@ func resourceWallarmAppRead(_ context.Context, d *schema.ResourceData, m interfa
 	appID := d.Get("app_id").(int)
 
 	appRead := &wallarm.AppRead{
-		Limit:  DefaultAPIListLimit,
+		Limit:  APIListLimit,
 		Offset: 0,
 		Filter: &wallarm.AppReadFilter{
 			Clientid: []int{clientID},
@@ -107,7 +107,7 @@ func resourceWallarmAppRead(_ context.Context, d *schema.ResourceData, m interfa
 	return nil
 }
 
-func resourceWallarmAppUpdate(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceWallarmAppUpdate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	client := apiClient(m)
 	clientID, err := retrieveClientID(d, m)
 	if err != nil {
@@ -132,7 +132,7 @@ func resourceWallarmAppUpdate(_ context.Context, d *schema.ResourceData, m inter
 		}
 	}
 
-	return resourceWallarmAppRead(context.TODO(), d, m)
+	return resourceWallarmAppRead(ctx, d, m)
 }
 
 func resourceWallarmAppDelete(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
@@ -162,7 +162,7 @@ func resourceWallarmAppDelete(_ context.Context, d *schema.ResourceData, m inter
 	return nil
 }
 
-func resourceWallarmAppImport(_ context.Context, d *schema.ResourceData, m interface{}) ([]*schema.ResourceData, error) {
+func resourceWallarmAppImport(ctx context.Context, d *schema.ResourceData, m interface{}) ([]*schema.ResourceData, error) {
 	idAttr := strings.SplitN(d.Id(), "/", 2)
 	if len(idAttr) != 2 {
 		return nil, fmt.Errorf("invalid id (%q) specified, should be in format \"{clientID}/{appID}\"", d.Id())
@@ -181,7 +181,7 @@ func resourceWallarmAppImport(_ context.Context, d *schema.ResourceData, m inter
 	d.Set("app_id", appID)
 	d.SetId(fmt.Sprintf("%d/%d", clientID, appID))
 
-	if diags := resourceWallarmAppRead(context.TODO(), d, m); diags.HasError() {
+	if diags := resourceWallarmAppRead(ctx, d, m); diags.HasError() {
 		return nil, fmt.Errorf("%s", diags[0].Summary)
 	}
 
