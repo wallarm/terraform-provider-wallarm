@@ -5,7 +5,7 @@ description: |-
   Describes the action argument shared across Wallarm rule resources.
 ---
 
-# action
+# Action
 
 The `action` argument defines the scope (conditions) for where a rule applies. There are two ways to define action conditions:
 

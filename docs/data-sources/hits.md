@@ -55,6 +55,7 @@ data "wallarm_hits" "example" {
 * `mode` - (Optional) Fetch mode. `"request"` (default) fetches hits for the request_id only. `"attack"` expands to all related hits sharing the same `attack_id`, filtered by allowed attack types and matching action (Host + path).
 * `attack_types` - (Optional) Override the list of allowed attack types for filtering in attack mode. Defaults to: `xss`, `sqli`, `rce`, `xxe`, `ptrav`, `crlf`, `redir`, `nosqli`, `ldapi`, `scanner`, `mass_assignment`, `ssrf`, `ssi`, `mail_injection`, `ssti`.
 * `time` - (Optional) Time range as `[from, to]` unix timestamps. Defaults to 6 months ago to now.
+* `include_instance` - (Optional) Include instance (pool ID) in action conditions. When `true` (default), rules are scoped to the hit's application instance. Set to `false` if your Wallarm account is configured to exclude instance from action conditions — otherwise action hash mismatches will occur.
 
 ## Attributes Reference
 

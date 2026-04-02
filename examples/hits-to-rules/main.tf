@@ -66,6 +66,12 @@ variable "default_mode" {
   default = "request"
 }
 
+variable "include_instance" {
+  type        = bool
+  default     = true
+  description = "Include instance (pool ID) in action conditions. Set to false if your account excludes instance from actions."
+}
+
 variable "generate_configs" {
   type        = bool
   default     = false
@@ -103,10 +109,11 @@ locals {
 # ─── Fetch hits ONLY for new request_ids ────────────────────────────────────
 
 data "wallarm_hits" "new" {
-  for_each   = local._new_request_ids
-  client_id  = var.client_id
-  request_id = each.key
-  mode       = try(local._request_configs[each.key].mode, var.default_mode)
+  for_each         = local._new_request_ids
+  client_id        = var.client_id
+  request_id       = each.key
+  mode             = try(local._request_configs[each.key].mode, var.default_mode)
+  include_instance = var.include_instance
 }
 
 # ─── Persist rules in state (hits are ephemeral) ──────────────────────────

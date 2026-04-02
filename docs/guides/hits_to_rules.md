@@ -177,6 +177,7 @@ Remove a request ID from `terraform.tfvars` and apply. Terraform will:
 | `client_id` | `number` | `null` | Client ID (uses provider default if null) |
 | `request_ids` | `map(string)` | `{}` | Map of request_id to config JSON |
 | `default_mode` | `string` | `request` | Default fetch mode |
+| `include_instance` | `bool` | `true` | Include instance (pool ID) in action conditions. Set to `false` if your account excludes instance from actions. |
 | `generate_configs` | `bool` | `false` | Generate HCL config files |
 | `output_dir` | `string` | `./generated_rules` | Output directory for generated configs |
 
