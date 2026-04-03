@@ -1,13 +1,14 @@
 # Hits to Rules
 #
 # Creates false positive suppression rules from Wallarm hit data.
-# State-only, no filesystem dependency. Rules persist even after hits expire.
+# Per-request data is cached in terraform_data with ignore_changes.
+# Deduplication by action_hash happens in locals (Map 2).
 #
 # How it works:
-#   - wallarm_hits_index tracks which request_ids have been fetched
+#   - wallarm_hits_index tracks request_ids (gating)
 #   - data.wallarm_hits fetches ONLY for new (uncached) request_ids
-#   - terraform_data.rules_cache persists rules per request_id (ignore_changes)
-#   - After apply, cached_request_ids matches request_ids → no more API calls
+#   - terraform_data.cache stores aggregated data per request_id (Map 1)
+#   - Locals build a deduplicated map by action_hash (Map 2) and feed rules
 #
 # First-time setup (two applies required):
 #   1. terraform apply                    — initializes state (no request_ids yet)
@@ -17,14 +18,13 @@
 # Add more request_ids later — just add to tfvars and apply.
 # Only new entries trigger API calls.
 #
-# Generate HCL config files (optional, for reference or migration):
-#   terraform apply -var='generate_configs=true'
-#
 # Per-request config via JSON:
 #   request_ids = {
-#     "abc123" = "{}"                                       # defaults
-#     "def456" = "{\"mode\":\"attack\"}"                    # attack mode
-#     "ghi789" = "{\"rule_types\":[\"disable_stamp\"]}"     # stamp only
+#     "abc123" = "{}"                                          # defaults
+#     "def456" = "{\"mode\":\"attack\"}"                       # attack mode
+#     "ghi789" = "{\"rule_types\":[\"disable_stamp\"]}"        # stamp rules only
+#     "jkl012" = "{\"attack_types\":[\"sqli\"]}"               # only sqli hits
+#     "mno345" = "{\"mode\":\"attack\", \"attack_types\":[\"xss\",\"rce\"]}"
 #   }
 
 terraform {
@@ -83,7 +83,7 @@ variable "output_dir" {
   default = "./generated_rules"
 }
 
-# ─── Hits index (tracks cached request_ids) ─────────────────────────────────
+# ─── Hits index (gating) ───────────────────────────────────────────────────
 
 resource "wallarm_hits_index" "this" {
   client_id   = var.client_id
@@ -113,40 +113,96 @@ data "wallarm_hits" "new" {
   client_id        = var.client_id
   request_id       = each.key
   mode             = try(local._request_configs[each.key].mode, var.default_mode)
+  attack_types     = try(local._request_configs[each.key].attack_types, [])
+  rule_types       = try(local._request_configs[each.key].rule_types, [])
   include_instance = var.include_instance
 }
 
-# ─── Persist rules in state (hits are ephemeral) ──────────────────────────
+# ─── Map 1: Per-request cache (terraform_data, ignore_changes) ─────────────
 
-resource "terraform_data" "rules_cache" {
+resource "terraform_data" "cache" {
   for_each = var.request_ids
-  input = try(jsonencode([
-    for rule in data.wallarm_hits.new[each.key].rules : merge(rule, {
-      key = "${substr(each.key, 0, 8)}_${rule.key}"
-    })
-  ]), null)
-  lifecycle {
-    ignore_changes = [input]
-  }
+  input    = try(data.wallarm_hits.new[each.key].aggregated, null)
+  lifecycle { ignore_changes = [input] }
 }
 
-# ─── Build rule maps ────────────────────────────────────────────────────────
+# ─── Map 2: Deduplicated by action_hash (built in locals) ──────────────────
 
 locals {
-  _all_rules = flatten([
-    for req_id in keys(var.request_ids) :
-    try(jsondecode(terraform_data.rules_cache[req_id].input), [])
-  ])
-
-  stamp_rules = {
-    for rule in local._all_rules : rule.key => rule
-    if rule.resource_type == "wallarm_rule_disable_stamp"
+  # Decode each cached entry. Skip entries with no data (null input).
+  _cached_data = {
+    for req_id, td in terraform_data.cache :
+    req_id => try(jsondecode(td.input), null)
+    if td.input != null
   }
 
+  # Action map: action_hash → action conditions (deduplicated naturally).
+  _actions = {
+    for req_id, data in local._cached_data :
+    data.action_hash => data.action...
+  }
+  actions = { for ah, v in local._actions : ah => v[0] }
+
+  # Merge groups across request_ids by action_hash.
+  # Groups from different request_ids with the same action are combined.
+  _groups_by_action = {
+    for req_id, data in local._cached_data :
+    data.action_hash => data.groups...
+  }
+
+  # Flatten and deduplicate groups within each action_hash.
+  # Stamp groups: merge stamps for same point key.
+  # Attack type groups: deduplicate by key (point + attack_type).
+  _merged_groups = {
+    for ah, group_lists in local._groups_by_action :
+    ah => {
+      # Flatten all group lists into one.
+      groups = { for g in flatten(group_lists) : g.key => g... }
+    }
+  }
+
+  # Build final deduplicated group map: action_hash_group_key → group data.
+  _groups = merge([
+    for ah, mg in local._merged_groups : {
+      for gk, g_list in mg.groups :
+      "${ah}_${gk}" => {
+        action      = local.actions[ah]
+        point       = g_list[0].point
+        attack_type = try(g_list[0].attack_type, "")
+        stamps      = distinct(flatten([for g in g_list : try(g.stamps, [])]))
+      }
+    }
+  ]...)
+
+  # Expand stamps: one rule per stamp group per stamp.
+  stamp_rules = merge([
+    for gk, g in local._groups : {
+      for s in g.stamps :
+      "${gk}_${s}" => {
+        stamp  = s
+        point  = g.point
+        action = g.action
+      }
+    }
+    if length(g.stamps) > 0
+  ]...)
+
+  # Attack type rules: groups that have an attack_type set.
   attack_type_rules = {
-    for rule in local._all_rules : rule.key => rule
-    if rule.resource_type == "wallarm_rule_disable_attack_type"
+    for gk, g in local._groups :
+    gk => {
+      attack_type = g.attack_type
+      point       = g.point
+      action      = g.action
+    }
+    if g.attack_type != ""
   }
+
+  # Flat list for generator and counts.
+  _all_rules = concat(
+    [for k, v in local.stamp_rules : merge(v, { key = k, resource_type = "wallarm_rule_disable_stamp", attack_type = "" })],
+    [for k, v in local.attack_type_rules : merge(v, { key = k, resource_type = "wallarm_rule_disable_attack_type", stamp = 0 })],
+  )
 }
 
 # ─── Create rules ──────────────────────────────────────────────────────────
@@ -191,16 +247,11 @@ resource "wallarm_rule_disable_attack_type" "this" {
 
 resource "wallarm_rule_generator" "configs" {
   count      = var.generate_configs && length(local._all_rules) > 0 ? 1 : 0
-  source     = "hits"
+  source     = "rules"
   client_id  = var.client_id
   moved_from = "this"
   split      = true
-  requests_json = jsonencode({
-    for req_id in keys(var.request_ids) : req_id => {
-      hits              = try(data.wallarm_hits.new[req_id].hits, [])
-      action_conditions = try(data.wallarm_hits.new[req_id].action_conditions, [])
-    }
-  })
+  rules_json = jsonencode(local._all_rules)
   output_dir = var.output_dir
 }
 

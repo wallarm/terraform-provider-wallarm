@@ -8,16 +8,29 @@ description: |-
 
 # wallarm_rule_generator
 
-Generates HCL `.tf` files for Wallarm rules. Supports two source modes:
+Generates HCL `.tf` files for Wallarm rules. Supports three source modes:
 
-- **`hits`** -- generates rules from `data.wallarm_hits` output
+- **`rules`** -- generates HCL from pre-built rules (e.g., cached rules from the hits-to-rules workflow)
+- **`hits`** -- generates rules from raw `data.wallarm_hits` output
 - **`api`** -- fetches existing rules from the Wallarm API and generates HCL
 
 Generated files persist on disk after the resource is removed from state. This is a **state-only delete** -- removing the resource does not delete the generated files.
 
 ## Example Usage
 
-### From hits data
+### From pre-built rules (recommended for hits-to-rules workflow)
+
+```hcl
+resource "wallarm_rule_generator" "from_rules" {
+  source     = "rules"
+  output_dir = "./generated_rules"
+  split      = true
+  moved_from = "this"
+  rules_json = jsonencode(local._all_rules)
+}
+```
+
+### From raw hits data
 
 ```hcl
 resource "wallarm_rule_generator" "from_hits" {
@@ -46,10 +59,10 @@ resource "wallarm_rule_generator" "from_api" {
 
 ```hcl
 resource "wallarm_rule_generator" "migrate" {
-  source     = "hits"
+  source     = "rules"
   moved_from = "this"
   output_dir = "./migrated_rules"
-  requests_json = jsonencode({...})
+  rules_json = jsonencode(local._all_rules)
 }
 ```
 
@@ -58,7 +71,8 @@ resource "wallarm_rule_generator" "migrate" {
 * `client_id` - (Optional) Client ID for generated resource blocks. Defaults to the provider's client ID.
 * `output_dir` - (Required, ForceNew) Directory to write generated `.tf` files.
 * `output_filename` - (Optional) Filename when `split = false`. Defaults to `{prefix}_rules.tf`.
-* `source` - (Optional) Source of rules: `hits` or `api`. Default: `hits`.
+* `source` - (Optional) Source of rules: `rules`, `hits`, or `api`. Default: `hits`.
+* `rules_json` - (Optional) JSON-encoded list of pre-built rules (same structure as `data.wallarm_hits` rules output). Required when `source = "rules"`.
 * `requests_json` - (Optional) JSON-encoded map of request_id to hit data. Required when `source = "hits"`.
 * `rule_types` - (Optional) Filter by rule type. Possible values: `disable_stamp`, `disable_attack_type`. Default: all types.
 * `resource_prefix` - (Optional) Prefix for resource names. Default: `fp` for hits, `rule` for api.

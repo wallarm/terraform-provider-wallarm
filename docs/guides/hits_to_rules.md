@@ -13,7 +13,7 @@ The hits-to-rules workflow creates false positive suppression rules directly fro
 
 Wallarm hits are **ephemeral** -- they have a retention period and can be dropped from the API at any time. The `data.wallarm_hits` data source should only be called once per request ID to perform the initial fetch. After that, the rules data must be cached in Terraform state so that subsequent plans do not re-fetch from the API. If hits have expired, re-fetching would return empty results and Terraform would destroy the rules.
 
-This module handles this automatically: `data.wallarm_hits` is gated to only fetch **new** (uncached) request IDs, and `terraform_data.rules_cache` with `ignore_changes` persists the rules in state permanently.
+This module handles this automatically: `data.wallarm_hits` is gated to only fetch **new** (uncached) request IDs, and `wallarm_hits_index` persists the deduplicated rule cache in state permanently.
 
 Two rule types are supported:
 
@@ -67,7 +67,7 @@ Each request ID maps to a JSON config string. Use `"{}"` for defaults.
 
 ```hcl
 request_ids = {
-  # Default: request mode, all rule types
+  # Default: request mode, all rule types, all attack types
   "abc123" = "{}"
 
   # Attack mode: expand to all related hits by attack_id
@@ -75,6 +75,12 @@ request_ids = {
 
   # Filter: only generate disable_stamp rules
   "ghi789" = "{\"rule_types\":[\"disable_stamp\"]}"
+
+  # Filter: only create rules for sqli hits
+  "jkl012" = "{\"attack_types\":[\"sqli\"]}"
+
+  # Combined: attack mode, only xss and rce hits
+  "mno345" = "{\"mode\":\"attack\", \"attack_types\":[\"xss\",\"rce\"]}"
 }
 ```
 
@@ -84,16 +90,19 @@ request_ids = {
 |-----|--------|---------|-------------|
 | `mode` | `request`, `attack` | `request` | `request` fetches direct hits only. `attack` expands to all related hits sharing the same attack campaign. |
 | `rule_types` | `["disable_stamp"]`, `["disable_attack_type"]` | all types | Filter which rule types to generate. |
+| `attack_types` | `["sqli"]`, `["xss","rce"]`, etc. | all standard types | Filter which attack types produce rules. In attack mode, also controls which types to fetch from the API. |
 
 ## How It Works
 
 The module uses three resources working together:
 
-1. **`wallarm_hits_index`** -- tracks which request IDs have been fetched (persistent index in state)
+1. **`wallarm_hits_index`** -- tracks which request IDs have been fetched (gating)
 2. **`data.wallarm_hits`** -- fetches hit data from the API, gated to only query new (uncached) request IDs
-3. **`terraform_data.rules_cache`** -- persists rules per request ID using `ignore_changes` on input
+3. **`wallarm_hits_data_cache`** -- stores deduplicated rule cache keyed by action_hash
 
-On subsequent plans, the data source is skipped for cached request IDs, and rules are read from the `terraform_data` state. This means:
+The cache stores compact aggregated data keyed by `action_hash` (Host + path scope). Each cache entry contains action conditions and point groups with stamps/attack_types. Multiple request IDs that share the same action (same host and path) are merged into a single cache entry -- stamps are unioned and new groups are added. Rules are expanded from the cached groups in HCL locals at plan time.
+
+On subsequent plans, the data source is skipped for cached request IDs, and groups are read from the `wallarm_hits_data_cache` state. This means:
 
 - No API calls for previously fetched hits
 - Rules survive even after hits expire from the API
@@ -111,7 +120,7 @@ Optionally generate standalone `.tf` files for reference or migration:
 terraform apply -var='generate_configs=true'
 ```
 
-This uses `wallarm_rule_generator` to write HCL files to `./generated_rules/` (configurable via `output_dir`).
+This uses `wallarm_rule_generator` with `source = "rules"` to write HCL files from the cached rules data. Because it reads from the rules cache (not raw hits), it works whether added before or after the initial fetch.
 
 ### Migrating to standalone resources with moved blocks
 
@@ -120,7 +129,7 @@ Generated files include `moved` blocks that map from the `for_each`-based resour
 **Example generated output:**
 
 ```hcl
-resource "wallarm_rule_disable_stamp" "fp_4666dee2_48c0e969_7994" {
+resource "wallarm_rule_disable_stamp" "fp_48c0e969_7994" {
   client_id            = 8649
   comment              = "Managed by Terraform"
   variativity_disabled = true
@@ -129,8 +138,8 @@ resource "wallarm_rule_disable_stamp" "fp_4666dee2_48c0e969_7994" {
 }
 
 moved {
-  from = wallarm_rule_disable_stamp.this["4666dee2_48c0e969_7994"]
-  to   = wallarm_rule_disable_stamp.fp_4666dee2_48c0e969_7994
+  from = wallarm_rule_disable_stamp.this["48c0e969_7994"]
+  to   = wallarm_rule_disable_stamp.fp_48c0e969_7994
 }
 ```
 
@@ -160,13 +169,21 @@ moved {
 
 6. Remove the `moved` blocks from the generated files after one successful apply -- they are only needed for the migration.
 
+## Deduplication
+
+Multiple request IDs may produce identical rules -- for example, when the same request was repeated multiple times generating hits with different request IDs but the same structure. The provider automatically deduplicates when merging new entries into the cache: groups that share the same `action_hash` (Host + path scope) and detection point are merged provider-side. Stamps are unioned and new groups are added. This means only one Terraform resource is created per unique rule regardless of how many request IDs produced it.
+
+Different request IDs with different actions (different hosts or paths) produce separate cache entries and separate rules -- they are never merged.
+
+This prevents drift loops where the Wallarm API would deduplicate identical rules, causing Terraform to detect changes on every plan.
+
 ## Removing Request IDs
 
 Remove a request ID from `terraform.tfvars` and apply. Terraform will:
 
-1. Destroy the corresponding `terraform_data.rules_cache` entry
-2. Destroy the associated rule resources (`wallarm_rule_disable_stamp`, `wallarm_rule_disable_attack_type`)
-3. Remove the ID from the `wallarm_hits_index`
+1. Remove the ID from the `wallarm_hits_index`
+2. Update the `wallarm_hits_data_cache` -- remove the request ID reference and clean up any cache entries no longer referenced by any request ID
+3. Destroy the associated rule resources (`wallarm_rule_disable_stamp`, `wallarm_rule_disable_attack_type`)
 
 ## Variables Reference
 

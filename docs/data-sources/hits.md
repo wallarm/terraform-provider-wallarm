@@ -48,12 +48,23 @@ data "wallarm_hits" "example" {
 }
 ```
 
+### Only Generate Stamp Rules for SQLi Hits
+
+```hcl
+data "wallarm_hits" "sqli_stamps" {
+  request_id   = "d4184a2f138b73c7ef4f7090deb5dfe1"
+  attack_types = ["sqli"]
+  rule_types   = ["disable_stamp"]
+}
+```
+
 ## Argument Reference
 
 * `client_id` - (Optional) ID of the client to query. Defaults to the provider's default client ID.
 * `request_id` - (Required) The unique request identifier to fetch hits for.
 * `mode` - (Optional) Fetch mode. `"request"` (default) fetches hits for the request_id only. `"attack"` expands to all related hits sharing the same `attack_id`, filtered by allowed attack types and matching action (Host + path).
-* `attack_types` - (Optional) Override the list of allowed attack types for filtering in attack mode. Defaults to: `xss`, `sqli`, `rce`, `xxe`, `ptrav`, `crlf`, `redir`, `nosqli`, `ldapi`, `scanner`, `mass_assignment`, `ssrf`, `ssi`, `mail_injection`, `ssti`.
+* `attack_types` - (Optional) Allowed attack types for filtering. In attack mode, controls which types to fetch from the API. In all modes, only hits matching these types produce rules. Defaults to: `xss`, `sqli`, `rce`, `xxe`, `ptrav`, `crlf`, `redir`, `nosqli`, `ldapi`, `scanner`, `mass_assignment`, `ssrf`, `ssi`, `mail_injection`, `ssti`.
+* `rule_types` - (Optional) Rule types to generate. Valid values: `disable_stamp`, `disable_attack_type`. Defaults to both.
 * `time` - (Optional) Time range as `[from, to]` unix timestamps. Defaults to 6 months ago to now.
 * `include_instance` - (Optional) Include instance (pool ID) in action conditions. When `true` (default), rules are scoped to the hit's application instance. Set to `false` if your Wallarm account is configured to exclude instance from action conditions — otherwise action hash mismatches will occur.
 
@@ -61,6 +72,7 @@ data "wallarm_hits" "example" {
 
 * `action` - Rule action conditions derived from the hit's domain, path, and pool ID. Uses the same schema as `wallarm_rule_*` action blocks, so the output can be passed directly to rule resources.
 * `action_hash` - SHA256 hash of the sorted action conditions, used for grouping rules with the same scope.
+* `aggregated` - JSON-encoded compact representation of the grouped hits data: `{action_hash, action, groups}`. Each group contains a detection point with its aggregated stamps and attack types. Use this for caching in `terraform_data` instead of `rules` to avoid duplicating action data across every rule. See the [Hits to Rules Guide](../guides/hits_to_rules) for the recommended caching pattern.
 * `hits` - List of hit objects, each containing:
   * `id` - Hit ID components.
   * `type` - Attack type (e.g., `sqli`, `xss`, `rce`).

@@ -10,6 +10,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strings"
 
 	"github.com/hashicorp/hcl/v2/hclwrite"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
@@ -25,6 +26,7 @@ const (
 	ruleTypeDisableAttackType = "disable_attack_type"
 	generatorSourceAPI        = "api"
 	generatorSourceHits       = "hits"
+	generatorSourceRules      = "rules"
 )
 
 var validRuleTypes = []string{ruleTypeDisableStamp, ruleTypeDisableAttackType}
@@ -60,14 +62,21 @@ func resourceWallarmRuleGenerator() *schema.Resource {
 				Optional:  true,
 				Sensitive: true,
 				Description: "JSON-encoded map of request_id → {hits, action_conditions} from data.wallarm_hits. " +
-					"Required when source = 'hits'. Not used when source = 'api'.",
+					"Required when source = 'hits'. Not used when source = 'api' or 'rules'.",
+			},
+			"rules_json": {
+				Type:      schema.TypeString,
+				Optional:  true,
+				Sensitive: true,
+				Description: "JSON-encoded list of pre-built rules (same structure as data.wallarm_hits rules output). " +
+					"Required when source = 'rules'. Each rule must have key, resource_type, stamp/attack_type, point, and action.",
 			},
 			"source": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Default:      generatorSourceHits,
-				ValidateFunc: validation.StringInSlice([]string{generatorSourceHits, generatorSourceAPI}, false),
-				Description:  "Source of rules: 'hits' (from data.wallarm_hits via requests_json) or 'api' (fetch existing rules from Wallarm API).",
+				ValidateFunc: validation.StringInSlice([]string{generatorSourceHits, generatorSourceAPI, generatorSourceRules}, false),
+				Description:  "Source of rules: 'hits' (from data.wallarm_hits via requests_json), 'rules' (from pre-built rules via rules_json), or 'api' (fetch existing rules from Wallarm API).",
 			},
 			"rule_types": {
 				Type:     schema.TypeList,
@@ -218,6 +227,23 @@ type requestEntry struct {
 	RuleTypes        []string        `json:"rule_types,omitempty"`
 }
 
+// rulesJSONAction is one action condition entry in rules_json input.
+type rulesJSONAction struct {
+	Type  string            `json:"type"`
+	Value string            `json:"value"`
+	Point map[string]string `json:"point"`
+}
+
+// rulesJSONEntry is one rule entry in rules_json input.
+type rulesJSONEntry struct {
+	Key          string            `json:"key"`
+	ResourceType string            `json:"resource_type"`
+	Stamp        int               `json:"stamp"`
+	AttackType   string            `json:"attack_type"`
+	Point        [][]string        `json:"point"`
+	Action       []rulesJSONAction `json:"action"`
+}
+
 func generateRuleFiles(d *schema.ResourceData, clientID int, m interface{}) ([]string, int, error) {
 	outputDir := d.Get("output_dir").(string)
 	ruleTypes := resolveRuleTypes(d)
@@ -256,11 +282,14 @@ func generateRuleFiles(d *schema.ResourceData, clientID int, m interface{}) ([]s
 		source = generatorSourceHits
 	}
 
-	if source == generatorSourceAPI {
+	switch source {
+	case generatorSourceAPI:
 		return generateFromAPI(m, clientID, outputDir, prefix, filename, comment, ruleTypes, split, movedFrom)
+	case generatorSourceRules:
+		return generateFromRulesJSON(d, clientID, outputDir, prefix, filename, comment, ruleTypes, split, movedFrom)
+	default:
+		return generateFromHits(d, clientID, outputDir, prefix, comment, ruleTypes, split, movedFrom)
 	}
-
-	return generateFromHits(d, clientID, outputDir, prefix, comment, ruleTypes, split, movedFrom)
 }
 
 // generateFromHits generates HCL from data.wallarm_hits (requests_json input).
@@ -312,7 +341,9 @@ func generateFromHits(d *schema.ResourceData, clientID int, outputDir, prefix, c
 
 		// Per-request filename when split=false to avoid overwriting across request_ids.
 		reqFilename := fmt.Sprintf("%s_rules.tf", filePrefix)
-		files, err := generateStaticFiles(outputDir, filePrefix, reqFilename, clientID, comment, actions, expanded, split, movedFrom, short)
+		// Empty forEachKeyPrefix: for_each keys are intrinsic (point_hash + stamp/type),
+		// not prefixed with request_id. Moved blocks use the key as-is.
+		files, err := generateStaticFiles(outputDir, filePrefix, reqFilename, clientID, comment, actions, expanded, split, movedFrom, "")
 		if err != nil {
 			return nil, 0, fmt.Errorf("request %s: %w", reqID, err)
 		}
@@ -322,6 +353,78 @@ func generateFromHits(d *schema.ResourceData, clientID int, outputDir, prefix, c
 	}
 
 	return allFiles, totalRules, nil
+}
+
+// generateFromRulesJSON generates HCL from pre-built rules (rules_json input).
+// Accepts the same structure as data.wallarm_hits rules output: [{key, resource_type, stamp, attack_type, point, action}].
+func generateFromRulesJSON(d *schema.ResourceData, clientID int, outputDir, prefix, filename, comment string, ruleTypes []string, split bool, movedFrom string) ([]string, int, error) {
+	rulesJSON := d.Get("rules_json").(string)
+	if rulesJSON == "" {
+		return nil, 0, fmt.Errorf("rules_json is required when source = 'rules'")
+	}
+
+	var rawRules []rulesJSONEntry
+	if err := json.Unmarshal([]byte(rulesJSON), &rawRules); err != nil {
+		return nil, 0, fmt.Errorf("failed to parse rules_json: %w", err)
+	}
+
+	// Build rule type filter.
+	rtSet := make(map[string]bool, len(ruleTypes))
+	for _, rt := range ruleTypes {
+		rtSet[rt] = true
+	}
+
+	// Convert to expandedRule and extract actions (same across all rules).
+	var expanded []expandedRule
+	var actions []ActionCondition
+	for _, r := range rawRules {
+		// resource_type is "wallarm_rule_disable_stamp" → ruleType is "disable_stamp"
+		ruleType := strings.TrimPrefix(r.ResourceType, "wallarm_rule_")
+		if !rtSet[ruleType] {
+			continue
+		}
+		expanded = append(expanded, expandedRule{
+			Key:        r.Key,
+			RuleType:   ruleType,
+			Point:      r.Point,
+			Stamp:      r.Stamp,
+			AttackType: r.AttackType,
+		})
+		// Convert action format: point map {"header": "HOST"} → list ["header", "HOST"]
+		if actions == nil && len(r.Action) > 0 {
+			for _, a := range r.Action {
+				// Sort map keys for deterministic output.
+				keys := make([]string, 0, len(a.Point))
+				for k := range a.Point {
+					keys = append(keys, k)
+				}
+				sort.Strings(keys)
+				var point []string
+				for _, k := range keys {
+					point = append(point, k)
+					if v := a.Point[k]; v != "" {
+						point = append(point, v)
+					}
+				}
+				actions = append(actions, ActionCondition{
+					Type:  a.Type,
+					Value: a.Value,
+					Point: point,
+				})
+			}
+		}
+	}
+
+	if len(expanded) == 0 {
+		return nil, 0, nil
+	}
+
+	files, err := generateStaticFiles(outputDir, prefix, filename, clientID, comment, actions, expanded, split, movedFrom, "")
+	if err != nil {
+		return nil, 0, err
+	}
+
+	return files, len(expanded), nil
 }
 
 // generateFromAPI fetches existing rules from the Wallarm API and generates HCL configs.
@@ -621,7 +724,8 @@ func expandRules(groups map[string]*pointGroup, ruleTypes []string) []expandedRu
 }
 
 // movedFromKey builds the for_each key for moved block "from" references.
-// When forEachKeyPrefix is set, it prepends it to match keys like "4666dee2_48c0e969_7994".
+// When forEachKeyPrefix is set, it prepends it to match prefixed keys.
+// For hits source, forEachKeyPrefix is empty — keys are intrinsic (e.g., "48c0e969_7994").
 func movedFromKey(forEachKeyPrefix, key string) string {
 	if forEachKeyPrefix != "" {
 		return forEachKeyPrefix + "_" + key
@@ -631,8 +735,8 @@ func movedFromKey(forEachKeyPrefix, key string) string {
 
 // ─── File generation ─────────────────────────────────────────────────────────────
 
-// forEachKeyPrefix is prepended to r.Key for moved block "from" keys (e.g., "4666dee2" to match for_each keys like "4666dee2_48c0e969_7994").
-// Empty string means r.Key is used as-is.
+// forEachKeyPrefix is prepended to r.Key for moved block "from" keys.
+// For hits source this is empty (keys are intrinsic). For API source it may be set.
 func generateStaticFiles(outputDir, prefix, filename string, clientID int, comment string, actions []ActionCondition, rules []expandedRule, split bool, movedFrom, forEachKeyPrefix string) ([]string, error) {
 	if !split {
 		// All in one file.

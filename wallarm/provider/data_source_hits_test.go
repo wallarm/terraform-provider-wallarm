@@ -491,7 +491,8 @@ func TestBuildRulesFromHits_BasicGrouping(t *testing.T) {
 		{Type: "iequal", Point: []interface{}{"header", "HOST"}, Value: "example.com"},
 	}
 
-	rules := buildRulesFromHits(hits, actionDetails)
+	groups, schemaActions := groupHitsForRules(hits, actionDetails, defaultAllowedAttackTypes)
+	rules := expandGroupsToSchema(groups, schemaActions, validRuleTypes)
 
 	// Should produce: 3 stamp rules (100, 200, 300) + 2 attack_type rules (sqli, xss) = 5 total.
 	stampCount := 0
@@ -514,12 +515,14 @@ func TestBuildRulesFromHits_BasicGrouping(t *testing.T) {
 }
 
 func TestBuildRulesFromHits_EmptyHits(t *testing.T) {
-	rules := buildRulesFromHits(nil, nil)
+	groups, schemaActions := groupHitsForRules(nil, nil, defaultAllowedAttackTypes)
+	rules := expandGroupsToSchema(groups, schemaActions, validRuleTypes)
 	if rules != nil {
 		t.Errorf("expected nil for empty hits, got %v", rules)
 	}
 
-	rules = buildRulesFromHits([]*wallarm.Hit{}, []wallarm.ActionDetails{})
+	groups, schemaActions = groupHitsForRules([]*wallarm.Hit{}, []wallarm.ActionDetails{}, defaultAllowedAttackTypes)
+	rules = expandGroupsToSchema(groups, schemaActions, validRuleTypes)
 	if rules != nil {
 		t.Errorf("expected nil for empty hits slice, got %v", rules)
 	}
