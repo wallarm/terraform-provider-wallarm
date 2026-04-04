@@ -94,15 +94,15 @@ request_ids = {
 
 ## How It Works
 
-The module uses three resources working together:
+The module uses three components working together:
 
 1. **`wallarm_hits_index`** -- tracks which request IDs have been fetched (gating)
 2. **`data.wallarm_hits`** -- fetches hit data from the API, gated to only query new (uncached) request IDs
-3. **`wallarm_hits_data_cache`** -- stores deduplicated rule cache keyed by action_hash
+3. **`terraform_data.cache`** -- stores aggregated hit data per request_id with `ignore_changes` on input
 
-The cache stores compact aggregated data keyed by `action_hash` (Host + path scope). Each cache entry contains action conditions and point groups with stamps/attack_types. Multiple request IDs that share the same action (same host and path) are merged into a single cache entry -- stamps are unioned and new groups are added. Rules are expanded from the cached groups in HCL locals at plan time.
+Hit data is cached per request_id in `terraform_data.cache`. HCL locals then build a deduplicated map keyed by `action_hash` -- multiple request IDs sharing the same action (same host and path) are merged, with stamps unioned and new point groups added. Actions are stored separately to avoid duplication. Rules are expanded from this deduplicated map.
 
-On subsequent plans, the data source is skipped for cached request IDs, and groups are read from the `wallarm_hits_data_cache` state. This means:
+On subsequent plans, the data source is skipped for cached request IDs, and groups are read from `terraform_data.cache` state. This means:
 
 - No API calls for previously fetched hits
 - Rules survive even after hits expire from the API
@@ -182,8 +182,8 @@ This prevents drift loops where the Wallarm API would deduplicate identical rule
 Remove a request ID from `terraform.tfvars` and apply. Terraform will:
 
 1. Remove the ID from the `wallarm_hits_index`
-2. Update the `wallarm_hits_data_cache` -- remove the request ID reference and clean up any cache entries no longer referenced by any request ID
-3. Destroy the associated rule resources (`wallarm_rule_disable_stamp`, `wallarm_rule_disable_attack_type`)
+2. Destroy the corresponding `terraform_data.cache` entry
+3. The deduplicated locals recompute -- if no other request ID references the same action, the rules are destroyed
 
 ## Variables Reference
 
