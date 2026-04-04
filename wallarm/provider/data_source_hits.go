@@ -24,8 +24,6 @@ const (
 	hitsPointKeyInstance   = "instance"
 	hitsCondTypeAbsent     = "absent"
 	hitsPathMultiple       = "[multiple]"
-	hitsResDisableStamp    = "wallarm_rule_disable_stamp"
-	hitsResDisableAttack   = "wallarm_rule_disable_attack_type"
 )
 
 var defaultAllowedAttackTypes = []string{
@@ -123,61 +121,6 @@ func dataSourceWallarmHits() *schema.Resource {
 				Description: "Action conditions in API format (type/point/value list). Used for .action.yaml generation.",
 			},
 
-			"rules": {
-				Type:        schema.TypeList,
-				Computed:    true,
-				Description: "Pre-grouped rules ready for for_each. Each rule has key, resource_type, stamp/attack_type, point, and action blocks.",
-				Elem: &schema.Resource{
-					Schema: map[string]*schema.Schema{
-						"key": {
-							Type:     schema.TypeString,
-							Computed: true,
-						},
-						"resource_type": {
-							Type:     schema.TypeString,
-							Computed: true,
-						},
-						"stamp": {
-							Type:     schema.TypeInt,
-							Computed: true,
-						},
-						"attack_type": {
-							Type:     schema.TypeString,
-							Computed: true,
-						},
-						"point": {
-							Type:     schema.TypeList,
-							Computed: true,
-							Elem: &schema.Schema{
-								Type: schema.TypeList,
-								Elem: &schema.Schema{Type: schema.TypeString},
-							},
-						},
-						"action": {
-							Type:     schema.TypeList,
-							Computed: true,
-							Elem: &schema.Resource{
-								Schema: map[string]*schema.Schema{
-									"type": {
-										Type:     schema.TypeString,
-										Computed: true,
-									},
-									"value": {
-										Type:     schema.TypeString,
-										Computed: true,
-									},
-									"point": {
-										Type:     schema.TypeMap,
-										Computed: true,
-										Elem:     &schema.Schema{Type: schema.TypeString},
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-
 			"aggregated": {
 				Type:        schema.TypeString,
 				Computed:    true,
@@ -189,22 +132,6 @@ func dataSourceWallarmHits() *schema.Resource {
 				Computed:    true,
 				Description: "Total number of hits fetched.",
 			},
-			"rules_count": {
-				Type:        schema.TypeInt,
-				Computed:    true,
-				Description: "Number of rules that will be generated from the hits.",
-			},
-			"rules_stamp_count": {
-				Type:        schema.TypeInt,
-				Computed:    true,
-				Description: "Number of disable_stamp rules.",
-			},
-			"rules_attack_type_count": {
-				Type:        schema.TypeInt,
-				Computed:    true,
-				Description: "Number of disable_attack_type rules.",
-			},
-
 			"hits": {
 				Type:     schema.TypeList,
 				Computed: true,
@@ -397,9 +324,8 @@ func dataSourceWallarmHitsRead(_ context.Context, d *schema.ResourceData, m inte
 	actionSet := actionToSchemaSet(action)
 	hitsForSchema := hitsToSchemaList(allHits)
 
-	// Group hits by point, then expand into individual rules.
+	// Group hits by point for aggregated output.
 	groups, schemaActions := groupHitsForRules(allHits, actionDetails, attackTypes)
-	rulesForSchema := expandGroupsToSchema(groups, schemaActions, ruleTypes)
 
 	if err := d.Set("action", actionSet); err != nil {
 		return diag.FromErr(fmt.Errorf("error setting action: %s", err))
@@ -423,26 +349,7 @@ func dataSourceWallarmHitsRead(_ context.Context, d *schema.ResourceData, m inte
 		return diag.FromErr(fmt.Errorf("error setting aggregated: %s", err))
 	}
 
-	if err := d.Set("rules", rulesForSchema); err != nil {
-		return diag.FromErr(fmt.Errorf("error setting rules: %s", err))
-	}
-
-	// Set summary counts.
-	stampCount := 0
-	attackTypeCount := 0
-	for _, r := range rulesForSchema {
-		rm := r.(map[string]interface{})
-		switch rm["resource_type"] {
-		case hitsResDisableStamp:
-			stampCount++
-		case hitsResDisableAttack:
-			attackTypeCount++
-		}
-	}
 	d.Set("hits_count", len(allHits))
-	d.Set("rules_count", len(rulesForSchema))
-	d.Set("rules_stamp_count", stampCount)
-	d.Set("rules_attack_type_count", attackTypeCount)
 	if err := d.Set("hits", hitsForSchema); err != nil {
 		return diag.FromErr(fmt.Errorf("error setting hits: %s", err))
 	}
@@ -634,16 +541,10 @@ func setEmptyHitsState(d *schema.ResourceData) diag.Diagnostics {
 	if err := d.Set("action_conditions", []interface{}{}); err != nil {
 		diags = append(diags, diag.FromErr(err)...)
 	}
-	if err := d.Set("rules", []interface{}{}); err != nil {
-		diags = append(diags, diag.FromErr(err)...)
-	}
 	if err := d.Set("aggregated", "{}"); err != nil {
 		diags = append(diags, diag.FromErr(err)...)
 	}
 	d.Set("hits_count", 0)
-	d.Set("rules_count", 0)
-	d.Set("rules_stamp_count", 0)
-	d.Set("rules_attack_type_count", 0)
 	if err := d.Set("hits", []interface{}{}); err != nil {
 		diags = append(diags, diag.FromErr(err)...)
 	}
@@ -955,43 +856,6 @@ func groupHitsForRules(hits []*wallarm.Hit, actionDetails []wallarm.ActionDetail
 	}
 
 	return groups, schemaActions
-}
-
-// expandGroupsToSchema expands point groups into individual rules for the rules output.
-func expandGroupsToSchema(groups map[string]*pointGroup, schemaActions []map[string]interface{}, ruleTypes []string) []interface{} {
-	expanded := expandRules(groups, ruleTypes)
-	if len(expanded) == 0 {
-		return nil
-	}
-
-	// Convert to []interface{} for Terraform SDK TypeList compatibility.
-	actionList := make([]interface{}, len(schemaActions))
-	for i, a := range schemaActions {
-		actionList[i] = a
-	}
-
-	result := make([]interface{}, 0, len(expanded))
-	for _, r := range expanded {
-		pointForSchema := make([]interface{}, 0, len(r.Point))
-		for _, inner := range r.Point {
-			innerList := make([]interface{}, 0, len(inner))
-			for _, s := range inner {
-				innerList = append(innerList, s)
-			}
-			pointForSchema = append(pointForSchema, innerList)
-		}
-
-		result = append(result, map[string]interface{}{
-			"key":           r.Key,
-			"resource_type": "wallarm_rule_" + r.RuleType,
-			"stamp":         r.Stamp,
-			"attack_type":   r.AttackType,
-			"point":         pointForSchema,
-			"action":        actionList,
-		})
-	}
-
-	return result
 }
 
 // aggregatedGroup is one entry in the aggregated JSON output.
