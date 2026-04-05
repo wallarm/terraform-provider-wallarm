@@ -13,7 +13,6 @@
 ## BREAKING CHANGES:
 
 * **`data.wallarm_hits`: `attack_types` now filters in all modes** — previously only filtered API fetch in attack mode. Now also filters which hits produce rules in request mode. If you had request-mode hits of types outside the default list, they would previously produce rules but now will not.
-* **`wallarm_rule_generator`: moved block key format changed** — keys no longer include request_id prefix (e.g., `48c0e969_7994` instead of `4666dee2_48c0e969_7994`). Existing moved blocks generated with `source = "hits"` will reference old keys.
 * **`wallarm_hits_index`: `cached_request_ids` type changed** — from comma-separated `string` to `TypeSet`. HCL using `split(",", ...)` must be updated to use the set directly.
 * **`data.wallarm_hits`: `rules` output removed** — use `aggregated` output with `terraform_data` caching instead. See the [Hits to Rules Guide](docs/guides/hits_to_rules.md).
 
