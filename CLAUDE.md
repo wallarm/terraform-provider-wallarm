@@ -650,7 +650,7 @@ The Wallarm API stores header names in uppercase (`X-API-KEY`, `CONTENT-TYPE`). 
 
 **CRITICAL: This section is the ONLY authoritative source for point structure (paired vs simple elements, chaining rules). When constructing, reviewing, or testing point values — read this section first. Do NOT guess or approximate from memory.**
 
-The `point` field is a list of lists of strings representing a path through the request parser chain. The `WrapPointElements()` function in `wallarm/common/resourcerule/resource_rule.go` is the authoritative reference for paired vs simple classification. Full point chaining data is in `.claude/point_map_exact.json` (fetched from API).
+The `point` field is a list of lists of strings representing a path through the request parser chain. The `WrapPointElements()` function in `wallarm/common/resourcerule/resource_rule.go` is the authoritative reference for paired vs simple classification. Full point chaining data is in `.claude/point_map_exact.json` (fetched by `.claude/fetch_point_refs.py`). Proton type definitions (IDs, simple/keys/array/parser flags, attack type IDs) are in `.claude/types.rb`.
 
 #### Base points (level 1)
 
