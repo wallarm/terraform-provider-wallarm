@@ -160,19 +160,22 @@ Caches `GET /v4/clients/{clientID}/credential_stuffing/configs` responses. The A
 
 ## HCL Generator (`wallarm/provider/resource_hcl_generator.go`)
 
-The `wallarm_rule_generator` resource generates HCL config files from hits or existing API rules.
+The `wallarm_rule_generator` resource generates HCL config files from cached rule data or existing API rules.
 
 **Two source modes:**
-- `source = "hits"` (default) — generates rules from `data.wallarm_hits` output via `requests_json`
+- `source = "rules"` (default) — generates HCL from pre-built rules via `rules_json` (e.g., from the hits-to-rules workflow `_all_rules` local)
 - `source = "api"` — fetches existing rules directly from the Wallarm API via `HintRead`, groups by action, generates HCL
 
 **Key fields:**
 - `output_dir` — directory for generated files
 - `output_filename` — filename when `split = false` (defaults to `{prefix}_rules.tf`)
+- `rules_json` — JSON-encoded list of pre-built rules (required when `source = "rules"`)
 - `rule_types` — filter by type (default: `["disable_stamp", "disable_attack_type"]`)
 - `split` — one file per rule (true) or all in one file (false, default)
-- `resource_prefix` — prefix for resource names (default: `"fp"` for hits, `"rule"` for api)
-- `source` — `"hits"` or `"api"`
+- `resource_prefix` — prefix for resource names (default: `"fp"` for rules, `"rule"` for api)
+- `source` — `"rules"` or `"api"`
+
+Each rule in `rules_json` carries its own `action` block — rules from different action scopes are correctly generated with their respective action conditions. The `expandedRule` struct has an `Actions` field for per-rule action conditions.
 
 **Templates** (`hcl_generator_templates.go`): use `hclwrite` + `cty` for proper HCL generation with correct escaping of special characters in point values (XML namespaces, URIs, etc.). This handles cases where `terraform plan -generate-config-out` fails.
 
@@ -945,7 +948,7 @@ Removing rule YAML files → next apply:
 - **Remove unused `get_vulns.go`** from wallarm-go (`POST /v1/objects/vuln`) — legacy endpoint not used by the provider.
 
 ### HCL Generator
-- **`source = "convert"` mode**: Add a conversion mode to `wallarm_rule_generator` that reads existing `.tf` files with `action {}` blocks and rewrites them using `action_*` scope fields. Uses `ReverseMapActions()` from `resourcerule/action_reverse_map.go`. New `input_path` field for source file/directory, output to `output_dir`. See plan at `.claude/plans/snuggly-churning-dragon.md`.
+- **`source = "convert"` mode**: Add a conversion mode to `wallarm_rule_generator` that reads existing `.tf` files with `action {}` blocks and rewrites them using `action_*` scope fields. Uses `ReverseMapActions()` from `resourcerule/action_reverse_map.go`. New `input_path` field for source file/directory, output to `output_dir`.
 
 ### Provider Framework
 - **terraform-plugin-framework migration**: The current provider uses `terraform-plugin-sdk/v2`. Future major version could migrate to `terraform-plugin-framework` for better type safety, plan modifiers, and validator support. This is a large effort.
