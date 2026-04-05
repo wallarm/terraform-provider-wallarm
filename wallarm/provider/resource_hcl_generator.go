@@ -292,55 +292,51 @@ func generateFromRulesJSON(d *schema.ResourceData, clientID int, outputDir, pref
 		rtSet[rt] = true
 	}
 
-	// Convert to expandedRule and extract actions (same across all rules).
+	// Convert to expandedRule with per-rule action conditions.
 	var expanded []expandedRule
-	var actions []ActionCondition
 	for _, r := range rawRules {
-		// resource_type is "wallarm_rule_disable_stamp" → ruleType is "disable_stamp"
 		ruleType := strings.TrimPrefix(r.ResourceType, "wallarm_rule_")
 		if !rtSet[ruleType] {
 			continue
 		}
+
+		// Convert action format: point map → ActionCondition with correct Point/Value split.
+		var ruleActions []ActionCondition
+		for _, a := range r.Action {
+			var point []string
+			value := a.Value
+
+			for k, v := range a.Point {
+				point = append(point, k)
+				if resourcerule.PointValuePoints[k] {
+					value = v
+				} else if v != "" {
+					point = append(point, v)
+				}
+			}
+
+			ruleActions = append(ruleActions, ActionCondition{
+				Type:  a.Type,
+				Value: value,
+				Point: point,
+			})
+		}
+
 		expanded = append(expanded, expandedRule{
 			Key:        r.Key,
 			RuleType:   ruleType,
 			Point:      r.Point,
 			Stamp:      r.Stamp,
 			AttackType: r.AttackType,
+			Actions:    ruleActions,
 		})
-		// Convert action format: point map → ActionCondition with correct Point/Value split.
-		// Point-value types (action_name, action_ext, instance, etc.) store their
-		// value in the point map. Two-part types (header, query, path) store the
-		// second point element in the map and keep Value separate.
-		if actions == nil && len(r.Action) > 0 {
-			for _, a := range r.Action {
-				var point []string
-				value := a.Value
-
-				// Each action condition has exactly one key in the point map.
-				for k, v := range a.Point {
-					point = append(point, k)
-					if resourcerule.PointValuePoints[k] {
-						value = v // map value IS the action value
-					} else if v != "" {
-						point = append(point, v) // map value is Point[1]
-					}
-				}
-
-				actions = append(actions, ActionCondition{
-					Type:  a.Type,
-					Value: value,
-					Point: point,
-				})
-			}
-		}
 	}
 
 	if len(expanded) == 0 {
 		return nil, 0, nil
 	}
 
-	files, err := generateStaticFiles(outputDir, prefix, filename, clientID, comment, actions, expanded, split, movedFrom, "")
+	files, err := generateStaticFiles(outputDir, prefix, filename, clientID, comment, nil, expanded, split, movedFrom, "")
 	if err != nil {
 		return nil, 0, err
 	}
@@ -538,6 +534,7 @@ type expandedRule struct {
 	Point      [][]string
 	Stamp      int
 	AttackType string
+	Actions    []ActionCondition // per-rule action conditions (may differ across rules)
 }
 
 func expandRules(groups map[string]*pointGroup, ruleTypes []string) []expandedRule {
@@ -595,11 +592,15 @@ func generateStaticFiles(outputDir, prefix, filename string, clientID int, comme
 		f := hclwrite.NewEmptyFile()
 		for _, r := range rules {
 			name := fmt.Sprintf("%s_%s", prefix, r.Key)
+			ruleActions := actions
+			if len(r.Actions) > 0 {
+				ruleActions = r.Actions
+			}
 			cfg := StaticRuleConfig{
 				ClientID:   clientID,
 				Comment:    comment,
 				Point:      r.Point,
-				Actions:    actions,
+				Actions:    ruleActions,
 				Stamp:      r.Stamp,
 				AttackType: r.AttackType,
 			}
@@ -630,11 +631,15 @@ func generateStaticFiles(outputDir, prefix, filename string, clientID int, comme
 	for _, r := range rules {
 		f := hclwrite.NewEmptyFile()
 		name := fmt.Sprintf("%s_%s", prefix, r.Key)
+		ruleActions := actions
+		if len(r.Actions) > 0 {
+			ruleActions = r.Actions
+		}
 		cfg := StaticRuleConfig{
 			ClientID:   clientID,
 			Comment:    comment,
 			Point:      r.Point,
-			Actions:    actions,
+			Actions:    ruleActions,
 			Stamp:      r.Stamp,
 			AttackType: r.AttackType,
 		}
@@ -696,4 +701,3 @@ func hashString(s string) string {
 	h := sha256.Sum256([]byte(s))
 	return hex.EncodeToString(h[:8])
 }
-
