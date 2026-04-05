@@ -135,16 +135,16 @@ locals {
 
   # Action map: action_hash → action conditions (deduplicated naturally).
   _actions = {
-    for req_id, data in local._cached_data :
-    data.action_hash => data.action...
+    for req_id, req_data in local._cached_data :
+    req_data.action_hash => req_data.action...
   }
   actions = { for ah, v in local._actions : ah => v[0] }
 
   # Merge groups across request_ids by action_hash.
   # Groups from different request_ids with the same action are combined.
   _groups_by_action = {
-    for req_id, data in local._cached_data :
-    data.action_hash => data.groups...
+    for req_id, req_data in local._cached_data :
+    req_data.action_hash => req_data.groups...
   }
 
   # Flatten and deduplicate groups within each action_hash.
