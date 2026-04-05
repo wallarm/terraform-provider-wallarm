@@ -21,7 +21,7 @@ const (
 //   - Instance-based → numeric prefix: "13_example.com_api_c522d1d1"
 //   - Domain-based → alpha prefix: "example.com_api_a3f2e1b7"
 //
-// Path transform: "/" → "_", "*" → ".", "**" → ".."
+// Path transform: separators → "_", root "/" → "root", "*" → ".", "**" → ".."
 // Max 64 chars. Prefix truncated at last "_" boundary if needed.
 func ActionDirName(conditions []wallarm.ActionDetails) string {
 	if len(conditions) == 0 {
