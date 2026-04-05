@@ -377,7 +377,7 @@ Some detections are false positives (FPs) — legitimate requests misidentified 
 4. **Generate Rules**: Two rule types are used for FP suppression:
    - **`disable_stamp`** — allows specific attack signatures (stamps) at a given point
    - **`disable_attack_type`** — allows specific attack types at a given point
-5. **File-per-group**: Rules sharing the same action + point are placed in one Terraform file, listing all stamps or attack types as parameters. In the Wallarm API each stamp/attack type is a separate rule, but Terraform represents them as a single resource with a list — keeping config minimal and flexible.
+5. **One resource per rule**: Each stamp and each attack_type is a separate Terraform resource (`wallarm_rule_disable_stamp` or `wallarm_rule_disable_attack_type`), matching the API 1:1. The `for_each` key is `{action_hash}_{point_hash}_{stamp}` or `{action_hash}_{point_hash}_{attack_type}`. When generating HCL files with `split = true`, each rule gets its own `.tf` file.
 
 ### Grouping Logic
 
