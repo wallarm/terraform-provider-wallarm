@@ -60,8 +60,15 @@ func hitsIndexCustomizeDiff(_ context.Context, d *schema.ResourceDiff, _ interfa
 		}
 		return d.SetNew("cached_request_ids", schema.NewSet(schema.HashString, []interface{}{}))
 	}
-	// Update: preserve current values from state.
-	return nil
+	// Update: set cached_request_ids to the new request_ids so the planned value
+	// is known and matches what Update+Read will produce.
+	// The gating for new IDs uses the `ready` flag: on first create (ready=false),
+	// ALL IDs are fetched. On subsequent updates, cached_request_ids = request_ids,
+	// so _request_ids_to_fetch is empty — but data.wallarm_hits.new still runs for
+	// IDs that have no terraform_data.cache entry yet (for_each = var.request_ids
+	// creates cache entries, try() returns null for missing data source instances).
+	requestIDsSet := d.Get("request_ids").(*schema.Set)
+	return d.SetNew("cached_request_ids", requestIDsSet)
 }
 
 // ─── CRUD ───────────────────────────────────────────────────────────────────
