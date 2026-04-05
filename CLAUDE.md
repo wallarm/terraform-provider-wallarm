@@ -390,7 +390,7 @@ Some detections are false positives (FPs) — legitimate requests misidentified 
 
 Fetches hits from the Wallarm API and aggregates them into rule-ready structures.
 
-**Input**: `request_id` list + `mode` variable (`"request"` or `"attack"`)
+**Input**: `request_id` (single string) + `mode` variable (`"request"` or `"attack"`). Called per-request_id via `for_each` in HCL.
 
 **Two modes, same output structure:**
 - **Request mode**: Fetch hits directly by `request_id` — produces rules for the specific request
@@ -403,13 +403,11 @@ Fetches hits from the Wallarm API and aggregates them into rule-ready structures
 4. Fetch all hits belonging to those `attack_id`s (filtered by allowed attack types)
 5. Fetch in batches of 500 hits per request
 6. Validate each batch — all hits must share the same action conditions (Host + path). Discard hits with different action hash
-7. Group hits by point and rule type (stamps → `disable_stamp`, attack types → `disable_attack_type`)
-8. One point = one config file (as in the existing `hit_fetcher`/`fp_rules` modules)
-
-**Related hits field**: The data source exposes a `related_hits` field that collects all hits by `attack_id` belonging to each original hit. The strict restriction is that the action (Host + path) must match — related hits with different actions are excluded.
+7. Group hits by point (stamps and attack_types aggregated per point group)
+8. Build `aggregated` JSON output for caching in `terraform_data`
 
 **Hit filtering — allowed attack types:**
-`xss`, `sqli`, `rce`, `xxe`, `ptrav`, `crlf`, `redir`, `nosqli`, `ldapi`, `scanner`, `mass_assignment`, `ssrf`, `ssi`, `mail_injection`, `ssti`
+`xss`, `sqli`, `rce`, `ptrav`, `crlf`, `redir`, `nosqli`, `ldapi`, `scanner`, `mass_assignment`, `ssrf`, `ssi`, `mail_injection`, `ssti`, `xxe`, `invalid_xml`
 
 **API call pattern (hits by attack_id):**
 ```bash
@@ -445,7 +443,7 @@ POST /v1/objects/hit
 **Aggregation rules:**
 - Group by action hash (Host + path) — mandatory, strict match
 - Within action: group by point (request parameter)
-- Each unique point produces one rule — either `disable_stamp` (for stamp-type hits) or `disable_attack_type` (for attack-type hits)
+- Each unique point produces multiple rules: one `disable_stamp` per stamp and one `disable_attack_type` per attack type. Stamp groups and attack_type groups are separate (stamps are not attack-type-scoped).
 - Output structure is identical for both request and attack modes
 
 ## Tenant Resource (`wallarm_tenant`)
@@ -750,7 +748,7 @@ Read-only resource available for manual action tracking. Registered in the provi
 
 ### `data.wallarm_actions` Data Source (`data_source_actions.go`)
 
-Discovery — fetches all non-empty actions with pagination. Returns list with `conditions_hash`, `dir_name`, `action_id`, `conditions`, `endpoint_*`, `updated_at`. Used by the optional discovery step (`discover_actions=true`) to generate `.action.yaml` files for action scopes not yet tracked on disk.
+Discovery — fetches all non-empty actions with pagination. Returns list with `conditions_hash`, `dir_name`, `action_id`, `conditions`, `endpoint_*`, `updated_at`. Available for advanced configurations that need to organize rules by action scope.
 
 ### wallarm-go Action API Methods
 
