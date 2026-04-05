@@ -24,9 +24,8 @@ import (
 const (
 	ruleTypeDisableStamp      = "disable_stamp"
 	ruleTypeDisableAttackType = "disable_attack_type"
-	generatorSourceAPI        = "api"
-	generatorSourceHits       = "hits"
-	generatorSourceRules      = "rules"
+	generatorSourceAPI   = "api"
+	generatorSourceRules = "rules"
 )
 
 var validRuleTypes = []string{ruleTypeDisableStamp, ruleTypeDisableAttackType}
@@ -57,13 +56,6 @@ func resourceWallarmRuleGenerator() *schema.Resource {
 				Optional:    true,
 				Description: "Filename for the generated .tf file (used when split = false). Defaults to '{prefix}_rules.tf'.",
 			},
-			"requests_json": {
-				Type:      schema.TypeString,
-				Optional:  true,
-				Sensitive: true,
-				Description: "JSON-encoded map of request_id → {hits, action_conditions} from data.wallarm_hits. " +
-					"Required when source = 'hits'. Not used when source = 'api' or 'rules'.",
-			},
 			"rules_json": {
 				Type:      schema.TypeString,
 				Optional:  true,
@@ -74,9 +66,9 @@ func resourceWallarmRuleGenerator() *schema.Resource {
 			"source": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				Default:      generatorSourceHits,
-				ValidateFunc: validation.StringInSlice([]string{generatorSourceHits, generatorSourceAPI, generatorSourceRules}, false),
-				Description:  "Source of rules: 'hits' (from data.wallarm_hits via requests_json), 'rules' (from pre-built rules via rules_json), or 'api' (fetch existing rules from Wallarm API).",
+				Default:      generatorSourceRules,
+				ValidateFunc: validation.StringInSlice([]string{generatorSourceRules, generatorSourceAPI}, false),
+				Description:  "Source of rules: 'rules' (from pre-built rules via rules_json) or 'api' (fetch existing rules from Wallarm API).",
 			},
 			"rule_types": {
 				Type:     schema.TypeList,
@@ -220,13 +212,6 @@ func resolveGeneratorClientID(d *schema.ResourceData, m interface{}) (int, error
 	return meta.DefaultClientID, nil
 }
 
-// requestEntry is one entry in the requests_json map.
-type requestEntry struct {
-	Hits             json.RawMessage `json:"hits"`
-	ActionConditions json.RawMessage `json:"action_conditions"`
-	RuleTypes        []string        `json:"rule_types,omitempty"`
-}
-
 // rulesJSONAction is one action condition entry in rules_json input.
 type rulesJSONAction struct {
 	Type  string            `json:"type"`
@@ -254,6 +239,8 @@ func generateRuleFiles(d *schema.ResourceData, clientID int, m interface{}) ([]s
 	prefix := "fp"
 	if source == generatorSourceAPI {
 		prefix = "rule"
+	} else if source == "" {
+		source = generatorSourceRules
 	}
 	if v, ok := d.GetOk("resource_prefix"); ok {
 		prefix = v.(string)
@@ -278,81 +265,12 @@ func generateRuleFiles(d *schema.ResourceData, clientID int, m interface{}) ([]s
 		return nil, 0, fmt.Errorf("failed to create output directory %s: %w", outputDir, err)
 	}
 
-	if source == "" {
-		source = generatorSourceHits
-	}
-
 	switch source {
 	case generatorSourceAPI:
 		return generateFromAPI(m, clientID, outputDir, prefix, filename, comment, ruleTypes, split, movedFrom)
-	case generatorSourceRules:
-		return generateFromRulesJSON(d, clientID, outputDir, prefix, filename, comment, ruleTypes, split, movedFrom)
 	default:
-		return generateFromHits(d, clientID, outputDir, prefix, comment, ruleTypes, split, movedFrom)
+		return generateFromRulesJSON(d, clientID, outputDir, prefix, filename, comment, ruleTypes, split, movedFrom)
 	}
-}
-
-// generateFromHits generates HCL from data.wallarm_hits (requests_json input).
-func generateFromHits(d *schema.ResourceData, clientID int, outputDir, prefix, comment string, ruleTypes []string, split bool, movedFrom string) ([]string, int, error) {
-	reqJSON := d.Get("requests_json").(string)
-	if reqJSON == "" {
-		return nil, 0, fmt.Errorf("requests_json is required when source = 'hits'")
-	}
-
-	var requests map[string]requestEntry
-	if err := json.Unmarshal([]byte(reqJSON), &requests); err != nil {
-		return nil, 0, fmt.Errorf("failed to parse requests_json: %w", err)
-	}
-
-	var allFiles []string
-	totalRules := 0
-
-	reqIDs := make([]string, 0, len(requests))
-	for id := range requests {
-		reqIDs = append(reqIDs, id)
-	}
-	sort.Strings(reqIDs)
-
-	for _, reqID := range reqIDs {
-		entry := requests[reqID]
-		short := reqID[:min(8, len(reqID))]
-		filePrefix := fmt.Sprintf("%s_%s", prefix, short)
-
-		actions, err := parseActionConditionsJSON(entry.ActionConditions)
-		if err != nil {
-			return nil, 0, fmt.Errorf("request %s: %w", reqID, err)
-		}
-
-		groups, err := groupHitsByPoint(string(entry.Hits))
-		if err != nil {
-			return nil, 0, fmt.Errorf("request %s: %w", reqID, err)
-		}
-
-		effectiveRuleTypes := ruleTypes
-		if len(entry.RuleTypes) > 0 {
-			effectiveRuleTypes = entry.RuleTypes
-		}
-
-		expanded := expandRules(groups, effectiveRuleTypes)
-		if len(expanded) == 0 {
-			log.Printf("[WARN] wallarm_rule_generator: no rules for request %s", reqID)
-			continue
-		}
-
-		// Per-request filename when split=false to avoid overwriting across request_ids.
-		reqFilename := fmt.Sprintf("%s_rules.tf", filePrefix)
-		// Empty forEachKeyPrefix: for_each keys are intrinsic (point_hash + stamp/type),
-		// not prefixed with request_id. Moved blocks use the key as-is.
-		files, err := generateStaticFiles(outputDir, filePrefix, reqFilename, clientID, comment, actions, expanded, split, movedFrom, "")
-		if err != nil {
-			return nil, 0, fmt.Errorf("request %s: %w", reqID, err)
-		}
-
-		allFiles = append(allFiles, files...)
-		totalRules += len(expanded)
-	}
-
-	return allFiles, totalRules, nil
 }
 
 // generateFromRulesJSON generates HCL from pre-built rules (rules_json input).
@@ -610,70 +528,11 @@ func convertAPIPoint(point []interface{}) [][]string {
 	return result
 }
 
-// ─── Hit parsing & grouping ─────────────────────────────────────────────────────
-
-// hitJSON is the minimal struct we parse from hits_json.
-type hitJSON struct {
-	Type         string          `json:"type"`
-	Stamps       []int           `json:"stamps"`
-	PointHash    string          `json:"point_hash"`
-	PointWrapped [][]interface{} `json:"point_wrapped"`
-}
-
 // pointGroup aggregates hits sharing the same point_hash.
 type pointGroup struct {
 	PointWrapped [][]string
 	Stamps       []int
 	AttackTypes  []string
-}
-
-func groupHitsByPoint(hitsJSONStr string) (map[string]*pointGroup, error) {
-	var rawHits []json.RawMessage
-	if err := json.Unmarshal([]byte(hitsJSONStr), &rawHits); err != nil {
-		return nil, fmt.Errorf("failed to parse hits_json: %w", err)
-	}
-
-	groups := make(map[string]*pointGroup)
-
-	for _, raw := range rawHits {
-		var h hitJSON
-		if err := json.Unmarshal(raw, &h); err != nil {
-			log.Printf("[WARN] wallarm_rule_generator: skipping unparseable hit: %v", err)
-			continue
-		}
-
-		if h.PointHash == "" {
-			continue
-		}
-
-		g, exists := groups[h.PointHash]
-		if !exists {
-			g = &pointGroup{
-				PointWrapped: convertPointWrapped(h.PointWrapped),
-			}
-			groups[h.PointHash] = g
-		}
-
-		// Merge stamps.
-		for _, s := range h.Stamps {
-			if s > 0 && !containsInt(g.Stamps, s) {
-				g.Stamps = append(g.Stamps, s)
-			}
-		}
-
-		// Merge attack types.
-		if h.Type != "" && !containsStr(g.AttackTypes, h.Type) {
-			g.AttackTypes = append(g.AttackTypes, h.Type)
-		}
-	}
-
-	// Sort for deterministic output.
-	for _, g := range groups {
-		sort.Ints(g.Stamps)
-		sort.Strings(g.AttackTypes)
-	}
-
-	return groups, nil
 }
 
 // expandedRule is a single expanded rule ready for HCL generation.
@@ -826,41 +685,6 @@ func resolveRuleTypes(d *schema.ResourceData) []string {
 		}
 	}
 	return []string{ruleTypeDisableStamp, ruleTypeDisableAttackType}
-}
-
-func parseActionConditionsJSON(raw json.RawMessage) ([]ActionCondition, error) {
-	var rawConditions []struct {
-		Type  string   `json:"type"`
-		Point []string `json:"point"`
-		Value string   `json:"value"`
-	}
-
-	if err := json.Unmarshal(raw, &rawConditions); err != nil {
-		return nil, fmt.Errorf("failed to parse action_conditions: %w", err)
-	}
-
-	conditions := make([]ActionCondition, 0, len(rawConditions))
-	for _, rc := range rawConditions {
-		conditions = append(conditions, ActionCondition{
-			Type:  rc.Type,
-			Point: rc.Point,
-			Value: rc.Value,
-		})
-	}
-
-	return conditions, nil
-}
-
-func convertPointWrapped(pw [][]interface{}) [][]string {
-	result := make([][]string, 0, len(pw))
-	for _, inner := range pw {
-		row := make([]string, 0, len(inner))
-		for _, v := range inner {
-			row = append(row, fmt.Sprintf("%v", v))
-		}
-		result = append(result, row)
-	}
-	return result
 }
 
 func writeHCLFile(path string, f *hclwrite.File) error {

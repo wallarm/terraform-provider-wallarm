@@ -1,115 +1,12 @@
 package wallarm
 
 import (
-	"encoding/json"
 	"os"
 	"strings"
 	"testing"
 
 	"github.com/hashicorp/hcl/v2/hclwrite"
 )
-
-func TestGroupHitsByPoint(t *testing.T) {
-	hits := []map[string]interface{}{
-		{
-			"type":          "sqli",
-			"stamps":        []int{111, 222},
-			"point_hash":    "aabbccdd11223344",
-			"point_wrapped": [][]string{{"header", "X-API-Key"}},
-		},
-		{
-			"type":          "xss",
-			"stamps":        []int{333},
-			"point_hash":    "aabbccdd11223344", // same point
-			"point_wrapped": [][]string{{"header", "X-API-Key"}},
-		},
-		{
-			"type":          "sqli",
-			"stamps":        []int{444},
-			"point_hash":    "eeff00112233aabb", // different point
-			"point_wrapped": [][]string{{"post"}, {"form_urlencoded", "username"}},
-		},
-	}
-
-	hitsJSON, _ := json.Marshal(hits)
-	groups, err := groupHitsByPoint(string(hitsJSON))
-	if err != nil {
-		t.Fatalf("groupHitsByPoint failed: %v", err)
-	}
-
-	if len(groups) != 2 {
-		t.Fatalf("expected 2 groups, got %d", len(groups))
-	}
-
-	// First group: merged stamps and attack types.
-	g1 := groups["aabbccdd11223344"]
-	if g1 == nil {
-		t.Fatal("missing group for aabbccdd11223344")
-	}
-	if len(g1.Stamps) != 3 {
-		t.Errorf("expected 3 stamps, got %d: %v", len(g1.Stamps), g1.Stamps)
-	}
-	if len(g1.AttackTypes) != 2 {
-		t.Errorf("expected 2 attack types, got %d: %v", len(g1.AttackTypes), g1.AttackTypes)
-	}
-
-	// Second group.
-	g2 := groups["eeff00112233aabb"]
-	if g2 == nil {
-		t.Fatal("missing group for eeff00112233aabb")
-	}
-	if len(g2.Stamps) != 1 || g2.Stamps[0] != 444 {
-		t.Errorf("expected stamps [444], got %v", g2.Stamps)
-	}
-}
-
-func TestGroupHitsByPoint_DuplicateStamps(t *testing.T) {
-	hits := []map[string]interface{}{
-		{"type": "sqli", "stamps": []int{111, 222}, "point_hash": "aabb", "point_wrapped": [][]string{{"post"}}},
-		{"type": "sqli", "stamps": []int{111, 333}, "point_hash": "aabb", "point_wrapped": [][]string{{"post"}}},
-	}
-
-	hitsJSON, _ := json.Marshal(hits)
-	groups, err := groupHitsByPoint(string(hitsJSON))
-	if err != nil {
-		t.Fatalf("groupHitsByPoint failed: %v", err)
-	}
-
-	g := groups["aabb"]
-	if len(g.Stamps) != 3 {
-		t.Errorf("expected 3 deduplicated stamps, got %d: %v", len(g.Stamps), g.Stamps)
-	}
-	// Should be sorted.
-	if g.Stamps[0] != 111 || g.Stamps[1] != 222 || g.Stamps[2] != 333 {
-		t.Errorf("stamps not sorted: %v", g.Stamps)
-	}
-}
-
-func TestGroupHitsByPoint_EmptyInput(t *testing.T) {
-	groups, err := groupHitsByPoint("[]")
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	if len(groups) != 0 {
-		t.Errorf("expected 0 groups, got %d", len(groups))
-	}
-}
-
-func TestGroupHitsByPoint_SkipsEmptyPointHash(t *testing.T) {
-	hits := []map[string]interface{}{
-		{"type": "sqli", "stamps": []int{111}, "point_hash": "", "point_wrapped": [][]string{{"post"}}},
-		{"type": "sqli", "stamps": []int{222}, "point_hash": "aabb", "point_wrapped": [][]string{{"post"}}},
-	}
-
-	hitsJSON, _ := json.Marshal(hits)
-	groups, err := groupHitsByPoint(string(hitsJSON))
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	if len(groups) != 1 {
-		t.Errorf("expected 1 group (empty point_hash skipped), got %d", len(groups))
-	}
-}
 
 func TestExpandRules(t *testing.T) {
 	groups := map[string]*pointGroup{
@@ -417,34 +314,3 @@ func TestWriteMovedBlock(t *testing.T) {
 	}
 }
 
-func TestParseActionConditionsJSON(t *testing.T) {
-	raw := []byte(`[
-		{"type": "iequal", "point": ["header", "HOST"], "value": "example.com"},
-		{"type": "equal", "point": ["instance"], "value": "13"},
-		{"type": "absent", "point": ["path", "1"], "value": ""}
-	]`)
-
-	conditions, err := parseActionConditionsJSON(raw)
-	if err != nil {
-		t.Fatalf("parseActionConditionsJSON failed: %v", err)
-	}
-
-	if len(conditions) != 3 {
-		t.Fatalf("expected 3 conditions, got %d", len(conditions))
-	}
-
-	if conditions[0].Type != "iequal" || conditions[0].Value != "example.com" {
-		t.Errorf("wrong first condition: %+v", conditions[0])
-	}
-	if len(conditions[0].Point) != 2 || conditions[0].Point[0] != "header" {
-		t.Errorf("wrong first condition point: %v", conditions[0].Point)
-	}
-
-	if conditions[1].Type != "equal" || conditions[1].Value != "13" {
-		t.Errorf("wrong instance condition: %+v", conditions[1])
-	}
-
-	if conditions[2].Type != "absent" || conditions[2].Value != "" {
-		t.Errorf("wrong absent condition: %+v", conditions[2])
-	}
-}
