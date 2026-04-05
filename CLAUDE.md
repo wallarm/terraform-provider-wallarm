@@ -409,6 +409,8 @@ Fetches hits from the Wallarm API and aggregates them into rule-ready structures
 **Hit filtering — allowed attack types:**
 `xss`, `sqli`, `rce`, `ptrav`, `crlf`, `redir`, `nosqli`, `ldapi`, `scanner`, `mass_assignment`, `ssrf`, `ssi`, `mail_injection`, `ssti`, `xxe`, `invalid_xml`
 
+**Stampless attack types:** `xxe` and `invalid_xml` do not produce stamps. Hits of these types can only be suppressed via `disable_attack_type` rules, not `disable_stamp` rules. When building aggregated output, stamp groups for these types should be empty.
+
 **API call pattern (hits by attack_id):**
 ```bash
 POST /v1/objects/hit
