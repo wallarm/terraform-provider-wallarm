@@ -899,7 +899,7 @@ func buildAggregatedJSON(actionHash string, schemaActions []map[string]interface
 	aggGroups := make([]aggregatedGroup, 0, len(groups)*2)
 	for _, ph := range phKeys {
 		g := groups[ph]
-		prefix := ph[:min(8, len(ph))]
+		prefix := ph[:min(16, len(ph))]
 
 		// Stamp group: keyed by point_hash only. Stamps are not attack-type-scoped.
 		if includeStamps && len(g.Stamps) > 0 {
@@ -924,7 +924,7 @@ func buildAggregatedJSON(actionHash string, schemaActions []map[string]interface
 	}
 
 	out := aggregatedOutput{
-		ActionHash: actionHash[:min(8, len(actionHash))],
+		ActionHash: actionHash[:min(16, len(actionHash))],
 		Action:     schemaActions,
 		Groups:     aggGroups,
 	}

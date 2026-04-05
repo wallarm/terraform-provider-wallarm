@@ -24,8 +24,8 @@ import (
 const (
 	ruleTypeDisableStamp      = "disable_stamp"
 	ruleTypeDisableAttackType = "disable_attack_type"
-	generatorSourceAPI   = "api"
-	generatorSourceRules = "rules"
+	generatorSourceAPI        = "api"
+	generatorSourceRules      = "rules"
 )
 
 var validRuleTypes = []string{ruleTypeDisableStamp, ruleTypeDisableAttackType}
@@ -561,7 +561,7 @@ func expandRules(groups map[string]*pointGroup, ruleTypes []string) []expandedRu
 
 	for _, ph := range phKeys {
 		g := groups[ph]
-		prefix := ph[:min(8, len(ph))]
+		prefix := ph[:min(16, len(ph))]
 
 		if rtSet[ruleTypeDisableStamp] {
 			for _, s := range g.Stamps {
