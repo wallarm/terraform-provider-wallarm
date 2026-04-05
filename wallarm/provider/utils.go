@@ -507,3 +507,21 @@ func existsHint(d *schema.ResourceData, m interface{}, actionID int, hintType st
 func ImportAsExistsError(resourceName, id string) error {
 	return fmt.Errorf("the resource with the ID %q already exists - to be managed via Terraform this resource needs to be imported into the State. Please see the resource documentation for %q for more information", id, resourceName)
 }
+
+func containsInt(slice []int, val int) bool {
+	for _, v := range slice {
+		if v == val {
+			return true
+		}
+	}
+	return false
+}
+
+func containsStr(slice []string, val string) bool {
+	for _, v := range slice {
+		if v == val {
+			return true
+		}
+	}
+	return false
+}

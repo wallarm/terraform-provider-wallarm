@@ -264,9 +264,9 @@ var validPointKeys = map[string]bool{
 	"instance":    true,
 }
 
-// pointValuePoints are points where the actual value goes in the point map
+// PointValuePoints are points where the actual value goes in the point map
 // and the "value" field must be "".
-var pointValuePoints = map[string]bool{
+var PointValuePoints = map[string]bool{
 	"action_name": true,
 	"action_ext":  true,
 	"method":      true,
@@ -350,7 +350,7 @@ func validateActionBlocks(d *schema.ResourceDiff) error {
 			}
 
 			// Point-value points require value = "".
-			if pointValuePoints[key] && condType != condTypeAbsent && condValue != "" {
+			if PointValuePoints[key] && condType != condTypeAbsent && condValue != "" {
 				return fmt.Errorf("action condition with point %q: the value goes in the point map, \"value\" field must be empty", key)
 			}
 

@@ -313,10 +313,6 @@ func generateFromRulesJSON(d *schema.ResourceData, clientID int, outputDir, pref
 		// value in the point map. Two-part types (header, query, path) store the
 		// second point element in the map and keep Value separate.
 		if actions == nil && len(r.Action) > 0 {
-			pointValueKeys := map[string]bool{
-				"action_name": true, "action_ext": true, "instance": true,
-				"method": true, "scheme": true, "proto": true, "uri": true,
-			}
 			for _, a := range r.Action {
 				var point []string
 				value := a.Value
@@ -324,7 +320,7 @@ func generateFromRulesJSON(d *schema.ResourceData, clientID int, outputDir, pref
 				// Each action condition has exactly one key in the point map.
 				for k, v := range a.Point {
 					point = append(point, k)
-					if pointValueKeys[k] {
+					if resourcerule.PointValuePoints[k] {
 						value = v // map value IS the action value
 					} else if v != "" {
 						point = append(point, v) // map value is Point[1]
@@ -589,16 +585,6 @@ func expandRules(groups map[string]*pointGroup, ruleTypes []string) []expandedRu
 	return rules
 }
 
-// movedFromKey builds the for_each key for moved block "from" references.
-// When forEachKeyPrefix is set, it prepends it to match prefixed keys.
-// For hits source, forEachKeyPrefix is empty — keys are intrinsic (e.g., "48c0e969_7994").
-func movedFromKey(forEachKeyPrefix, key string) string {
-	if forEachKeyPrefix != "" {
-		return forEachKeyPrefix + "_" + key
-	}
-	return key
-}
-
 // ─── File generation ─────────────────────────────────────────────────────────────
 
 // forEachKeyPrefix is prepended to r.Key for moved block "from" keys.
@@ -625,7 +611,11 @@ func generateStaticFiles(outputDir, prefix, filename string, clientID int, comme
 				generateStaticDisableAttackType(f, name, cfg)
 			}
 			if movedFrom != "" {
-				writeMovedBlock(f, resourceType, movedFrom, movedFromKey(forEachKeyPrefix, r.Key), name)
+				fromKey := r.Key
+				if forEachKeyPrefix != "" {
+					fromKey = forEachKeyPrefix + "_" + r.Key
+				}
+				writeMovedBlock(f, resourceType, movedFrom, fromKey, name)
 			}
 		}
 		filePath := filepath.Join(outputDir, filename)
@@ -707,20 +697,3 @@ func hashString(s string) string {
 	return hex.EncodeToString(h[:8])
 }
 
-func containsInt(slice []int, val int) bool {
-	for _, v := range slice {
-		if v == val {
-			return true
-		}
-	}
-	return false
-}
-
-func containsStr(slice []string, val string) bool {
-	for _, v := range slice {
-		if v == val {
-			return true
-		}
-	}
-	return false
-}
