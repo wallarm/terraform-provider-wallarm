@@ -20,6 +20,8 @@ Two rule types are supported:
 - **`wallarm_rule_disable_stamp`** -- allows specific attack signatures (stamps) at a given request point
 - **`wallarm_rule_disable_attack_type`** -- allows specific attack types at a given request point
 
+~> **Note:** `xxe` and `invalid_xml` attack types do not produce stamps. Hits of these types can only be suppressed via `disable_attack_type` rules. When filtering with `rule_types = ["disable_stamp"]`, these attack types will not generate any rules -- use `disable_attack_type` or both rule types (default).
+
 ## Quick Start
 
 ### Step 1: Add request IDs and apply
