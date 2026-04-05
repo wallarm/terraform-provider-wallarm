@@ -64,7 +64,10 @@ func dataSourceWallarmHits() *schema.Resource {
 				Type:        schema.TypeList,
 				Optional:    true,
 				Description: "Rule types to generate. Defaults to both disable_stamp and disable_attack_type.",
-				Elem:        &schema.Schema{Type: schema.TypeString},
+				Elem: &schema.Schema{
+					Type:         schema.TypeString,
+					ValidateFunc: validation.StringInSlice(validRuleTypes, false),
+				},
 			},
 
 			"include_instance": {

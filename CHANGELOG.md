@@ -1,3 +1,27 @@
+# v2.2.2 (Apr 5, 2026)
+
+## FEATURES:
+
+* **`data.wallarm_hits`: `rule_types` filter** — controls which rule types to generate (`disable_stamp`, `disable_attack_type`, or both)
+* **`data.wallarm_hits`: `include_instance` parameter** — controls whether instance (pool ID) is included in action conditions
+* **`data.wallarm_hits`: `aggregated` output** — compact JSON representation for efficient caching in `terraform_data`
+* **`wallarm_rule_generator`: `source = "rules"` mode** — generates HCL from pre-built rules via `rules_json` input
+* **`wallarm_hits_index`: `ready` flag** — enables single-apply workflow (no double-apply on first run)
+* **`wallarm_hits_index`: `cached_request_ids` as TypeSet** — replaces comma-separated string
+* **Hits-to-rules deduplication** — multiple request_ids with identical actions are deduplicated in HCL locals
+
+## BREAKING CHANGES:
+
+* **`data.wallarm_hits`: `attack_types` now filters in all modes** — previously only filtered API fetch in attack mode. Now also filters which hits produce rules in request mode. If you had request-mode hits of types outside the default list, they would previously produce rules but now will not.
+* **`wallarm_rule_generator`: moved block key format changed** — keys no longer include request_id prefix (e.g., `48c0e969_7994` instead of `4666dee2_48c0e969_7994`). Existing moved blocks generated with `source = "hits"` will reference old keys.
+* **`wallarm_hits_index`: `cached_request_ids` type changed** — from comma-separated `string` to `TypeSet`. HCL using `split(",", ...)` must be updated to use the set directly.
+* **`data.wallarm_hits`: `rules` output removed** — use `aggregated` output with `terraform_data` caching instead. See the [Hits to Rules Guide](docs/guides/hits_to_rules.md).
+
+## IMPROVEMENTS:
+
+* Stamp and attack_type groups separated in aggregated output (stamps are not attack-type-scoped)
+* Error propagation in `buildAggregatedJSON` (returns error instead of logging)
+
 # v2.2.1 (Apr 2, 2026)
 
 ## DOCUMENTATION:
