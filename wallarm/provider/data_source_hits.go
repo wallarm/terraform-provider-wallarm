@@ -541,7 +541,7 @@ func setEmptyHitsState(d *schema.ResourceData) diag.Diagnostics {
 	if err := d.Set("action_conditions", []interface{}{}); err != nil {
 		diags = append(diags, diag.FromErr(err)...)
 	}
-	if err := d.Set("aggregated", "{}"); err != nil {
+	if err := d.Set("aggregated", `{"action_hash":"","action":[],"groups":[]}`); err != nil {
 		diags = append(diags, diag.FromErr(err)...)
 	}
 	d.Set("hits_count", 0)

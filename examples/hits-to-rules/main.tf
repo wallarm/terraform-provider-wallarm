@@ -92,7 +92,7 @@ resource "wallarm_hits_index" "this" {
 # ─── Detect new request_ids ─────────────────────────────────────────────────
 
 locals {
-  _new_request_ids = wallarm_hits_index.this.ready ? toset([
+  _request_ids_to_fetch = wallarm_hits_index.this.ready ? toset([
     for id in keys(var.request_ids) : id
     if !contains(wallarm_hits_index.this.cached_request_ids, id)
   ]) : toset(keys(var.request_ids))
@@ -106,7 +106,7 @@ locals {
 # ─── Fetch hits ONLY for new request_ids ────────────────────────────────────
 
 data "wallarm_hits" "new" {
-  for_each         = local._new_request_ids
+  for_each         = local._request_ids_to_fetch
   client_id        = var.client_id
   request_id       = each.key
   mode             = try(local._request_configs[each.key].mode, var.default_mode)
@@ -130,7 +130,7 @@ locals {
   _cached_data = {
     for req_id, td in terraform_data.cache :
     req_id => try(jsondecode(td.input), null)
-    if td.input != null
+    if td.input != null && try(jsondecode(td.input).action_hash, "") != ""
   }
 
   # Action map: action_hash → action conditions (deduplicated naturally).
