@@ -10,7 +10,7 @@ description: |-
 
 Tracks which request IDs have had their hits fetched. Used to gate `data.wallarm_hits` so only uncached request IDs trigger API calls.
 
-This is a **state-only** resource -- it makes no API calls. The `cached_request_ids` output reflects the current `request_ids` input after each refresh.
+This is a **state-only** resource -- it makes no API calls. On first create, `ready` is `false` (triggers fetching all request IDs). After create, `ready` becomes `true` and `cached_request_ids` reflects the current `request_ids` set -- enabling gating to only fetch new IDs.
 
 ## Example Usage
 
@@ -20,16 +20,16 @@ resource "wallarm_hits_index" "this" {
 }
 
 locals {
-  _cached = toset(compact(split(",", wallarm_hits_index.this.cached_request_ids)))
-
-  _new_request_ids = toset([
+  # On first create (ready=false): fetch all request_ids.
+  # After create (ready=true): only fetch IDs not in cached_request_ids.
+  _request_ids_to_fetch = wallarm_hits_index.this.ready ? toset([
     for id in keys(var.request_ids) : id
-    if !contains(local._cached, id)
-  ])
+    if !contains(wallarm_hits_index.this.cached_request_ids, id)
+  ]) : toset(keys(var.request_ids))
 }
 
 data "wallarm_hits" "new" {
-  for_each   = local._new_request_ids
+  for_each   = local._request_ids_to_fetch
   request_id = each.key
 }
 ```
@@ -43,4 +43,5 @@ For complete usage including rule creation and caching, see the [Hits to Rules G
 
 ## Attributes Reference
 
-* `cached_request_ids` - Comma-separated string of request IDs currently tracked. Used downstream to gate `data.wallarm_hits` so only uncached request IDs trigger API calls.
+* `ready` - Boolean. `false` on first create (known at plan time), `true` after. Use to control gating: when `false`, fetch all request IDs; when `true`, only fetch IDs not in `cached_request_ids`.
+* `cached_request_ids` - Set of request IDs currently tracked. Synced to match `request_ids` on each refresh.

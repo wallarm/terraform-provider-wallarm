@@ -72,7 +72,7 @@ data "wallarm_hits" "sqli_stamps" {
 
 * `action` - Rule action conditions derived from the hit's domain, path, and pool ID. Uses the same schema as `wallarm_rule_*` action blocks, so the output can be passed directly to rule resources.
 * `action_hash` - SHA256 hash of the sorted action conditions, used for grouping rules with the same scope.
-* `aggregated` - JSON-encoded compact representation of the grouped hits data: `{action_hash, action, groups}`. Each group contains a detection point with its aggregated stamps and attack types. Use this for caching in `terraform_data` instead of `rules` to avoid duplicating action data across every rule. See the [Hits to Rules Guide](../guides/hits_to_rules) for the recommended caching pattern.
+* `aggregated` - JSON-encoded compact representation of the grouped hits data. Structure: `{action_hash (16 hex chars), action (conditions list), groups (list)}`. Two kinds of groups: stamp groups (keyed by `point_hash`, containing stamps for `disable_stamp` rules) and attack_type groups (keyed by `point_hash_attack_type`, for `disable_attack_type` rules). Use this for caching in `terraform_data` with `ignore_changes`. See the [Hits to Rules Guide](../guides/hits_to_rules) for the recommended caching pattern.
 * `hits` - List of hit objects, each containing:
   * `id` - Hit ID components.
   * `type` - Attack type (e.g., `sqli`, `xss`, `rce`).
