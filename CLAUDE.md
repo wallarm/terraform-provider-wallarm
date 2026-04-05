@@ -529,12 +529,14 @@ The provider operates under an API token scoped to a specific user role. The rol
 | **API Developer** | Single account | View/download API inventory and specs only |
 | **Deploy** | Single account | Create filtering nodes only, no Console access |
 | **Global Administrator** | Multi-tenant | Same as Administrator but across technical tenant + all linked tenant accounts |
+| **Global Administrator Extended** | Multi-tenant | Same as Global Administrator + can manage `disable_stamp` rules (FP suppression by signature) |
 | **Global Analyst** | Multi-tenant | Same as Analyst but across technical tenant + all linked tenant accounts |
 | **Global Read Only** | Multi-tenant | Same as Read Only but across technical tenant + all linked tenant accounts |
 
 ### Provider Implications
 
 - Only **Administrator** and **Global Administrator** can manage users, integrations, and rules
+- Only **Global Administrator Extended** can manage `disable_stamp` rules — standard Administrator/Global Administrator tokens will get 403 on `HintCreate` for this rule type
 - Only **Global** roles can operate across tenant accounts — standard roles are limited to the technical tenant account
 - `client_id` in the provider config or on individual resources determines which tenant account to target
 - If `client_id` is omitted, the provider auto-detects it from the API token via `UserDetails()`
