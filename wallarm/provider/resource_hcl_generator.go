@@ -390,25 +390,32 @@ func generateFromRulesJSON(d *schema.ResourceData, clientID int, outputDir, pref
 			Stamp:      r.Stamp,
 			AttackType: r.AttackType,
 		})
-		// Convert action format: point map {"header": "HOST"} → list ["header", "HOST"]
+		// Convert action format: point map → ActionCondition with correct Point/Value split.
+		// Point-value types (action_name, action_ext, instance, etc.) store their
+		// value in the point map. Two-part types (header, query, path) store the
+		// second point element in the map and keep Value separate.
 		if actions == nil && len(r.Action) > 0 {
+			pointValueKeys := map[string]bool{
+				"action_name": true, "action_ext": true, "instance": true,
+				"method": true, "scheme": true, "proto": true, "uri": true,
+			}
 			for _, a := range r.Action {
-				// Sort map keys for deterministic output.
-				keys := make([]string, 0, len(a.Point))
-				for k := range a.Point {
-					keys = append(keys, k)
-				}
-				sort.Strings(keys)
 				var point []string
-				for _, k := range keys {
+				value := a.Value
+
+				// Each action condition has exactly one key in the point map.
+				for k, v := range a.Point {
 					point = append(point, k)
-					if v := a.Point[k]; v != "" {
-						point = append(point, v)
+					if pointValueKeys[k] {
+						value = v // map value IS the action value
+					} else if v != "" {
+						point = append(point, v) // map value is Point[1]
 					}
 				}
+
 				actions = append(actions, ActionCondition{
 					Type:  a.Type,
-					Value: a.Value,
+					Value: value,
 					Point: point,
 				})
 			}

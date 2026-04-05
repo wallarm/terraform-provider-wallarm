@@ -97,6 +97,7 @@ func writeActionBlocks(body *hclwrite.Body, conditions []ActionCondition) {
 		for i, p := range c.Point {
 			point[i] = p
 		}
+
 		var value interface{} = c.Value
 		if c.Value == "" {
 			value = nil
