@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"sort"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/customdiff"
@@ -109,20 +108,8 @@ func resourceHitsIndexDelete(_ context.Context, d *schema.ResourceData, _ interf
 // syncCachedRequestIDs sets cached_request_ids to match request_ids from config.
 func syncCachedRequestIDs(d *schema.ResourceData) diag.Diagnostics {
 	requestIDsSet := d.Get("request_ids").(*schema.Set)
-	cachedIDs := make([]string, 0, requestIDsSet.Len())
-	for _, v := range requestIDsSet.List() {
-		cachedIDs = append(cachedIDs, v.(string))
-	}
-	sort.Strings(cachedIDs)
-
-	// Convert to interface slice for schema.Set.
-	ifaces := make([]interface{}, len(cachedIDs))
-	for i, id := range cachedIDs {
-		ifaces[i] = id
-	}
-
-	log.Printf("[INFO] wallarm_hits_index: syncing cached_request_ids (%d entries)", len(cachedIDs))
-	if err := d.Set("cached_request_ids", schema.NewSet(schema.HashString, ifaces)); err != nil {
+	log.Printf("[INFO] wallarm_hits_index: syncing cached_request_ids (%d entries)", requestIDsSet.Len())
+	if err := d.Set("cached_request_ids", requestIDsSet); err != nil {
 		return diag.FromErr(err)
 	}
 	return nil
