@@ -5,22 +5,24 @@ import (
 	"fmt"
 	"log"
 	"sort"
-	"strings"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/customdiff"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 func resourceWallarmHitsIndex() *schema.Resource {
 	return &schema.Resource{
 		Description: "Persistent index of request_ids whose hits have been fetched. " +
-			"Tracks which request_ids are cached. Use cached_request_ids to gate " +
-			"data.wallarm_hits — only fetch for IDs not in the index.",
+			"Tracks which request_ids are cached. Use ready and cached_request_ids " +
+			"to gate data.wallarm_hits.",
 
 		CreateContext: resourceHitsIndexCreate,
 		ReadContext:   resourceHitsIndexRead,
 		UpdateContext: resourceHitsIndexUpdate,
 		DeleteContext: resourceHitsIndexDelete,
+
+		CustomizeDiff: customdiff.All(hitsIndexCustomizeDiff),
 
 		Schema: map[string]*schema.Schema{
 			"client_id": defaultClientIDWithValidationSchema,
@@ -32,14 +34,35 @@ func resourceWallarmHitsIndex() *schema.Resource {
 				Description: "Set of request_ids to track.",
 			},
 
-			// Computed — the persistent index
-			"cached_request_ids": {
-				Type:        schema.TypeString,
+			"ready": {
+				Type:        schema.TypeBool,
 				Computed:    true,
-				Description: "Comma-separated request IDs currently in the index.",
+				Description: "False on first create, true after. Use to gate data source: ready ? _new_ids : all_ids.",
+			},
+
+			"cached_request_ids": {
+				Type:        schema.TypeSet,
+				Computed:    true,
+				Elem:        &schema.Schema{Type: schema.TypeString},
+				Description: "Set of request IDs currently in the index.",
 			},
 		},
 	}
+}
+
+// hitsIndexCustomizeDiff makes ready and cached_request_ids known at plan time.
+// On Create: ready=false, cached_request_ids=empty.
+// On Update: ready=true (from state), cached_request_ids=request_ids (from state).
+func hitsIndexCustomizeDiff(_ context.Context, d *schema.ResourceDiff, _ interface{}) error {
+	if d.Id() == "" {
+		// Create: not ready yet, no cached IDs.
+		if err := d.SetNew("ready", false); err != nil {
+			return err
+		}
+		return d.SetNew("cached_request_ids", schema.NewSet(schema.HashString, []interface{}{}))
+	}
+	// Update: preserve current values from state.
+	return nil
 }
 
 // ─── CRUD ───────────────────────────────────────────────────────────────────
@@ -55,11 +78,20 @@ func resourceHitsIndexCreate(_ context.Context, d *schema.ResourceData, m interf
 		return diag.FromErr(err)
 	}
 
+	// Set ready=true so next plan sees it as ready.
+	if err := d.Set("ready", true); err != nil {
+		return diag.FromErr(err)
+	}
+
+	// Sync cached_request_ids = request_ids.
 	return syncCachedRequestIDs(d)
 }
 
 func resourceHitsIndexRead(_ context.Context, d *schema.ResourceData, _ interface{}) diag.Diagnostics {
-	// Sync cached_request_ids on every Read to ensure state is correct.
+	// Ensure ready is true (resource exists).
+	if err := d.Set("ready", true); err != nil {
+		return diag.FromErr(err)
+	}
 	return syncCachedRequestIDs(d)
 }
 
@@ -75,16 +107,22 @@ func resourceHitsIndexDelete(_ context.Context, d *schema.ResourceData, _ interf
 // ─── Core logic ─────────────────────────────────────────────────────────────
 
 // syncCachedRequestIDs sets cached_request_ids to match request_ids from config.
-// On Create: all request_ids become cached (they'll be fetched by data.wallarm_hits in the same apply).
-// On Update: new request_ids are added, removed ones are dropped.
 func syncCachedRequestIDs(d *schema.ResourceData) diag.Diagnostics {
 	requestIDsSet := d.Get("request_ids").(*schema.Set)
-	cachedIDs := expandInterfaceToStringList(requestIDsSet.List())
+	cachedIDs := make([]string, 0, requestIDsSet.Len())
+	for _, v := range requestIDsSet.List() {
+		cachedIDs = append(cachedIDs, v.(string))
+	}
 	sort.Strings(cachedIDs)
 
-	joined := strings.Join(cachedIDs, ",")
-	log.Printf("[INFO] wallarm_hits_index: syncing cached_request_ids = %q (%d entries)", joined, len(cachedIDs))
-	if err := d.Set("cached_request_ids", joined); err != nil {
+	// Convert to interface slice for schema.Set.
+	ifaces := make([]interface{}, len(cachedIDs))
+	for i, id := range cachedIDs {
+		ifaces[i] = id
+	}
+
+	log.Printf("[INFO] wallarm_hits_index: syncing cached_request_ids (%d entries)", len(cachedIDs))
+	if err := d.Set("cached_request_ids", schema.NewSet(schema.HashString, ifaces)); err != nil {
 		return diag.FromErr(err)
 	}
 	return nil

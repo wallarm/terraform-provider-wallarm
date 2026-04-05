@@ -10,10 +10,9 @@
 #   - terraform_data.cache stores aggregated data per request_id (Map 1)
 #   - Locals build a deduplicated map by action_hash (Map 2) and feed rules
 #
-# First-time setup (two applies required):
-#   1. terraform apply                    — initializes state (no request_ids yet)
-#   2. Add request_ids to terraform.tfvars
-#   3. terraform apply                    — fetches hits, creates rules
+# First-time setup:
+#   1. Add request_ids to terraform.tfvars
+#   2. terraform apply                    — fetches hits, creates rules
 #
 # Add more request_ids later — just add to tfvars and apply.
 # Only new entries trigger API calls.
@@ -93,12 +92,10 @@ resource "wallarm_hits_index" "this" {
 # ─── Detect new request_ids ─────────────────────────────────────────────────
 
 locals {
-  _cached = toset(compact(split(",", wallarm_hits_index.this.cached_request_ids)))
-
-  _new_request_ids = toset([
+  _new_request_ids = wallarm_hits_index.this.ready ? toset([
     for id in keys(var.request_ids) : id
-    if !contains(local._cached, id)
-  ])
+    if !contains(wallarm_hits_index.this.cached_request_ids, id)
+  ]) : toset(keys(var.request_ids))
 
   _request_configs = {
     for id, cfg_json in var.request_ids :
