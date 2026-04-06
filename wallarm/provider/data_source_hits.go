@@ -906,17 +906,26 @@ func buildAggregatedJSON(actionHash string, schemaActions []map[string]interface
 	aggGroups := make([]aggregatedGroup, 0, len(groups))
 	for _, gk := range phKeys {
 		g := groups[gk]
-		prefix := gk[:min(16, len(gk))]
+
+		// Group key is "point_hash_attack_type". Truncate only the point_hash part.
+		attackType := ""
+		if len(g.AttackTypes) > 0 {
+			attackType = g.AttackTypes[0]
+		}
+		// Extract point_hash by stripping the "_attack_type" suffix.
+		phPart := gk
+		if attackType != "" && len(gk) > len(attackType)+1 {
+			phPart = gk[:len(gk)-len(attackType)-1]
+		}
+		prefix := phPart[:min(16, len(phPart))]
+		if attackType != "" {
+			prefix = prefix + "_" + attackType
+		}
 
 		// Determine what to include based on rule_types filter.
 		stamps := g.Stamps
 		if !includeStamps {
 			stamps = []int{}
-		}
-
-		attackType := ""
-		if len(g.AttackTypes) > 0 {
-			attackType = g.AttackTypes[0] // One attack type per group by design.
 		}
 
 		// Skip group if nothing to include after filtering.
