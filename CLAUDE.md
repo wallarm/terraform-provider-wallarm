@@ -293,7 +293,7 @@ A **hit** represents a single detected threat within an HTTP request. Hits shari
 4. **Generate Rules**: Two rule types for FP suppression:
    - **`disable_stamp`** — allows specific attack signatures (stamps) at a given point
    - **`disable_attack_type`** — allows specific attack types at a given point
-5. **One resource per rule**: Each stamp and each attack_type is a separate Terraform resource, matching the API 1:1. The `for_each` key is `{action_hash_16}_{point_hash_16}_{stamp}` or `{action_hash_16}_{point_hash_16}_{attack_type}`.
+5. **One resource per rule**: Each stamp and each attack_type is a separate Terraform resource, matching the API 1:1. The `for_each` key is `{action_hash}_{point_hash}_{attack_type}_{stamp}` for stamp rules or `{action_hash}_{point_hash}_{attack_type}` for attack_type rules. Hash prefixes are 16 hex chars.
 
 **Stampless attack types:** `xxe` and `invalid_xml` do not produce stamps. Hits of these types can only be suppressed via `disable_attack_type` rules.
 
@@ -305,7 +305,7 @@ A **hit** represents a single detected threat within an HTTP request. Hits shari
 `xss`, `sqli`, `rce`, `ptrav`, `crlf`, `redir`, `nosqli`, `ldapi`, `scanner`, `mass_assignment`, `ssrf`, `ssi`, `mail_injection`, `ssti`, `xxe`, `invalid_xml`
 
 **Key computed outputs:**
-- `aggregated` — compact JSON with `action_hash` (16 chars), `action` conditions, and `groups` (stamp groups keyed by point_hash, attack_type groups keyed by point_hash + attack_type)
+- `aggregated` — compact JSON with `action_hash` (16 chars), `action` conditions, and `groups` (each keyed by `point_hash_16 + "_" + attack_type`, containing stamps for that type and the attack_type)
 - `action_hash` — Ruby-compatible `ConditionsHash`
 - Action validation via `ActionReadByHitID` hash comparison
 

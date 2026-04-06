@@ -109,7 +109,7 @@ On the very first apply with request IDs, `wallarm_hits_index` is created with `
 Rule resources use `for_each` keys derived from hash prefixes:
 
 ```
-wallarm_rule_disable_stamp.this["{action_hash}_{point_hash}_{stamp}"]
+wallarm_rule_disable_stamp.this["{action_hash}_{point_hash}_{attack_type}_{stamp}"]
 wallarm_rule_disable_attack_type.this["{action_hash}_{point_hash}_{attack_type}"]
 ```
 
@@ -120,7 +120,7 @@ Where:
 
 Example: `wallarm_rule_disable_stamp.this["ed1d2ad7a1b2c3d4_48c0e969f1e2d3c4_6961"]`
 
-Stamp groups (keyed by `action_hash_point_hash`) and attack_type groups (keyed by `action_hash_point_hash_attack_type`) are separate because stamps are not attack-type-scoped in the Wallarm API.
+All groups are keyed by `action_hash_point_hash_attack_type`. Each stamp belongs to a specific attack type, so stamps are grouped per type for traceability.
 
 ## Generating HCL Config Files
 

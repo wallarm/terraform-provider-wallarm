@@ -20,7 +20,7 @@
 
 ## IMPROVEMENTS:
 
-* Stamp and attack_type groups separated in aggregated output (stamps are not attack-type-scoped)
+* Stamps grouped per attack type in aggregated output for traceability
 * Error propagation in `buildAggregatedJSON` (returns error instead of logging)
 * `PointValuePoints` exported from `resourcerule` package for shared use
 * `containsInt`/`containsStr` moved to `utils.go`
