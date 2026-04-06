@@ -923,8 +923,9 @@ func buildAggregatedJSON(actionHash string, schemaActions []map[string]interface
 		}
 
 		// Determine what to include based on rule_types filter.
+		// Ensure non-nil slice (nil marshals to JSON null, causing HCL errors).
 		stamps := g.Stamps
-		if !includeStamps {
+		if stamps == nil || !includeStamps {
 			stamps = []int{}
 		}
 
