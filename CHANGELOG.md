@@ -1,4 +1,4 @@
-# v2.2.2 (Apr 6, 2026)
+# v2.3.0 (Apr 6, 2026)
 
 ## FEATURES:
 
@@ -35,7 +35,6 @@
 * Updated: `docs/guides/hits_to_rules.md` — single-apply flow, resource naming, deduplication, stampless types
 * Updated: `docs/resources/hits_index.md` — `ready` flag, TypeSet `cached_request_ids`
 * Updated: `docs/resources/rule_generator.md` — `source = "rules"` default, removed `source = "hits"`
-* Restructured `CLAUDE.md` — merged duplicate Action sections, reordered by priority, explicit `.claude/` file references
 
 # v2.2.1 (Apr 2, 2026)
 
