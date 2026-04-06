@@ -866,10 +866,11 @@ func groupHitsForRules(hits []*wallarm.Hit, actionDetails []wallarm.ActionDetail
 // attack_type groups (keyed by point_hash + attack_type, no stamps).
 // This matches the API model where disable_stamp is not attack-type-scoped.
 type aggregatedGroup struct {
-	Key        string     `json:"key"`
-	Point      [][]string `json:"point"`
-	Stamps     []int      `json:"stamps"`
-	AttackType string     `json:"attack_type"`
+	Key         string     `json:"key"`
+	Point       [][]string `json:"point"`
+	Stamps      []int      `json:"stamps"`
+	AttackType  string     `json:"attack_type"`
+	AttackTypes []string   `json:"attack_types,omitempty"`
 }
 
 // aggregatedOutput is the compact representation stored in the aggregated field.
@@ -902,11 +903,13 @@ func buildAggregatedJSON(actionHash string, schemaActions []map[string]interface
 		prefix := ph[:min(16, len(ph))]
 
 		// Stamp group: keyed by point_hash only. Stamps are not attack-type-scoped.
+		// AttackTypes included for debugging (shows which types contributed stamps).
 		if includeStamps && len(g.Stamps) > 0 {
 			aggGroups = append(aggGroups, aggregatedGroup{
-				Key:    prefix,
-				Point:  g.PointWrapped,
-				Stamps: g.Stamps,
+				Key:         prefix,
+				Point:       g.PointWrapped,
+				Stamps:      g.Stamps,
+				AttackTypes: g.AttackTypes,
 			})
 		}
 
