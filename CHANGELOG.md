@@ -1,25 +1,41 @@
-# v2.2.2 (Apr 5, 2026)
+# v2.2.2 (Apr 6, 2026)
 
 ## FEATURES:
 
-* **`data.wallarm_hits`: `rule_types` filter** — controls which rule types to generate (`disable_stamp`, `disable_attack_type`, or both)
+* **`data.wallarm_hits`: `rule_types` filter** — controls which rule types to generate (`disable_stamp`, `disable_attack_type`, or both). Validated at plan time.
 * **`data.wallarm_hits`: `include_instance` parameter** — controls whether instance (pool ID) is included in action conditions
 * **`data.wallarm_hits`: `aggregated` output** — compact JSON representation for efficient caching in `terraform_data`
-* **`wallarm_rule_generator`: `source = "rules"` mode** — generates HCL from pre-built rules via `rules_json` input
+* **`wallarm_rule_generator`: `source = "rules"` mode** — generates HCL from pre-built rules via `rules_json` input, with per-rule action conditions (different action scopes generate correct HCL)
 * **`wallarm_hits_index`: `ready` flag** — enables single-apply workflow (no double-apply on first run)
 * **`wallarm_hits_index`: `cached_request_ids` as TypeSet** — replaces comma-separated string
 * **Hits-to-rules deduplication** — multiple request_ids with identical actions are deduplicated in HCL locals
+* **16-char hash prefixes** — action_hash and point_hash in `for_each` keys use 16 hex chars (was 8) for collision safety
 
 ## BREAKING CHANGES:
 
-* **`data.wallarm_hits`: `attack_types` now filters in all modes** — previously only filtered API fetch in attack mode. Now also filters which hits produce rules in request mode. If you had request-mode hits of types outside the default list, they would previously produce rules but now will not.
+* **`data.wallarm_hits`: `attack_types` now filters in all modes** — previously only filtered API fetch in attack mode. Now also filters which hits produce rules in request mode.
+* **`data.wallarm_hits`: `rules` output removed** — use `aggregated` output with `terraform_data` caching instead. Also removed: `rules_count`, `rules_stamp_count`, `rules_attack_type_count`. See the [Hits to Rules Guide](docs/guides/hits_to_rules.md).
 * **`wallarm_hits_index`: `cached_request_ids` type changed** — from comma-separated `string` to `TypeSet`. HCL using `split(",", ...)` must be updated to use the set directly.
-* **`data.wallarm_hits`: `rules` output removed** — use `aggregated` output with `terraform_data` caching instead. See the [Hits to Rules Guide](docs/guides/hits_to_rules.md).
+* **`wallarm_rule_generator`: `source = "hits"` removed** — use `source = "rules"` (now default) with `rules_json` input. The `requests_json` field is removed.
 
 ## IMPROVEMENTS:
 
 * Stamp and attack_type groups separated in aggregated output (stamps are not attack-type-scoped)
 * Error propagation in `buildAggregatedJSON` (returns error instead of logging)
+* `PointValuePoints` exported from `resourcerule` package for shared use
+* `containsInt`/`containsStr` moved to `utils.go`
+* Removed dead code: `generateFromHits`, `groupHitsByPoint`, `parseActionConditionsJSON`, `hitJSON`, `requestEntry`
+* New unit tests for `common.ConvertToStringSlice`, `apitotf`, `tftoapi` mappers
+* New integration tests for `generateFromRulesJSON` with multiple action scopes
+
+## DOCUMENTATION:
+
+* New: `docs/data-sources/actions.md`
+* Updated: `docs/resources/rule_parser_state.md` — added `jwt` and `gql` parsers
+* Updated: `docs/guides/hits_to_rules.md` — single-apply flow, resource naming, deduplication, stampless types
+* Updated: `docs/resources/hits_index.md` — `ready` flag, TypeSet `cached_request_ids`
+* Updated: `docs/resources/rule_generator.md` — `source = "rules"` default, removed `source = "hits"`
+* Restructured `CLAUDE.md` — merged duplicate Action sections, reordered by priority, explicit `.claude/` file references
 
 # v2.2.1 (Apr 2, 2026)
 
