@@ -491,37 +491,44 @@ func TestBuildRulesFromHits_BasicGrouping(t *testing.T) {
 		{Type: "iequal", Point: []interface{}{"header", "HOST"}, Value: "example.com"},
 	}
 
-	rules := buildRulesFromHits(hits, actionDetails)
+	groups, schemaActions := groupHitsForRules(hits, actionDetails, defaultAllowedAttackTypes)
 
-	// Should produce: 3 stamp rules (100, 200, 300) + 2 attack_type rules (sqli, xss) = 5 total.
-	stampCount := 0
-	attackTypeCount := 0
-	for _, r := range rules {
-		rm := r.(map[string]interface{})
-		switch rm["resource_type"] {
-		case "wallarm_rule_disable_stamp":
-			stampCount++
-		case "wallarm_rule_disable_attack_type":
-			attackTypeCount++
+	// Should produce 2 groups: one per attack type at the same point.
+	// sqli → stamps [100, 200], xss → stamps [300].
+	if len(groups) != 2 {
+		t.Fatalf("expected 2 groups (one per attack type), got %d", len(groups))
+	}
+
+	totalStamps := 0
+	totalTypes := 0
+	for _, g := range groups {
+		totalStamps += len(g.Stamps)
+		totalTypes += len(g.AttackTypes)
+		// Each group should have exactly 1 attack type.
+		if len(g.AttackTypes) != 1 {
+			t.Errorf("expected 1 attack type per group, got %d: %v", len(g.AttackTypes), g.AttackTypes)
 		}
 	}
-	if stampCount != 3 {
-		t.Errorf("expected 3 disable_stamp rules, got %d", stampCount)
+	if totalStamps != 3 {
+		t.Errorf("expected 3 total stamps across groups, got %d", totalStamps)
 	}
-	if attackTypeCount != 2 {
-		t.Errorf("expected 2 disable_attack_type rules, got %d", attackTypeCount)
+	if totalTypes != 2 {
+		t.Errorf("expected 2 total attack types across groups, got %d", totalTypes)
+	}
+	if len(schemaActions) != 1 {
+		t.Errorf("expected 1 schema action, got %d", len(schemaActions))
 	}
 }
 
-func TestBuildRulesFromHits_EmptyHits(t *testing.T) {
-	rules := buildRulesFromHits(nil, nil)
-	if rules != nil {
-		t.Errorf("expected nil for empty hits, got %v", rules)
+func TestGroupHitsForRules_EmptyHits(t *testing.T) {
+	groups, _ := groupHitsForRules(nil, nil, defaultAllowedAttackTypes)
+	if len(groups) != 0 {
+		t.Errorf("expected 0 groups for nil hits, got %d", len(groups))
 	}
 
-	rules = buildRulesFromHits([]*wallarm.Hit{}, []wallarm.ActionDetails{})
-	if rules != nil {
-		t.Errorf("expected nil for empty hits slice, got %v", rules)
+	groups, _ = groupHitsForRules([]*wallarm.Hit{}, []wallarm.ActionDetails{}, defaultAllowedAttackTypes)
+	if len(groups) != 0 {
+		t.Errorf("expected 0 groups for empty hits, got %d", len(groups))
 	}
 }
 

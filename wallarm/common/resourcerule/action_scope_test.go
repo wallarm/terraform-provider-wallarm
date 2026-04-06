@@ -50,16 +50,16 @@ func TestPointValuePoints(t *testing.T) {
 	// Points where value goes in the point map, not the value field.
 	pointValue := []string{"action_name", "action_ext", "method", "proto", "scheme", "uri", "instance"}
 	for _, p := range pointValue {
-		if !pointValuePoints[p] {
-			t.Errorf("expected %q in pointValuePoints", p)
+		if !PointValuePoints[p] {
+			t.Errorf("expected %q in PointValuePoints", p)
 		}
 	}
 
 	// Header and query use the value field for matched content.
 	valueField := []string{"header", "query", "path"}
 	for _, p := range valueField {
-		if pointValuePoints[p] {
-			t.Errorf("%q should not be in pointValuePoints (value goes in the value field, not point)", p)
+		if PointValuePoints[p] {
+			t.Errorf("%q should not be in PointValuePoints (value goes in the value field, not point)", p)
 		}
 	}
 }

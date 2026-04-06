@@ -2,6 +2,7 @@ package wallarm
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log"
 	"sort"
@@ -23,8 +24,6 @@ const (
 	hitsPointKeyInstance   = "instance"
 	hitsCondTypeAbsent     = "absent"
 	hitsPathMultiple       = "[multiple]"
-	hitsResDisableStamp    = "wallarm_rule_disable_stamp"
-	hitsResDisableAttack   = "wallarm_rule_disable_attack_type"
 )
 
 var defaultAllowedAttackTypes = []string{
@@ -57,8 +56,18 @@ func dataSourceWallarmHits() *schema.Resource {
 			"attack_types": {
 				Type:        schema.TypeList,
 				Optional:    true,
-				Description: "Allowed attack types for filtering in attack mode. Defaults to the standard FP-relevant types.",
+				Description: "Allowed attack types for filtering. In attack mode, controls which types to fetch from the API. In all modes, only hits matching these types produce rules. Defaults to the standard FP-relevant types.",
 				Elem:        &schema.Schema{Type: schema.TypeString},
+			},
+
+			"rule_types": {
+				Type:        schema.TypeList,
+				Optional:    true,
+				Description: "Rule types to generate. Defaults to both disable_stamp and disable_attack_type.",
+				Elem: &schema.Schema{
+					Type:         schema.TypeString,
+					ValidateFunc: validation.StringInSlice(validRuleTypes, false),
+				},
 			},
 
 			"include_instance": {
@@ -115,59 +124,10 @@ func dataSourceWallarmHits() *schema.Resource {
 				Description: "Action conditions in API format (type/point/value list). Used for .action.yaml generation.",
 			},
 
-			"rules": {
-				Type:        schema.TypeList,
+			"aggregated": {
+				Type:        schema.TypeString,
 				Computed:    true,
-				Description: "Pre-grouped rules ready for for_each. Each rule has key, resource_type, stamp/attack_type, point, and action blocks.",
-				Elem: &schema.Resource{
-					Schema: map[string]*schema.Schema{
-						"key": {
-							Type:     schema.TypeString,
-							Computed: true,
-						},
-						"resource_type": {
-							Type:     schema.TypeString,
-							Computed: true,
-						},
-						"stamp": {
-							Type:     schema.TypeInt,
-							Computed: true,
-						},
-						"attack_type": {
-							Type:     schema.TypeString,
-							Computed: true,
-						},
-						"point": {
-							Type:     schema.TypeList,
-							Computed: true,
-							Elem: &schema.Schema{
-								Type: schema.TypeList,
-								Elem: &schema.Schema{Type: schema.TypeString},
-							},
-						},
-						"action": {
-							Type:     schema.TypeList,
-							Computed: true,
-							Elem: &schema.Resource{
-								Schema: map[string]*schema.Schema{
-									"type": {
-										Type:     schema.TypeString,
-										Computed: true,
-									},
-									"value": {
-										Type:     schema.TypeString,
-										Computed: true,
-									},
-									"point": {
-										Type:     schema.TypeMap,
-										Computed: true,
-										Elem:     &schema.Schema{Type: schema.TypeString},
-									},
-								},
-							},
-						},
-					},
-				},
+				Description: "JSON-encoded compact representation: {action_hash, action, groups}. Groups aggregate stamps and attack_types per detection point. Use this for caching instead of rules to avoid duplicating action data.",
 			},
 
 			"hits_count": {
@@ -175,22 +135,6 @@ func dataSourceWallarmHits() *schema.Resource {
 				Computed:    true,
 				Description: "Total number of hits fetched.",
 			},
-			"rules_count": {
-				Type:        schema.TypeInt,
-				Computed:    true,
-				Description: "Number of rules that will be generated from the hits.",
-			},
-			"rules_stamp_count": {
-				Type:        schema.TypeInt,
-				Computed:    true,
-				Description: "Number of disable_stamp rules.",
-			},
-			"rules_attack_type_count": {
-				Type:        schema.TypeInt,
-				Computed:    true,
-				Description: "Number of disable_attack_type rules.",
-			},
-
 			"hits": {
 				Type:     schema.TypeList,
 				Computed: true,
@@ -302,6 +246,8 @@ func dataSourceWallarmHitsRead(_ context.Context, d *schema.ResourceData, m inte
 	}
 	requestID := d.Get("request_id").(string)
 	mode := d.Get("mode").(string)
+	attackTypes := resolveAttackTypes(d)
+	ruleTypes := resolveRuleTypes(d)
 
 	timeRange := buildTimeRange(d)
 
@@ -338,7 +284,6 @@ func dataSourceWallarmHitsRead(_ context.Context, d *schema.ResourceData, m inte
 	// Phase 2 & 3: In attack mode, expand to related hits.
 	allHits := directHits
 	if mode == "attack" {
-		attackTypes := resolveAttackTypes(d)
 		relatedHits, err := fetchRelatedHitsByAttackIDs(client, clientID, directHits, attackTypes, timeRange, refDomain, refPath, refPoolID)
 		if err != nil {
 			return diag.FromErr(err)
@@ -382,8 +327,8 @@ func dataSourceWallarmHitsRead(_ context.Context, d *schema.ResourceData, m inte
 	actionSet := actionToSchemaSet(action)
 	hitsForSchema := hitsToSchemaList(allHits)
 
-	// Group hits into rules and generate HCL.
-	rulesForSchema := buildRulesFromHits(allHits, actionDetails)
+	// Group hits by point for aggregated output.
+	groups, schemaActions := groupHitsForRules(allHits, actionDetails, attackTypes)
 
 	if err := d.Set("action", actionSet); err != nil {
 		return diag.FromErr(fmt.Errorf("error setting action: %s", err))
@@ -397,26 +342,17 @@ func dataSourceWallarmHitsRead(_ context.Context, d *schema.ResourceData, m inte
 	if err := d.Set("action_dir_name", actionDirName); err != nil {
 		return diag.FromErr(fmt.Errorf("error setting action_dir_name: %s", err))
 	}
-	if err := d.Set("rules", rulesForSchema); err != nil {
-		return diag.FromErr(fmt.Errorf("error setting rules: %s", err))
+
+	// Build aggregated output: compact representation for caching.
+	aggregatedJSON, err := buildAggregatedJSON(actionHash, schemaActions, groups, ruleTypes)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+	if err := d.Set("aggregated", aggregatedJSON); err != nil {
+		return diag.FromErr(fmt.Errorf("error setting aggregated: %s", err))
 	}
 
-	// Set summary counts.
-	stampCount := 0
-	attackTypeCount := 0
-	for _, r := range rulesForSchema {
-		rm := r.(map[string]interface{})
-		switch rm["resource_type"] {
-		case hitsResDisableStamp:
-			stampCount++
-		case hitsResDisableAttack:
-			attackTypeCount++
-		}
-	}
 	d.Set("hits_count", len(allHits))
-	d.Set("rules_count", len(rulesForSchema))
-	d.Set("rules_stamp_count", stampCount)
-	d.Set("rules_attack_type_count", attackTypeCount)
 	if err := d.Set("hits", hitsForSchema); err != nil {
 		return diag.FromErr(fmt.Errorf("error setting hits: %s", err))
 	}
@@ -608,13 +544,10 @@ func setEmptyHitsState(d *schema.ResourceData) diag.Diagnostics {
 	if err := d.Set("action_conditions", []interface{}{}); err != nil {
 		diags = append(diags, diag.FromErr(err)...)
 	}
-	if err := d.Set("rules", []interface{}{}); err != nil {
+	if err := d.Set("aggregated", `{"action_hash":"","action":[],"groups":[]}`); err != nil {
 		diags = append(diags, diag.FromErr(err)...)
 	}
 	d.Set("hits_count", 0)
-	d.Set("rules_count", 0)
-	d.Set("rules_stamp_count", 0)
-	d.Set("rules_attack_type_count", 0)
 	if err := d.Set("hits", []interface{}{}); err != nil {
 		diags = append(diags, diag.FromErr(err)...)
 	}
@@ -858,35 +791,52 @@ func actionNameExtConditions(segment string) []map[string]interface{} {
 	}
 }
 
-// buildRulesFromHits groups hits by point and expands into individual rules.
-// Groups directly from []*wallarm.Hit without JSON round-trip.
-// Reuses expandRules from resource_hcl_generator.go.
-func buildRulesFromHits(hits []*wallarm.Hit, actionDetails []wallarm.ActionDetails) []interface{} {
-	// Group hits by point_hash directly.
+// groupHitsForRules groups hits by point_hash, filtering by allowed attack types,
+// and converts action details to schema format. Returns the groups and schema actions
+// for use by both the expanded rules output and the aggregated output.
+func groupHitsForRules(hits []*wallarm.Hit, actionDetails []wallarm.ActionDetails, attackTypes []string) (map[string]*pointGroup, []map[string]interface{}) {
+	// Build attack type filter set.
+	attackTypeSet := make(map[string]bool, len(attackTypes))
+	for _, at := range attackTypes {
+		attackTypeSet[at] = true
+	}
+
+	// Group hits by point_hash + attack_type. Each stamp belongs to a specific
+	// attack type, so grouping per type gives accurate stamp-to-type traceability.
 	groups := make(map[string]*pointGroup)
 	for _, h := range hits {
+		if !attackTypeSet[h.Type] {
+			continue
+		}
+
 		ph := resourcerule.PointHash(h.Point)
 		if ph == "" {
 			continue
 		}
 
-		g, exists := groups[ph]
+		// Key includes attack type — each type gets its own stamp list.
+		groupKey := ph
+		if h.Type != "" {
+			groupKey = ph + "_" + h.Type
+		}
+
+		g, exists := groups[groupKey]
 		if !exists {
 			wrapped := resourcerule.WrapPointElements(h.Point)
 			pointStrs := make([][]string, 0, len(wrapped))
 			pointStrs = append(pointStrs, wrapped...)
 			g = &pointGroup{PointWrapped: pointStrs}
-			groups[ph] = g
+			groups[groupKey] = g
 		}
 
-		// Merge stamps.
+		// Merge stamps for this attack type.
 		for _, s := range h.Stamps {
 			if s > 0 && !containsInt(g.Stamps, s) {
 				g.Stamps = append(g.Stamps, s)
 			}
 		}
 
-		// Merge attack types.
+		// Track attack type (one per group).
 		if h.Type != "" && !containsStr(g.AttackTypes, h.Type) {
 			g.AttackTypes = append(g.AttackTypes, h.Type)
 		}
@@ -898,14 +848,8 @@ func buildRulesFromHits(hits []*wallarm.Hit, actionDetails []wallarm.ActionDetai
 		sort.Strings(g.AttackTypes)
 	}
 
-	allTypes := []string{"disable_stamp", "disable_attack_type"}
-	expanded := expandRules(groups, allTypes)
-	if len(expanded) == 0 {
-		return nil
-	}
-
-	// Convert action details to schema format for the action blocks output.
-	schemaActions := make([]interface{}, 0, len(actionDetails))
+	// Convert action details to schema format.
+	schemaActions := make([]map[string]interface{}, 0, len(actionDetails))
 	for _, ad := range actionDetails {
 		item := resourcerule.ActionDetailToSchemaItem(ad)
 		pointMap := make(map[string]interface{})
@@ -921,27 +865,94 @@ func buildRulesFromHits(hits []*wallarm.Hit, actionDetails []wallarm.ActionDetai
 		})
 	}
 
-	// Build output list.
-	result := make([]interface{}, 0, len(expanded))
-	for _, r := range expanded {
-		pointForSchema := make([]interface{}, 0, len(r.Point))
-		for _, inner := range r.Point {
-			innerList := make([]interface{}, 0, len(inner))
-			for _, s := range inner {
-				innerList = append(innerList, s)
-			}
-			pointForSchema = append(pointForSchema, innerList)
+	return groups, schemaActions
+}
+
+// aggregatedGroup is one entry in the aggregated JSON output.
+// Each group is keyed by point_hash + attack_type. Contains stamps for that
+// attack type at that point, plus the attack_type itself. Stampless types
+// (xxe, invalid_xml) have empty stamps but still produce disable_attack_type rules.
+type aggregatedGroup struct {
+	Key        string     `json:"key"`
+	Point      [][]string `json:"point"`
+	Stamps     []int      `json:"stamps"`
+	AttackType string     `json:"attack_type"`
+}
+
+// aggregatedOutput is the compact representation stored in the aggregated field.
+type aggregatedOutput struct {
+	ActionHash string                   `json:"action_hash"`
+	Action     []map[string]interface{} `json:"action"`
+	Groups     []aggregatedGroup        `json:"groups"`
+}
+
+// buildAggregatedJSON builds the compact JSON for the aggregated output.
+// ruleTypes filters which data is included: stamps for disable_stamp, attack_types for disable_attack_type.
+func buildAggregatedJSON(actionHash string, schemaActions []map[string]interface{}, groups map[string]*pointGroup, ruleTypes []string) (string, error) {
+	rtSet := make(map[string]bool, len(ruleTypes))
+	for _, rt := range ruleTypes {
+		rtSet[rt] = true
+	}
+	includeStamps := rtSet[ruleTypeDisableStamp]
+	includeAttackTypes := rtSet[ruleTypeDisableAttackType]
+
+	// Sort group keys for deterministic output.
+	phKeys := make([]string, 0, len(groups))
+	for ph := range groups {
+		phKeys = append(phKeys, ph)
+	}
+	sort.Strings(phKeys)
+
+	aggGroups := make([]aggregatedGroup, 0, len(groups))
+	for _, gk := range phKeys {
+		g := groups[gk]
+
+		// Group key is "point_hash_attack_type". Truncate only the point_hash part.
+		attackType := ""
+		if len(g.AttackTypes) > 0 {
+			attackType = g.AttackTypes[0]
+		}
+		// Extract point_hash by stripping the "_attack_type" suffix.
+		phPart := gk
+		if attackType != "" && len(gk) > len(attackType)+1 {
+			phPart = gk[:len(gk)-len(attackType)-1]
+		}
+		prefix := phPart[:min(16, len(phPart))]
+		if attackType != "" {
+			prefix = prefix + "_" + attackType
 		}
 
-		result = append(result, map[string]interface{}{
-			"key":           r.Key,
-			"resource_type": "wallarm_rule_" + r.RuleType,
-			"stamp":         r.Stamp,
-			"attack_type":   r.AttackType,
-			"point":         pointForSchema,
-			"action":        schemaActions,
+		// Determine what to include based on rule_types filter.
+		// Ensure non-nil slice (nil marshals to JSON null, causing HCL errors).
+		stamps := g.Stamps
+		if stamps == nil || !includeStamps {
+			stamps = []int{}
+		}
+
+		// Skip group if nothing to include after filtering.
+		hasStamps := len(stamps) > 0
+		hasAttackType := includeAttackTypes && attackType != ""
+		if !hasStamps && !hasAttackType {
+			continue
+		}
+
+		aggGroups = append(aggGroups, aggregatedGroup{
+			Key:        prefix,
+			Point:      g.PointWrapped,
+			Stamps:     stamps,
+			AttackType: attackType,
 		})
 	}
 
-	return result
+	out := aggregatedOutput{
+		ActionHash: actionHash[:min(16, len(actionHash))],
+		Action:     schemaActions,
+		Groups:     aggGroups,
+	}
+
+	data, err := json.Marshal(out)
+	if err != nil {
+		return "", fmt.Errorf("failed to marshal aggregated output: %w", err)
+	}
+	return string(data), nil
 }

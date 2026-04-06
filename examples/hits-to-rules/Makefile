@@ -14,7 +14,7 @@ list:
 
 init:
 	@echo "Initializing the Wallarm provider..."
-	@terraform init && terraform apply -auto-approve -var='request_ids={}'
+	@terraform init
 
 plan:
 	@terraform plan

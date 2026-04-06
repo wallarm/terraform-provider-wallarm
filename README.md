@@ -89,7 +89,7 @@ resource "wallarm_denylist" "bad_ips" {
 
 ### Mitigation Controls (8 resources)
 
-Session-based rules for real-time threat mitigation.
+Session-based rules for real-time threat mitigation. In the Wallarm Console UI these appear under a dedicated Mitigation Controls section.
 
 | Resource | Description |
 |----------|-------------|
@@ -104,7 +104,9 @@ Session-based rules for real-time threat mitigation.
 
 ### Rules (20 resources)
 
-Request-level rules for detection tuning, virtual patching, and data handling.
+Request-level rules for detection tuning, virtual patching, and data handling. These appear under the Rules section in the Wallarm Console UI.
+
+> **Note:** `wallarm_rule_mode`, `wallarm_rule_graphql_detection`, and `wallarm_rule_file_upload_size_limit` appear in both tables because they are shown in both the Rules and Mitigation Controls sections of the Wallarm Console UI. They are a single Terraform resource — listed in both places here to match the UI experience.
 
 | Resource | Description |
 |----------|-------------|
@@ -153,7 +155,7 @@ Request-level rules for detection tuning, virtual patching, and data handling.
 | `wallarm_integration_insightconnect` | InsightConnect integration |
 | `wallarm_integration_webhook` | Custom webhook notifications |
 
-### Infrastructure (7 resources)
+### Infrastructure & Tooling (11 resources)
 
 | Resource | Description |
 |----------|-------------|
@@ -164,13 +166,17 @@ Request-level rules for detection tuning, virtual patching, and data handling.
 | `wallarm_trigger` | Trigger configuration |
 | `wallarm_global_mode` | Global filtration mode |
 | `wallarm_rules_settings` | Rules engine settings |
+| `wallarm_api_spec` | API specification management |
+| `wallarm_action` | Rule action scope tracking |
+| `wallarm_rule_generator` | Generate HCL config files from hits or existing API rules |
+| `wallarm_hits_index` | Track fetched request IDs for the [hits-to-rules workflow](docs/guides/hits_to_rules.md) |
 
 ### Data Sources (7 data sources)
 
 | Data Source | Description |
 |-------------|-------------|
 | `wallarm_node` | Look up filtering nodes |
-| `wallarm_applications` | List applications |
+| `wallarm_applications` | List applications (supports bulk import) |
 | `wallarm_actions` | Discover rule action scopes |
 | `wallarm_rules` | Read all rules (hints) |
 | `wallarm_hits` | Fetch detected hits for FP analysis |
@@ -179,7 +185,21 @@ Request-level rules for detection tuning, virtual patching, and data handling.
 
 ## Import
 
-Most resources support `terraform import`. IP lists support bulk import via the `wallarm_ip_lists` data source. See the [IP List Import Guide](docs/guides/ip_list_import.md) for details.
+Most resources support `terraform import`. Bulk import is supported for:
+- **IP lists** — via the `wallarm_ip_lists` data source. See the [IP List Import Guide](docs/guides/ip_list_import.md).
+- **Rules** — via the `wallarm_rules` data source. See the [Rules Import Guide](docs/guides/rules_import.md).
+- **Applications** — via the `wallarm_applications` data source to discover existing apps and generate import blocks.
+
+## Guides
+
+| Guide | Description |
+|-------|-------------|
+| [Action Scopes](docs/guides/action.md) | How action conditions define rule scope (Host, path, method, etc.) |
+| [Detection Points](docs/guides/point.md) | Point syntax for specifying request parts in rules |
+| [Mitigation Controls](docs/guides/mitigation_controls.md) | Configuring brute force, BOLA, enumeration, and other session-based protections |
+| [Hits to Rules](docs/guides/hits_to_rules.md) | Creating false positive suppression rules from hit data |
+| [Rules Import](docs/guides/rules_import.md) | Bulk-importing existing rules from the Wallarm API |
+| [IP List Import](docs/guides/ip_list_import.md) | Bulk-importing IP list entries |
 
 ## Documentation
 

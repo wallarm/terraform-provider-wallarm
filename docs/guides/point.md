@@ -5,7 +5,7 @@ description: |-
   Provides examples of the point argument.
 ---
 
-# point
+# Point
 
 `point` — (**required**) request parameter to apply the rules to. Additional information is available in the [Wallarm official documentation](https://docs.wallarm.com/user-guides/rules/request-processing/#identifying-and-parsing-the-request-parts).
 

@@ -3,32 +3,38 @@ layout: "wallarm"
 page_title: "Wallarm: wallarm_hits_index"
 subcategory: "Common"
 description: |-
-  Provides a persistent index of fetched request IDs for the hits-to-rules workflow.
+  Tracks fetched request IDs for the hits-to-rules workflow.
 ---
 
 # wallarm_hits_index
 
-Tracks which request IDs have had their hits fetched. Used with `data.wallarm_hits` and `terraform_data` to implement a persistent cache for the [hits-to-rules workflow](../guides/hits_to_rules).
+Tracks which request IDs have had their hits fetched. Used to gate `data.wallarm_hits` so only uncached request IDs trigger API calls.
 
-This is a **state-only** resource -- it makes no API calls. It stores the set of request IDs as a comma-separated string in Terraform state, enabling gated fetching of hit data.
+This is a **state-only** resource -- it makes no API calls. On first create, `ready` is `false` (triggers fetching all request IDs). After create, `ready` becomes `true` and `cached_request_ids` reflects the current `request_ids` set -- enabling gating to only fetch new IDs.
 
 ## Example Usage
 
 ```hcl
 resource "wallarm_hits_index" "this" {
-  request_ids = ["abc123", "def456"]
-}
-```
-
-```hcl
-# Multi-tenant
-resource "wallarm_hits_index" "this" {
-  client_id   = 8649
   request_ids = keys(var.request_ids)
 }
+
+locals {
+  # On first create (ready=false): fetch all request_ids.
+  # After create (ready=true): only fetch IDs not in cached_request_ids.
+  _request_ids_to_fetch = wallarm_hits_index.this.ready ? toset([
+    for id in keys(var.request_ids) : id
+    if !contains(wallarm_hits_index.this.cached_request_ids, id)
+  ]) : toset(keys(var.request_ids))
+}
+
+data "wallarm_hits" "new" {
+  for_each   = local._request_ids_to_fetch
+  request_id = each.key
+}
 ```
 
-For complete usage including hit fetching and rule creation, see the [Hits to Rules Guide](../guides/hits_to_rules).
+For complete usage including rule creation and caching, see the [Hits to Rules Guide](../guides/hits_to_rules).
 
 ## Argument Reference
 
@@ -37,4 +43,5 @@ For complete usage including hit fetching and rule creation, see the [Hits to Ru
 
 ## Attributes Reference
 
-* `cached_request_ids` - Comma-separated string of request IDs currently in the index. Used downstream to gate `data.wallarm_hits` fetches.
+* `ready` - Boolean. `false` on first create (known at plan time), `true` after. Use to control gating: when `false`, fetch all request IDs; when `true`, only fetch IDs not in `cached_request_ids`.
+* `cached_request_ids` - Set of request IDs currently tracked. Synced to match `request_ids` on each refresh.
