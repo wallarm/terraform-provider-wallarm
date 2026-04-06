@@ -801,7 +801,8 @@ func groupHitsForRules(hits []*wallarm.Hit, actionDetails []wallarm.ActionDetail
 		attackTypeSet[at] = true
 	}
 
-	// Group hits by point_hash, filtering by allowed attack types.
+	// Group hits by point_hash + attack_type. Each stamp belongs to a specific
+	// attack type, so grouping per type gives accurate stamp-to-type traceability.
 	groups := make(map[string]*pointGroup)
 	for _, h := range hits {
 		if !attackTypeSet[h.Type] {
@@ -813,23 +814,29 @@ func groupHitsForRules(hits []*wallarm.Hit, actionDetails []wallarm.ActionDetail
 			continue
 		}
 
-		g, exists := groups[ph]
+		// Key includes attack type — each type gets its own stamp list.
+		groupKey := ph
+		if h.Type != "" {
+			groupKey = ph + "_" + h.Type
+		}
+
+		g, exists := groups[groupKey]
 		if !exists {
 			wrapped := resourcerule.WrapPointElements(h.Point)
 			pointStrs := make([][]string, 0, len(wrapped))
 			pointStrs = append(pointStrs, wrapped...)
 			g = &pointGroup{PointWrapped: pointStrs}
-			groups[ph] = g
+			groups[groupKey] = g
 		}
 
-		// Merge stamps.
+		// Merge stamps for this attack type.
 		for _, s := range h.Stamps {
 			if s > 0 && !containsInt(g.Stamps, s) {
 				g.Stamps = append(g.Stamps, s)
 			}
 		}
 
-		// Merge attack types.
+		// Track attack type (one per group).
 		if h.Type != "" && !containsStr(g.AttackTypes, h.Type) {
 			g.AttackTypes = append(g.AttackTypes, h.Type)
 		}
@@ -862,9 +869,9 @@ func groupHitsForRules(hits []*wallarm.Hit, actionDetails []wallarm.ActionDetail
 }
 
 // aggregatedGroup is one entry in the aggregated JSON output.
-// Two kinds: stamp groups (keyed by point_hash, no attack_type) and
-// attack_type groups (keyed by point_hash + attack_type, no stamps).
-// This matches the API model where disable_stamp is not attack-type-scoped.
+// Each group is keyed by point_hash + attack_type. Contains stamps for that
+// attack type at that point, plus the attack_type itself. Stampless types
+// (xxe, invalid_xml) have empty stamps but still produce disable_attack_type rules.
 type aggregatedGroup struct {
 	Key        string     `json:"key"`
 	Point      [][]string `json:"point"`
@@ -896,31 +903,35 @@ func buildAggregatedJSON(actionHash string, schemaActions []map[string]interface
 	}
 	sort.Strings(phKeys)
 
-	aggGroups := make([]aggregatedGroup, 0, len(groups)*2)
-	for _, ph := range phKeys {
-		g := groups[ph]
-		prefix := ph[:min(16, len(ph))]
+	aggGroups := make([]aggregatedGroup, 0, len(groups))
+	for _, gk := range phKeys {
+		g := groups[gk]
+		prefix := gk[:min(16, len(gk))]
 
-		// Stamp group: keyed by point_hash only. Stamps are not attack-type-scoped.
-		if includeStamps && len(g.Stamps) > 0 {
-			aggGroups = append(aggGroups, aggregatedGroup{
-				Key:    prefix,
-				Point:  g.PointWrapped,
-				Stamps: g.Stamps,
-			})
+		// Determine what to include based on rule_types filter.
+		stamps := g.Stamps
+		if !includeStamps {
+			stamps = []int{}
 		}
 
-		// Attack type groups: one per attack_type, keyed by point_hash + attack_type.
-		if includeAttackTypes {
-			for _, at := range g.AttackTypes {
-				aggGroups = append(aggGroups, aggregatedGroup{
-					Key:        prefix + "_" + at,
-					Point:      g.PointWrapped,
-					Stamps:     []int{},
-					AttackType: at,
-				})
-			}
+		attackType := ""
+		if len(g.AttackTypes) > 0 {
+			attackType = g.AttackTypes[0] // One attack type per group by design.
 		}
+
+		// Skip group if nothing to include after filtering.
+		hasStamps := len(stamps) > 0
+		hasAttackType := includeAttackTypes && attackType != ""
+		if !hasStamps && !hasAttackType {
+			continue
+		}
+
+		aggGroups = append(aggGroups, aggregatedGroup{
+			Key:        prefix,
+			Point:      g.PointWrapped,
+			Stamps:     stamps,
+			AttackType: attackType,
+		})
 	}
 
 	out := aggregatedOutput{

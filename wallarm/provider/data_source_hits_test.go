@@ -493,17 +493,27 @@ func TestBuildRulesFromHits_BasicGrouping(t *testing.T) {
 
 	groups, schemaActions := groupHitsForRules(hits, actionDetails, defaultAllowedAttackTypes)
 
-	// Should produce 1 point group with 3 stamps and 2 attack types.
-	if len(groups) != 1 {
-		t.Fatalf("expected 1 point group, got %d", len(groups))
+	// Should produce 2 groups: one per attack type at the same point.
+	// sqli → stamps [100, 200], xss → stamps [300].
+	if len(groups) != 2 {
+		t.Fatalf("expected 2 groups (one per attack type), got %d", len(groups))
 	}
+
+	totalStamps := 0
+	totalTypes := 0
 	for _, g := range groups {
-		if len(g.Stamps) != 3 {
-			t.Errorf("expected 3 stamps, got %d", len(g.Stamps))
+		totalStamps += len(g.Stamps)
+		totalTypes += len(g.AttackTypes)
+		// Each group should have exactly 1 attack type.
+		if len(g.AttackTypes) != 1 {
+			t.Errorf("expected 1 attack type per group, got %d: %v", len(g.AttackTypes), g.AttackTypes)
 		}
-		if len(g.AttackTypes) != 2 {
-			t.Errorf("expected 2 attack types, got %d", len(g.AttackTypes))
-		}
+	}
+	if totalStamps != 3 {
+		t.Errorf("expected 3 total stamps across groups, got %d", totalStamps)
+	}
+	if totalTypes != 2 {
+		t.Errorf("expected 2 total attack types across groups, got %d", totalTypes)
 	}
 	if len(schemaActions) != 1 {
 		t.Errorf("expected 1 schema action, got %d", len(schemaActions))

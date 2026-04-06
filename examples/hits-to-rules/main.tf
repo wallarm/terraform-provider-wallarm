@@ -148,8 +148,8 @@ locals {
   }
 
   # Flatten and deduplicate groups within each action_hash.
-  # Stamp groups: merge stamps for same point key.
-  # Attack type groups: deduplicate by key (point + attack_type).
+  # Each group is keyed by point_hash + attack_type.
+  # Stamps are merged for groups with the same key across request_ids.
   _merged_groups = {
     for ah, group_lists in local._groups_by_action :
     ah => {
@@ -171,7 +171,7 @@ locals {
     }
   ]...)
 
-  # Expand stamps: one rule per stamp group per stamp.
+  # Expand stamps: one rule per group per stamp (stampless types skipped).
   stamp_rules = merge([
     for gk, g in local._groups : {
       for s in g.stamps :
