@@ -293,7 +293,7 @@ func generateFromRulesJSON(d *schema.ResourceData, clientID int, outputDir, pref
 	}
 
 	// Convert to expandedRule with per-rule action conditions.
-	var expanded []expandedRule
+	expanded := make([]expandedRule, 0, len(rawRules))
 	for _, r := range rawRules {
 		ruleType := strings.TrimPrefix(r.ResourceType, "wallarm_rule_")
 		if !rtSet[ruleType] {
@@ -336,7 +336,7 @@ func generateFromRulesJSON(d *schema.ResourceData, clientID int, outputDir, pref
 		return nil, 0, nil
 	}
 
-	files, err := generateStaticFiles(outputDir, prefix, filename, clientID, comment, nil, expanded, split, movedFrom, "")
+	files, err := generateStaticFiles(outputDir, prefix, filename, clientID, comment, nil, expanded, split, movedFrom)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -493,7 +493,7 @@ func generateFromAPI(m interface{}, clientID int, outputDir, prefix, filename, c
 		// Split: one file per rule.
 		for _, actionID := range actionIDs {
 			ag := groups[actionID]
-			files, err := generateStaticFiles(outputDir, prefix, filename, clientID, comment, ag.conditions, ag.rules, true, movedFrom, "")
+			files, err := generateStaticFiles(outputDir, prefix, filename, clientID, comment, ag.conditions, ag.rules, true, movedFrom)
 			if err != nil {
 				return nil, 0, fmt.Errorf("action %d: %w", actionID, err)
 			}
@@ -584,9 +584,8 @@ func expandRules(groups map[string]*pointGroup, ruleTypes []string) []expandedRu
 
 // ─── File generation ─────────────────────────────────────────────────────────────
 
-// forEachKeyPrefix is prepended to r.Key for moved block "from" keys.
-// For hits source this is empty (keys are intrinsic). For API source it may be set.
-func generateStaticFiles(outputDir, prefix, filename string, clientID int, comment string, actions []ActionCondition, rules []expandedRule, split bool, movedFrom, forEachKeyPrefix string) ([]string, error) {
+// generateStaticFiles writes HCL resource blocks and optional moved blocks.
+func generateStaticFiles(outputDir, prefix, filename string, clientID int, comment string, actions []ActionCondition, rules []expandedRule, split bool, movedFrom string) ([]string, error) {
 	if !split {
 		// All in one file.
 		f := hclwrite.NewEmptyFile()
@@ -612,11 +611,7 @@ func generateStaticFiles(outputDir, prefix, filename string, clientID int, comme
 				generateStaticDisableAttackType(f, name, cfg)
 			}
 			if movedFrom != "" {
-				fromKey := r.Key
-				if forEachKeyPrefix != "" {
-					fromKey = forEachKeyPrefix + "_" + r.Key
-				}
-				writeMovedBlock(f, resourceType, movedFrom, fromKey, name)
+				writeMovedBlock(f, resourceType, movedFrom, r.Key, name)
 			}
 		}
 		filePath := filepath.Join(outputDir, filename)
@@ -651,11 +646,7 @@ func generateStaticFiles(outputDir, prefix, filename string, clientID int, comme
 			generateStaticDisableAttackType(f, name, cfg)
 		}
 		if movedFrom != "" {
-			fromKey := r.Key
-			if forEachKeyPrefix != "" {
-				fromKey = forEachKeyPrefix + "_" + r.Key
-			}
-			writeMovedBlock(f, resourceType, movedFrom, fromKey, name)
+			writeMovedBlock(f, resourceType, movedFrom, r.Key, name)
 		}
 		filePath := filepath.Join(outputDir, fmt.Sprintf("%s_%s.tf", prefix, r.Key))
 		if err := writeHCLFile(filePath, f); err != nil {
