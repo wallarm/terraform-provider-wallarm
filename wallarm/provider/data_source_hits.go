@@ -928,10 +928,13 @@ func buildAggregatedJSON(actionHash string, schemaActions []map[string]interface
 		if stamps == nil || !includeStamps {
 			stamps = []int{}
 		}
+		if !includeAttackTypes {
+			attackType = ""
+		}
 
 		// Skip group if nothing to include after filtering.
 		hasStamps := len(stamps) > 0
-		hasAttackType := includeAttackTypes && attackType != ""
+		hasAttackType := attackType != ""
 		if !hasStamps && !hasAttackType {
 			continue
 		}
