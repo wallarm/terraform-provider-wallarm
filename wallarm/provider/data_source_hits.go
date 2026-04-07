@@ -873,10 +873,11 @@ func groupHitsForRules(hits []*wallarm.Hit, actionDetails []wallarm.ActionDetail
 // attack type at that point, plus the attack_type itself. Stampless types
 // (xxe, invalid_xml) have empty stamps but still produce disable_attack_type rules.
 type aggregatedGroup struct {
-	Key        string     `json:"key"`
-	Point      [][]string `json:"point"`
-	Stamps     []int      `json:"stamps"`
-	AttackType string     `json:"attack_type"`
+	Key               string     `json:"key"`
+	Point             [][]string `json:"point"`
+	Stamps            []int      `json:"stamps"`
+	AttackType        string     `json:"attack_type"`
+	DisableAttackType bool       `json:"disable_attack_type"`
 }
 
 // aggregatedOutput is the compact representation stored in the aggregated field.
@@ -928,22 +929,20 @@ func buildAggregatedJSON(actionHash string, schemaActions []map[string]interface
 		if stamps == nil || !includeStamps {
 			stamps = []int{}
 		}
-		if !includeAttackTypes {
-			attackType = ""
-		}
 
 		// Skip group if nothing to include after filtering.
 		hasStamps := len(stamps) > 0
-		hasAttackType := attackType != ""
+		hasAttackType := includeAttackTypes && attackType != ""
 		if !hasStamps && !hasAttackType {
 			continue
 		}
 
 		aggGroups = append(aggGroups, aggregatedGroup{
-			Key:        prefix,
-			Point:      g.PointWrapped,
-			Stamps:     stamps,
-			AttackType: attackType,
+			Key:               prefix,
+			Point:             g.PointWrapped,
+			Stamps:            stamps,
+			AttackType:        attackType,
+			DisableAttackType: hasAttackType,
 		})
 	}
 

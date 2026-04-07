@@ -184,7 +184,7 @@ locals {
     if length(g.stamps) > 0
   ]...)
 
-  # Attack type rules: groups that have an attack_type set.
+  # Attack type rules: groups where disable_attack_type is enabled.
   attack_type_rules = {
     for gk, g in local._groups :
     gk => {
@@ -192,7 +192,7 @@ locals {
       point       = g.point
       action      = g.action
     }
-    if g.attack_type != ""
+    if try(g.disable_attack_type, false)
   }
 
   # Flat list for generator and counts.
