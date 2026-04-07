@@ -163,10 +163,11 @@ locals {
     for ah, mg in local._merged_groups : {
       for gk, g_list in mg.groups :
       "${ah}_${gk}" => {
-        action      = local.actions[ah]
-        point       = g_list[0].point
-        attack_type = try(g_list[0].attack_type, "")
-        stamps      = distinct(flatten([for g in g_list : try(g.stamps, [])]))
+        action               = local.actions[ah]
+        point                = g_list[0].point
+        attack_type          = try(g_list[0].attack_type, "")
+        stamps               = distinct(flatten([for g in g_list : try(g.stamps, [])]))
+        disable_attack_type  = try(g_list[0].disable_attack_type, false)
       }
     }
   ]...)
