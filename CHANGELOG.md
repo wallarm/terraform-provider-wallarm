@@ -1,3 +1,17 @@
+# v2.3.1 (Apr 7, 2026)
+
+## IMPROVEMENTS:
+
+* Stamps grouped per attack type for traceability — each group now has `attack_type` always set
+* New `disable_attack_type` bool field in aggregated groups — controls whether `disable_attack_type` rule is created, decoupled from `attack_type` key
+* `rule_types` filter correctly controls both stamp and attack_type rule creation
+
+## BUG FIXES:
+
+* Fixed `rule_types = ["disable_stamp"]` still creating `disable_attack_type` rules
+* Fixed nil stamps for stampless types (`xxe`, `invalid_xml`) causing HCL null errors
+* Fixed stamp group key truncation dropping attack_type suffix
+
 # v2.3.0 (Apr 6, 2026)
 
 ## FEATURES:

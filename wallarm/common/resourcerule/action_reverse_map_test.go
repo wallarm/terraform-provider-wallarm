@@ -167,7 +167,7 @@ func TestReverseMapRealExamples(t *testing.T) {
 		Proto      string                  `json:"proto"`
 	}
 
-	data, err := os.ReadFile("../../../.claude/actions_examples.json")
+	data, err := os.ReadFile("testdata/actions_examples.json")
 	if err != nil {
 		t.Skipf("Skipping real examples test: %v", err)
 	}
@@ -371,7 +371,7 @@ func TestRealExamplesRoundTrip(t *testing.T) {
 		Headers    []HeaderParam           `json:"headers"`
 	}
 
-	data, err := os.ReadFile("../../../.claude/actions_examples.json")
+	data, err := os.ReadFile("testdata/actions_examples.json")
 	if err != nil {
 		t.Skipf("Skipping: %v", err)
 	}
