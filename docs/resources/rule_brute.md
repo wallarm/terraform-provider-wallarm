@@ -103,7 +103,7 @@ Parameters for mode `regexp`:
 
 * `rule_id` - ID of the created rule.
 * `action_id` - the action ID (The conditions to apply on request).
-* `rule_type` - type of the created rule. For example, `rule_type = "enum"`.
+* `rule_type` - type of the created rule. For example, `rule_type = "brute"`.
 
 ## Import
 

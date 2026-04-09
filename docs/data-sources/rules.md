@@ -42,7 +42,7 @@ data "wallarm_rules" "all" {
   * `action_id` - (Int) Action ID.
   * `client_id` - (Int) Client ID.
   * `type` - (String) Rule type (API type name).
-  * `resource_type` - (String) Corresponding Terraform resource type name (e.g., `wallarm_rule_mode`).
+  * `terraform_resource` - (String) Corresponding Terraform resource type name (e.g., `wallarm_rule_mode`).
   * `import_id` - (String) Pre-computed import ID for `terraform import`.
 
 * `rules_export` - Full rule details with reverse-mapped scope fields. Used for config generation and export workflows. Each entry contains:

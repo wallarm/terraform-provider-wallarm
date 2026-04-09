@@ -84,7 +84,7 @@ resource "wallarm_rule_rate_limit_enum" "wallarm_rule_rate_limit_enum_regexp" {
 * `rule_id` - ID of the created rule.
 * `counter` - Name of the counter. Randomly generated, but always starts with `d:`.
 * `action_id` - the action ID (The conditions to apply on request).
-* `rule_type` - type of the created rule. For example, `rule_type = "dirbust_counter"`.
+* `rule_type` - type of the created rule. For example, `rule_type = "rate_limit_enum"`.
 
 ## Import
 

@@ -52,7 +52,7 @@ resource "local_file" "import_blocks" {
     for rule in data.wallarm_rules.all.rules :
     <<-EOT
     import {
-      to = ${rule.resource_type}.rule_${rule.rule_id}
+      to = ${rule.terraform_resource}.rule_${rule.rule_id}
       id = "${rule.import_id}"
     }
     EOT
