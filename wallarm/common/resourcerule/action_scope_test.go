@@ -80,9 +80,9 @@ func TestActionDetailToSchemaItem(t *testing.T) {
 			wantPoint: map[string]interface{}{"header": "HOST"},
 		},
 		{
-			name:      "instance — equal type normalized to empty, value moves to point",
+			name:      "instance — type preserved, value moves to point",
 			input:     wallarm.ActionDetails{Type: "equal", Point: []interface{}{"instance"}, Value: "13"},
-			wantType:  "",
+			wantType:  "equal",
 			wantValue: "",
 			wantPoint: map[string]interface{}{"instance": "13"},
 		},

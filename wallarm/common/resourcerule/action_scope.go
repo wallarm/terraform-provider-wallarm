@@ -112,6 +112,7 @@ func ScopeActionSchema() *schema.Schema {
 				"type": {
 					Type:         schema.TypeString,
 					Optional:     true,
+					Computed:     true,
 					ForceNew:     true,
 					ValidateFunc: validation.StringInSlice([]string{"equal", "iequal", "regex", "absent", ""}, false),
 				},
@@ -384,11 +385,6 @@ func ActionDetailToSchemaItem(a wallarm.ActionDetails) map[string]interface{} {
 	case pointKeyInstance:
 		pointMap[pointKeyInstance] = value
 		value = ""
-		// Normalize "equal" to "" for backward compatibility (configs omit type for instance).
-		// Non-default types like "regex" are preserved.
-		if condType == "equal" {
-			condType = ""
-		}
 	case pointKeyActionName:
 		pointMap[pointKeyActionName] = value
 		value = ""
