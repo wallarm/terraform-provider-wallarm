@@ -137,13 +137,12 @@ func ResourceRuleWallarmRead(d *schema.ResourceData, clientID int, cli wallarm.A
 	setIfExists(d, "regex", updatedRule.Regex)
 	setIfExists(d, "regex_id", updatedRule.RegexID)
 
-	actionsSet := schema.Set{F: HashActionDetails}
+	actionsSet := schema.Set{F: HashResponseActionDetails}
 	for _, a := range updatedRule.Action {
 		acts, err := ActionDetailsToMap(a)
 		if err != nil {
 			return fmt.Errorf("failed to map action details: %w", err)
 		}
-		TransformAPIActionToSchema(acts)
 		actionsSet.Add(acts)
 	}
 	setIfExists(d, "action", &actionsSet)
@@ -540,13 +539,70 @@ func HashActionDetails(v interface{}) int {
 	return HashString(buf.String())
 }
 
-// HashResponseActionDetails is deprecated. Use HashActionDetails + TransformAPIActionToSchema.
-// Kept for backward compatibility — calls the new functions in sequence.
+// HashResponseActionDetails is the legacy hash+transform function for the action TypeSet.
+// It hashes the map AND transforms it as a side effect. Instance type is preserved.
 func HashResponseActionDetails(v interface{}) int {
+	var buf bytes.Buffer
 	m := v.(map[string]interface{})
-	h := HashActionDetails(v)
-	TransformAPIActionToSchema(m)
-	return h
+	var p []interface{}
+	buf.WriteString(fmt.Sprintf("%s-", m["type"].(string)))
+	buf.WriteString(fmt.Sprintf("%s-", m["value"].(string)))
+	if val, ok := m["point"]; ok {
+		p = val.([]interface{})
+		switch p[0].(string) {
+		case "action_name":
+			pointMap := make(map[string]string)
+			pointMap["action_name"] = m["value"].(string)
+			m["point"] = pointMap
+			m["value"] = ""
+		case "action_ext":
+			pointMap := make(map[string]string)
+			pointMap["action_ext"] = m["value"].(string)
+			m["point"] = pointMap
+			m["value"] = ""
+		case "scheme":
+			pointMap := make(map[string]string)
+			pointMap["scheme"] = m["value"].(string)
+			m["point"] = pointMap
+			m["value"] = ""
+		case "uri":
+			pointMap := make(map[string]string)
+			pointMap["uri"] = m["value"].(string)
+			m["point"] = pointMap
+			m["value"] = ""
+		case "proto":
+			pointMap := make(map[string]string)
+			pointMap["proto"] = m["value"].(string)
+			m["point"] = pointMap
+			m["value"] = ""
+		case "method":
+			pointMap := make(map[string]string)
+			pointMap["method"] = m["value"].(string)
+			m["point"] = pointMap
+			m["value"] = ""
+		case common.Path:
+			pointMap := make(map[string]string)
+			pointMap[common.Path] = fmt.Sprintf("%d", int(p[1].(float64)))
+			m["point"] = pointMap
+		case "instance":
+			pointMap := make(map[string]string)
+			pointMap["instance"] = m["value"].(string)
+			m["point"] = pointMap
+			m["value"] = ""
+			// Type preserved — not cleared to "". Supports equal, regex.
+		case "header":
+			pointMap := make(map[string]string)
+			pointMap["header"] = p[1].(string)
+			m["point"] = pointMap
+		case "get":
+			pointMap := make(map[string]string)
+			pointMap["query"] = p[1].(string)
+			m["point"] = pointMap
+		}
+
+		buf.WriteString(fmt.Sprintf("%v-", m["point"]))
+	}
+	return HashString(buf.String())
 }
 
 // ActionDetailsToMap converts an API ActionDetails struct to a Terraform-compatible map

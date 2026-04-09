@@ -133,13 +133,12 @@ func resourceWallarmCredentialStuffingPointRead(_ context.Context, d *schema.Res
 	d.Set("set", rule.Set)
 	d.Set("variativity_disabled", rule.VariativityDisabled)
 	d.Set("comment", rule.Comment)
-	actionsSet := schema.Set{F: resourcerule.HashActionDetails}
+	actionsSet := schema.Set{F: resourcerule.HashResponseActionDetails}
 	for _, a := range rule.Action {
 		acts, err := resourcerule.ActionDetailsToMap(a)
 		if err != nil {
 			return diag.FromErr(err)
 		}
-		resourcerule.TransformAPIActionToSchema(acts)
 		actionsSet.Add(acts)
 	}
 	if err := d.Set("action", &actionsSet); err != nil {
@@ -220,7 +219,6 @@ func resourceWallarmCredentialStuffingPointImport(_ context.Context, d *schema.R
 		if err != nil {
 			return nil, err
 		}
-		resourcerule.TransformAPIActionToSchema(acts)
 		actionsSet.Add(acts)
 	}
 	if err := d.Set("action", &actionsSet); err != nil {
