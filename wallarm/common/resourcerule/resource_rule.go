@@ -468,6 +468,11 @@ func HashResponseActionDetails(v interface{}) int {
 			pointMap["instance"] = m["value"].(string)
 			m["point"] = pointMap
 			m["value"] = ""
+			// Normalize "equal" to "" for backward compatibility (configs omit type for instance).
+			// Non-default types like "regex" are preserved.
+			if m["type"] == "equal" {
+				m["type"] = ""
+			}
 		case "header":
 			pointMap := make(map[string]string)
 			pointMap["header"] = p[1].(string)
