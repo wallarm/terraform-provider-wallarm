@@ -137,12 +137,13 @@ func ResourceRuleWallarmRead(d *schema.ResourceData, clientID int, cli wallarm.A
 	setIfExists(d, "regex", updatedRule.Regex)
 	setIfExists(d, "regex_id", updatedRule.RegexID)
 
-	actionsSet := schema.Set{F: HashResponseActionDetails}
+	actionsSet := schema.Set{F: HashActionDetails}
 	for _, a := range updatedRule.Action {
 		acts, err := ActionDetailsToMap(a)
 		if err != nil {
 			return fmt.Errorf("failed to map action details: %w", err)
 		}
+		TransformAPIActionToSchema(acts)
 		actionsSet.Add(acts)
 	}
 	setIfExists(d, "action", &actionsSet)
@@ -292,7 +293,6 @@ func ExpandSetToActionDetailsList(action *schema.Set) ([]wallarm.ActionDetails, 
 					case "instance":
 						a.Point = []interface{}{pointKey}
 						a.Value = pointValue.(string)
-						a.Type = "equal"
 					case common.Header:
 						// This is required by the API when a header field is specified
 						a.Point = []interface{}{pointKey, strings.ToUpper(pointValue.(string))}
@@ -418,71 +418,135 @@ func WrapPointElements(input []interface{}) [][]string {
 	return result
 }
 
-// HashResponseActionDetails is the hash function for the action TypeSet.
-// It transforms API point arrays into point maps as a side effect (e.g.,
-// ["header","HOST"] → {header: "HOST"}, ["get","key"] → {query: "key"}).
-func HashResponseActionDetails(v interface{}) int {
-	var buf bytes.Buffer
+// TransformAPIActionToSchema converts an API-format action map to Terraform schema format.
+// Mutates the map in place: converts point arrays to point maps, moves values for
+// point-value types, normalizes type for instance.
+func TransformAPIActionToSchema(m map[string]interface{}) {
+	val, ok := m["point"]
+	if !ok {
+		return
+	}
+	p := val.([]interface{})
+	switch p[0].(string) {
+	case "action_name":
+		pointMap := make(map[string]string)
+		pointMap["action_name"] = m["value"].(string)
+		m["point"] = pointMap
+		m["value"] = ""
+	case "action_ext":
+		pointMap := make(map[string]string)
+		pointMap["action_ext"] = m["value"].(string)
+		m["point"] = pointMap
+		m["value"] = ""
+	case "scheme":
+		pointMap := make(map[string]string)
+		pointMap["scheme"] = m["value"].(string)
+		m["point"] = pointMap
+		m["value"] = ""
+	case "uri":
+		pointMap := make(map[string]string)
+		pointMap["uri"] = m["value"].(string)
+		m["point"] = pointMap
+		m["value"] = ""
+	case "proto":
+		pointMap := make(map[string]string)
+		pointMap["proto"] = m["value"].(string)
+		m["point"] = pointMap
+		m["value"] = ""
+	case "method":
+		pointMap := make(map[string]string)
+		pointMap["method"] = m["value"].(string)
+		m["point"] = pointMap
+		m["value"] = ""
+	case common.Path:
+		pointMap := make(map[string]string)
+		pointMap[common.Path] = fmt.Sprintf("%d", int(p[1].(float64)))
+		m["point"] = pointMap
+	case "instance":
+		pointMap := make(map[string]string)
+		pointMap["instance"] = m["value"].(string)
+		m["point"] = pointMap
+		m["value"] = ""
+		// Type preserved (supports equal, regex). Not cleared to "".
+	case "header":
+		pointMap := make(map[string]string)
+		pointMap["header"] = p[1].(string)
+		m["point"] = pointMap
+	case "get":
+		pointMap := make(map[string]string)
+		pointMap["query"] = p[1].(string)
+		m["point"] = pointMap
+	}
+}
+
+// HashActionDetails is the hash function for the action TypeSet.
+// Pure function — no side effects. Computes hash from the raw API-format map
+// using original type/value + computed point representation.
+// Hash is backward-compatible with the former HashResponseActionDetails.
+func HashActionDetails(v interface{}) int {
 	m := v.(map[string]interface{})
-	var p []interface{}
+
+	// If point is already a map (schema format), hash directly.
+	if _, isMap := m["point"].(map[string]interface{}); isMap {
+		var buf bytes.Buffer
+		buf.WriteString(fmt.Sprintf("%s-", m["type"].(string)))
+		buf.WriteString(fmt.Sprintf("%s-", m["value"].(string)))
+		buf.WriteString(fmt.Sprintf("%v-", m["point"]))
+		return HashString(buf.String())
+	}
+	if _, isMap := m["point"].(map[string]string); isMap {
+		var buf bytes.Buffer
+		buf.WriteString(fmt.Sprintf("%s-", m["type"].(string)))
+		buf.WriteString(fmt.Sprintf("%s-", m["value"].(string)))
+		buf.WriteString(fmt.Sprintf("%v-", m["point"]))
+		return HashString(buf.String())
+	}
+
+	// API format: point is []interface{}. Hash using original type/value
+	// and computed point representation (matching legacy behavior).
+	var buf bytes.Buffer
 	buf.WriteString(fmt.Sprintf("%s-", m["type"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["value"].(string)))
+
 	if val, ok := m["point"]; ok {
-		p = val.([]interface{})
+		p := val.([]interface{})
+		var pointRepr string
 		switch p[0].(string) {
 		case "action_name":
-			pointMap := make(map[string]string)
-			pointMap["action_name"] = m["value"].(string)
-			m["point"] = pointMap
-			m["value"] = ""
+			pointRepr = fmt.Sprintf("map[action_name:%s]", m["value"].(string))
 		case "action_ext":
-			pointMap := make(map[string]string)
-			pointMap["action_ext"] = m["value"].(string)
-			m["point"] = pointMap
-			m["value"] = ""
+			pointRepr = fmt.Sprintf("map[action_ext:%s]", m["value"].(string))
 		case "scheme":
-			pointMap := make(map[string]string)
-			pointMap["scheme"] = m["value"].(string)
-			m["point"] = pointMap
-			m["value"] = ""
+			pointRepr = fmt.Sprintf("map[scheme:%s]", m["value"].(string))
 		case "uri":
-			pointMap := make(map[string]string)
-			pointMap["uri"] = m["value"].(string)
-			m["point"] = pointMap
-			m["value"] = ""
+			pointRepr = fmt.Sprintf("map[uri:%s]", m["value"].(string))
 		case "proto":
-			pointMap := make(map[string]string)
-			pointMap["proto"] = m["value"].(string)
-			m["point"] = pointMap
-			m["value"] = ""
+			pointRepr = fmt.Sprintf("map[proto:%s]", m["value"].(string))
 		case "method":
-			pointMap := make(map[string]string)
-			pointMap["method"] = m["value"].(string)
-			m["point"] = pointMap
-			m["value"] = ""
+			pointRepr = fmt.Sprintf("map[method:%s]", m["value"].(string))
 		case common.Path:
-			pointMap := make(map[string]string)
-			pointMap[common.Path] = fmt.Sprintf("%d", int(p[1].(float64)))
-			m["point"] = pointMap
+			pointRepr = fmt.Sprintf("map[path:%d]", int(p[1].(float64)))
 		case "instance":
-			pointMap := make(map[string]string)
-			pointMap["instance"] = m["value"].(string)
-			m["point"] = pointMap
-			m["value"] = ""
-			m["type"] = ""
+			pointRepr = fmt.Sprintf("map[instance:%s]", m["value"].(string))
 		case "header":
-			pointMap := make(map[string]string)
-			pointMap["header"] = p[1].(string)
-			m["point"] = pointMap
+			pointRepr = fmt.Sprintf("map[header:%s]", p[1].(string))
 		case "get":
-			pointMap := make(map[string]string)
-			pointMap["query"] = p[1].(string)
-			m["point"] = pointMap
+			pointRepr = fmt.Sprintf("map[query:%s]", p[1].(string))
+		default:
+			pointRepr = fmt.Sprintf("%v", m["point"])
 		}
-
-		buf.WriteString(fmt.Sprintf("%v-", m["point"]))
+		buf.WriteString(pointRepr + "-")
 	}
 	return HashString(buf.String())
+}
+
+// HashResponseActionDetails is deprecated. Use HashActionDetails + TransformAPIActionToSchema.
+// Kept for backward compatibility — calls the new functions in sequence.
+func HashResponseActionDetails(v interface{}) int {
+	m := v.(map[string]interface{})
+	h := HashActionDetails(v)
+	TransformAPIActionToSchema(m)
+	return h
 }
 
 // ActionDetailsToMap converts an API ActionDetails struct to a Terraform-compatible map

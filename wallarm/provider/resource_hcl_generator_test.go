@@ -263,8 +263,8 @@ func TestWriteActionBlocks_PointValueTypes(t *testing.T) {
 	}
 	// Extract the action block containing instance.
 	instanceBlock := hcl[strings.LastIndex(hcl[:instanceIdx], "action {"):instanceIdx]
-	if strings.Contains(instanceBlock, "type") {
-		t.Error("instance action block should not have type attribute")
+	if !strings.Contains(instanceBlock, `type`) {
+		t.Error("instance action block should have type attribute (preserved)")
 	}
 	if strings.Contains(instanceBlock, "value") {
 		t.Error("instance action block should not have value attribute")
