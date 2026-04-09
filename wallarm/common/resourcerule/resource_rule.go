@@ -417,130 +417,9 @@ func WrapPointElements(input []interface{}) [][]string {
 	return result
 }
 
-// TransformAPIActionToSchema converts an API-format action map to Terraform schema format.
-// Mutates the map in place: converts point arrays to point maps, moves values for
-// point-value types, normalizes type for instance.
-func TransformAPIActionToSchema(m map[string]interface{}) {
-	val, ok := m["point"]
-	if !ok {
-		return
-	}
-	p := val.([]interface{})
-	switch p[0].(string) {
-	case "action_name":
-		pointMap := make(map[string]string)
-		pointMap["action_name"] = m["value"].(string)
-		m["point"] = pointMap
-		m["value"] = ""
-	case "action_ext":
-		pointMap := make(map[string]string)
-		pointMap["action_ext"] = m["value"].(string)
-		m["point"] = pointMap
-		m["value"] = ""
-	case "scheme":
-		pointMap := make(map[string]string)
-		pointMap["scheme"] = m["value"].(string)
-		m["point"] = pointMap
-		m["value"] = ""
-	case "uri":
-		pointMap := make(map[string]string)
-		pointMap["uri"] = m["value"].(string)
-		m["point"] = pointMap
-		m["value"] = ""
-	case "proto":
-		pointMap := make(map[string]string)
-		pointMap["proto"] = m["value"].(string)
-		m["point"] = pointMap
-		m["value"] = ""
-	case "method":
-		pointMap := make(map[string]string)
-		pointMap["method"] = m["value"].(string)
-		m["point"] = pointMap
-		m["value"] = ""
-	case common.Path:
-		pointMap := make(map[string]string)
-		pointMap[common.Path] = fmt.Sprintf("%d", int(p[1].(float64)))
-		m["point"] = pointMap
-	case "instance":
-		pointMap := make(map[string]string)
-		pointMap["instance"] = m["value"].(string)
-		m["point"] = pointMap
-		m["value"] = ""
-		// Type preserved (supports equal, regex). Not cleared to "".
-	case "header":
-		pointMap := make(map[string]string)
-		pointMap["header"] = p[1].(string)
-		m["point"] = pointMap
-	case "get":
-		pointMap := make(map[string]string)
-		pointMap["query"] = p[1].(string)
-		m["point"] = pointMap
-	}
-}
-
-// HashActionDetails is the hash function for the action TypeSet.
-// Pure function — no side effects. Computes hash from the raw API-format map
-// using original type/value + computed point representation.
-// Hash is backward-compatible with the former HashResponseActionDetails.
-func HashActionDetails(v interface{}) int {
-	m := v.(map[string]interface{})
-
-	// If point is already a map (schema format), hash directly.
-	if _, isMap := m["point"].(map[string]interface{}); isMap {
-		var buf bytes.Buffer
-		buf.WriteString(fmt.Sprintf("%s-", m["type"].(string)))
-		buf.WriteString(fmt.Sprintf("%s-", m["value"].(string)))
-		buf.WriteString(fmt.Sprintf("%v-", m["point"]))
-		return HashString(buf.String())
-	}
-	if _, isMap := m["point"].(map[string]string); isMap {
-		var buf bytes.Buffer
-		buf.WriteString(fmt.Sprintf("%s-", m["type"].(string)))
-		buf.WriteString(fmt.Sprintf("%s-", m["value"].(string)))
-		buf.WriteString(fmt.Sprintf("%v-", m["point"]))
-		return HashString(buf.String())
-	}
-
-	// API format: point is []interface{}. Hash using original type/value
-	// and computed point representation (matching legacy behavior).
-	var buf bytes.Buffer
-	buf.WriteString(fmt.Sprintf("%s-", m["type"].(string)))
-	buf.WriteString(fmt.Sprintf("%s-", m["value"].(string)))
-
-	if val, ok := m["point"]; ok {
-		p := val.([]interface{})
-		var pointRepr string
-		switch p[0].(string) {
-		case "action_name":
-			pointRepr = fmt.Sprintf("map[action_name:%s]", m["value"].(string))
-		case "action_ext":
-			pointRepr = fmt.Sprintf("map[action_ext:%s]", m["value"].(string))
-		case "scheme":
-			pointRepr = fmt.Sprintf("map[scheme:%s]", m["value"].(string))
-		case "uri":
-			pointRepr = fmt.Sprintf("map[uri:%s]", m["value"].(string))
-		case "proto":
-			pointRepr = fmt.Sprintf("map[proto:%s]", m["value"].(string))
-		case "method":
-			pointRepr = fmt.Sprintf("map[method:%s]", m["value"].(string))
-		case common.Path:
-			pointRepr = fmt.Sprintf("map[path:%d]", int(p[1].(float64)))
-		case "instance":
-			pointRepr = fmt.Sprintf("map[instance:%s]", m["value"].(string))
-		case "header":
-			pointRepr = fmt.Sprintf("map[header:%s]", p[1].(string))
-		case "get":
-			pointRepr = fmt.Sprintf("map[query:%s]", p[1].(string))
-		default:
-			pointRepr = fmt.Sprintf("%v", m["point"])
-		}
-		buf.WriteString(pointRepr + "-")
-	}
-	return HashString(buf.String())
-}
-
-// HashResponseActionDetails is the legacy hash+transform function for the action TypeSet.
-// It hashes the map AND transforms it as a side effect. Instance type is preserved.
+// HashResponseActionDetails is the hash function for the action TypeSet.
+// It transforms API point arrays into point maps as a side effect (e.g.,
+// ["header","HOST"] → {header: "HOST"}, ["get","key"] → {query: "key"}).
 func HashResponseActionDetails(v interface{}) int {
 	var buf bytes.Buffer
 	m := v.(map[string]interface{})
@@ -589,7 +468,11 @@ func HashResponseActionDetails(v interface{}) int {
 			pointMap["instance"] = m["value"].(string)
 			m["point"] = pointMap
 			m["value"] = ""
-			// Type preserved — not cleared to "". Supports equal, regex.
+			// Normalize "equal" to "" for backward compatibility (configs omit type for instance).
+			// Non-default types like "regex" are preserved.
+			if m["type"] == "equal" {
+				m["type"] = ""
+			}
 		case "header":
 			pointMap := make(map[string]string)
 			pointMap["header"] = p[1].(string)

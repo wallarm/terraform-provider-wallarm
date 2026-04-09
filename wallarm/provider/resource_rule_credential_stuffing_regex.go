@@ -142,7 +142,6 @@ func resourceWallarmCredentialStuffingRegexRead(_ context.Context, d *schema.Res
 		if err != nil {
 			return diag.FromErr(err)
 		}
-		resourcerule.TransformAPIActionToSchema(acts)
 		actionsSet.Add(acts)
 	}
 	if err := d.Set("action", &actionsSet); err != nil {

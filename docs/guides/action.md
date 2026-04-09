@@ -133,7 +133,7 @@ resource "wallarm_rule_mode" "example" {
   }
 ```
 
-**Value placement:** For `action_name`, `action_ext`, `method`, `proto`, `scheme`, `uri`, and `instance`, the actual value goes in the `point` map and `value` is set to `""`. For `instance`, `type` must also be `""`:
+**Value placement:** For `action_name`, `action_ext`, `method`, `proto`, `scheme`, `uri`, and `instance`, the actual value goes in the `point` map and `value` is set to `""`:
 
 ```hcl
   # action_name = "login" → value goes in point
@@ -143,9 +143,9 @@ resource "wallarm_rule_mode" "example" {
     point = { action_name = "login" }
   }
 
-  # instance = "42" → value goes in point, type must be ""
+  # instance = "42" → value goes in point, type is preserved (supports equal, regex)
   action {
-    type  = ""
+    type  = "equal"
     value = ""
     point = { instance = "42" }
   }

@@ -324,7 +324,7 @@ func dataSourceWallarmRulesRead(_ context.Context, d *schema.ResourceData, m int
 			if err != nil {
 				continue
 			}
-			resourcerule.TransformAPIActionToSchema(m)
+			resourcerule.HashResponseActionDetails(m) // side effect: converts point array → map
 			tfActions = append(tfActions, m)
 		}
 		entry["action_json"] = mustJSON(tfActions)

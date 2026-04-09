@@ -212,7 +212,7 @@ func resourceWallarmCredentialStuffingPointImport(_ context.Context, d *schema.R
 	d.Set("cred_stuff_type", rule.Type)
 
 	actionsSet := schema.Set{
-		F: resourcerule.HashActionDetails,
+		F: resourcerule.HashResponseActionDetails,
 	}
 	for _, a := range rule.Action {
 		acts, err := resourcerule.ActionDetailsToMap(a)
