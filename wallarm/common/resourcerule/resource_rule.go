@@ -292,7 +292,6 @@ func ExpandSetToActionDetailsList(action *schema.Set) ([]wallarm.ActionDetails, 
 					case "instance":
 						a.Point = []interface{}{pointKey}
 						a.Value = pointValue.(string)
-						a.Type = "equal"
 					case common.Header:
 						// This is required by the API when a header field is specified
 						a.Point = []interface{}{pointKey, strings.ToUpper(pointValue.(string))}
@@ -469,7 +468,6 @@ func HashResponseActionDetails(v interface{}) int {
 			pointMap["instance"] = m["value"].(string)
 			m["point"] = pointMap
 			m["value"] = ""
-			m["type"] = ""
 		case "header":
 			pointMap := make(map[string]string)
 			pointMap["header"] = p[1].(string)

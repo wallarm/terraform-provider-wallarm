@@ -344,11 +344,6 @@ func validateActionBlocks(d *schema.ResourceDiff) error {
 				conflictingPoints = append(conflictingPoints, key)
 			}
 
-			// Instance requires type = "".
-			if key == pointKeyInstance && condType != "" {
-				return fmt.Errorf("action condition with point \"instance\" requires type = \"\", got %q", condType)
-			}
-
 			// Point-value points require value = "".
 			if PointValuePoints[key] && condType != condTypeAbsent && condValue != "" {
 				return fmt.Errorf("action condition with point %q: the value goes in the point map, \"value\" field must be empty", key)
@@ -389,7 +384,6 @@ func ActionDetailToSchemaItem(a wallarm.ActionDetails) map[string]interface{} {
 	case pointKeyInstance:
 		pointMap[pointKeyInstance] = value
 		value = ""
-		condType = ""
 	case pointKeyActionName:
 		pointMap[pointKeyActionName] = value
 		value = ""
