@@ -204,7 +204,12 @@ func dataSourceWallarmRulesRead(_ context.Context, d *schema.ResourceData, m int
 			}
 
 			batch := *resp.Body
-			allRules = append(allRules, batch...)
+			for _, rule := range batch {
+				if isCredentialStuffingType(rule.Type) {
+					continue
+				}
+				allRules = append(allRules, rule)
+			}
 
 			if len(batch) < batchSize {
 				break
@@ -215,8 +220,9 @@ func dataSourceWallarmRulesRead(_ context.Context, d *schema.ResourceData, m int
 		log.Printf("[INFO] wallarm_rules data source: fetched %d rules for client %d (direct API)", len(allRules), clientID)
 	}
 
-	// Fetch credential stuffing configs from the v4 API — they are not
-	// returned by HintRead, so we merge them into the common list.
+	// Fetch credential stuffing configs from the v4 API and merge into the
+	// common list. Credential stuffing types are filtered out of HintRead
+	// results (in the cache and fallback path) to avoid duplicates.
 	csCache := m.(*ProviderMeta).CredentialStuffingCache
 	credConfigs, err := csCache.LoadAll(client, clientID)
 	if err != nil {
@@ -324,7 +330,7 @@ func dataSourceWallarmRulesRead(_ context.Context, d *schema.ResourceData, m int
 			if err != nil {
 				continue
 			}
-			resourcerule.HashResponseActionDetails(m) // side effect: converts point array → map
+			resourcerule.TransformAPIActionToSchema(m)
 			tfActions = append(tfActions, m)
 		}
 		entry["action_json"] = mustJSON(tfActions)

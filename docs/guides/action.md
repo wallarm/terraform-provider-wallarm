@@ -89,12 +89,11 @@ resource "wallarm_rule_mode" "example" {
 
 ### Action block arguments
 
-* `type` - (**required**) condition type. Must be one of:
+* `type` - (optional) condition type. Required for most conditions, optional for `instance` (defaults to `"equal"`). Must be one of:
   - `equal` — exact match (case-sensitive)
   - `iequal` — case-insensitive match. **Values are automatically lowercased by the API.** Always used for HOST header.
   - `regex` — regular expression match (Pire engine syntax)
   - `absent` — the parameter must not exist
-  - `""` (empty string) — used only for `instance` condition
 
 * `value` - (conditionally required) value to match:
   - **Required** for `header` and `query` conditions — the actual matched value (e.g., domain name, query param value).
@@ -133,7 +132,7 @@ resource "wallarm_rule_mode" "example" {
   }
 ```
 
-**Value placement:** For `action_name`, `action_ext`, `method`, `proto`, `scheme`, `uri`, and `instance`, the actual value goes in the `point` map and `value` is set to `""`. For `instance`, `type` must also be `""`:
+**Value placement:** For `action_name`, `action_ext`, `method`, `proto`, `scheme`, `uri`, and `instance`, the actual value goes in the `point` map and `value` is set to `""`:
 
 ```hcl
   # action_name = "login" → value goes in point
@@ -143,9 +142,9 @@ resource "wallarm_rule_mode" "example" {
     point = { action_name = "login" }
   }
 
-  # instance = "42" → value goes in point, type must be ""
+  # instance = "42" → value goes in point, type is preserved (supports equal, regex)
   action {
-    type  = ""
+    type  = "equal"
     value = ""
     point = { instance = "42" }
   }
@@ -172,6 +171,9 @@ In addition to `action` and resource-specific fields, all rule resources support
 * `client_id` - (Optional) Client ID. Defaults to the provider's client ID.
 * `comment` - (Optional) Comment stored with the rule. Default: `"Managed by Terraform"`. On import, the provider sets this default, which may trigger an update if the existing rule has a different comment.
 * `variativity_disabled` - (Optional) Disable variativity for the rule. Default: `true`. On import, the provider sets this default, which may trigger an update if the existing rule has variativity enabled.
+* `title` - (Optional) Short title for the rule.
+* `active` - (Optional) Whether the rule is active.
+* `set` - (Optional) Rule set name for grouping related rules.
 
 Common computed attributes:
 
