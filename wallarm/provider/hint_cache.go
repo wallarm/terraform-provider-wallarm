@@ -44,6 +44,14 @@ type HintCache struct {
 	lastFetchAt   time.Time
 }
 
+// isCredentialStuffingType returns true for rule types that are served by the
+// dedicated credential stuffing API (v4). With elevated permissions HintRead
+// also returns these, so the cache skips them to avoid duplicates — the
+// CredentialStuffingCache is the authoritative source.
+func isCredentialStuffingType(t string) bool {
+	return t == "credentials_point" || t == "credentials_regex"
+}
+
 // NewHintCache creates an empty HintCache.
 func NewHintCache() *HintCache {
 	return &HintCache{
@@ -104,6 +112,9 @@ func (c *HintCache) GetOrFetch(hintID, clientID int, api wallarm.API) (*wallarm.
 
 		batch := *resp.Body
 		for i := range batch {
+			if isCredentialStuffingType(batch[i].Type) {
+				continue
+			}
 			c.hints[batch[i].ID] = &batch[i]
 		}
 
@@ -160,6 +171,9 @@ func (c *HintCache) LoadAll(clientID int, api wallarm.API) error {
 
 		batch := *resp.Body
 		for i := range batch {
+			if isCredentialStuffingType(batch[i].Type) {
+				continue
+			}
 			c.hints[batch[i].ID] = &batch[i]
 		}
 

@@ -94,7 +94,7 @@ resource "wallarm_rule_mode" "example" {
   - `iequal` — case-insensitive match. **Values are automatically lowercased by the API.** Always used for HOST header.
   - `regex` — regular expression match (Pire engine syntax)
   - `absent` — the parameter must not exist
-  - `""` (empty string) — used only for `instance` condition
+  - Omit `type` for `instance` conditions — it will be computed as `"equal"` from the API
 
 * `value` - (conditionally required) value to match:
   - **Required** for `header` and `query` conditions — the actual matched value (e.g., domain name, query param value).

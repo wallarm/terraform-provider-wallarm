@@ -240,7 +240,7 @@ func TestWriteActionBlocks_PointValueTypes(t *testing.T) {
 	block := f.Body().AppendNewBlock("resource", []string{"test", "foo"})
 
 	conditions := []ActionCondition{
-		// Instance: type="" (omitted), value="" (omitted), point={instance="13"}
+		// Instance: type="equal", value="" (omitted), point={instance="13"}
 		{Type: "equal", Point: []string{"instance"}, Value: "13"},
 		// Header: type="iequal", value="example.com", point={header="HOST"}
 		{Type: "iequal", Point: []string{"header", "HOST"}, Value: "example.com"},
@@ -255,16 +255,15 @@ func TestWriteActionBlocks_PointValueTypes(t *testing.T) {
 	writeActionBlocks(block.Body(), conditions)
 	hcl := string(hclwrite.Format(f.Bytes()))
 
-	// Instance block: should have no type, no value — just point.
-	// Verify the instance action block has no type attribute.
+	// Instance block: should have type = "equal" and no value — point holds the value.
 	instanceIdx := strings.Index(hcl, `instance = "13"`)
 	if instanceIdx < 0 {
 		t.Fatal("missing instance point value")
 	}
 	// Extract the action block containing instance.
 	instanceBlock := hcl[strings.LastIndex(hcl[:instanceIdx], "action {"):instanceIdx]
-	if strings.Contains(instanceBlock, "type") {
-		t.Error("instance action block should not have type attribute")
+	if !strings.Contains(instanceBlock, `"equal"`) {
+		t.Error("instance action block should have type = \"equal\"")
 	}
 	if strings.Contains(instanceBlock, "value") {
 		t.Error("instance action block should not have value attribute")

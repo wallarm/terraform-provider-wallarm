@@ -1,3 +1,17 @@
+# v2.3.2 (Apr 10, 2026)
+
+## IMPROVEMENTS:
+
+* Instance action conditions now preserve `type="equal"` in state instead of clearing to empty string, enabling future `type="regex"` support
+* Added `admin_ext` role to `wallarm_user` resource for Administrator (extended) support
+
+## BUG FIXES:
+
+* Fixed credential stuffing rules appearing twice in `data.wallarm_rules` when API token has elevated permissions
+* Fixed instance condition `type` field lost after resource Read, causing perpetual drift when explicitly set
+* Fixed wrong field name `resource_type` → `terraform_resource` in 5 resource docs and `rules_import` guide
+* Fixed incorrect `rule_type` examples in `rule_bola`, `rule_brute`, `rule_forced_browsing`, `rule_graphql_detection`, `rule_rate_limit_enum` docs
+
 # v2.3.1 (Apr 7, 2026)
 
 ## IMPROVEMENTS:

@@ -50,7 +50,7 @@ func resourceWallarmUser() *schema.Resource {
 			"permissions": {
 				Type:         schema.TypeString,
 				Required:     true,
-				ValidateFunc: validation.StringInSlice([]string{"admin", "analytic", "auditor", "deploy", "partner_admin", "partner_admin_ext", "partner_analytic", "partner_auditor"}, false),
+				ValidateFunc: validation.StringInSlice([]string{"admin", "admin_ext", "analytic", "auditor", "deploy", "partner_admin", "partner_admin_ext", "partner_analytic", "partner_auditor"}, false),
 			},
 
 			"realname": {

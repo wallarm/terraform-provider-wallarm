@@ -137,12 +137,13 @@ func ResourceRuleWallarmRead(d *schema.ResourceData, clientID int, cli wallarm.A
 	setIfExists(d, "regex", updatedRule.Regex)
 	setIfExists(d, "regex_id", updatedRule.RegexID)
 
-	actionsSet := schema.Set{F: HashResponseActionDetails}
+	actionsSet := schema.Set{F: HashActionDetails}
 	for _, a := range updatedRule.Action {
 		acts, err := ActionDetailsToMap(a)
 		if err != nil {
 			return fmt.Errorf("failed to map action details: %w", err)
 		}
+		TransformAPIActionToSchema(acts)
 		actionsSet.Add(acts)
 	}
 	setIfExists(d, "action", &actionsSet)
@@ -292,7 +293,7 @@ func ExpandSetToActionDetailsList(action *schema.Set) ([]wallarm.ActionDetails, 
 					case "instance":
 						a.Point = []interface{}{pointKey}
 						a.Value = pointValue.(string)
-						a.Type = "equal"
+						a.Type = "equal" // default; overridden by the "type" key if explicitly set
 					case common.Header:
 						// This is required by the API when a header field is specified
 						a.Point = []interface{}{pointKey, strings.ToUpper(pointValue.(string))}
@@ -383,7 +384,7 @@ func WrapPointElements(input []interface{}) [][]string {
 			// Core
 			"hash", "array", "json", "json_obj", "json_array",
 			// HTTP
-			"header", "cookie", "get", "path", "multipart",
+			pointKeyHeader, "cookie", pointKeyGet, "path", "multipart",
 			"form_urlencoded", "content_disp", "response_header",
 			// XML
 			"xml_pi", "xml_dtd_entity", "xml_tag_array", "xml_tag",
@@ -470,11 +471,11 @@ func HashResponseActionDetails(v interface{}) int {
 			m["point"] = pointMap
 			m["value"] = ""
 			m["type"] = ""
-		case "header":
+		case pointKeyHeader:
 			pointMap := make(map[string]string)
-			pointMap["header"] = p[1].(string)
+			pointMap[pointKeyHeader] = p[1].(string)
 			m["point"] = pointMap
-		case "get":
+		case pointKeyGet:
 			pointMap := make(map[string]string)
 			pointMap["query"] = p[1].(string)
 			m["point"] = pointMap
@@ -483,6 +484,120 @@ func HashResponseActionDetails(v interface{}) int {
 		buf.WriteString(fmt.Sprintf("%v-", m["point"]))
 	}
 	return HashString(buf.String())
+}
+
+// HashActionDetails is a pure hash function for the action TypeSet that works
+// on both API-format (pre-transform) and config-format (post-transform) data.
+// Unlike HashResponseActionDetails, it has NO side effects on the input map.
+// For instance conditions, type "" and "equal" are normalized to the same value
+// so that config (type="" / omitted) and state (type="equal") produce the same
+// hash. Other types like "regex" are preserved to detect actual type changes.
+func HashActionDetails(v interface{}) int {
+	m := v.(map[string]interface{})
+	var buf bytes.Buffer
+
+	condType := m["type"].(string)
+	value := m["value"].(string)
+
+	// Detect point format: []interface{} (API) or map (config/transformed).
+	var pointStr string
+	if val, ok := m["point"]; ok {
+		switch p := val.(type) {
+		case []interface{}:
+			// API format — compute what the transformed point map would be.
+			pointMap := make(map[string]string)
+			key := p[0].(string)
+			switch key {
+			case "action_name", "action_ext", "scheme", "uri", "proto", "method":
+				pointMap[key] = value
+			case common.Path:
+				pointMap[common.Path] = fmt.Sprintf("%d", int(p[1].(float64)))
+			case "instance":
+				pointMap["instance"] = value
+				condType = normalizeInstanceType(condType)
+			case pointKeyHeader:
+				pointMap[pointKeyHeader] = p[1].(string)
+			case pointKeyGet:
+				pointMap["query"] = p[1].(string)
+			}
+			pointStr = fmt.Sprintf("%v", pointMap)
+		case map[string]string:
+			if _, isInstance := p["instance"]; isInstance {
+				condType = normalizeInstanceType(condType)
+			}
+			pointStr = fmt.Sprintf("%v", p)
+		case map[string]interface{}:
+			// Config format from Terraform SDK.
+			if _, isInstance := p["instance"]; isInstance {
+				condType = normalizeInstanceType(condType)
+			}
+			pointStr = fmt.Sprintf("%v", p)
+		}
+	}
+
+	buf.WriteString(fmt.Sprintf("%s-", condType))
+	buf.WriteString(fmt.Sprintf("%s-", value))
+	if pointStr != "" {
+		buf.WriteString(fmt.Sprintf("%s-", pointStr))
+	}
+	return HashString(buf.String())
+}
+
+// normalizeInstanceType normalizes the default instance types ("" and "equal")
+// to "" for hashing, so omitted type and API-returned "equal" produce the same
+// hash. Non-default types like "regex" are preserved to detect actual changes.
+func normalizeInstanceType(t string) string {
+	if t == "" || t == "equal" {
+		return ""
+	}
+	return t
+}
+
+// TransformAPIActionToSchema transforms an API-format action map (point as
+// []interface{}) into the Terraform config format (point as map[string]string).
+// Unlike HashResponseActionDetails, this is a pure transform with no hash
+// computation. It performs the same mutations that HashResponseActionDetails
+// applies as side effects.
+func TransformAPIActionToSchema(m map[string]interface{}) {
+	val, ok := m["point"]
+	if !ok {
+		return
+	}
+	p, ok := val.([]interface{})
+	if !ok {
+		return // Already transformed (map format) — nothing to do.
+	}
+	pointMap := make(map[string]string)
+	switch p[0].(string) {
+	case "action_name":
+		pointMap["action_name"] = m["value"].(string)
+		m["value"] = ""
+	case "action_ext":
+		pointMap["action_ext"] = m["value"].(string)
+		m["value"] = ""
+	case "scheme":
+		pointMap["scheme"] = m["value"].(string)
+		m["value"] = ""
+	case "uri":
+		pointMap["uri"] = m["value"].(string)
+		m["value"] = ""
+	case "proto":
+		pointMap["proto"] = m["value"].(string)
+		m["value"] = ""
+	case "method":
+		pointMap["method"] = m["value"].(string)
+		m["value"] = ""
+	case common.Path:
+		pointMap[common.Path] = fmt.Sprintf("%d", int(p[1].(float64)))
+	case "instance":
+		pointMap["instance"] = m["value"].(string)
+		m["value"] = ""
+	case pointKeyHeader:
+		pointMap[pointKeyHeader] = p[1].(string)
+	case pointKeyGet:
+		pointMap["query"] = p[1].(string)
+	}
+	m["point"] = pointMap
 }
 
 // ActionDetailsToMap converts an API ActionDetails struct to a Terraform-compatible map

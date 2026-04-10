@@ -535,8 +535,7 @@ func hitKey(h *wallarm.Hit) string {
 // setEmptyHitsState sets empty values for all computed fields.
 func setEmptyHitsState(d *schema.ResourceData) diag.Diagnostics {
 	var diags diag.Diagnostics
-	if err := d.Set("action", schema.NewSet(schema.HashResource(
-		resourcerule.ScopeActionSchema().Elem.(*schema.Resource)), []interface{}{})); err != nil {
+	if err := d.Set("action", schema.NewSet(resourcerule.HashActionDetails, []interface{}{})); err != nil {
 		diags = append(diags, diag.FromErr(err)...)
 	}
 	d.Set("action_hash", "")
@@ -606,10 +605,7 @@ func actionToSchemaSet(action []map[string]interface{}) *schema.Set {
 	for i, a := range action {
 		ifaces[i] = a
 	}
-	return schema.NewSet(
-		schema.HashResource(resourcerule.ScopeActionSchema().Elem.(*schema.Resource)),
-		ifaces,
-	)
+	return schema.NewSet(resourcerule.HashActionDetails, ifaces)
 }
 
 // hitsToSchemaList converts wallarm.Hit objects to the schema list format.
@@ -660,11 +656,11 @@ func hitsToSchemaList(hits []*wallarm.Hit) []interface{} {
 // buildActionFromHit converts hit domain, path and poolid into Wallarm rule
 // action conditions in the exact format used by wallarm_rule_* resources.
 //
-// Conventions match HashResponseActionDetails in resourcerule:
+// Conventions match HashActionDetails in resourcerule:
 //
 //	point type    | type   | value  | point map
 //	--------------+--------+--------+-------------------------
-//	instance      | ""     | ""     | {"instance": "<id>"}
+//	instance      | equal  | ""     | {"instance": "<id>"}
 //	header        | iequal | domain | {"header": "HOST"}
 //	path (equal)  | equal  | seg    | {"path": "<N>"}
 //	path (absent) | absent | ""     | {"path": "<N>"}
