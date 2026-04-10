@@ -89,12 +89,11 @@ resource "wallarm_rule_mode" "example" {
 
 ### Action block arguments
 
-* `type` - (**required**) condition type. Must be one of:
+* `type` - (optional) condition type. Required for most conditions, optional for `instance` (defaults to `"equal"`). Must be one of:
   - `equal` — exact match (case-sensitive)
   - `iequal` — case-insensitive match. **Values are automatically lowercased by the API.** Always used for HOST header.
   - `regex` — regular expression match (Pire engine syntax)
   - `absent` — the parameter must not exist
-  - Omit `type` for `instance` conditions — it will be computed as `"equal"` from the API
 
 * `value` - (conditionally required) value to match:
   - **Required** for `header` and `query` conditions — the actual matched value (e.g., domain name, query param value).
@@ -172,6 +171,9 @@ In addition to `action` and resource-specific fields, all rule resources support
 * `client_id` - (Optional) Client ID. Defaults to the provider's client ID.
 * `comment` - (Optional) Comment stored with the rule. Default: `"Managed by Terraform"`. On import, the provider sets this default, which may trigger an update if the existing rule has a different comment.
 * `variativity_disabled` - (Optional) Disable variativity for the rule. Default: `true`. On import, the provider sets this default, which may trigger an update if the existing rule has variativity enabled.
+* `title` - (Optional) Short title for the rule.
+* `active` - (Optional) Whether the rule is active.
+* `set` - (Optional) Rule set name for grouping related rules.
 
 Common computed attributes:
 

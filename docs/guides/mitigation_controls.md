@@ -22,7 +22,7 @@ For detailed documentation, see [Mitigation Controls Overview](https://docs.wall
 | Forced browsing protection | [`wallarm_rule_forced_browsing`](../resources/rule_forced_browsing) | `mode`, `threshold`, `reaction`, `advanced_conditions`, `arbitrary_conditions` |
 | Brute force protection | [`wallarm_rule_brute`](../resources/rule_brute) | `mode`, `threshold`, `reaction`, `advanced_conditions`, `arbitrary_conditions` |
 | DoS protection | [`wallarm_rule_rate_limit_enum`](../resources/rule_rate_limit_enum) | `mode`, `threshold`, `reaction`, `advanced_conditions`, `arbitrary_conditions` |
-| File upload restriction policy | [`wallarm_rule_file_upload_size_limit`](../resources/rule_file_upload) | `mode`, `max_size`, `size_unit`, `file_types` |
+| File upload restriction policy | [`wallarm_rule_file_upload_size_limit`](../resources/rule_file_upload) | `mode`, `size`, `size_unit` |
 
 ## Parameter Mapping
 
@@ -49,7 +49,7 @@ The UI "Mitigation mode" maps to the `mode` attribute.
 | Inherited | `"default"` | `rule_mode`, `graphql_detection`, `file_upload_size_limit` |
 | Monitoring | `"monitoring"` | All |
 | Blocking | `"block"` | All |
-| Safe blocking | `"safe_blocking"` | `rule_mode` |
+| Safe blocking | `"safe_blocking"` | `rule_mode` only |
 | Excluding | `"off"` | `rule_mode`, `graphql_detection`, `file_upload_size_limit` |
 
 ### Threshold
