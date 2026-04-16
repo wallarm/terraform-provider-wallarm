@@ -47,7 +47,9 @@ The following arguments are supported in `provider "wallarm"`:
 * `client_id` - (optional) ID of the client (tenant). The value is required for [multi-tenant scenarios][2]. This can also be specified with the `WALLARM_API_CLIENT_ID` shell environment variable. Default: client ID of the authenticated user defined by api_token.
 * `retries` - (optional) maximum number of retries to perform when an API request fails. Default: 12. This can also be specified with the `WALLARM_API_RETRIES` shell environment variable.
 * `min_backoff` - (optional) minimum backoff period in seconds after failed API calls. Default: 1. This can also be specified with the `WALLARM_API_MIN_BACKOFF` shell environment variable.
-* `max_backoff` - (optional) maximum backoff period in seconds after failed API calls Default: 30. This can also be specified with the `WALLARM_API_MAX_BACKOFF` shell environment variable.
+* `max_backoff` - (optional) maximum backoff period in seconds after failed API calls. Default: 5. This can also be specified with the `WALLARM_API_MAX_BACKOFF` shell environment variable.
 * `api_client_logging` - (optional) whether to print logs from the API client (using the default log library logger). Default: false. This can also be specified with the `WALLARM_API_CLIENT_LOGGING` shell environment variable.
+* `hint_prefetch` - (optional) enable bulk prefetching of hints (rules) during plan/refresh to reduce API calls. When enabled, the first rule read triggers a bulk fetch of all hints for the client, and subsequent reads are served from an in-memory cache. Default: true. This can also be specified with the `WALLARM_HINT_PREFETCH` shell environment variable.
+* `require_explicit_client_id` - (optional) when true, every resource must set `client_id` explicitly. Prevents accidental cross-tenant operations for Global Administrator tokens managing multiple tenants. Default: false. This can also be specified with the `WALLARM_REQUIRE_EXPLICIT_CLIENT_ID` shell environment variable.
 
 [2]: https://docs.wallarm.com/installation/multi-tenant/overview/

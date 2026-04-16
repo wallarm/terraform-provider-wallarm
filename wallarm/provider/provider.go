@@ -91,6 +91,7 @@ func Provider() *schema.Provider {
 				DefaultFunc: schema.EnvDefaultFunc("WALLARM_API_CLIENT_LOGGING", false),
 				Description: "Whether to print logs from the API client (using the default log library logger)",
 			},
+			// TODO: ignore_existing is defined but never read — decide whether to implement (skip existsAction errors) or remove
 			"ignore_existing": {
 				Type:        schema.TypeBool,
 				Optional:    true,

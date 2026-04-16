@@ -8,7 +8,7 @@ The Wallarm Terraform provider manages resources on the [Wallarm](https://www.wa
 
 ## Requirements
 
-- [Terraform](https://www.terraform.io/downloads.html) >= 1.0
+- [Terraform](https://www.terraform.io/downloads.html) >= 1.5
 - [Go](https://golang.org/doc/install) >= 1.24 (only to build from source)
 
 ## Installation
@@ -17,7 +17,7 @@ Install the provider from the [Terraform Registry](https://registry.terraform.io
 
 ```hcl
 terraform {
-  required_version = ">= 1.0"
+  required_version = ">= 1.5"
 
   required_providers {
     wallarm = {
