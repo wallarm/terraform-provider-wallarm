@@ -1,7 +1,6 @@
 package wallarm
 
 import (
-	"context"
 	crand "crypto/rand"
 	"fmt"
 	"math/big"
@@ -10,45 +9,11 @@ import (
 	"strings"
 	"unicode"
 
-	stderrors "errors"
-	"net/http"
-
 	"github.com/wallarm/terraform-provider-wallarm/wallarm/common/resourcerule"
 	"github.com/wallarm/wallarm-go"
 
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/customdiff"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
-
-const eventTypeSIEM = "siem"
-
-// isNotFoundError checks if the error is a Wallarm API 404 response.
-func isNotFoundError(err error) bool {
-	var apiErr *wallarm.APIError
-	return stderrors.As(err, &apiErr) && apiErr.StatusCode == http.StatusNotFound
-}
-
-// validateWithHeadersOnlySiem returns a CustomizeDiffFunc that ensures
-// with_headers is only set to true on events of type "siem".
-func validateWithHeadersOnlySiem() schema.CustomizeDiffFunc {
-	return customdiff.All(
-		func(_ context.Context, d *schema.ResourceDiff, _ interface{}) error {
-			events, ok := d.GetOk("event")
-			if !ok {
-				return nil
-			}
-			for _, e := range events.(*schema.Set).List() {
-				m := e.(map[string]interface{})
-				eventType, _ := m["event_type"].(string)
-				withHeaders, _ := m["with_headers"].(bool)
-				if withHeaders && eventType != eventTypeSIEM {
-					return fmt.Errorf("with_headers can only be set for the 'siem' event type, got event_type=%q", eventType)
-				}
-			}
-			return nil
-		},
-	)
-}
 
 type ruleNotFoundError struct {
 	clientID int
@@ -160,187 +125,6 @@ func isPasswordValid(s string) bool {
 		}
 	}
 	return hasMinLen && hasUpper && hasLower && hasNumber && hasSpecial
-}
-
-func expandWallarmEventToIntEvents(d interface{}, resourceType string) *[]wallarm.IntegrationEvents {
-	cfg := d.(*schema.Set).List()
-	events := []wallarm.IntegrationEvents{}
-	if len(cfg) == 0 || cfg[0] == nil {
-		var defaultEvents []map[string]interface{}
-		switch resourceType {
-		case "email":
-			defaultEvents = []map[string]interface{}{
-				{
-					"event_type": "system",
-					"active":     false},
-				{
-					"event_type": "aasm_report",
-					"active":     false},
-				{
-					"event_type": "api_discovery_hourly_changes_report",
-					"active":     false},
-				{
-					"event_type": "api_discovery_daily_changes_report",
-					"active":     false},
-				{
-					"event_type": "report_daily",
-					"active":     false},
-				{
-					"event_type": "report_weekly",
-					"active":     false},
-				{
-					"event_type": "report_monthly",
-					"active":     false},
-			}
-		case "data_dog", "insight_connect", "splunk", "sumo_logic", "web_hooks":
-			defaultEvents = []map[string]interface{}{
-				{
-					"event_type": eventTypeSIEM,
-					"active":     false},
-				{
-					"event_type": "rules_and_triggers",
-					"active":     false},
-				{
-					"event_type": "number_of_requests_per_hour",
-					"active":     false},
-				{
-					"event_type": "security_issue_critical",
-					"active":     false},
-				{
-					"event_type": "security_issue_high",
-					"active":     false},
-				{
-					"event_type": "security_issue_medium",
-					"active":     false},
-				{
-					"event_type": "security_issue_low",
-					"active":     false},
-				{
-					"event_type": "security_issue_info",
-					"active":     false},
-				{
-					"event_type": "system",
-					"active":     false},
-			}
-		case "telegram":
-			defaultEvents = []map[string]interface{}{
-				{
-					"event_type": "system",
-					"active":     false},
-				{
-					"event_type": "rules_and_triggers",
-					"active":     false},
-				{
-					"event_type": "security_issue_critical",
-					"active":     false},
-				{
-					"event_type": "security_issue_high",
-					"active":     false},
-				{
-					"event_type": "security_issue_medium",
-					"active":     false},
-				{
-					"event_type": "security_issue_low",
-					"active":     false},
-				{
-					"event_type": "security_issue_info",
-					"active":     false},
-				{
-					"event_type": "report_daily",
-					"active":     false},
-				{
-					"event_type": "report_weekly",
-					"active":     false},
-				{
-					"event_type": "report_monthly",
-					"active":     false},
-			}
-		case "ms_teams", "opsgenie", "pager_duty", "slack":
-			defaultEvents = []map[string]interface{}{
-				{
-					"event_type": "system",
-					"active":     false},
-				{
-					"event_type": "rules_and_triggers",
-					"active":     false},
-				{
-					"event_type": "security_issue_critical",
-					"active":     false},
-				{
-					"event_type": "security_issue_high",
-					"active":     false},
-				{
-					"event_type": "security_issue_medium",
-					"active":     false},
-				{
-					"event_type": "security_issue_low",
-					"active":     false},
-				{
-					"event_type": "security_issue_info",
-					"active":     false},
-			}
-		default:
-			defaultEvents = []map[string]interface{}{
-				{
-					"event_type": "system",
-					"active":     false},
-				{
-					"event_type": "rules_and_triggers",
-					"active":     false},
-				{
-					"event_type": "security_issue_critical",
-					"active":     false},
-				{
-					"event_type": "security_issue_high",
-					"active":     false},
-				{
-					"event_type": "security_issue_medium",
-					"active":     false},
-				{
-					"event_type": "security_issue_low",
-					"active":     false},
-				{
-					"event_type": "security_issue_info",
-					"active":     false},
-			}
-		}
-		for _, v := range defaultEvents {
-			event := wallarm.IntegrationEvents{
-				Event:  v["event_type"].(string),
-				Active: v["active"].(bool),
-			}
-			events = append(events, event)
-		}
-		return &events
-	}
-
-	for _, conf := range cfg {
-
-		m := conf.(map[string]interface{})
-		e := wallarm.IntegrationEvents{}
-		event, ok := m["event_type"]
-		if ok {
-			if event.(string) == "hit" {
-				e.Event = eventTypeSIEM
-			} else {
-				e.Event = event.(string)
-			}
-		}
-
-		active, ok := m["active"]
-		if ok {
-			e.Active = active.(bool)
-		}
-		// with_headers is only applicable to the siem event type
-		if e.Event == eventTypeSIEM {
-			if wh, ok := m["with_headers"]; ok {
-				whBool := wh.(bool)
-				e.WithHeaders = &whBool
-			}
-		}
-		events = append(events, e)
-	}
-	return &events
 }
 
 // equalWithoutOrder tells whether a and b contain
