@@ -10,8 +10,6 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/wallarm/terraform-provider-wallarm/wallarm/common"
-	"github.com/wallarm/terraform-provider-wallarm/wallarm/common/mapper/apitotf"
-	"github.com/wallarm/terraform-provider-wallarm/wallarm/common/mapper/tftoapi"
 	"github.com/wallarm/wallarm-go"
 )
 
@@ -82,12 +80,12 @@ func ResourceRuleWallarmRead(d *schema.ResourceData, clientID int, cli wallarm.A
 	// only defines a subset of these in its schema. In SDK v2, d.Set
 	// panics for keys not in the schema.
 	setIfExists(d, "point", WrapPointElements(updatedRule.Point))
-	setIfExists(d, "threshold", apitotf.Threshold(updatedRule.Threshold))
-	setIfExists(d, "reaction", apitotf.Reaction(updatedRule.Reaction))
+	setIfExists(d, "threshold", ThresholdToTF(updatedRule.Threshold))
+	setIfExists(d, "reaction", ReactionToTF(updatedRule.Reaction))
 	setIfExists(d, "mode", updatedRule.Mode)
-	setIfExists(d, "enumerated_parameters", apitotf.EnumeratedParameters(updatedRule.EnumeratedParameters))
-	setIfExists(d, "advanced_conditions", apitotf.AdvancedConditions(updatedRule.AdvancedConditions))
-	setIfExists(d, "arbitrary_conditions", apitotf.ArbitraryConditions(updatedRule.ArbitraryConditions))
+	setIfExists(d, "enumerated_parameters", EnumeratedParametersToTF(updatedRule.EnumeratedParameters))
+	setIfExists(d, "advanced_conditions", AdvancedConditionsToTF(updatedRule.AdvancedConditions))
+	setIfExists(d, "arbitrary_conditions", ArbitraryConditionsToTF(updatedRule.ArbitraryConditions))
 	setIfExists(d, "counter", updatedRule.Counter)
 	setIfExists(d, "size", updatedRule.Size)
 	setIfExists(d, "size_unit", updatedRule.SizeUnit)
@@ -145,31 +143,31 @@ func ResourceRuleWallarmCreate(
 	}
 
 	enumeratedParametersFromState := GetValueWithTypeCastingOrDefault[[]interface{}](d, "enumerated_parameters")
-	enumeratedParameters, err := tftoapi.EnumeratedParameters(enumeratedParametersFromState)
+	enumeratedParameters, err := EnumeratedParametersToAPI(enumeratedParametersFromState)
 	if err != nil {
 		return diag.FromErr(err)
 	}
 
 	reactionFromState := GetValueWithTypeCastingOrDefault[[]interface{}](d, "reaction")
-	reaction, err := tftoapi.Reaction(reactionFromState)
+	reaction, err := ReactionToAPI(reactionFromState)
 	if err != nil {
 		return diag.FromErr(err)
 	}
 
 	thresholdFromState := GetValueWithTypeCastingOrDefault[[]interface{}](d, "threshold")
-	threshold, err := tftoapi.Threshold(thresholdFromState)
+	threshold, err := ThresholdToAPI(thresholdFromState)
 	if err != nil {
 		return diag.FromErr(err)
 	}
 
 	advancedConditionsFromState := GetValueWithTypeCastingOrDefault[[]interface{}](d, "advanced_conditions")
-	advancedConditions, err := tftoapi.AdvancedConditions(advancedConditionsFromState)
+	advancedConditions, err := AdvancedConditionsToAPI(advancedConditionsFromState)
 	if err != nil {
 		return diag.FromErr(err)
 	}
 
 	arbitraryConditionsFromState := GetValueWithTypeCastingOrDefault[[]interface{}](d, "arbitrary_conditions")
-	arbitraryConditions, err := tftoapi.ArbitraryConditionsReq(arbitraryConditionsFromState)
+	arbitraryConditions, err := ArbitraryConditionsToAPI(arbitraryConditionsFromState)
 	if err != nil {
 		return diag.FromErr(err)
 	}

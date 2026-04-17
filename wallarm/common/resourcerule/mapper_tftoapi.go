@@ -1,4 +1,4 @@
-package tftoapi
+package resourcerule
 
 import (
 	"fmt"
@@ -8,7 +8,7 @@ import (
 	"github.com/wallarm/wallarm-go"
 )
 
-func EnumeratedParameters(enumeratedParameters []interface{}) (*wallarm.EnumeratedParameters, error) {
+func EnumeratedParametersToAPI(enumeratedParameters []interface{}) (*wallarm.EnumeratedParameters, error) {
 	if len(enumeratedParameters) == 0 {
 		return nil, nil
 	}
@@ -86,7 +86,7 @@ func mapEnumeratedParameterExactToAPI(enumeratedParameter map[string]interface{}
 	return result, nil
 }
 
-func Reaction(reaction []interface{}) (*wallarm.Reaction, error) {
+func ReactionToAPI(reaction []interface{}) (*wallarm.Reaction, error) {
 	if len(reaction) == 0 {
 		return nil, nil
 	}
@@ -114,7 +114,7 @@ func Reaction(reaction []interface{}) (*wallarm.Reaction, error) {
 	}, nil
 }
 
-func Threshold(threshold []interface{}) (*wallarm.Threshold, error) {
+func ThresholdToAPI(threshold []interface{}) (*wallarm.Threshold, error) {
 	if len(threshold) == 0 {
 		return nil, nil
 	}
@@ -133,7 +133,7 @@ func Threshold(threshold []interface{}) (*wallarm.Threshold, error) {
 	}, nil
 }
 
-func AdvancedConditions(advancedConditions []interface{}) ([]wallarm.AdvancedCondition, error) {
+func AdvancedConditionsToAPI(advancedConditions []interface{}) ([]wallarm.AdvancedCondition, error) {
 	if len(advancedConditions) == 0 {
 		return nil, nil
 	}
@@ -160,7 +160,7 @@ func AdvancedConditions(advancedConditions []interface{}) ([]wallarm.AdvancedCon
 	return response, nil
 }
 
-func ArbitraryConditionsReq(arbitraryConditions []interface{}) ([]wallarm.ArbitraryConditionReq, error) {
+func ArbitraryConditionsToAPI(arbitraryConditions []interface{}) ([]wallarm.ArbitraryConditionReq, error) {
 	if len(arbitraryConditions) == 0 {
 		return nil, nil
 	}
