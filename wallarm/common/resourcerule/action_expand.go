@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	"github.com/wallarm/terraform-provider-wallarm/wallarm/common"
 	wallarm "github.com/wallarm/wallarm-go"
 )
 
@@ -33,7 +32,7 @@ func ExpandSetToActionDetailsList(action *schema.Set) ([]wallarm.ActionDetails, 
 				point := actionMap[k].(map[string]interface{})
 				for pointKey, pointValue := range point {
 					switch pointKey {
-					case common.Path:
+					case Path:
 						// Marshalling of the number leads to float64 even though it was int initially
 						// Therefore, we parse string into float64 to compare structs properly afterwards
 						pointValue, err := strconv.ParseFloat(pointValue.(string), 64)
@@ -46,7 +45,7 @@ func ExpandSetToActionDetailsList(action *schema.Set) ([]wallarm.ActionDetails, 
 						a.Point = []interface{}{pointKey}
 						// This is required by the API when case is insensitive
 						switch {
-						case actionMap["type"] == common.Iequal:
+						case actionMap["type"] == Iequal:
 							a.Value = strings.ToLower(pointValue.(string))
 						case actionMap["type"] == "absent":
 							a.Value = nil
@@ -57,12 +56,12 @@ func ExpandSetToActionDetailsList(action *schema.Set) ([]wallarm.ActionDetails, 
 						a.Point = []interface{}{pointKey}
 						a.Value = pointValue.(string)
 						a.Type = "equal" // default; overridden by the "type" key if explicitly set
-					case common.Header:
+					case Header:
 						// This is required by the API when a header field is specified
 						a.Point = []interface{}{pointKey, strings.ToUpper(pointValue.(string))}
 					case "query":
 						// This is required by the API when case is insensitive
-						if actionMap["type"] == common.Iequal {
+						if actionMap["type"] == Iequal {
 							a.Point = []interface{}{"get", strings.ToLower(pointValue.(string))}
 						} else {
 							a.Point = []interface{}{"get", pointValue.(string)}

@@ -3,6 +3,7 @@ GOFMT_FILES?=$$(find . -name '*.go' |grep -v vendor)
 GOOS?=$$(go env GOOS)
 GOARCH?=$$(go env GOARCH)
 VERSION?=$$(git describe --abbrev=0 --tags)
+DEV_VERSION=2.99.0
 TESTTIMEOUT=120m
 
 WALLARM_API_HOST?=https://audit.api.wallarm.com
@@ -21,6 +22,18 @@ build: fmtcheck
 init:
 	@echo "Initializing the Wallarm provider..."
 	@terraform init
+
+dev: fmtcheck
+	@echo "Building dev provider (v$(DEV_VERSION))..."
+	@go build -o terraform-provider-wallarm .
+	@mkdir -p ~/.terraform.d/plugins/registry.terraform.io/wallarm/wallarm/$(DEV_VERSION)/$(GOOS)_$(GOARCH)
+	@cp terraform-provider-wallarm ~/.terraform.d/plugins/registry.terraform.io/wallarm/wallarm/$(DEV_VERSION)/$(GOOS)_$(GOARCH)/terraform-provider-wallarm_v$(DEV_VERSION)
+	@rm terraform-provider-wallarm
+	@echo "Installed to ~/.terraform.d/plugins/ (v$(DEV_VERSION)). Run 'terraform init' in your HCL project."
+
+dev-clean:
+	@rm -rf ~/.terraform.d/plugins/registry.terraform.io/wallarm/wallarm/$(DEV_VERSION)
+	@echo "Dev provider (v$(DEV_VERSION)) removed. Run 'terraform init -upgrade' to switch to released version."
 
 init-plugin: build
 	@echo "Initializing and copying the Wallarm provider..."
@@ -53,4 +66,4 @@ fmt:
 fmtcheck:
 	@sh -c "'$(CURDIR)/scripts/gofmtcheck.sh'"
 
-.PHONY: install build init init-plugin test testacc vet fmt fmtcheck
+.PHONY: install build init dev dev-clean init-plugin test testacc vet fmt fmtcheck

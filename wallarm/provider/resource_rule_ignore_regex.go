@@ -8,7 +8,6 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/samber/lo"
-	"github.com/wallarm/terraform-provider-wallarm/wallarm/common"
 	"github.com/wallarm/terraform-provider-wallarm/wallarm/common/resourcerule"
 	"github.com/wallarm/wallarm-go"
 
@@ -100,7 +99,7 @@ func resourceWallarmIgnoreRegexRead(_ context.Context, d *schema.ResourceData, m
 		return diag.FromErr(err)
 	}
 	return diag.FromErr(resourcerule.ResourceRuleWallarmRead(d, clientID, apiClient(m),
-		common.ReadOptionWithPoint, common.ReadOptionWithRegexID))
+		resourcerule.ReadOptionWithPoint, resourcerule.ReadOptionWithRegexID))
 }
 
 func resourceWallarmIgnoreRegexDelete(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {

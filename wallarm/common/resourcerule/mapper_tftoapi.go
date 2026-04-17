@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/samber/lo"
-	"github.com/wallarm/terraform-provider-wallarm/wallarm/common"
 	"github.com/wallarm/wallarm-go"
 )
 
@@ -30,7 +29,7 @@ func mapEnumeratedParameterRegexpToAPI(enumeratedParameter map[string]interface{
 	if !ok {
 		return nil, fmt.Errorf("enumerated_parameters.name_regexps: expected list, got %T", enumeratedParameter["name_regexps"])
 	}
-	nameRegexps := common.ConvertToStringSlice(nameRegexpsRaw)
+	nameRegexps := ConvertToStringSlice(nameRegexpsRaw)
 	if len(nameRegexps) == 0 {
 		nameRegexps = []string{""}
 	}
@@ -39,7 +38,7 @@ func mapEnumeratedParameterRegexpToAPI(enumeratedParameter map[string]interface{
 	if !ok {
 		return nil, fmt.Errorf("enumerated_parameters.value_regexps: expected list, got %T", enumeratedParameter["value_regexps"])
 	}
-	valueRegexps := common.ConvertToStringSlice(valueRegexpsRaw)
+	valueRegexps := ConvertToStringSlice(valueRegexpsRaw)
 	if len(valueRegexps) == 0 {
 		valueRegexps = []string{""}
 	}
@@ -152,7 +151,7 @@ func AdvancedConditionsToAPI(advancedConditions []interface{}) ([]wallarm.Advanc
 		operator, _ := advancedConditionObj["operator"].(string)
 		response = append(response, wallarm.AdvancedCondition{
 			Field:    field,
-			Value:    common.ConvertToStringSlice(valueRaw),
+			Value:    ConvertToStringSlice(valueRaw),
 			Operator: operator,
 		})
 	}
@@ -182,7 +181,7 @@ func ArbitraryConditionsToAPI(arbitraryConditions []interface{}) ([]wallarm.Arbi
 		operator, _ := arbitraryConditionObj["operator"].(string)
 		response = append(response, wallarm.ArbitraryConditionReq{
 			Point:    mapPointToAPI(pointRaw),
-			Value:    common.ConvertToStringSlice(valueRaw),
+			Value:    ConvertToStringSlice(valueRaw),
 			Operator: operator,
 		})
 	}

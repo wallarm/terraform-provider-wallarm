@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/wallarm/terraform-provider-wallarm/wallarm/common"
 	wallarm "github.com/wallarm/wallarm-go"
 )
 
@@ -51,9 +50,9 @@ func HashResponseActionDetails(v interface{}) int {
 			pointMap["method"] = m["value"].(string)
 			m["point"] = pointMap
 			m["value"] = ""
-		case common.Path:
+		case Path:
 			pointMap := make(map[string]string)
-			pointMap[common.Path] = fmt.Sprintf("%d", int(p[1].(float64)))
+			pointMap[Path] = fmt.Sprintf("%d", int(p[1].(float64)))
 			m["point"] = pointMap
 		case "instance":
 			pointMap := make(map[string]string)
@@ -100,8 +99,8 @@ func HashActionDetails(v interface{}) int {
 			switch key {
 			case "action_name", "action_ext", "scheme", "uri", "proto", "method":
 				pointMap[key] = value
-			case common.Path:
-				pointMap[common.Path] = fmt.Sprintf("%d", int(p[1].(float64)))
+			case Path:
+				pointMap[Path] = fmt.Sprintf("%d", int(p[1].(float64)))
 			case "instance":
 				pointMap["instance"] = value
 				condType = normalizeInstanceType(condType)
@@ -177,8 +176,8 @@ func TransformAPIActionToSchema(m map[string]interface{}) {
 	case "method":
 		pointMap["method"] = m["value"].(string)
 		m["value"] = ""
-	case common.Path:
-		pointMap[common.Path] = fmt.Sprintf("%d", int(p[1].(float64)))
+	case Path:
+		pointMap[Path] = fmt.Sprintf("%d", int(p[1].(float64)))
 	case "instance":
 		pointMap["instance"] = m["value"].(string)
 		m["value"] = ""

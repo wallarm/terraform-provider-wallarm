@@ -8,7 +8,6 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/samber/lo"
-	"github.com/wallarm/terraform-provider-wallarm/wallarm/common"
 	"github.com/wallarm/terraform-provider-wallarm/wallarm/common/resourcerule"
 	"github.com/wallarm/wallarm-go"
 
@@ -102,7 +101,7 @@ func resourceWallarmVpatchRead(_ context.Context, d *schema.ResourceData, m inte
 		return diag.FromErr(err)
 	}
 	return diag.FromErr(resourcerule.ResourceRuleWallarmRead(d, clientID, apiClient(m),
-		common.ReadOptionWithPoint))
+		resourcerule.ReadOptionWithPoint))
 }
 
 func resourceWallarmVpatchDelete(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {

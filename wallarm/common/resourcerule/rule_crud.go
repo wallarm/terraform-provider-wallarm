@@ -9,7 +9,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/pkg/errors"
 
-	"github.com/wallarm/terraform-provider-wallarm/wallarm/common"
 	"github.com/wallarm/wallarm-go"
 )
 
@@ -36,7 +35,7 @@ func setIfExists(d *schema.ResourceData, key string, value interface{}) {
 }
 
 // nolint
-func ResourceRuleWallarmRead(d *schema.ResourceData, clientID int, cli wallarm.API, opts ...common.ReadOption) error {
+func ResourceRuleWallarmRead(d *schema.ResourceData, clientID int, cli wallarm.API, opts ...ReadOption) error {
 	var ruleID = d.Get("rule_id").(int)
 	hint := &wallarm.HintRead{
 		Limit:     1000,
