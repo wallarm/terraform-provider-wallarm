@@ -14,6 +14,7 @@ import (
 const eventTypeSIEM = "siem"
 
 // isNotFoundError checks if the error is a Wallarm API 404 response.
+// TODO: add unit test — APIError 404→true, 500→false, non-APIError→false
 func isNotFoundError(err error) bool {
 	var apiErr *wallarm.APIError
 	return stderrors.As(err, &apiErr) && apiErr.StatusCode == http.StatusNotFound
@@ -41,6 +42,7 @@ func validateWithHeadersOnlySiem() schema.CustomizeDiffFunc {
 	)
 }
 
+// TODO: add test — empty set per resource type returns defaults, populated events with hit→siem mapping, with_headers on siem
 func expandWallarmEventToIntEvents(d interface{}, resourceType string) *[]wallarm.IntegrationEvents {
 	cfg := d.(*schema.Set).List()
 	events := []wallarm.IntegrationEvents{}

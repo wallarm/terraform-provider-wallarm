@@ -292,6 +292,7 @@ var uriConflictPoints = map[string]bool{
 //   - URI conflict with path/action_name/action_ext/query
 //   - Point-value points (action_name, method, etc.) require value = ""
 //   - Header and query require non-empty value
+// TODO: add unit test — valid conditions, unknown point key, multiple keys, URI conflict, point-value with value, header empty value
 func validateActionBlocks(d *schema.ResourceDiff) error {
 	v, ok := d.GetOk("action")
 	if !ok {

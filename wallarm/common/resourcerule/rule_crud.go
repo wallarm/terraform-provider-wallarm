@@ -34,6 +34,7 @@ func setIfExists(d *schema.ResourceData, key string, value interface{}) {
 	}
 }
 
+// TODO: add test — needs mock wallarm.API, verify field population, action set transform, not-found removes from state
 // nolint
 func ResourceRuleWallarmRead(d *schema.ResourceData, clientID int, cli wallarm.API, opts ...ReadOption) error {
 	var ruleID = d.Get("rule_id").(int)
@@ -125,6 +126,7 @@ func ResourceRuleWallarmRead(d *schema.ResourceData, clientID int, cli wallarm.A
 	return nil
 }
 
+// TODO: add test — needs mock wallarm.API, verify HintCreate call, ID format, error handling
 // nolint
 func ResourceRuleWallarmCreate(
 	ctx context.Context,

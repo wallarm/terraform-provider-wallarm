@@ -189,6 +189,7 @@ func TransformAPIActionToSchema(m map[string]interface{}) {
 	m["point"] = pointMap
 }
 
+// TODO: add unit test — valid ActionDetails, nil value handling, value always present in output
 // ActionDetailsToMap converts an API ActionDetails struct to a Terraform-compatible map
 // via JSON marshal/unmarshal. Ensures "value" key is always present.
 func ActionDetailsToMap(actionDetails wallarm.ActionDetails) (map[string]interface{}, error) {

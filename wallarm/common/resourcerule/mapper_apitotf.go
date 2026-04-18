@@ -33,6 +33,7 @@ func ReactionToTF(reaction *wallarm.Reaction) []interface{} {
 	}
 }
 
+// TODO: add unit test — nil, regexp mode, exact mode
 func EnumeratedParametersToTF(enumeratedParameters *wallarm.EnumeratedParameters) []interface{} {
 	if enumeratedParameters == nil {
 		return nil
@@ -96,6 +97,7 @@ func AdvancedConditionsToTF(advancedConditions []wallarm.AdvancedCondition) []in
 	return result
 }
 
+// TODO: add unit test — nil, single condition with points
 func ArbitraryConditionsToTF(arbitraryConditions []wallarm.ArbitraryConditionResp) []interface{} {
 	if arbitraryConditions == nil {
 		return nil

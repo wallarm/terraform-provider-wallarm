@@ -14,6 +14,7 @@ import (
 // equalWithoutOrder tells whether a and b contain
 // the same elements regardless the order.
 // Applicable only for []wallarm.ActionDetails
+// TODO: add unit test — same order, different order, different conditions, empty, different lengths
 func equalWithoutOrder(conditionsA, conditionsB []wallarm.ActionDetails) bool {
 	if len(conditionsA) != len(conditionsB) {
 		return false
@@ -90,6 +91,7 @@ func actionPointsEqual(listA, listB []interface{}) bool {
 	return true
 }
 
+// TODO: add test — needs mock API + schema.ResourceData, verify action lookup and existsHint delegation
 func existsAction(d *schema.ResourceData, m interface{}, hintType string) (string, bool, error) {
 	client := apiClient(m)
 	clientID, err := retrieveClientID(d, m)
@@ -125,6 +127,7 @@ func existsAction(d *schema.ResourceData, m interface{}, hintType string) (strin
 	return "", false, err
 }
 
+// TODO: add test — needs mock API + schema.ResourceData, verify hint lookup returns correct ID
 func existsHint(d *schema.ResourceData, m interface{}, actionID int, hintType string) (string, bool, error) {
 	client := apiClient(m)
 	clientID, err := retrieveClientID(d, m)
