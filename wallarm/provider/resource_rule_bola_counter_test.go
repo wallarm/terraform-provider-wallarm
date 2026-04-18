@@ -14,9 +14,6 @@ import (
 )
 
 func TestAccRuleBolaCounterCreate(t *testing.T) {
-	// if os.Getenv("WALLARM_EXTRA_PERMISSIONS") == "" {
-	// 	t.Skip("Skipping not test as it requires WALLARM_EXTRA_PERMISSIONS set")
-	// }
 	rnd := generateRandomResourceName(5)
 	name := "wallarm_rule_bola_counter." + rnd
 	resource.Test(t, resource.TestCase{

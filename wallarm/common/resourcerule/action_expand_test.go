@@ -208,7 +208,7 @@ func TestWrapPointElements_MultiLevelChain(t *testing.T) {
 
 func TestWrapPointElements_Empty(t *testing.T) {
 	result := WrapPointElements([]interface{}{})
-	if result != nil && len(result) != 0 {
+	if len(result) != 0 {
 		t.Errorf("expected nil or empty, got %v", result)
 	}
 }
