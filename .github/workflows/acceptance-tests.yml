@@ -27,6 +27,15 @@ jobs:
     - name: Check out code into the Go module directory
       uses: actions/checkout@v2
 
+    - name: Set up Terraform
+      uses: hashicorp/setup-terraform@v3
+      with:
+        terraform_version: "1.9.8"
+        terraform_wrapper: false
+
+    - name: Export TF_ACC_TERRAFORM_PATH
+      run: echo "TF_ACC_TERRAFORM_PATH=$(command -v terraform)" >> $GITHUB_ENV
+
     - name: Create test tenant
       id: tenant
       run: |
