@@ -14,7 +14,6 @@ import (
 const eventTypeSIEM = "siem"
 
 // isNotFoundError checks if the error is a Wallarm API 404 response.
-// TODO: add unit test — APIError 404→true, 500→false, non-APIError→false
 func isNotFoundError(err error) bool {
 	var apiErr *wallarm.APIError
 	return stderrors.As(err, &apiErr) && apiErr.StatusCode == http.StatusNotFound

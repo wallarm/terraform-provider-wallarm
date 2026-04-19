@@ -14,7 +14,6 @@ import (
 // equalWithoutOrder tells whether a and b contain
 // the same elements regardless the order.
 // Applicable only for []wallarm.ActionDetails
-// TODO: add unit test — same order, different order, different conditions, empty, different lengths
 func equalWithoutOrder(conditionsA, conditionsB []wallarm.ActionDetails) bool {
 	if len(conditionsA) != len(conditionsB) {
 		return false

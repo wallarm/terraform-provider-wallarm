@@ -10,7 +10,6 @@ import (
 	wallarm "github.com/wallarm/wallarm-go"
 )
 
-// TODO: add unit test — header/iequal, path/equal, instance, query, action_name, absent, empty set
 // nolint
 func ExpandSetToActionDetailsList(action *schema.Set) ([]wallarm.ActionDetails, error) {
 	var as []wallarm.ActionDetails
@@ -107,7 +106,6 @@ func ExpandSetToActionDetailsList(action *schema.Set) ([]wallarm.ActionDetails, 
 	return as, nil
 }
 
-// TODO: add unit test — paired element, simple element, integer index, multi-level chain, empty
 // WrapPointElements converts a flat API point array into a 2D string slice
 // for the Terraform point schema. 2-part elements (hash, header, get, form_urlencoded, etc.)
 // consume the next element as their value; 1-part elements (post, json_doc, uri, etc.) stand alone.
@@ -158,7 +156,6 @@ func WrapPointElements(input []interface{}) [][]string {
 	return result
 }
 
-// TODO: add unit test — numeric types to float64, non-numeric passthrough, empty
 // ExpandPointsToTwoDimensionalArray converts the Terraform point schema (list of lists of strings)
 // to the API TwoDimensionalSlice format. Numeric-value point types (path, array, etc.) are
 // converted from string to float64.
