@@ -214,3 +214,12 @@ func resourceWallarmEmailDelete(_ context.Context, d *schema.ResourceData, m int
 	}
 	return nil
 }
+
+func expandInterfaceToStringList(list interface{}) []string {
+	ifaceList := list.([]interface{})
+	vs := []string{}
+	for _, v := range ifaceList {
+		vs = append(vs, v.(string))
+	}
+	return vs
+}

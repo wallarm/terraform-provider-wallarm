@@ -240,3 +240,13 @@ type searchFilterWallarmNode struct {
 	Hostname string
 	UUID     string
 }
+
+func interfaceToString(i interface{}) string {
+	r, _ := i.(string)
+	return r
+}
+
+func interfaceToInt(i interface{}) int {
+	r, _ := i.(int)
+	return r
+}

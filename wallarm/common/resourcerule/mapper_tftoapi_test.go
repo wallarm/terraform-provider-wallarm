@@ -1,11 +1,11 @@
-package tftoapi
+package resourcerule
 
 import (
 	"testing"
 )
 
-func TestThreshold_Empty(t *testing.T) {
-	got, err := Threshold([]interface{}{})
+func TestThresholdToAPI_Empty(t *testing.T) {
+	got, err := ThresholdToAPI([]interface{}{})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -14,11 +14,11 @@ func TestThreshold_Empty(t *testing.T) {
 	}
 }
 
-func TestThreshold_Values(t *testing.T) {
+func TestThresholdToAPI_Values(t *testing.T) {
 	input := []interface{}{
 		map[string]interface{}{"count": 10, "period": 60},
 	}
-	got, err := Threshold(input)
+	got, err := ThresholdToAPI(input)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -27,8 +27,8 @@ func TestThreshold_Values(t *testing.T) {
 	}
 }
 
-func TestReaction_Empty(t *testing.T) {
-	got, err := Reaction([]interface{}{})
+func TestReactionToAPI_Empty(t *testing.T) {
+	got, err := ReactionToAPI([]interface{}{})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -37,11 +37,11 @@ func TestReaction_Empty(t *testing.T) {
 	}
 }
 
-func TestReaction_Values(t *testing.T) {
+func TestReactionToAPI_Values(t *testing.T) {
 	input := []interface{}{
 		map[string]interface{}{"block_by_session": 600, "block_by_ip": 0, "graylist_by_ip": 0},
 	}
-	got, err := Reaction(input)
+	got, err := ReactionToAPI(input)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -53,8 +53,8 @@ func TestReaction_Values(t *testing.T) {
 	}
 }
 
-func TestEnumeratedParameters_Empty(t *testing.T) {
-	got, err := EnumeratedParameters([]interface{}{})
+func TestEnumeratedParametersToAPI_Empty(t *testing.T) {
+	got, err := EnumeratedParametersToAPI([]interface{}{})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -63,8 +63,8 @@ func TestEnumeratedParameters_Empty(t *testing.T) {
 	}
 }
 
-func TestAdvancedConditions_Empty(t *testing.T) {
-	got, err := AdvancedConditions([]interface{}{})
+func TestAdvancedConditionsToAPI_Empty(t *testing.T) {
+	got, err := AdvancedConditionsToAPI([]interface{}{})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -73,7 +73,7 @@ func TestAdvancedConditions_Empty(t *testing.T) {
 	}
 }
 
-func TestAdvancedConditions_Values(t *testing.T) {
+func TestAdvancedConditionsToAPI_Values(t *testing.T) {
 	input := []interface{}{
 		map[string]interface{}{
 			"field":    "ip",
@@ -81,7 +81,7 @@ func TestAdvancedConditions_Values(t *testing.T) {
 			"value":    []interface{}{"1.2.3.4"},
 		},
 	}
-	got, err := AdvancedConditions(input)
+	got, err := AdvancedConditionsToAPI(input)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}

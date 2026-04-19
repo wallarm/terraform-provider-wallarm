@@ -6,19 +6,12 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"regexp"
 	"strconv"
-	"strings"
 
 	"github.com/wallarm/wallarm-go"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-)
-
-const (
-	vulnPrefixMinLength = 2
-	vulnPrefixMaxLength = 4
 )
 
 func resourceWallarmTenant() *schema.Resource {
@@ -132,7 +125,6 @@ func resourceWallarmTenantCreate(ctx context.Context, d *schema.ResourceData, m 
 
 	params := wallarm.ClientCreate{
 		Name:        name,
-		VulnPrefix:  generateVulnPrefix(name),
 		PartnerUUID: partnerUUID,
 	}
 
@@ -232,49 +224,4 @@ func resourceWallarmTenantDelete(_ context.Context, d *schema.ResourceData, m in
 	}
 
 	return nil
-}
-
-func generateVulnPrefix(name string) string {
-	prefix := strings.ToUpper(name)
-
-	if len(prefix) <= vulnPrefixMaxLength {
-		return prefix
-	}
-
-	reg := regexp.MustCompile("[^A-Z]+")
-	prefix = reg.ReplaceAllString(prefix, "")
-
-	reg = regexp.MustCompile("[AEIOU]")
-	prefix = reg.ReplaceAllString(prefix, "")
-
-	prefix = removeConsecutiveDuplicates(prefix)
-
-	if len(prefix) > vulnPrefixMaxLength {
-		prefix = prefix[:vulnPrefixMaxLength]
-	}
-
-	if len(prefix) < vulnPrefixMinLength {
-		prefix = strings.ToUpper(name)
-		prefix = reg.ReplaceAllString(prefix, "")
-
-		if len(prefix) > vulnPrefixMaxLength {
-			prefix = prefix[:vulnPrefixMaxLength]
-		}
-	}
-
-	return prefix
-}
-
-func removeConsecutiveDuplicates(s string) string {
-	var result []rune
-	var lastRune rune
-
-	for _, r := range s {
-		if r != lastRune {
-			result = append(result, r)
-			lastRune = r
-		}
-	}
-
-	return string(result)
 }

@@ -2,11 +2,14 @@ package wallarm
 
 import (
 	"context"
+	crand "crypto/rand"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"log"
+	"math/big"
 	"regexp"
+	"unicode"
 
 	"github.com/wallarm/wallarm-go"
 
@@ -216,6 +219,78 @@ func resourceWallarmUserUpdate(ctx context.Context, d *schema.ResourceData, m in
 	}
 
 	return resourceWallarmUserRead(ctx, d, m)
+}
+
+func passwordGenerate(length int) (string, error) {
+	digits := "0123456789"
+	specials := "~=+%^*()_[]{}!@#$?"
+	all := "ABCDEFGHIJKLMNOPQRSTUVWXYZ" +
+		"abcdefghijklmnopqrstuvwxyz" +
+		digits + specials
+	buf := make([]byte, length)
+	var err error
+	if buf[0], err = cryptoRandByte(digits); err != nil {
+		return "", err
+	}
+	if buf[1], err = cryptoRandByte(specials); err != nil {
+		return "", err
+	}
+	for i := 2; i < length; i++ {
+		if buf[i], err = cryptoRandByte(all); err != nil {
+			return "", err
+		}
+	}
+	for i := len(buf) - 1; i > 0; i-- {
+		j, err := cryptoRandIntn(i + 1)
+		if err != nil {
+			return "", err
+		}
+		buf[i], buf[j] = buf[j], buf[i]
+	}
+	return string(buf), nil
+}
+
+func cryptoRandByte(charset string) (byte, error) {
+	idx, err := cryptoRandIntn(len(charset))
+	if err != nil {
+		return 0, err
+	}
+	return charset[idx], nil
+}
+
+func cryptoRandIntn(n int) (int, error) {
+	maxN := big.NewInt(int64(n))
+	v, err := crand.Int(crand.Reader, maxN)
+	if err != nil {
+		return 0, fmt.Errorf("crypto/rand failed: %w", err)
+	}
+	return int(v.Int64()), nil
+}
+
+func isPasswordValid(s string) bool {
+	var (
+		hasMinLen  = false
+		hasUpper   = false
+		hasLower   = false
+		hasNumber  = false
+		hasSpecial = false
+	)
+	if len(s) >= 7 {
+		hasMinLen = true
+	}
+	for _, char := range s {
+		switch {
+		case unicode.IsUpper(char):
+			hasUpper = true
+		case unicode.IsLower(char):
+			hasLower = true
+		case unicode.IsNumber(char):
+			hasNumber = true
+		case unicode.IsPunct(char) || unicode.IsSymbol(char):
+			hasSpecial = true
+		}
+	}
+	return hasMinLen && hasUpper && hasLower && hasNumber && hasSpecial
 }
 
 func resourceWallarmUserDelete(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {

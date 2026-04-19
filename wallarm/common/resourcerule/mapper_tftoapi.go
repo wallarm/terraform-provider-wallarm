@@ -1,14 +1,13 @@
-package tftoapi
+package resourcerule
 
 import (
 	"fmt"
 
 	"github.com/samber/lo"
-	"github.com/wallarm/terraform-provider-wallarm/wallarm/common"
 	"github.com/wallarm/wallarm-go"
 )
 
-func EnumeratedParameters(enumeratedParameters []interface{}) (*wallarm.EnumeratedParameters, error) {
+func EnumeratedParametersToAPI(enumeratedParameters []interface{}) (*wallarm.EnumeratedParameters, error) {
 	if len(enumeratedParameters) == 0 {
 		return nil, nil
 	}
@@ -25,12 +24,13 @@ func EnumeratedParameters(enumeratedParameters []interface{}) (*wallarm.Enumerat
 	}
 }
 
+// TODO: add unit test — valid regexp params with name/value regexps
 func mapEnumeratedParameterRegexpToAPI(enumeratedParameter map[string]interface{}) (*wallarm.EnumeratedParameters, error) {
 	nameRegexpsRaw, ok := enumeratedParameter["name_regexps"].([]interface{})
 	if !ok {
 		return nil, fmt.Errorf("enumerated_parameters.name_regexps: expected list, got %T", enumeratedParameter["name_regexps"])
 	}
-	nameRegexps := common.ConvertToStringSlice(nameRegexpsRaw)
+	nameRegexps := ConvertToStringSlice(nameRegexpsRaw)
 	if len(nameRegexps) == 0 {
 		nameRegexps = []string{""}
 	}
@@ -39,7 +39,7 @@ func mapEnumeratedParameterRegexpToAPI(enumeratedParameter map[string]interface{
 	if !ok {
 		return nil, fmt.Errorf("enumerated_parameters.value_regexps: expected list, got %T", enumeratedParameter["value_regexps"])
 	}
-	valueRegexps := common.ConvertToStringSlice(valueRegexpsRaw)
+	valueRegexps := ConvertToStringSlice(valueRegexpsRaw)
 	if len(valueRegexps) == 0 {
 		valueRegexps = []string{""}
 	}
@@ -56,6 +56,7 @@ func mapEnumeratedParameterRegexpToAPI(enumeratedParameter map[string]interface{
 	}, nil
 }
 
+// TODO: add unit test — valid exact params, empty points list
 func mapEnumeratedParameterExactToAPI(enumeratedParameter map[string]interface{}) (*wallarm.EnumeratedParameters, error) {
 	result := &wallarm.EnumeratedParameters{
 		Mode: "exact",
@@ -86,7 +87,7 @@ func mapEnumeratedParameterExactToAPI(enumeratedParameter map[string]interface{}
 	return result, nil
 }
 
-func Reaction(reaction []interface{}) (*wallarm.Reaction, error) {
+func ReactionToAPI(reaction []interface{}) (*wallarm.Reaction, error) {
 	if len(reaction) == 0 {
 		return nil, nil
 	}
@@ -114,7 +115,7 @@ func Reaction(reaction []interface{}) (*wallarm.Reaction, error) {
 	}, nil
 }
 
-func Threshold(threshold []interface{}) (*wallarm.Threshold, error) {
+func ThresholdToAPI(threshold []interface{}) (*wallarm.Threshold, error) {
 	if len(threshold) == 0 {
 		return nil, nil
 	}
@@ -133,7 +134,7 @@ func Threshold(threshold []interface{}) (*wallarm.Threshold, error) {
 	}, nil
 }
 
-func AdvancedConditions(advancedConditions []interface{}) ([]wallarm.AdvancedCondition, error) {
+func AdvancedConditionsToAPI(advancedConditions []interface{}) ([]wallarm.AdvancedCondition, error) {
 	if len(advancedConditions) == 0 {
 		return nil, nil
 	}
@@ -152,7 +153,7 @@ func AdvancedConditions(advancedConditions []interface{}) ([]wallarm.AdvancedCon
 		operator, _ := advancedConditionObj["operator"].(string)
 		response = append(response, wallarm.AdvancedCondition{
 			Field:    field,
-			Value:    common.ConvertToStringSlice(valueRaw),
+			Value:    ConvertToStringSlice(valueRaw),
 			Operator: operator,
 		})
 	}
@@ -160,7 +161,8 @@ func AdvancedConditions(advancedConditions []interface{}) ([]wallarm.AdvancedCon
 	return response, nil
 }
 
-func ArbitraryConditionsReq(arbitraryConditions []interface{}) ([]wallarm.ArbitraryConditionReq, error) {
+// TODO: add unit test — empty, single condition with point and value
+func ArbitraryConditionsToAPI(arbitraryConditions []interface{}) ([]wallarm.ArbitraryConditionReq, error) {
 	if len(arbitraryConditions) == 0 {
 		return nil, nil
 	}
@@ -182,7 +184,7 @@ func ArbitraryConditionsReq(arbitraryConditions []interface{}) ([]wallarm.Arbitr
 		operator, _ := arbitraryConditionObj["operator"].(string)
 		response = append(response, wallarm.ArbitraryConditionReq{
 			Point:    mapPointToAPI(pointRaw),
-			Value:    common.ConvertToStringSlice(valueRaw),
+			Value:    ConvertToStringSlice(valueRaw),
 			Operator: operator,
 		})
 	}

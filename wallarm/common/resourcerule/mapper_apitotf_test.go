@@ -1,4 +1,4 @@
-package apitotf
+package resourcerule
 
 import (
 	"testing"
@@ -6,15 +6,15 @@ import (
 	wallarm "github.com/wallarm/wallarm-go"
 )
 
-func TestThreshold_Nil(t *testing.T) {
-	got := Threshold(nil)
+func TestThresholdToTF_Nil(t *testing.T) {
+	got := ThresholdToTF(nil)
 	if got != nil {
 		t.Errorf("expected nil, got %v", got)
 	}
 }
 
-func TestThreshold_Values(t *testing.T) {
-	got := Threshold(&wallarm.Threshold{Count: 10, Period: 60})
+func TestThresholdToTF_Values(t *testing.T) {
+	got := ThresholdToTF(&wallarm.Threshold{Count: 10, Period: 60})
 	if len(got) != 1 {
 		t.Fatalf("expected 1 element, got %d", len(got))
 	}
@@ -24,16 +24,16 @@ func TestThreshold_Values(t *testing.T) {
 	}
 }
 
-func TestReaction_Nil(t *testing.T) {
-	got := Reaction(nil)
+func TestReactionToTF_Nil(t *testing.T) {
+	got := ReactionToTF(nil)
 	if got != nil {
 		t.Errorf("expected nil, got %v", got)
 	}
 }
 
-func TestReaction_Values(t *testing.T) {
+func TestReactionToTF_Values(t *testing.T) {
 	bbs := 600
-	got := Reaction(&wallarm.Reaction{BlockBySession: &bbs})
+	got := ReactionToTF(&wallarm.Reaction{BlockBySession: &bbs})
 	if len(got) != 1 {
 		t.Fatalf("expected 1 element, got %d", len(got))
 	}
@@ -57,15 +57,15 @@ func TestSliceAnyToSliceString_Nil(t *testing.T) {
 	}
 }
 
-func TestAdvancedConditions_Nil(t *testing.T) {
-	got := AdvancedConditions(nil)
+func TestAdvancedConditionsToTF_Nil(t *testing.T) {
+	got := AdvancedConditionsToTF(nil)
 	if got != nil {
 		t.Errorf("expected nil, got %v", got)
 	}
 }
 
-func TestAdvancedConditions_Values(t *testing.T) {
-	got := AdvancedConditions([]wallarm.AdvancedCondition{
+func TestAdvancedConditionsToTF_Values(t *testing.T) {
+	got := AdvancedConditionsToTF([]wallarm.AdvancedCondition{
 		{Field: "ip", Operator: "eq", Value: []string{"1.2.3.4"}},
 	})
 	if len(got) != 1 {

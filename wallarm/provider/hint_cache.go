@@ -135,6 +135,7 @@ func (c *HintCache) GetOrFetch(hintID, clientID int, api wallarm.API) (*wallarm.
 	}
 }
 
+// TODO: add test — mock API returning 2 pages then empty, verify fullyLoaded, credential stuffing filtered
 // LoadAll fetches ALL hints into cache. Used by data.wallarm_rules which needs
 // the complete set. After this call, fullyLoaded is true.
 func (c *HintCache) LoadAll(clientID int, api wallarm.API) error {
@@ -189,6 +190,7 @@ func (c *HintCache) LoadAll(clientID int, api wallarm.API) error {
 	return nil
 }
 
+// TODO: add test — before LoadAll returns nil, after LoadAll returns sorted hints
 // All returns all cached hints sorted by ID descending.
 // Returns nil if not fully loaded.
 func (c *HintCache) All() []wallarm.ActionBody {
@@ -207,6 +209,7 @@ func (c *HintCache) All() []wallarm.ActionBody {
 	return result
 }
 
+// TODO: add test — insert single hint, verify retrievable via GetOrFetch
 // Insert adds or updates a single hint in the cache without invalidating.
 // Used by HintCreate and HintUpdateV3 to keep the cache warm during batch operations.
 func (c *HintCache) Insert(hint *wallarm.ActionBody) {
@@ -280,6 +283,7 @@ func NewCachedClient(api wallarm.API) *CachedClient {
 	}
 }
 
+// TODO: add test — mock API, verify returns all non-credential-stuffing hints
 // AllRules loads all hints into cache and returns them.
 // Used by data.wallarm_rules which needs the complete set.
 func (c *CachedClient) AllRules(clientID int) ([]wallarm.ActionBody, error) {
@@ -346,6 +350,7 @@ func (c *CachedClient) HintRead(body *wallarm.HintRead) (*wallarm.HintReadResp, 
 	return c.API.HintRead(body)
 }
 
+// TODO: add test — mock API, verify response cached via Insert
 // HintCreate delegates to the underlying API and inserts the new hint into cache.
 func (c *CachedClient) HintCreate(body *wallarm.ActionCreate) (*wallarm.ActionCreateResp, error) {
 	resp, err := c.API.HintCreate(body)
@@ -358,11 +363,13 @@ func (c *CachedClient) HintCreate(body *wallarm.ActionCreate) (*wallarm.ActionCr
 	return resp, nil
 }
 
+// TODO: add test — mock API, verify delegation
 // HintDelete delegates to the underlying API.
 func (c *CachedClient) HintDelete(body *wallarm.HintDelete) error {
 	return c.API.HintDelete(body)
 }
 
+// TODO: add test — mock API, verify response cached via Insert
 // HintUpdateV3 delegates to the underlying API and updates the cache entry.
 func (c *CachedClient) HintUpdateV3(ruleID int, body *wallarm.HintUpdateV3Params) (*wallarm.ActionCreateResp, error) {
 	resp, err := c.API.HintUpdateV3(ruleID, body)

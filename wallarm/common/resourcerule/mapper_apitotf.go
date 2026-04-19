@@ -1,4 +1,4 @@
-package apitotf
+package resourcerule
 
 import (
 	"fmt"
@@ -6,7 +6,7 @@ import (
 	"github.com/wallarm/wallarm-go"
 )
 
-func Threshold(threshold *wallarm.Threshold) []interface{} {
+func ThresholdToTF(threshold *wallarm.Threshold) []interface{} {
 	if threshold == nil {
 		return nil
 	}
@@ -19,7 +19,7 @@ func Threshold(threshold *wallarm.Threshold) []interface{} {
 	}
 }
 
-func Reaction(reaction *wallarm.Reaction) []interface{} {
+func ReactionToTF(reaction *wallarm.Reaction) []interface{} {
 	if reaction == nil {
 		return nil
 	}
@@ -33,7 +33,8 @@ func Reaction(reaction *wallarm.Reaction) []interface{} {
 	}
 }
 
-func EnumeratedParameters(enumeratedParameters *wallarm.EnumeratedParameters) []interface{} {
+// TODO: add unit test — nil, regexp mode, exact mode
+func EnumeratedParametersToTF(enumeratedParameters *wallarm.EnumeratedParameters) []interface{} {
 	if enumeratedParameters == nil {
 		return nil
 	}
@@ -79,7 +80,7 @@ func mapPointsToTF(points []*wallarm.Points) []interface{} {
 	return result
 }
 
-func AdvancedConditions(advancedConditions []wallarm.AdvancedCondition) []interface{} {
+func AdvancedConditionsToTF(advancedConditions []wallarm.AdvancedCondition) []interface{} {
 	if advancedConditions == nil {
 		return nil
 	}
@@ -96,7 +97,8 @@ func AdvancedConditions(advancedConditions []wallarm.AdvancedCondition) []interf
 	return result
 }
 
-func ArbitraryConditions(arbitraryConditions []wallarm.ArbitraryConditionResp) []interface{} {
+// TODO: add unit test — nil, single condition with points
+func ArbitraryConditionsToTF(arbitraryConditions []wallarm.ArbitraryConditionResp) []interface{} {
 	if arbitraryConditions == nil {
 		return nil
 	}

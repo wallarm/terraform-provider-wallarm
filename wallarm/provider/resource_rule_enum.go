@@ -8,7 +8,6 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
-	"github.com/wallarm/terraform-provider-wallarm/wallarm/common"
 	"github.com/wallarm/terraform-provider-wallarm/wallarm/common/resourcerule"
 	"github.com/wallarm/wallarm-go"
 
@@ -62,12 +61,12 @@ func resourceWallarmEnumRead(_ context.Context, d *schema.ResourceData, m interf
 		return diag.FromErr(err)
 	}
 	return diag.FromErr(resourcerule.ResourceRuleWallarmRead(d, clientID, apiClient(m),
-		common.ReadOptionWithMode,
-		common.ReadOptionWithAction,
-		common.ReadOptionWithThreshold,
-		common.ReadOptionWithReaction,
-		common.ReadOptionWithEnumeratedParameters,
-		common.ReadOptionWithArbitraryConditions,
+		resourcerule.ReadOptionWithMode,
+		resourcerule.ReadOptionWithAction,
+		resourcerule.ReadOptionWithThreshold,
+		resourcerule.ReadOptionWithReaction,
+		resourcerule.ReadOptionWithEnumeratedParameters,
+		resourcerule.ReadOptionWithArbitraryConditions,
 	))
 }
 

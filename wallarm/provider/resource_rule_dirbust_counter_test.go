@@ -42,8 +42,6 @@ func TestAccRuleDirbustCounterCreate(t *testing.T) {
 func testAccRuleDirbustCounterCreate(resourceID string) string {
 	return fmt.Sprintf(`
 resource "wallarm_rule_dirbust_counter" "%[1]s" {
-	comment = "This is a comment for a test case"
-
 	action {
 		type = "absent"
     	point = {

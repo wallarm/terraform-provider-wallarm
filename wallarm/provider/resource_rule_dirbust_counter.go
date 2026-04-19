@@ -8,7 +8,6 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/samber/lo"
-	"github.com/wallarm/terraform-provider-wallarm/wallarm/common"
 	"github.com/wallarm/terraform-provider-wallarm/wallarm/common/resourcerule"
 	"github.com/wallarm/wallarm-go"
 
@@ -28,14 +27,13 @@ func resourceWallarmDirbustCounter() *schema.Resource {
 	return &schema.Resource{
 		CreateContext: resourceWallarmDirbustCounterCreate,
 		ReadContext:   resourceWallarmDirbustCounterRead,
-		UpdateContext: resourceWallarmDirbustCounterUpdate,
 		DeleteContext: resourceWallarmDirbustCounterDelete,
 		Importer: &schema.ResourceImporter{
 			StateContext: resourceWallarmDirbustCounterImport,
 		},
 
 		CustomizeDiff: resourcerule.ActionScopeCustomizeDiff,
-		Schema:        lo.Assign(fields, commonResourceRuleFields, resourcerule.ActionScopeFields),
+		Schema:        lo.Assign(fields, commonResourceRuleFields, resourcerule.ActionScopeFields, counterFieldOverrides),
 	}
 }
 
@@ -84,7 +82,7 @@ func resourceWallarmDirbustCounterRead(_ context.Context, d *schema.ResourceData
 	if err != nil {
 		return diag.FromErr(err)
 	}
-	return diag.FromErr(resourcerule.ResourceRuleWallarmRead(d, clientID, apiClient(m), common.ReadOptionWithAction))
+	return diag.FromErr(resourcerule.ResourceRuleWallarmRead(d, clientID, apiClient(m), resourcerule.ReadOptionWithAction))
 }
 
 func resourceWallarmDirbustCounterDelete(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
@@ -105,17 +103,6 @@ func resourceWallarmDirbustCounterDelete(_ context.Context, d *schema.ResourceDa
 	}
 
 	return nil
-}
-
-func resourceWallarmDirbustCounterUpdate(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
-	client := apiClient(m)
-	variativityDisabled, _ := d.Get("variativity_disabled").(bool)
-	comment, _ := d.Get("comment").(string)
-	_, err := client.HintUpdateV3(d.Get("rule_id").(int), &wallarm.HintUpdateV3Params{
-		VariativityDisabled: lo.ToPtr(variativityDisabled),
-		Comment:             lo.ToPtr(comment),
-	})
-	return diag.FromErr(err)
 }
 
 func resourceWallarmDirbustCounterImport(_ context.Context, d *schema.ResourceData, _ interface{}) ([]*schema.ResourceData, error) {

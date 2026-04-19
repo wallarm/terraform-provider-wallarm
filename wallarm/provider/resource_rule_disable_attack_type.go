@@ -8,7 +8,6 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/samber/lo"
-	"github.com/wallarm/terraform-provider-wallarm/wallarm/common"
 	"github.com/wallarm/terraform-provider-wallarm/wallarm/common/resourcerule"
 	"github.com/wallarm/wallarm-go"
 
@@ -101,7 +100,7 @@ func resourceWallarmDisableAttackTypeRead(_ context.Context, d *schema.ResourceD
 	if err != nil {
 		return diag.FromErr(err)
 	}
-	return diag.FromErr(resourcerule.ResourceRuleWallarmRead(d, clientID, apiClient(m), common.ReadOptionWithPoint))
+	return diag.FromErr(resourcerule.ResourceRuleWallarmRead(d, clientID, apiClient(m), resourcerule.ReadOptionWithPoint))
 }
 
 func resourceWallarmDisableAttackTypeDelete(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {

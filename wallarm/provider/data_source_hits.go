@@ -954,3 +954,21 @@ func buildAggregatedJSON(actionHash string, schemaActions []map[string]interface
 	}
 	return string(data), nil
 }
+
+func containsInt(slice []int, val int) bool {
+	for _, v := range slice {
+		if v == val {
+			return true
+		}
+	}
+	return false
+}
+
+func containsStr(slice []string, val string) bool {
+	for _, v := range slice {
+		if v == val {
+			return true
+		}
+	}
+	return false
+}

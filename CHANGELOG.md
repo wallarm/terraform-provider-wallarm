@@ -1,3 +1,27 @@
+# v2.3.3 (Apr 19, 2026)
+
+## IMPROVEMENTS:
+
+* Bumped `wallarm-go` dependency to v0.9.1 — adds unit test coverage (79.5%), removes unused `vuln_prefix` and `get_vulns` endpoints
+* Restructured `wallarm/common/` — collapsed `mapper/` packages into `resourcerule/`, deleted `common` package, all constants and helpers consolidated
+* Split monolithic `resource_rule.go` (647 lines) into focused files: `rule_crud.go`, `action_hash.go`, `action_expand.go`
+* Dissolved `utils.go` — moved functions to domain files (`integration_helpers.go`, `action_helpers.go`, `resource_user.go`, etc.)
+* Renamed files for clarity: `default.go` → `schema_common.go`, `utils.go` → `provider_helpers.go`, `resource_hcl_generator.go` → `hcl_generator.go`
+* Added `make dev` / `make dev-clean` targets for local provider development without version hardcoding
+* CI: dedicated test tenant per acceptance test run — eliminates orphaned resources from failed pipelines
+* Removed `vuln_prefix` from tenant creation (field removed from Wallarm API)
+* Unit test coverage: `resourcerule` raised to 55.7%, added ~50 unit tests across `resourcerule` and `provider` packages
+
+## BUG FIXES:
+
+* Removed `generateVulnPrefix` — sending `vuln_prefix` to the API now causes errors
+* Fixed counter resources (`bola_counter`, `bruteforce_counter`, `dirbust_counter`) failing with 403 on import — removed Update (counters are immutable), made `comment` and `variativity_disabled` computed-only
+
+## DOCUMENTATION:
+
+* `docs/index.md` — documented `hint_prefetch` and `require_explicit_client_id` provider arguments; corrected `max_backoff` default from 30 to 5
+* `README.md` — Terraform required version raised to >= 1.5
+
 # v2.3.2 (Apr 10, 2026)
 
 ## IMPROVEMENTS:

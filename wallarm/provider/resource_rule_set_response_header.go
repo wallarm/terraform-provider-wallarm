@@ -8,7 +8,6 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/samber/lo"
-	"github.com/wallarm/terraform-provider-wallarm/wallarm/common"
 	"github.com/wallarm/terraform-provider-wallarm/wallarm/common/resourcerule"
 	"github.com/wallarm/wallarm-go"
 
@@ -111,7 +110,7 @@ func resourceWallarmSetResponseHeaderRead(_ context.Context, d *schema.ResourceD
 		return diag.FromErr(err)
 	}
 	return diag.FromErr(resourcerule.ResourceRuleWallarmRead(d, clientID, apiClient(m),
-		common.ReadOptionWithMode, common.ReadOptionWithName, common.ReadOptionWithValues))
+		resourcerule.ReadOptionWithMode, resourcerule.ReadOptionWithName, resourcerule.ReadOptionWithValues))
 }
 
 func resourceWallarmSetResponseHeaderDelete(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
