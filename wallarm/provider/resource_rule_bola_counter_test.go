@@ -41,8 +41,6 @@ func TestAccRuleBolaCounterCreate(t *testing.T) {
 func testAccRuleBolaCounterCreate(resourceID string) string {
 	return fmt.Sprintf(`
 resource "wallarm_rule_bola_counter" "%[1]s" {
-	comment = "This is a comment for a test case"
-
 	action {
 		type = "absent"
     	point = {

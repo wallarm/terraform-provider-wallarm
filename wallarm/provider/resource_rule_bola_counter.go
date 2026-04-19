@@ -28,14 +28,13 @@ func resourceWallarmBolaCounter() *schema.Resource {
 	return &schema.Resource{
 		CreateContext: resourceWallarmBolaCounterCreate,
 		ReadContext:   resourceWallarmBolaCounterRead,
-		UpdateContext: resourceWallarmBolaCounterUpdate,
 		DeleteContext: resourceWallarmBolaCounterDelete,
 		Importer: &schema.ResourceImporter{
 			StateContext: resourceWallarmBolaCounterImport,
 		},
 
 		CustomizeDiff: resourcerule.ActionScopeCustomizeDiff,
-		Schema:        lo.Assign(fields, commonResourceRuleFields, resourcerule.ActionScopeFields),
+		Schema:        lo.Assign(fields, commonResourceRuleFields, resourcerule.ActionScopeFields, counterFieldOverrides),
 	}
 }
 
@@ -105,17 +104,6 @@ func resourceWallarmBolaCounterDelete(_ context.Context, d *schema.ResourceData,
 	}
 
 	return nil
-}
-
-func resourceWallarmBolaCounterUpdate(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
-	client := apiClient(m)
-	variativityDisabled, _ := d.Get("variativity_disabled").(bool)
-	comment, _ := d.Get("comment").(string)
-	_, err := client.HintUpdateV3(d.Get("rule_id").(int), &wallarm.HintUpdateV3Params{
-		VariativityDisabled: lo.ToPtr(variativityDisabled),
-		Comment:             lo.ToPtr(comment),
-	})
-	return diag.FromErr(err)
 }
 
 func resourceWallarmBolaCounterImport(_ context.Context, d *schema.ResourceData, _ interface{}) ([]*schema.ResourceData, error) {

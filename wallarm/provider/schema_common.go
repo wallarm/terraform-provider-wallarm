@@ -89,6 +89,21 @@ var (
 		},
 	}
 
+	// counterFieldOverrides makes comment and variativity_disabled read-only
+	// for counter resources (bola_counter, bruteforce_counter, dirbust_counter).
+	// Counters are immutable — the API returns 403 on any update attempt.
+	// Merge after commonResourceRuleFields via lo.Assign to override.
+	counterFieldOverrides = map[string]*schema.Schema{
+		"comment": {
+			Type:     schema.TypeString,
+			Computed: true,
+		},
+		"variativity_disabled": {
+			Type:     schema.TypeBool,
+			Computed: true,
+		},
+	}
+
 	thresholdSchema = &schema.Schema{
 		Type:     schema.TypeList,
 		MaxItems: 1,
