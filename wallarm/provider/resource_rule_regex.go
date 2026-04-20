@@ -46,7 +46,7 @@ func resourceWallarmRegex() *schema.Resource {
 	return &schema.Resource{
 		CreateContext: resourceWallarmRegexCreate,
 		ReadContext:   resourceWallarmRegexRead,
-		UpdateContext: resourcerule.ResourceRuleWallarmUpdate(apiClient),
+		UpdateContext: resourcerule.Update(apiClient),
 		DeleteContext: resourceWallarmRegexDelete,
 		Importer: &schema.ResourceImporter{
 			StateContext: resourceWallarmRegexImport,
@@ -125,7 +125,7 @@ func resourceWallarmRegexRead(_ context.Context, d *schema.ResourceData, m inter
 	if err != nil {
 		return diag.FromErr(err)
 	}
-	return diag.FromErr(resourcerule.ResourceRuleWallarmRead(d, clientID, apiClient(m)))
+	return diag.FromErr(resourcerule.Read(d, clientID, apiClient(m)))
 }
 
 func resourceWallarmRegexDelete(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {

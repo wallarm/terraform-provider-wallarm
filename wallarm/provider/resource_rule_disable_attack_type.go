@@ -29,10 +29,10 @@ func resourceWallarmDisableAttackType() *schema.Resource {
 	return &schema.Resource{
 		CreateContext: resourceWallarmDisableAttackTypeCreate,
 		ReadContext:   resourceWallarmDisableAttackTypeRead,
-		UpdateContext: resourcerule.ResourceRuleWallarmUpdate(apiClient),
+		UpdateContext: resourcerule.Update(apiClient),
 		DeleteContext: resourceWallarmDisableAttackTypeDelete,
 		Importer: &schema.ResourceImporter{
-			StateContext: resourcerule.ResourceRuleWallarmImport("disable_attack_type"),
+			StateContext: resourcerule.Import("disable_attack_type"),
 		},
 		CustomizeDiff: resourcerule.ActionScopeCustomizeDiff,
 		Schema:        lo.Assign(fields, commonResourceRuleFields, resourcerule.ActionScopeFields),
@@ -98,7 +98,7 @@ func resourceWallarmDisableAttackTypeRead(_ context.Context, d *schema.ResourceD
 	if err != nil {
 		return diag.FromErr(err)
 	}
-	return diag.FromErr(resourcerule.ResourceRuleWallarmRead(d, clientID, apiClient(m), resourcerule.ReadOptionWithPoint))
+	return diag.FromErr(resourcerule.Read(d, clientID, apiClient(m), resourcerule.ReadOptionWithPoint))
 }
 
 func resourceWallarmDisableAttackTypeDelete(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {

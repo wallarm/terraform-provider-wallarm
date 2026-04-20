@@ -29,7 +29,7 @@ func resourceWallarmMode() *schema.Resource {
 	return &schema.Resource{
 		CreateContext: resourceWallarmModeCreate,
 		ReadContext:   resourceWallarmModeRead,
-		UpdateContext: resourcerule.ResourceRuleWallarmUpdate(apiClient),
+		UpdateContext: resourcerule.Update(apiClient),
 		DeleteContext: resourceWallarmModeDelete,
 		Importer: &schema.ResourceImporter{
 			StateContext: resourceWallarmModeImport,
@@ -95,7 +95,7 @@ func resourceWallarmModeRead(_ context.Context, d *schema.ResourceData, m interf
 	if err != nil {
 		return diag.FromErr(err)
 	}
-	return diag.FromErr(resourcerule.ResourceRuleWallarmRead(d, clientID, apiClient(m), resourcerule.ReadOptionWithAction))
+	return diag.FromErr(resourcerule.Read(d, clientID, apiClient(m), resourcerule.ReadOptionWithAction))
 }
 
 func resourceWallarmModeDelete(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {

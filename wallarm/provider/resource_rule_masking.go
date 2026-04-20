@@ -21,10 +21,10 @@ func resourceWallarmSensitiveData() *schema.Resource {
 	return &schema.Resource{
 		CreateContext: resourceWallarmSensitiveDataCreate,
 		ReadContext:   resourceWallarmSensitiveDataRead,
-		UpdateContext: resourcerule.ResourceRuleWallarmUpdate(apiClient),
+		UpdateContext: resourcerule.Update(apiClient),
 		DeleteContext: resourceWallarmSensitiveDataDelete,
 		Importer: &schema.ResourceImporter{
-			StateContext: resourcerule.ResourceRuleWallarmImport("sensitive_data"),
+			StateContext: resourcerule.Import("sensitive_data"),
 		},
 		CustomizeDiff: resourcerule.ActionScopeCustomizeDiff,
 		Schema:        lo.Assign(fields, commonResourceRuleFields, resourcerule.ActionScopeFields),
@@ -90,7 +90,7 @@ func resourceWallarmSensitiveDataRead(_ context.Context, d *schema.ResourceData,
 	if err != nil {
 		return diag.FromErr(err)
 	}
-	return diag.FromErr(resourcerule.ResourceRuleWallarmRead(d, clientID, apiClient(m), resourcerule.ReadOptionWithPoint))
+	return diag.FromErr(resourcerule.Read(d, clientID, apiClient(m), resourcerule.ReadOptionWithPoint))
 }
 
 func resourceWallarmSensitiveDataDelete(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {

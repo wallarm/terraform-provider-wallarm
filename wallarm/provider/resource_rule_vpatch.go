@@ -27,10 +27,10 @@ func resourceWallarmVpatch() *schema.Resource {
 	return &schema.Resource{
 		CreateContext: resourceWallarmVpatchCreate,
 		ReadContext:   resourceWallarmVpatchRead,
-		UpdateContext: resourcerule.ResourceRuleWallarmUpdate(apiClient),
+		UpdateContext: resourcerule.Update(apiClient),
 		DeleteContext: resourceWallarmVpatchDelete,
 		Importer: &schema.ResourceImporter{
-			StateContext: resourcerule.ResourceRuleWallarmImport("vpatch"),
+			StateContext: resourcerule.Import("vpatch"),
 		},
 		CustomizeDiff: resourcerule.ActionScopeCustomizeDiff,
 		Schema:        lo.Assign(fields, commonResourceRuleFields, resourcerule.ActionScopeFields),
@@ -98,7 +98,7 @@ func resourceWallarmVpatchRead(_ context.Context, d *schema.ResourceData, m inte
 	if err != nil {
 		return diag.FromErr(err)
 	}
-	return diag.FromErr(resourcerule.ResourceRuleWallarmRead(d, clientID, apiClient(m),
+	return diag.FromErr(resourcerule.Read(d, clientID, apiClient(m),
 		resourcerule.ReadOptionWithPoint))
 }
 

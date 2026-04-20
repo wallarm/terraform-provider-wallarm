@@ -40,10 +40,10 @@ func resourceWallarmSetResponseHeader() *schema.Resource {
 	return &schema.Resource{
 		CreateContext: resourceWallarmSetResponseHeaderCreate,
 		ReadContext:   resourceWallarmSetResponseHeaderRead,
-		UpdateContext: resourcerule.ResourceRuleWallarmUpdate(apiClient),
+		UpdateContext: resourcerule.Update(apiClient),
 		DeleteContext: resourceWallarmSetResponseHeaderDelete,
 		Importer: &schema.ResourceImporter{
-			StateContext: resourcerule.ResourceRuleWallarmImport("set_response_header"),
+			StateContext: resourcerule.Import("set_response_header"),
 		},
 		CustomizeDiff: resourcerule.ActionScopeCustomizeDiff,
 		Schema:        lo.Assign(fields, commonResourceRuleFields, resourcerule.ActionScopeFields),
@@ -107,7 +107,7 @@ func resourceWallarmSetResponseHeaderRead(_ context.Context, d *schema.ResourceD
 	if err != nil {
 		return diag.FromErr(err)
 	}
-	return diag.FromErr(resourcerule.ResourceRuleWallarmRead(d, clientID, apiClient(m),
+	return diag.FromErr(resourcerule.Read(d, clientID, apiClient(m),
 		resourcerule.ReadOptionWithMode, resourcerule.ReadOptionWithName, resourcerule.ReadOptionWithValues))
 }
 

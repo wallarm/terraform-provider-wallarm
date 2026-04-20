@@ -40,10 +40,10 @@ func resourceWallarmFileUploadSizeLimit() *schema.Resource {
 	return &schema.Resource{
 		CreateContext: resourceWallarmFileUploadSizeLimitCreate,
 		ReadContext:   resourceWallarmFileUploadSizeLimitRead,
-		UpdateContext: resourcerule.ResourceRuleWallarmUpdate(apiClient),
+		UpdateContext: resourcerule.Update(apiClient),
 		DeleteContext: resourceWallarmFileUploadSizeLimitDelete,
 		Importer: &schema.ResourceImporter{
-			StateContext: resourcerule.ResourceRuleWallarmImport("file_upload_size_limit"),
+			StateContext: resourcerule.Import("file_upload_size_limit"),
 		},
 		CustomizeDiff: resourcerule.ActionScopeCustomizeDiff,
 		Schema:        sh,
@@ -55,7 +55,7 @@ func resourceWallarmFileUploadSizeLimitCreate(ctx context.Context, d *schema.Res
 	if err != nil {
 		return diag.FromErr(err)
 	}
-	return resourcerule.ResourceRuleWallarmCreate(ctx, d, apiClient(m), clientID,
+	return resourcerule.Create(ctx, d, apiClient(m), clientID,
 		"file_upload_size_limit", "", resourceWallarmFileUploadSizeLimitRead, m)
 }
 
@@ -64,7 +64,7 @@ func resourceWallarmFileUploadSizeLimitRead(_ context.Context, d *schema.Resourc
 	if err != nil {
 		return diag.FromErr(err)
 	}
-	return diag.FromErr(resourcerule.ResourceRuleWallarmRead(d, clientID, apiClient(m)))
+	return diag.FromErr(resourcerule.Read(d, clientID, apiClient(m)))
 }
 
 func resourceWallarmFileUploadSizeLimitDelete(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {

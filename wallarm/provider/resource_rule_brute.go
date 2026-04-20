@@ -33,10 +33,10 @@ func resourceWallarmBrute() *schema.Resource {
 	return &schema.Resource{
 		CreateContext: resourceWallarmBruteCreate,
 		ReadContext:   resourceWallarmBruteRead,
-		UpdateContext: resourcerule.ResourceRuleWallarmUpdate(apiClient),
+		UpdateContext: resourcerule.Update(apiClient),
 		DeleteContext: resourceWallarmBruteDelete,
 		Importer: &schema.ResourceImporter{
-			StateContext: resourcerule.ResourceRuleWallarmImport("brute"),
+			StateContext: resourcerule.Import("brute"),
 		},
 		CustomizeDiff: resourcerule.ActionScopeCustomizeDiff,
 		Schema:        sh,
@@ -48,7 +48,7 @@ func resourceWallarmBruteCreate(ctx context.Context, d *schema.ResourceData, m i
 	if err != nil {
 		return diag.FromErr(err)
 	}
-	return resourcerule.ResourceRuleWallarmCreate(ctx, d, apiClient(m), clientID,
+	return resourcerule.Create(ctx, d, apiClient(m), clientID,
 		"brute", "brute", resourceWallarmBruteRead, m)
 }
 
@@ -57,7 +57,7 @@ func resourceWallarmBruteRead(_ context.Context, d *schema.ResourceData, m inter
 	if err != nil {
 		return diag.FromErr(err)
 	}
-	return diag.FromErr(resourcerule.ResourceRuleWallarmRead(d, clientID, apiClient(m),
+	return diag.FromErr(resourcerule.Read(d, clientID, apiClient(m),
 		resourcerule.ReadOptionWithMode,
 		resourcerule.ReadOptionWithAction,
 		resourcerule.ReadOptionWithThreshold,

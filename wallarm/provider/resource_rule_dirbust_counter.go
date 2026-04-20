@@ -27,7 +27,7 @@ func resourceWallarmDirbustCounter() *schema.Resource {
 		ReadContext:   resourceWallarmDirbustCounterRead,
 		DeleteContext: resourceWallarmDirbustCounterDelete,
 		Importer: &schema.ResourceImporter{
-			StateContext: resourcerule.ResourceRuleWallarmImport("dirbust_counter"),
+			StateContext: resourcerule.Import("dirbust_counter"),
 		},
 
 		CustomizeDiff: resourcerule.ActionScopeCustomizeDiff,
@@ -80,7 +80,7 @@ func resourceWallarmDirbustCounterRead(_ context.Context, d *schema.ResourceData
 	if err != nil {
 		return diag.FromErr(err)
 	}
-	return diag.FromErr(resourcerule.ResourceRuleWallarmRead(d, clientID, apiClient(m), resourcerule.ReadOptionWithAction))
+	return diag.FromErr(resourcerule.Read(d, clientID, apiClient(m), resourcerule.ReadOptionWithAction))
 }
 
 func resourceWallarmDirbustCounterDelete(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {

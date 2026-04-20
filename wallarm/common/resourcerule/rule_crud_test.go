@@ -33,7 +33,7 @@ func testUpdateSchema() *schema.Resource {
 	}
 }
 
-func TestResourceRuleWallarmUpdate_Success(t *testing.T) {
+func TestUpdate_Success(t *testing.T) {
 	mock := &mockUpdateAPI{}
 	cp := func(_ interface{}) wallarm.API { return mock }
 
@@ -42,7 +42,7 @@ func TestResourceRuleWallarmUpdate_Success(t *testing.T) {
 	d.Set("variativity_disabled", true)
 	d.Set("comment", "hello")
 
-	diags := ResourceRuleWallarmUpdate(cp)(context.Background(), d, nil)
+	diags := Update(cp)(context.Background(), d, nil)
 	if diags.HasError() {
 		t.Fatalf("expected no error, got %v", diags)
 	}
@@ -57,14 +57,14 @@ func TestResourceRuleWallarmUpdate_Success(t *testing.T) {
 	}
 }
 
-func TestResourceRuleWallarmUpdate_APIError(t *testing.T) {
+func TestUpdate_APIError(t *testing.T) {
 	mock := &mockUpdateAPI{err: errors.New("boom")}
 	cp := func(_ interface{}) wallarm.API { return mock }
 
 	d := testUpdateSchema().TestResourceData()
 	d.Set("rule_id", 1)
 
-	diags := ResourceRuleWallarmUpdate(cp)(context.Background(), d, nil)
+	diags := Update(cp)(context.Background(), d, nil)
 	if !diags.HasError() {
 		t.Fatal("expected error diagnostic, got none")
 	}

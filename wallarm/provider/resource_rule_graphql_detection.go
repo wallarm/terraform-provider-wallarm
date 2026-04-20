@@ -63,10 +63,10 @@ func resourceWallarmGraphqlDetection() *schema.Resource {
 	return &schema.Resource{
 		CreateContext: resourceWallarmGraphqlDetectionCreate,
 		ReadContext:   resourceWallarmGraphqlDetectionRead,
-		UpdateContext: resourcerule.ResourceRuleWallarmUpdate(apiClient),
+		UpdateContext: resourcerule.Update(apiClient),
 		DeleteContext: resourceWallarmGraphqlDetectionDelete,
 		Importer: &schema.ResourceImporter{
-			StateContext: resourcerule.ResourceRuleWallarmImport("graphql_detection"),
+			StateContext: resourcerule.Import("graphql_detection"),
 		},
 		CustomizeDiff: resourcerule.ActionScopeCustomizeDiff,
 		Schema:        sh,
@@ -78,7 +78,7 @@ func resourceWallarmGraphqlDetectionCreate(ctx context.Context, d *schema.Resour
 	if err != nil {
 		return diag.FromErr(err)
 	}
-	return resourcerule.ResourceRuleWallarmCreate(ctx, d, apiClient(m), clientID,
+	return resourcerule.Create(ctx, d, apiClient(m), clientID,
 		"graphql_detection", "", resourceWallarmGraphqlDetectionRead, m)
 }
 
@@ -87,7 +87,7 @@ func resourceWallarmGraphqlDetectionRead(_ context.Context, d *schema.ResourceDa
 	if err != nil {
 		return diag.FromErr(err)
 	}
-	return diag.FromErr(resourcerule.ResourceRuleWallarmRead(d, clientID, apiClient(m)))
+	return diag.FromErr(resourcerule.Read(d, clientID, apiClient(m)))
 }
 
 func resourceWallarmGraphqlDetectionDelete(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {

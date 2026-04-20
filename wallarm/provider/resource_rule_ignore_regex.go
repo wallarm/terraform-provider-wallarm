@@ -29,7 +29,7 @@ func resourceWallarmIgnoreRegex() *schema.Resource {
 	return &schema.Resource{
 		CreateContext: resourceWallarmIgnoreRegexCreate,
 		ReadContext:   resourceWallarmIgnoreRegexRead,
-		UpdateContext: resourcerule.ResourceRuleWallarmUpdate(apiClient),
+		UpdateContext: resourcerule.Update(apiClient),
 		DeleteContext: resourceWallarmIgnoreRegexDelete,
 		Importer: &schema.ResourceImporter{
 			StateContext: resourceWallarmIgnoreRegexImport,
@@ -98,7 +98,7 @@ func resourceWallarmIgnoreRegexRead(_ context.Context, d *schema.ResourceData, m
 	if err != nil {
 		return diag.FromErr(err)
 	}
-	return diag.FromErr(resourcerule.ResourceRuleWallarmRead(d, clientID, apiClient(m),
+	return diag.FromErr(resourcerule.Read(d, clientID, apiClient(m),
 		resourcerule.ReadOptionWithPoint, resourcerule.ReadOptionWithRegexID))
 }
 

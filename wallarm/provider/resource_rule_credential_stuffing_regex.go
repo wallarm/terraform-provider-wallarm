@@ -46,7 +46,7 @@ func resourceWallarmCredentialStuffingRegex() *schema.Resource {
 	return &schema.Resource{
 		CreateContext: resourceWallarmCredentialStuffingRegexCreate,
 		ReadContext:   resourceWallarmCredentialStuffingRegexRead,
-		UpdateContext: resourcerule.ResourceRuleWallarmUpdate(apiClient),
+		UpdateContext: resourcerule.Update(apiClient),
 		DeleteContext: resourceWallarmCredentialStuffingRegexDelete,
 		Importer: &schema.ResourceImporter{
 			StateContext: resourceWallarmCredentialStuffingRegexImport,

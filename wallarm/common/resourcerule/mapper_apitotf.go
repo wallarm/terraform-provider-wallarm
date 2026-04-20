@@ -42,7 +42,7 @@ func EnumeratedParametersToTF(enumeratedParameters *wallarm.EnumeratedParameters
 		"mode": enumeratedParameters.Mode,
 	}
 	switch enumeratedParameters.Mode {
-	case "exact":
+	case modeExact:
 		result["points"] = mapPointsToTF(enumeratedParameters.Points)
 	default:
 		result["name_regexps"] = enumeratedParameters.NameRegexps

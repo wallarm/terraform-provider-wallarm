@@ -32,10 +32,10 @@ func resourceWallarmForcedBrowsing() *schema.Resource {
 	return &schema.Resource{
 		CreateContext: resourceWallarmForcedBrowsingCreate,
 		ReadContext:   resourceWallarmForcedBrowsingRead,
-		UpdateContext: resourcerule.ResourceRuleWallarmUpdate(apiClient),
+		UpdateContext: resourcerule.Update(apiClient),
 		DeleteContext: resourceWallarmForcedBrowsingDelete,
 		Importer: &schema.ResourceImporter{
-			StateContext: resourcerule.ResourceRuleWallarmImport("forced_browsing"),
+			StateContext: resourcerule.Import("forced_browsing"),
 		},
 		CustomizeDiff: resourcerule.ActionScopeCustomizeDiff,
 		Schema:        sh,
@@ -47,7 +47,7 @@ func resourceWallarmForcedBrowsingCreate(ctx context.Context, d *schema.Resource
 	if err != nil {
 		return diag.FromErr(err)
 	}
-	return resourcerule.ResourceRuleWallarmCreate(ctx, d, apiClient(m), clientID,
+	return resourcerule.Create(ctx, d, apiClient(m), clientID,
 		"forced_browsing", "dirbust", resourceWallarmForcedBrowsingRead, m)
 }
 
@@ -56,7 +56,7 @@ func resourceWallarmForcedBrowsingRead(_ context.Context, d *schema.ResourceData
 	if err != nil {
 		return diag.FromErr(err)
 	}
-	return diag.FromErr(resourcerule.ResourceRuleWallarmRead(d, clientID, apiClient(m),
+	return diag.FromErr(resourcerule.Read(d, clientID, apiClient(m),
 		resourcerule.ReadOptionWithMode,
 		resourcerule.ReadOptionWithAction,
 		resourcerule.ReadOptionWithThreshold,

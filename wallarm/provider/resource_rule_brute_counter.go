@@ -27,7 +27,7 @@ func resourceWallarmBruteForceCounter() *schema.Resource {
 		ReadContext:   resourceWallarmBruteForceCounterRead,
 		DeleteContext: resourceWallarmBruteForceCounterDelete,
 		Importer: &schema.ResourceImporter{
-			StateContext: resourcerule.ResourceRuleWallarmImport("brute_counter"),
+			StateContext: resourcerule.Import("brute_counter"),
 		},
 		CustomizeDiff: resourcerule.ActionScopeCustomizeDiff,
 		Schema:        lo.Assign(fields, commonResourceRuleFields, resourcerule.ActionScopeFields, counterFieldOverrides),
@@ -79,7 +79,7 @@ func resourceWallarmBruteForceCounterRead(_ context.Context, d *schema.ResourceD
 	if err != nil {
 		return diag.FromErr(err)
 	}
-	return diag.FromErr(resourcerule.ResourceRuleWallarmRead(d, clientID, apiClient(m), resourcerule.ReadOptionWithAction))
+	return diag.FromErr(resourcerule.Read(d, clientID, apiClient(m), resourcerule.ReadOptionWithAction))
 }
 
 func resourceWallarmBruteForceCounterDelete(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {

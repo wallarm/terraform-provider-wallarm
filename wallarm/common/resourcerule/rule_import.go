@@ -9,9 +9,9 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-// ResourceRuleWallarmImport is used by rule resources whose import is purely a
+// Import is used by rule resources whose import is purely a
 // string parse with no API lookup.
-func ResourceRuleWallarmImport(ruleType string) schema.StateContextFunc {
+func Import(ruleType string) schema.StateContextFunc {
 	return func(_ context.Context, d *schema.ResourceData, _ interface{}) ([]*schema.ResourceData, error) {
 		parts := strings.SplitN(d.Id(), "/", 4)
 		if len(parts) != 3 {

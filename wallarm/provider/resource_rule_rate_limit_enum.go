@@ -32,10 +32,10 @@ func resourceWallarmRateLimitEnum() *schema.Resource {
 	return &schema.Resource{
 		CreateContext: resourceWallarmRateLimitEnumCreate,
 		ReadContext:   resourceWallarmRateLimitEnumRead,
-		UpdateContext: resourcerule.ResourceRuleWallarmUpdate(apiClient),
+		UpdateContext: resourcerule.Update(apiClient),
 		DeleteContext: resourceWallarmRateLimitEnumDelete,
 		Importer: &schema.ResourceImporter{
-			StateContext: resourcerule.ResourceRuleWallarmImport("rate_limit_enum"),
+			StateContext: resourcerule.Import("rate_limit_enum"),
 		},
 		CustomizeDiff: resourcerule.ActionScopeCustomizeDiff,
 		Schema:        sh,
@@ -47,7 +47,7 @@ func resourceWallarmRateLimitEnumCreate(ctx context.Context, d *schema.ResourceD
 	if err != nil {
 		return diag.FromErr(err)
 	}
-	return resourcerule.ResourceRuleWallarmCreate(ctx, d, apiClient(m), clientID,
+	return resourcerule.Create(ctx, d, apiClient(m), clientID,
 		"rate_limit_enum", "rate_limit", resourceWallarmRateLimitEnumRead, m)
 }
 
@@ -56,7 +56,7 @@ func resourceWallarmRateLimitEnumRead(_ context.Context, d *schema.ResourceData,
 	if err != nil {
 		return diag.FromErr(err)
 	}
-	return diag.FromErr(resourcerule.ResourceRuleWallarmRead(d, clientID, apiClient(m),
+	return diag.FromErr(resourcerule.Read(d, clientID, apiClient(m),
 		resourcerule.ReadOptionWithMode,
 		resourcerule.ReadOptionWithAction,
 		resourcerule.ReadOptionWithThreshold,

@@ -28,7 +28,7 @@ func resourceWallarmBolaCounter() *schema.Resource {
 		ReadContext:   resourceWallarmBolaCounterRead,
 		DeleteContext: resourceWallarmBolaCounterDelete,
 		Importer: &schema.ResourceImporter{
-			StateContext: resourcerule.ResourceRuleWallarmImport("bola_counter"),
+			StateContext: resourcerule.Import("bola_counter"),
 		},
 
 		CustomizeDiff: resourcerule.ActionScopeCustomizeDiff,
@@ -81,7 +81,7 @@ func resourceWallarmBolaCounterRead(_ context.Context, d *schema.ResourceData, m
 	if err != nil {
 		return diag.FromErr(err)
 	}
-	return diag.FromErr(resourcerule.ResourceRuleWallarmRead(d, clientID, apiClient(m), resourcerule.ReadOptionWithAction))
+	return diag.FromErr(resourcerule.Read(d, clientID, apiClient(m), resourcerule.ReadOptionWithAction))
 }
 
 func resourceWallarmBolaCounterDelete(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {

@@ -34,10 +34,10 @@ func resourceWallarmOverlimitResSettings() *schema.Resource {
 	return &schema.Resource{
 		CreateContext: resourceWallarmOverlimitResSettingsCreate,
 		ReadContext:   resourceWallarmOverlimitResSettingsRead,
-		UpdateContext: resourcerule.ResourceRuleWallarmUpdate(apiClient),
+		UpdateContext: resourcerule.Update(apiClient),
 		DeleteContext: resourceWallarmOverlimitResSettingsDelete,
 		Importer: &schema.ResourceImporter{
-			StateContext: resourcerule.ResourceRuleWallarmImport("overlimit_res_settings"),
+			StateContext: resourcerule.Import("overlimit_res_settings"),
 		},
 		CustomizeDiff: resourcerule.ActionScopeCustomizeDiff,
 		Schema:        lo.Assign(fields, commonResourceRuleFields, resourcerule.ActionScopeFields),
@@ -96,7 +96,7 @@ func resourceWallarmOverlimitResSettingsRead(_ context.Context, d *schema.Resour
 	if err != nil {
 		return diag.FromErr(err)
 	}
-	return diag.FromErr(resourcerule.ResourceRuleWallarmRead(d, clientID, apiClient(m), resourcerule.ReadOptionWithAction))
+	return diag.FromErr(resourcerule.Read(d, clientID, apiClient(m), resourcerule.ReadOptionWithAction))
 }
 
 func resourceWallarmOverlimitResSettingsDelete(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {

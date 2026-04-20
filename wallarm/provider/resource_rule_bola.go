@@ -33,10 +33,10 @@ func resourceWallarmBola() *schema.Resource {
 	return &schema.Resource{
 		CreateContext: resourceWallarmBolaCreate,
 		ReadContext:   resourceWallarmBolaRead,
-		UpdateContext: resourcerule.ResourceRuleWallarmUpdate(apiClient),
+		UpdateContext: resourcerule.Update(apiClient),
 		DeleteContext: resourceWallarmBolaDelete,
 		Importer: &schema.ResourceImporter{
-			StateContext: resourcerule.ResourceRuleWallarmImport("bola"),
+			StateContext: resourcerule.Import("bola"),
 		},
 		CustomizeDiff: resourcerule.ActionScopeCustomizeDiff,
 		Schema:        sh,
@@ -48,7 +48,7 @@ func resourceWallarmBolaCreate(ctx context.Context, d *schema.ResourceData, m in
 	if err != nil {
 		return diag.FromErr(err)
 	}
-	return resourcerule.ResourceRuleWallarmCreate(ctx, d, apiClient(m), clientID,
+	return resourcerule.Create(ctx, d, apiClient(m), clientID,
 		"bola", "bola", resourceWallarmBolaRead, m)
 }
 
@@ -57,7 +57,7 @@ func resourceWallarmBolaRead(_ context.Context, d *schema.ResourceData, m interf
 	if err != nil {
 		return diag.FromErr(err)
 	}
-	return diag.FromErr(resourcerule.ResourceRuleWallarmRead(d, clientID, apiClient(m),
+	return diag.FromErr(resourcerule.Read(d, clientID, apiClient(m),
 		resourcerule.ReadOptionWithMode,
 		resourcerule.ReadOptionWithAction,
 		resourcerule.ReadOptionWithThreshold,

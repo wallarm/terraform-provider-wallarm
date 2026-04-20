@@ -36,10 +36,10 @@ func resourceWallarmParserState() *schema.Resource {
 	return &schema.Resource{
 		CreateContext: resourceWallarmParserStateCreate,
 		ReadContext:   resourceWallarmParserStateRead,
-		UpdateContext: resourcerule.ResourceRuleWallarmUpdate(apiClient),
+		UpdateContext: resourcerule.Update(apiClient),
 		DeleteContext: resourceWallarmParserStateDelete,
 		Importer: &schema.ResourceImporter{
-			StateContext: resourcerule.ResourceRuleWallarmImport("parser_state"),
+			StateContext: resourcerule.Import("parser_state"),
 		},
 		CustomizeDiff: resourcerule.ActionScopeCustomizeDiff,
 		Schema:        lo.Assign(fields, commonResourceRuleFields, resourcerule.ActionScopeFields),
@@ -107,7 +107,7 @@ func resourceWallarmParserStateRead(_ context.Context, d *schema.ResourceData, m
 	if err != nil {
 		return diag.FromErr(err)
 	}
-	return diag.FromErr(resourcerule.ResourceRuleWallarmRead(d, clientID, apiClient(m), resourcerule.ReadOptionWithPoint))
+	return diag.FromErr(resourcerule.Read(d, clientID, apiClient(m), resourcerule.ReadOptionWithPoint))
 }
 
 func resourceWallarmParserStateDelete(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {

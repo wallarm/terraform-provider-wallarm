@@ -32,7 +32,7 @@ func resourceWallarmCredentialStuffingPoint() *schema.Resource {
 	return &schema.Resource{
 		CreateContext: resourceWallarmCredentialStuffingPointCreate,
 		ReadContext:   resourceWallarmCredentialStuffingPointRead,
-		UpdateContext: resourcerule.ResourceRuleWallarmUpdate(apiClient),
+		UpdateContext: resourcerule.Update(apiClient),
 		DeleteContext: resourceWallarmCredentialStuffingPointDelete,
 		Importer: &schema.ResourceImporter{
 			StateContext: resourceWallarmCredentialStuffingPointImport,

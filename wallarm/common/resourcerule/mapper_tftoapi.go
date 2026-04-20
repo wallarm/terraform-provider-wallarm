@@ -17,7 +17,7 @@ func EnumeratedParametersToAPI(enumeratedParameters []interface{}) (*wallarm.Enu
 	}
 	mode, _ := enumeratedParameterObj["mode"].(string)
 	switch mode {
-	case "exact":
+	case modeExact:
 		return mapEnumeratedParameterExactToAPI(enumeratedParameterObj)
 	default:
 		return mapEnumeratedParameterRegexpToAPI(enumeratedParameterObj)
@@ -47,7 +47,7 @@ func mapEnumeratedParameterRegexpToAPI(enumeratedParameter map[string]interface{
 	additionalParameters, _ := enumeratedParameter["additional_parameters"].(bool)
 
 	return &wallarm.EnumeratedParameters{
-		Mode:                 "regexp",
+		Mode:                 modeRegexp,
 		NameRegexps:          nameRegexps,
 		ValueRegexp:          valueRegexps,
 		PlainParameters:      lo.ToPtr(plainParameters),
@@ -57,7 +57,7 @@ func mapEnumeratedParameterRegexpToAPI(enumeratedParameter map[string]interface{
 
 func mapEnumeratedParameterExactToAPI(enumeratedParameter map[string]interface{}) (*wallarm.EnumeratedParameters, error) {
 	result := &wallarm.EnumeratedParameters{
-		Mode: "exact",
+		Mode: modeExact,
 	}
 
 	pointsList, ok := enumeratedParameter["points"].([]interface{})

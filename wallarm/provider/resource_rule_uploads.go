@@ -29,10 +29,10 @@ func resourceWallarmUploads() *schema.Resource {
 	return &schema.Resource{
 		CreateContext: resourceWallarmUploadsCreate,
 		ReadContext:   resourceWallarmUploadsRead,
-		UpdateContext: resourcerule.ResourceRuleWallarmUpdate(apiClient),
+		UpdateContext: resourcerule.Update(apiClient),
 		DeleteContext: resourceWallarmUploadsDelete,
 		Importer: &schema.ResourceImporter{
-			StateContext: resourcerule.ResourceRuleWallarmImport("uploads"),
+			StateContext: resourcerule.Import("uploads"),
 		},
 		CustomizeDiff: resourcerule.ActionScopeCustomizeDiff,
 		Schema:        lo.Assign(fields, commonResourceRuleFields, resourcerule.ActionScopeFields),
@@ -98,7 +98,7 @@ func resourceWallarmUploadsRead(_ context.Context, d *schema.ResourceData, m int
 	if err != nil {
 		return diag.FromErr(err)
 	}
-	return diag.FromErr(resourcerule.ResourceRuleWallarmRead(d, clientID, apiClient(m),
+	return diag.FromErr(resourcerule.Read(d, clientID, apiClient(m),
 		resourcerule.ReadOptionWithPoint))
 }
 

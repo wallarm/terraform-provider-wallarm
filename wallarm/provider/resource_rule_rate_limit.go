@@ -57,10 +57,10 @@ func resourceWallarmRateLimit() *schema.Resource {
 	return &schema.Resource{
 		CreateContext: resourceWallarmRateLimitCreate,
 		ReadContext:   resourceWallarmRateLimitRead,
-		UpdateContext: resourcerule.ResourceRuleWallarmUpdate(apiClient),
+		UpdateContext: resourcerule.Update(apiClient),
 		DeleteContext: resourceWallarmRateLimitDelete,
 		Importer: &schema.ResourceImporter{
-			StateContext: resourcerule.ResourceRuleWallarmImport("rate_limit"),
+			StateContext: resourcerule.Import("rate_limit"),
 		},
 		CustomizeDiff: resourcerule.ActionScopeCustomizeDiff,
 		Schema:        lo.Assign(fields, commonResourceRuleFields, resourcerule.ActionScopeFields),
@@ -134,7 +134,7 @@ func resourceWallarmRateLimitRead(_ context.Context, d *schema.ResourceData, m i
 	if err != nil {
 		return diag.FromErr(err)
 	}
-	return diag.FromErr(resourcerule.ResourceRuleWallarmRead(d, clientID, apiClient(m), resourcerule.ReadOptionWithAction))
+	return diag.FromErr(resourcerule.Read(d, clientID, apiClient(m), resourcerule.ReadOptionWithAction))
 }
 
 func resourceWallarmRateLimitDelete(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {

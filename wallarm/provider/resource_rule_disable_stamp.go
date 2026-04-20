@@ -29,10 +29,10 @@ func resourceWallarmDisableStamp() *schema.Resource {
 	return &schema.Resource{
 		CreateContext: resourceWallarmDisableStampCreate,
 		ReadContext:   resourceWallarmDisableStampRead,
-		UpdateContext: resourcerule.ResourceRuleWallarmUpdate(apiClient),
+		UpdateContext: resourcerule.Update(apiClient),
 		DeleteContext: resourceWallarmDisableStampDelete,
 		Importer: &schema.ResourceImporter{
-			StateContext: resourcerule.ResourceRuleWallarmImport("disable_stamp"),
+			StateContext: resourcerule.Import("disable_stamp"),
 		},
 		CustomizeDiff: resourcerule.ActionScopeCustomizeDiff,
 		Schema:        lo.Assign(fields, commonResourceRuleFields, resourcerule.ActionScopeFields),
@@ -98,7 +98,7 @@ func resourceWallarmDisableStampRead(_ context.Context, d *schema.ResourceData, 
 	if err != nil {
 		return diag.FromErr(err)
 	}
-	return diag.FromErr(resourcerule.ResourceRuleWallarmRead(d, clientID, apiClient(m), resourcerule.ReadOptionWithPoint))
+	return diag.FromErr(resourcerule.Read(d, clientID, apiClient(m), resourcerule.ReadOptionWithPoint))
 }
 
 func resourceWallarmDisableStampDelete(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {

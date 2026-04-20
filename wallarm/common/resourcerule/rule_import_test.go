@@ -18,11 +18,11 @@ func testImportSchema() *schema.Resource {
 	}
 }
 
-func TestResourceRuleWallarmImport_Valid(t *testing.T) {
+func TestImport_Valid(t *testing.T) {
 	d := testImportSchema().TestResourceData()
 	d.SetId("42/100/200")
 
-	result, err := ResourceRuleWallarmImport("bola")(context.Background(), d, nil)
+	result, err := Import("bola")(context.Background(), d, nil)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -43,12 +43,12 @@ func TestResourceRuleWallarmImport_Valid(t *testing.T) {
 	}
 }
 
-func TestResourceRuleWallarmImport_WrongPartCount(t *testing.T) {
+func TestImport_WrongPartCount(t *testing.T) {
 	cases := []string{"", "42", "42/100", "42/100/200/extra", "42/100/200/extra/more"}
 	for _, id := range cases {
 		d := testImportSchema().TestResourceData()
 		d.SetId(id)
-		_, err := ResourceRuleWallarmImport("bola")(context.Background(), d, nil)
+		_, err := Import("bola")(context.Background(), d, nil)
 		if err == nil {
 			t.Errorf("expected error for id %q, got nil", id)
 			continue
@@ -59,40 +59,40 @@ func TestResourceRuleWallarmImport_WrongPartCount(t *testing.T) {
 	}
 }
 
-func TestResourceRuleWallarmImport_EmptySegments(t *testing.T) {
+func TestImport_EmptySegments(t *testing.T) {
 	cases := []string{"/100/200", "42//200", "42/100/"}
 	for _, id := range cases {
 		d := testImportSchema().TestResourceData()
 		d.SetId(id)
-		_, err := ResourceRuleWallarmImport("bola")(context.Background(), d, nil)
+		_, err := Import("bola")(context.Background(), d, nil)
 		if err == nil {
 			t.Errorf("expected error for id %q, got nil", id)
 		}
 	}
 }
 
-func TestResourceRuleWallarmImport_InvalidClientID(t *testing.T) {
+func TestImport_InvalidClientID(t *testing.T) {
 	d := testImportSchema().TestResourceData()
 	d.SetId("abc/100/200")
-	_, err := ResourceRuleWallarmImport("bola")(context.Background(), d, nil)
+	_, err := Import("bola")(context.Background(), d, nil)
 	if err == nil || !strings.Contains(err.Error(), "client_id") {
 		t.Errorf("expected client_id error, got %v", err)
 	}
 }
 
-func TestResourceRuleWallarmImport_InvalidActionID(t *testing.T) {
+func TestImport_InvalidActionID(t *testing.T) {
 	d := testImportSchema().TestResourceData()
 	d.SetId("42/xyz/200")
-	_, err := ResourceRuleWallarmImport("bola")(context.Background(), d, nil)
+	_, err := Import("bola")(context.Background(), d, nil)
 	if err == nil || !strings.Contains(err.Error(), "action_id") {
 		t.Errorf("expected action_id error, got %v", err)
 	}
 }
 
-func TestResourceRuleWallarmImport_InvalidRuleID(t *testing.T) {
+func TestImport_InvalidRuleID(t *testing.T) {
 	d := testImportSchema().TestResourceData()
 	d.SetId("42/100/zzz")
-	_, err := ResourceRuleWallarmImport("bola")(context.Background(), d, nil)
+	_, err := Import("bola")(context.Background(), d, nil)
 	if err == nil || !strings.Contains(err.Error(), "rule_id") {
 		t.Errorf("expected rule_id error, got %v", err)
 	}

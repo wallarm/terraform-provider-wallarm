@@ -22,7 +22,7 @@ func schemaHasKey(d *schema.ResourceData, key string) (exists bool) {
 }
 
 // setIfExists calls d.Set for the given key only if the key is present in the
-// resource schema. This is needed because ResourceRuleWallarmRead is shared
+// resource schema. This is needed because Read is shared
 // across many resources, each of which defines only a subset of the fields.
 // In SDK v2 d.Set() logs an [ERROR] and panics (in test mode) for keys not in
 // the schema; checking beforehand avoids both.
@@ -36,8 +36,12 @@ func setIfExists(d *schema.ResourceData, key string, value interface{}) {
 }
 
 // TODO: add test — needs mock wallarm.API, verify field population, action set transform, not-found removes from state
-// nolint
-func ResourceRuleWallarmRead(d *schema.ResourceData, clientID int, cli wallarm.API, opts ...ReadOption) error {
+// TODO: consume opts inside the function body — currently accepted for API
+// compatibility but ignored; callers pass ReadOptionWith* and expect them to
+// gate optional field population.
+//
+//nolint:revive // unused-parameter: opts is a placeholder pending the TODO above
+func Read(d *schema.ResourceData, clientID int, cli wallarm.API, opts ...ReadOption) error {
 	var ruleID = d.Get("rule_id").(int)
 	hint := &wallarm.HintRead{
 		Limit:     1000,
@@ -128,8 +132,7 @@ func ResourceRuleWallarmRead(d *schema.ResourceData, clientID int, cli wallarm.A
 }
 
 // TODO: add test — needs mock wallarm.API, verify HintCreate call, ID format, error handling
-// nolint
-func ResourceRuleWallarmCreate(
+func Create(
 	ctx context.Context,
 	d *schema.ResourceData,
 	cli wallarm.API,
@@ -250,11 +253,11 @@ func GetPointerWithTypeCastingOrDefault[T any](d *schema.ResourceData, name stri
 	return &v
 }
 
-// ResourceRuleWallarmUpdate returns an UpdateContextFunc that writes the two
+// Update returns an UpdateContextFunc that writes the two
 // user-mutable fields (variativity_disabled, comment) via HintUpdateV3.
 // cp is a provider-supplied function that extracts the wallarm.API client
 // from the SDK's untyped meta value.
-func ResourceRuleWallarmUpdate(cp func(m interface{}) wallarm.API) schema.UpdateContextFunc {
+func Update(cp func(m interface{}) wallarm.API) schema.UpdateContextFunc {
 	return func(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 		_, err := cp(m).HintUpdateV3(d.Get("rule_id").(int), &wallarm.HintUpdateV3Params{
 			VariativityDisabled: lo.ToPtr(d.Get("variativity_disabled").(bool)),

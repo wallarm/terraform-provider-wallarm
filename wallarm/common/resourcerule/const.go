@@ -8,6 +8,12 @@ const (
 	Header = "header"
 )
 
+// EnumeratedParameters.Mode values.
+const (
+	modeExact  = "exact"
+	modeRegexp = "regexp"
+)
+
 type ReadOption string
 
 const (
