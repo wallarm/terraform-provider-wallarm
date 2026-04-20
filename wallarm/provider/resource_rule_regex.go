@@ -46,7 +46,7 @@ func resourceWallarmRegex() *schema.Resource {
 	return &schema.Resource{
 		CreateContext: resourceWallarmRegexCreate,
 		ReadContext:   resourceWallarmRegexRead,
-		UpdateContext: resourceWallarmRegexUpdate,
+		UpdateContext: resourcerule.ResourceRuleWallarmUpdate(apiClient),
 		DeleteContext: resourceWallarmRegexDelete,
 		Importer: &schema.ResourceImporter{
 			StateContext: resourceWallarmRegexImport,
@@ -148,17 +148,6 @@ func resourceWallarmRegexDelete(_ context.Context, d *schema.ResourceData, m int
 	}
 
 	return nil
-}
-
-func resourceWallarmRegexUpdate(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
-	client := apiClient(m)
-	variativityDisabled, _ := d.Get("variativity_disabled").(bool)
-	comment, _ := d.Get("comment").(string)
-	_, err := client.HintUpdateV3(d.Get("rule_id").(int), &wallarm.HintUpdateV3Params{
-		VariativityDisabled: lo.ToPtr(variativityDisabled),
-		Comment:             lo.ToPtr(comment),
-	})
-	return diag.FromErr(err)
 }
 
 func resourceWallarmRegexImport(_ context.Context, d *schema.ResourceData, _ interface{}) ([]*schema.ResourceData, error) {

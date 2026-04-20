@@ -2,9 +2,6 @@ package wallarm
 
 import (
 	"context"
-	"fmt"
-	"strconv"
-	"strings"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
@@ -36,10 +33,10 @@ func resourceWallarmBola() *schema.Resource {
 	return &schema.Resource{
 		CreateContext: resourceWallarmBolaCreate,
 		ReadContext:   resourceWallarmBolaRead,
-		UpdateContext: resourceWallarmBolaUpdate,
+		UpdateContext: resourcerule.ResourceRuleWallarmUpdate(apiClient),
 		DeleteContext: resourceWallarmBolaDelete,
 		Importer: &schema.ResourceImporter{
-			StateContext: resourceWallarmBolaImport,
+			StateContext: resourcerule.ResourceRuleWallarmImport("bola"),
 		},
 		CustomizeDiff: resourcerule.ActionScopeCustomizeDiff,
 		Schema:        sh,
@@ -87,44 +84,4 @@ func resourceWallarmBolaDelete(_ context.Context, d *schema.ResourceData, m inte
 		return diag.FromErr(err)
 	}
 	return nil
-}
-
-func resourceWallarmBolaUpdate(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
-	client := apiClient(m)
-	variativityDisabled, _ := d.Get("variativity_disabled").(bool)
-	comment, _ := d.Get("comment").(string)
-	_, err := client.HintUpdateV3(d.Get("rule_id").(int), &wallarm.HintUpdateV3Params{
-		VariativityDisabled: lo.ToPtr(variativityDisabled),
-		Comment:             lo.ToPtr(comment),
-	})
-	return diag.FromErr(err)
-}
-
-func resourceWallarmBolaImport(_ context.Context, d *schema.ResourceData, _ interface{}) ([]*schema.ResourceData, error) {
-	idAttr := strings.SplitN(d.Id(), "/", 3)
-	if len(idAttr) == 3 {
-		clientID, err := strconv.Atoi(idAttr[0])
-		if err != nil {
-			return nil, err
-		}
-		actionID, err := strconv.Atoi(idAttr[1])
-		if err != nil {
-			return nil, err
-		}
-		ruleID, err := strconv.Atoi(idAttr[2])
-		if err != nil {
-			return nil, err
-		}
-		d.Set("action_id", actionID)
-		d.Set("rule_id", ruleID)
-		d.Set("rule_type", "bola")
-
-		existingID := fmt.Sprintf("%d/%d/%d", clientID, actionID, ruleID)
-		d.SetId(existingID)
-
-	} else {
-		return nil, fmt.Errorf("invalid id (%q) specified, should be in format \"{clientID}/{actionID}/{ruleID}\"", d.Id())
-	}
-
-	return []*schema.ResourceData{d}, nil
 }

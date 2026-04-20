@@ -8,6 +8,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/pkg/errors"
+	"github.com/samber/lo"
 
 	"github.com/wallarm/wallarm-go"
 )
@@ -247,4 +248,18 @@ func GetPointerWithTypeCastingOrDefault[T any](d *schema.ResourceData, name stri
 		return nil
 	}
 	return &v
+}
+
+// ResourceRuleWallarmUpdate returns an UpdateContextFunc that writes the two
+// user-mutable fields (variativity_disabled, comment) via HintUpdateV3.
+// cp is a provider-supplied function that extracts the wallarm.API client
+// from the SDK's untyped meta value.
+func ResourceRuleWallarmUpdate(cp func(m interface{}) wallarm.API) schema.UpdateContextFunc {
+	return func(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+		_, err := cp(m).HintUpdateV3(d.Get("rule_id").(int), &wallarm.HintUpdateV3Params{
+			VariativityDisabled: lo.ToPtr(d.Get("variativity_disabled").(bool)),
+			Comment:             lo.ToPtr(d.Get("comment").(string)),
+		})
+		return diag.FromErr(err)
+	}
 }

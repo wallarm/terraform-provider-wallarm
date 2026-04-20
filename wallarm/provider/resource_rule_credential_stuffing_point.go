@@ -32,7 +32,7 @@ func resourceWallarmCredentialStuffingPoint() *schema.Resource {
 	return &schema.Resource{
 		CreateContext: resourceWallarmCredentialStuffingPointCreate,
 		ReadContext:   resourceWallarmCredentialStuffingPointRead,
-		UpdateContext: resourceWallarmCredentialStuffingPointUpdate,
+		UpdateContext: resourcerule.ResourceRuleWallarmUpdate(apiClient),
 		DeleteContext: resourceWallarmCredentialStuffingPointDelete,
 		Importer: &schema.ResourceImporter{
 			StateContext: resourceWallarmCredentialStuffingPointImport,
@@ -169,17 +169,6 @@ func resourceWallarmCredentialStuffingPointDelete(_ context.Context, d *schema.R
 
 	m.(*ProviderMeta).CredentialStuffingCache.Invalidate()
 	return nil
-}
-
-func resourceWallarmCredentialStuffingPointUpdate(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
-	client := apiClient(m)
-	variativityDisabled, _ := d.Get("variativity_disabled").(bool)
-	comment, _ := d.Get("comment").(string)
-	_, err := client.HintUpdateV3(d.Get("rule_id").(int), &wallarm.HintUpdateV3Params{
-		VariativityDisabled: lo.ToPtr(variativityDisabled),
-		Comment:             lo.ToPtr(comment),
-	})
-	return diag.FromErr(err)
 }
 
 func resourceWallarmCredentialStuffingPointImport(_ context.Context, d *schema.ResourceData, m interface{}) ([]*schema.ResourceData, error) {
