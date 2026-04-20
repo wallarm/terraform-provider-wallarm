@@ -19,7 +19,7 @@ func resourceWallarmSumologic() *schema.Resource {
 		DeleteContext: resourceWallarmSumologicDelete,
 
 		Importer: &schema.ResourceImporter{
-			StateContext: schema.ImportStatePassthroughContext,
+			StateContext: importIntegration("sumo_logic"),
 		},
 
 		CustomizeDiff: validateWithHeadersOnlySiem(),

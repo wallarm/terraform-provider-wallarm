@@ -19,7 +19,7 @@ func resourceWallarmEmail() *schema.Resource {
 		DeleteContext: resourceWallarmEmailDelete,
 
 		Importer: &schema.ResourceImporter{
-			StateContext: schema.ImportStatePassthroughContext,
+			StateContext: importIntegration("email"),
 		},
 
 		Schema: map[string]*schema.Schema{

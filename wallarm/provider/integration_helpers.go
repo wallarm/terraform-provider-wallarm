@@ -5,6 +5,8 @@ import (
 	stderrors "errors"
 	"fmt"
 	"net/http"
+	"strconv"
+	"strings"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/customdiff"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -17,6 +19,33 @@ const eventTypeSIEM = "siem"
 func isNotFoundError(err error) bool {
 	var apiErr *wallarm.APIError
 	return stderrors.As(err, &apiErr) && apiErr.StatusCode == http.StatusNotFound
+}
+
+// importIntegration parses a 3-part integration import ID
+// ("{client_id}/{type}/{integration_id}"), validates the type segment, and
+// populates client_id, integration_id on the ResourceData.
+func importIntegration(integrationType string) schema.StateContextFunc {
+	return func(_ context.Context, d *schema.ResourceData, _ interface{}) ([]*schema.ResourceData, error) {
+		parts := strings.SplitN(d.Id(), "/", 4)
+		if len(parts) != 3 {
+			return nil, fmt.Errorf("invalid id (%q) specified, should be in format \"{client_id}/%s/{integration_id}\"", d.Id(), integrationType)
+		}
+		clientID, err := strconv.Atoi(parts[0])
+		if err != nil {
+			return nil, fmt.Errorf("invalid client_id: %w", err)
+		}
+		if parts[1] != integrationType {
+			return nil, fmt.Errorf("invalid type segment %q, expected %q", parts[1], integrationType)
+		}
+		integrationID, err := strconv.Atoi(parts[2])
+		if err != nil {
+			return nil, fmt.Errorf("invalid integration_id: %w", err)
+		}
+		d.Set("client_id", clientID)
+		d.Set("integration_id", integrationID)
+		d.SetId(fmt.Sprintf("%d/%s/%d", clientID, integrationType, integrationID))
+		return []*schema.ResourceData{d}, nil
+	}
 }
 
 // validateWithHeadersOnlySiem returns a CustomizeDiffFunc that ensures

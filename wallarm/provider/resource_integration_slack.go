@@ -20,7 +20,7 @@ func resourceWallarmSlack() *schema.Resource {
 		DeleteContext: resourceWallarmSlackDelete,
 
 		Importer: &schema.ResourceImporter{
-			StateContext: schema.ImportStatePassthroughContext,
+			StateContext: importIntegration("slack"),
 		},
 
 		Schema: map[string]*schema.Schema{

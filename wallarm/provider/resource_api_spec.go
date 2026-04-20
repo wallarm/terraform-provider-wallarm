@@ -18,7 +18,7 @@ func resourceWallarmAPISpec() *schema.Resource {
 		ReadContext:   resourceWallarmAPISpecRead,
 		DeleteContext: resourceWallarmAPISpecDelete,
 		Importer: &schema.ResourceImporter{
-			StateContext: schema.ImportStatePassthroughContext,
+			StateContext: resourceWallarmAPISpecImport,
 		},
 
 		Schema: map[string]*schema.Schema{
@@ -151,4 +151,16 @@ func resourceWallarmAPISpecDelete(_ context.Context, d *schema.ResourceData, m i
 
 	d.SetId("")
 	return nil
+}
+
+// resourceWallarmAPISpecImport parses a single-integer import ID into
+// api_spec_id. The caller must set client_id in the resource config.
+func resourceWallarmAPISpecImport(_ context.Context, d *schema.ResourceData, _ interface{}) ([]*schema.ResourceData, error) {
+	apiSpecID, err := strconv.Atoi(d.Id())
+	if err != nil {
+		return nil, fmt.Errorf("invalid id (%q), expected single integer api_spec_id: %w", d.Id(), err)
+	}
+	d.Set("api_spec_id", apiSpecID)
+	d.SetId(strconv.Itoa(apiSpecID))
+	return []*schema.ResourceData{d}, nil
 }
