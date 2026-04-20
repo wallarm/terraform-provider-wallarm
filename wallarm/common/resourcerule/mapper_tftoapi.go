@@ -24,7 +24,6 @@ func EnumeratedParametersToAPI(enumeratedParameters []interface{}) (*wallarm.Enu
 	}
 }
 
-// TODO: add unit test — valid regexp params with name/value regexps
 func mapEnumeratedParameterRegexpToAPI(enumeratedParameter map[string]interface{}) (*wallarm.EnumeratedParameters, error) {
 	nameRegexpsRaw, ok := enumeratedParameter["name_regexps"].([]interface{})
 	if !ok {
@@ -56,7 +55,6 @@ func mapEnumeratedParameterRegexpToAPI(enumeratedParameter map[string]interface{
 	}, nil
 }
 
-// TODO: add unit test — valid exact params, empty points list
 func mapEnumeratedParameterExactToAPI(enumeratedParameter map[string]interface{}) (*wallarm.EnumeratedParameters, error) {
 	result := &wallarm.EnumeratedParameters{
 		Mode: "exact",
@@ -161,7 +159,6 @@ func AdvancedConditionsToAPI(advancedConditions []interface{}) ([]wallarm.Advanc
 	return response, nil
 }
 
-// TODO: add unit test — empty, single condition with point and value
 func ArbitraryConditionsToAPI(arbitraryConditions []interface{}) ([]wallarm.ArbitraryConditionReq, error) {
 	if len(arbitraryConditions) == 0 {
 		return nil, nil

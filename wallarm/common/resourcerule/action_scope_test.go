@@ -1,10 +1,90 @@
 package resourcerule
 
 import (
+	"strings"
 	"testing"
 
 	wallarm "github.com/wallarm/wallarm-go"
 )
+
+func TestValidateActionSet_Valid(t *testing.T) {
+	set := newActionSet(
+		map[string]interface{}{"type": "iequal", "value": "example.com", "point": map[string]interface{}{"header": "HOST"}},
+		map[string]interface{}{"type": "equal", "value": "api", "point": map[string]interface{}{"path": "0"}},
+	)
+	if err := validateActionSet(set); err != nil {
+		t.Errorf("expected nil, got %v", err)
+	}
+}
+
+func TestValidateActionSet_Nil(t *testing.T) {
+	if err := validateActionSet(nil); err != nil {
+		t.Errorf("expected nil for nil set, got %v", err)
+	}
+}
+
+func TestValidateActionSet_UnknownPointKey(t *testing.T) {
+	set := newActionSet(map[string]interface{}{
+		"type": "equal", "value": "x", "point": map[string]interface{}{"headers": "HOST"},
+	})
+	err := validateActionSet(set)
+	if err == nil || !strings.Contains(err.Error(), "unknown action point key") {
+		t.Errorf("expected unknown-key error, got %v", err)
+	}
+}
+
+func TestValidateActionSet_MultipleKeys(t *testing.T) {
+	set := newActionSet(map[string]interface{}{
+		"type": "equal", "value": "x", "point": map[string]interface{}{"header": "HOST", "path": "0"},
+	})
+	err := validateActionSet(set)
+	if err == nil || !strings.Contains(err.Error(), "exactly one key") {
+		t.Errorf("expected multi-key error, got %v", err)
+	}
+}
+
+func TestValidateActionSet_URIConflict(t *testing.T) {
+	// uri is a point-value type: the value lives in the point map.
+	set := newActionSet(
+		map[string]interface{}{"type": "equal", "value": "", "point": map[string]interface{}{"uri": "/api/v1"}},
+		map[string]interface{}{"type": "equal", "value": "api", "point": map[string]interface{}{"path": "0"}},
+	)
+	err := validateActionSet(set)
+	if err == nil || !strings.Contains(err.Error(), "conflicts with") {
+		t.Errorf("expected uri-conflict error, got %v", err)
+	}
+}
+
+func TestValidateActionSet_PointValueWithNonEmptyValue(t *testing.T) {
+	// action_name is a PointValuePoint — value must live in the point map, not the value field.
+	set := newActionSet(map[string]interface{}{
+		"type": "equal", "value": "login", "point": map[string]interface{}{"action_name": "something"},
+	})
+	err := validateActionSet(set)
+	if err == nil || !strings.Contains(err.Error(), "value goes in the point map") {
+		t.Errorf("expected point-value error, got %v", err)
+	}
+}
+
+func TestValidateActionSet_HeaderEmptyValue(t *testing.T) {
+	set := newActionSet(map[string]interface{}{
+		"type": "equal", "value": "", "point": map[string]interface{}{"header": "HOST"},
+	})
+	err := validateActionSet(set)
+	if err == nil || !strings.Contains(err.Error(), "non-empty") {
+		t.Errorf("expected empty-value error, got %v", err)
+	}
+}
+
+func TestValidateActionSet_AbsentSkipsValueChecks(t *testing.T) {
+	// type=absent allows both point-value-with-value AND empty-value for header.
+	set := newActionSet(map[string]interface{}{
+		"type": "absent", "value": "", "point": map[string]interface{}{"header": "HOST"},
+	})
+	if err := validateActionSet(set); err != nil {
+		t.Errorf("absent should bypass value checks, got %v", err)
+	}
+}
 
 func TestValidPointKeys(t *testing.T) {
 	expected := []string{
