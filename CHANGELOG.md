@@ -1,3 +1,28 @@
+# v2.3.4 (Apr 20, 2026)
+
+## IMPROVEMENTS:
+
+* Bumped `wallarm-go` dependency to v0.10.0 — adds Attack, Activity Log, and Security Issues API methods; nil-input guards on request helpers; IP-list search query encoding fix; cursor pagination for `AttackRead`; hit block-status filter.
+* Extracted shared `ResourceRuleWallarmImport` / `ResourceRuleWallarmUpdate` helpers in `wallarm/common/resourcerule/` — 42 rule resources migrated, ~850 net LOC of duplicated boilerplate removed.
+* Shortened `resourcerule` public API: `ResourceRuleWallarm{Read,Create,Update,Import}` → `{Read,Create,Update,Import}`. Callers use `resourcerule.Read(...)` etc.
+* Added unit tests for `validateActionSet` (6 cases), `EnumeratedParametersToTF/ToAPI`, `ArbitraryConditionsToTF/ToAPI`, `mapEnumeratedParameter{Regexp,Exact}ToAPI`, plus 5 cases for the new `importIntegration` helper. `resourcerule` coverage 55.7% → 69.3%.
+* Extracted `modeExact` / `modeRegexp` constants in `resourcerule/const.go`, replacing repeated string literals.
+
+## BUG FIXES:
+
+* `terraform import` now works correctly for `wallarm_api_spec`, 11 integration resources (`data_dog`, `email`, `insightconnect`, `opsgenie`, `pagerduty`, `slack`, `splunk`, `sumologic`, `teams`, `telegram`, `webhook`), and `wallarm_user`. Previously these used `schema.ImportStatePassthroughContext` which did not populate the fields `Read` requires, so documented import commands silently read the wrong resource or failed with a zero-ID API call. Real `StateContextFunc` parsers have been added.
+* `data.wallarm_security_issues` no longer panics when an issue has no vpatch mitigation. `SecurityIssueMitigations.Vpatch` (now a pointer in `wallarm-go` v0.10.0) is nil-checked before dereference.
+* `wallarm_api_spec` import ID format changed to `{client_id}/{api_spec_id}` (was single integer `{api_spec_id}`) to align with the `{client_id}/{resource_id}` convention used by other resources. Existing state with bare-integer IDs remains functional — `Read` does not parse `d.Id()`, so no destroy/recreate occurs on upgrade.
+
+## BREAKING CHANGES:
+
+* Removed the `ignore_existing` provider argument and the `WALLARM_IGNORE_EXISTING_RESOURCES` environment variable. The field was defined in the schema but never read by any code, so existing configurations that set it had no effect. Remove the assignment from your `provider "wallarm" {}` block after upgrading.
+
+## DOCUMENTATION:
+
+* Added `## Import` sections to 15 resource docs (`api_spec`, 11 integrations, `node`, `tenant`, `user`) with concrete ID-format examples.
+* Renamed `docs/resources/integration_ms_teams.md` → `integration_teams.md` to match the resource name `wallarm_integration_teams`.
+
 # v2.3.3 (Apr 19, 2026)
 
 ## IMPROVEMENTS:
