@@ -43,9 +43,10 @@ resource "wallarm_api_spec" "api_spec" {
 ## Import
 
 ```
-$ terraform import wallarm_api_spec.example 42
+$ terraform import wallarm_api_spec.example 1111/42
 ```
 
+* `1111` - Client ID.
 * `42` - API Spec ID.
 
 [1]: https://docs.wallarm.com/api-specification-enforcement/overview/

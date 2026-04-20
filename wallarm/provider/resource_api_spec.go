@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
+	"strings"
 
 	"github.com/wallarm/wallarm-go"
 
@@ -104,7 +105,7 @@ func resourceWallarmAPISpecCreate(ctx context.Context, d *schema.ResourceData, m
 	}
 
 	d.Set("api_spec_id", createRes.Body.ID)
-	d.SetId(strconv.Itoa(createRes.Body.ID))
+	d.SetId(fmt.Sprintf("%d/%d", d.Get("client_id").(int), createRes.Body.ID))
 
 	return resourceWallarmAPISpecRead(ctx, d, m)
 }
@@ -153,14 +154,22 @@ func resourceWallarmAPISpecDelete(_ context.Context, d *schema.ResourceData, m i
 	return nil
 }
 
-// resourceWallarmAPISpecImport parses a single-integer import ID into
-// api_spec_id. The caller must set client_id in the resource config.
+// resourceWallarmAPISpecImport parses a 2-part import ID "{client_id}/{api_spec_id}".
 func resourceWallarmAPISpecImport(_ context.Context, d *schema.ResourceData, _ interface{}) ([]*schema.ResourceData, error) {
-	apiSpecID, err := strconv.Atoi(d.Id())
-	if err != nil {
-		return nil, fmt.Errorf("invalid id (%q), expected single integer api_spec_id: %w", d.Id(), err)
+	parts := strings.SplitN(d.Id(), "/", 3)
+	if len(parts) != 2 {
+		return nil, fmt.Errorf("invalid id (%q) specified, should be in format \"{client_id}/{api_spec_id}\"", d.Id())
 	}
+	clientID, err := strconv.Atoi(parts[0])
+	if err != nil {
+		return nil, fmt.Errorf("invalid client_id: %w", err)
+	}
+	apiSpecID, err := strconv.Atoi(parts[1])
+	if err != nil {
+		return nil, fmt.Errorf("invalid api_spec_id: %w", err)
+	}
+	d.Set("client_id", clientID)
 	d.Set("api_spec_id", apiSpecID)
-	d.SetId(strconv.Itoa(apiSpecID))
+	d.SetId(fmt.Sprintf("%d/%d", clientID, apiSpecID))
 	return []*schema.ResourceData{d}, nil
 }
