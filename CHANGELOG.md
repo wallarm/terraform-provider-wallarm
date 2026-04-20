@@ -23,10 +23,6 @@
 * Added `## Import` sections to 4 resource docs (`api_spec`, `node`, `tenant`, `user`) with concrete ID-format examples.
 * Renamed `docs/resources/integration_ms_teams.md` → `integration_teams.md` to match the resource name `wallarm_integration_teams`.
 
-## KNOWN LIMITATIONS:
-
-* `terraform import` on the 11 integration resources and `wallarm_trigger` succeeds but leaves most type-specific fields (`active`, `event[]`, webhook URLs, API tokens, email lists, etc.) unpopulated. The underlying Read functions only return generic metadata (`name`, `is_active`, `created_by`, `type`). `-generate-config-out` therefore produces incomplete HCL. Import docs omitted from integration resources until Read completeness lands in v2.3.5.
-
 # v2.3.3 (Apr 19, 2026)
 
 ## IMPROVEMENTS:
