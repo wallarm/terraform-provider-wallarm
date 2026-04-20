@@ -100,5 +100,15 @@ Example:
 * `created_by` - email of the user who created the integration.
 * `is_active` - indicator of the integration status. Can be: `true` and `false`.
 
+## Import
+
+```
+$ terraform import wallarm_integration_opsgenie.example 1111/opsgenie/2222
+```
+
+* `1111` - Client ID.
+* `opsgenie` - Integration type constant (literal).
+* `2222` - Integration ID.
+
 [1]: https://docs.wallarm.com/user-guides/settings/integrations/opsgenie/
 [2]: https://docs.wallarm.com/installation/multi-tenant/overview/

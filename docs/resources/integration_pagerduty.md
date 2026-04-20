@@ -102,5 +102,15 @@ Example:
 * `created_by` - email of the user who created the integration.
 * `is_active` - indicator of the integration status. Can be: `true` and `false`.
 
+## Import
+
+```
+$ terraform import wallarm_integration_pagerduty.example 1111/pager_duty/2222
+```
+
+* `1111` - Client ID.
+* `pager_duty` - Integration type constant (literal).
+* `2222` - Integration ID.
+
 [1]: https://docs.wallarm.com/user-guides/settings/integrations/pagerduty/
 [2]: https://docs.wallarm.com/installation/multi-tenant/overview/
