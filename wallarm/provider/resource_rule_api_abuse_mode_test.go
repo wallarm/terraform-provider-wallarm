@@ -183,7 +183,7 @@ func TestAccRuleAPIAbuseModeInvalidMode(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccRuleAPIAbuseModeConfigBasic("bad", "monitoring"),
-				ExpectError: regexp.MustCompile(`expected mode to be one of \[.*enabled.*disabled.*\]`),
+				ExpectError: regexp.MustCompile(`expected mode to be one of \["enabled" "disabled"\]`),
 			},
 		},
 	})
