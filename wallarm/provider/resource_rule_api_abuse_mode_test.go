@@ -219,7 +219,7 @@ func TestAccRuleAPIAbuseModeImport(t *testing.T) {
 }
 
 func TestAccRuleAPIAbuseModeExistsError(t *testing.T) {
-	// Same action scope, different "resource" label → existsAction must block the second create.
+	// Same action scope, different "resource" label → existingHintForAction must block the second create.
 	configFirst := testAccRuleAPIAbuseModeConfigBasic("first", "exists.example.com", "enabled")
 	configDup := configFirst + testAccRuleAPIAbuseModeConfigBasic("duplicate", "exists.example.com", "disabled")
 

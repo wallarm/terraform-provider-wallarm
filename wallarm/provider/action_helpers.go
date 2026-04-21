@@ -89,7 +89,8 @@ func existingHintForAction(d *schema.ResourceData, m interface{}, hintType strin
 		return 0, nil, false, err
 	}
 
-	if body := *hintResp.Body; len(body) > 0 {
+	if hintResp.Body != nil && len(*hintResp.Body) > 0 {
+		body := *hintResp.Body
 		return matchedAction.ID, &body[0], true, nil
 	}
 	return 0, nil, false, nil

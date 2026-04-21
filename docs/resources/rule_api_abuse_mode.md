@@ -32,7 +32,7 @@ resource "wallarm_rule_api_abuse_mode" "pinterest" {
     type  = "equal"
     value = "api"
     point = {
-      path = "0"
+      path = 0
     }
   }
 
@@ -40,7 +40,7 @@ resource "wallarm_rule_api_abuse_mode" "pinterest" {
     type  = "regex"
     value = "v\\d"
     point = {
-      path = "1"
+      path = 1
     }
   }
 
