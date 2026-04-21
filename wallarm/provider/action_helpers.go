@@ -90,81 +90,87 @@ func actionPointsEqual(listA, listB []interface{}) bool {
 	return true
 }
 
-// TODO: add test — needs mock API + schema.ResourceData, verify action lookup and existsHint delegation
-func existsAction(d *schema.ResourceData, m interface{}, hintType string) (string, bool, error) {
+// existingHintForAction looks for a rule of the given hintType attached to an
+// action whose conditions match the resource's current `action {}` blocks,
+// optionally also matching the `point` schema field. The match is
+// mode-agnostic — a hit means "there's already a rule of this type on this
+// action scope", which is either a duplicate or a contradiction. Callers use
+// this on Create to detect conflicts and abort with ImportAsExistsError
+// pointing at a resource-specific import ID format.
+//
+// Returns:
+//   - actionID: the ID of the matched action (so callers can build a full ID)
+//   - rule:     the existing rule itself (callers read fields like Mode for ID
+//               formatting when needed)
+//   - exists:   true iff a match was found
+func existingHintForAction(d *schema.ResourceData, m interface{}, hintType string) (actionID int, rule *wallarm.ActionBody, exists bool, err error) {
 	client := apiClient(m)
 	clientID, err := retrieveClientID(d, m)
 	if err != nil {
-		return "", false, err
+		return 0, nil, false, err
 	}
 
 	actionsFromState := d.Get("action").(*schema.Set)
 	action, err := resourcerule.ExpandSetToActionDetailsList(actionsFromState)
 	if err != nil {
-		return "", false, err
+		return 0, nil, false, err
 	}
 
-	params := &wallarm.ActionListParams{
+	listResp, err := client.ActionList(&wallarm.ActionListParams{
 		Filter: &wallarm.ActionListFilter{
 			HintType: []string{hintType},
 			Clientid: []int{clientID},
 		},
 		Limit:  APIListLimit,
 		Offset: 0,
-	}
-
-	resp, err := client.ActionList(params)
+	})
 	if err != nil {
-		return "", false, err
+		return 0, nil, false, err
 	}
 
-	for _, entry := range resp.Body {
+	var matchedAction *wallarm.ActionEntry
+	for _, entry := range listResp.Body {
 		if equalWithoutOrder(action, entry.Conditions) {
-			return existsHint(d, m, entry.ID, hintType)
+			matchedAction = &entry
+			break
 		}
 	}
-	return "", false, err
-}
-
-// TODO: add test — needs mock API + schema.ResourceData, verify hint lookup returns correct ID
-func existsHint(d *schema.ResourceData, m interface{}, actionID int, hintType string) (string, bool, error) {
-	client := apiClient(m)
-	clientID, err := retrieveClientID(d, m)
-	if err != nil {
-		return "", false, err
+	if matchedAction == nil {
+		return 0, nil, false, nil
 	}
 
+	// Now look up the hint on that action. Preserve the existing Point filter:
+	// if the resource's schema has a `point` field set, narrow the search by
+	// point; otherwise pass empty (existing filter behavior).
 	var points wallarm.TwoDimensionalSlice
-
 	if ps, ok := d.GetOk("point"); ok {
-		var err error
-		points, err = resourcerule.ExpandPointsToTwoDimensionalArray(ps.([]interface{}))
+		expanded, err := resourcerule.ExpandPointsToTwoDimensionalArray(ps.([]interface{}))
 		if err != nil {
-			return "", false, err
+			return 0, nil, false, err
 		}
+		points = expanded
 	}
 
-	hint := &wallarm.HintRead{
+	hintResp, err := client.HintRead(&wallarm.HintRead{
 		Limit:     APIListLimit,
 		Offset:    0,
 		OrderBy:   "updated_at",
 		OrderDesc: true,
 		Filter: &wallarm.HintFilter{
 			Clientid: []int{clientID},
-			ActionID: []int{actionID},
+			ActionID: []int{matchedAction.ID},
 			Type:     []string{hintType},
 			Point:    points,
 		},
-	}
-	actionHints, err := client.HintRead(hint)
+	})
 	if err != nil {
-		return "", false, err
+		return 0, nil, false, err
 	}
-	for _, rule := range *actionHints.Body {
-		existingID := fmt.Sprintf("%d/%d/%d/%s", clientID, actionID, rule.ID, hintType)
-		return existingID, true, nil
+
+	for _, r := range *hintResp.Body {
+		return matchedAction.ID, &r, true, nil
 	}
-	return "", false, nil
+	return 0, nil, false, nil
 }
 
 // ImportAsExistsError returns an error when a resource already exists in the API

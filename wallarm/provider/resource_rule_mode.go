@@ -41,11 +41,16 @@ func resourceWallarmMode() *schema.Resource {
 
 func resourceWallarmModeCreate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	if d.IsNewResource() {
-		existingID, exists, err := existsAction(d, m, "wallarm_mode")
+		actionID, rule, exists, err := existingHintForAction(d, m, "wallarm_mode")
 		if err != nil {
 			return diag.FromErr(err)
 		}
 		if exists {
+			clientID, err := retrieveClientID(d, m)
+			if err != nil {
+				return diag.FromErr(err)
+			}
+			existingID := fmt.Sprintf("%d/%d/%d/%s", clientID, actionID, rule.ID, rule.Mode)
 			return diag.FromErr(ImportAsExistsError("wallarm_rule_mode", existingID))
 		}
 	}

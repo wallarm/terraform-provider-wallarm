@@ -42,11 +42,16 @@ func resourceWallarmAPIAbuseMode() *schema.Resource {
 
 func resourceWallarmAPIAbuseModeCreate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	if d.IsNewResource() {
-		existingID, exists, err := existsAction(d, m, ruleTypeAPIAbuseMode)
+		actionID, rule, exists, err := existingHintForAction(d, m, ruleTypeAPIAbuseMode)
 		if err != nil {
 			return diag.FromErr(err)
 		}
 		if exists {
+			clientID, err := retrieveClientID(d, m)
+			if err != nil {
+				return diag.FromErr(err)
+			}
+			existingID := fmt.Sprintf("%d/%d/%d", clientID, actionID, rule.ID)
 			return diag.FromErr(ImportAsExistsError("wallarm_rule_api_abuse_mode", existingID))
 		}
 	}

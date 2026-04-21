@@ -225,7 +225,7 @@ func TestAccRuleAPIAbuseModeExistsError(t *testing.T) {
 			},
 			{
 				Config:      configDup,
-				ExpectError: ResourceExistsError(`[0-9]+/[0-9]+/[0-9]+/api_abuse_mode`, "wallarm_rule_api_abuse_mode"),
+				ExpectError: ResourceExistsError(`[0-9]+/[0-9]+/[0-9]+`, "wallarm_rule_api_abuse_mode"),
 			},
 		},
 	})
