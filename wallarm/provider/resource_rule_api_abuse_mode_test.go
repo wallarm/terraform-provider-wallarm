@@ -77,8 +77,14 @@ func testAccCheckWallarmRuleAPIAbuseModeDestroy(s *terraform.State) error {
 		if rs.Type != "wallarm_rule_api_abuse_mode" {
 			continue
 		}
-		ruleID, _ := strconv.Atoi(rs.Primary.Attributes["rule_id"])
-		clientID, _ := strconv.Atoi(rs.Primary.Attributes["client_id"])
+		ruleID, err := strconv.Atoi(rs.Primary.Attributes["rule_id"])
+		if err != nil {
+			return fmt.Errorf("invalid rule_id for %s: %w", rs.Primary.ID, err)
+		}
+		clientID, err := strconv.Atoi(rs.Primary.Attributes["client_id"])
+		if err != nil {
+			return fmt.Errorf("invalid client_id for %s: %w", rs.Primary.ID, err)
+		}
 		resp, err := client.HintRead(&wallarm.HintRead{
 			Limit: 1, Offset: 0,
 			Filter: &wallarm.HintFilter{Clientid: []int{clientID}, ID: []int{ruleID}},
@@ -102,6 +108,7 @@ func TestAccRuleAPIAbuseModeCreate_Basic(t *testing.T) {
 					testAccCheckWallarmRuleAPIAbuseModeExists("wallarm_rule_api_abuse_mode.basic"),
 					resource.TestCheckResourceAttr("wallarm_rule_api_abuse_mode.basic", "mode", "enabled"),
 					resource.TestCheckResourceAttr("wallarm_rule_api_abuse_mode.basic", "rule_type", "api_abuse_mode"),
+					resource.TestCheckResourceAttr("wallarm_rule_api_abuse_mode.basic", "action.#", "1"),
 				),
 			},
 			{
@@ -134,6 +141,8 @@ func TestAccRuleAPIAbuseModeCreate_Disabled(t *testing.T) {
 }
 
 func TestAccRuleAPIAbuseModeForceNewOnMode(t *testing.T) {
+	var firstRuleID string
+
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV5ProviderFactories: testAccProtoV5ProviderFactories,
@@ -141,13 +150,26 @@ func TestAccRuleAPIAbuseModeForceNewOnMode(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccRuleAPIAbuseModeConfigBasic("force_new", "enabled"),
-				Check:  testAccCheckWallarmRuleAPIAbuseModeExists("wallarm_rule_api_abuse_mode.force_new"),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckWallarmRuleAPIAbuseModeExists("wallarm_rule_api_abuse_mode.force_new"),
+					func(s *terraform.State) error {
+						firstRuleID = s.RootModule().Resources["wallarm_rule_api_abuse_mode.force_new"].Primary.Attributes["rule_id"]
+						return nil
+					},
+				),
 			},
 			{
 				Config: testAccRuleAPIAbuseModeConfigBasic("force_new", "disabled"),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckWallarmRuleAPIAbuseModeExists("wallarm_rule_api_abuse_mode.force_new"),
 					resource.TestCheckResourceAttr("wallarm_rule_api_abuse_mode.force_new", "mode", "disabled"),
+					func(s *terraform.State) error {
+						newID := s.RootModule().Resources["wallarm_rule_api_abuse_mode.force_new"].Primary.Attributes["rule_id"]
+						if newID == firstRuleID {
+							return fmt.Errorf("expected rule_id to change on ForceNew, still %s", newID)
+						}
+						return nil
+					},
 				),
 			},
 		},
@@ -182,11 +204,6 @@ func TestAccRuleAPIAbuseModeImport(t *testing.T) {
 				ImportState:             true,
 				ImportStateVerify:       true,
 				ImportStateVerifyIgnore: []string{"rule_type"},
-				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr("wallarm_rule_api_abuse_mode.import_me", "mode", "disabled"),
-					resource.TestCheckResourceAttrSet("wallarm_rule_api_abuse_mode.import_me", "action_id"),
-					resource.TestCheckResourceAttrSet("wallarm_rule_api_abuse_mode.import_me", "rule_id"),
-				),
 			},
 		},
 	})
@@ -208,7 +225,7 @@ func TestAccRuleAPIAbuseModeExistsError(t *testing.T) {
 			},
 			{
 				Config:      configDup,
-				ExpectError: regexp.MustCompile(`already exists.*terraform import`),
+				ExpectError: ResourceExistsError(`[0-9]+/[0-9]+/[0-9]+`, "wallarm_rule_api_abuse_mode"),
 			},
 		},
 	})
