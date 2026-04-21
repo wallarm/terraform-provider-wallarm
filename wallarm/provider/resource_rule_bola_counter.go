@@ -3,8 +3,6 @@ package wallarm
 import (
 	"context"
 	"fmt"
-	"strconv"
-	"strings"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/samber/lo"
@@ -30,7 +28,7 @@ func resourceWallarmBolaCounter() *schema.Resource {
 		ReadContext:   resourceWallarmBolaCounterRead,
 		DeleteContext: resourceWallarmBolaCounterDelete,
 		Importer: &schema.ResourceImporter{
-			StateContext: resourceWallarmBolaCounterImport,
+			StateContext: resourcerule.Import("bola_counter"),
 		},
 
 		CustomizeDiff: resourcerule.ActionScopeCustomizeDiff,
@@ -83,7 +81,7 @@ func resourceWallarmBolaCounterRead(_ context.Context, d *schema.ResourceData, m
 	if err != nil {
 		return diag.FromErr(err)
 	}
-	return diag.FromErr(resourcerule.ResourceRuleWallarmRead(d, clientID, apiClient(m), resourcerule.ReadOptionWithAction))
+	return diag.FromErr(resourcerule.Read(d, clientID, apiClient(m), resourcerule.ReadOptionWithAction))
 }
 
 func resourceWallarmBolaCounterDelete(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
@@ -104,33 +102,4 @@ func resourceWallarmBolaCounterDelete(_ context.Context, d *schema.ResourceData,
 	}
 
 	return nil
-}
-
-func resourceWallarmBolaCounterImport(_ context.Context, d *schema.ResourceData, _ interface{}) ([]*schema.ResourceData, error) {
-	idAttr := strings.SplitN(d.Id(), "/", 3)
-	if len(idAttr) == 3 {
-		clientID, err := strconv.Atoi(idAttr[0])
-		if err != nil {
-			return nil, err
-		}
-		actionID, err := strconv.Atoi(idAttr[1])
-		if err != nil {
-			return nil, err
-		}
-		ruleID, err := strconv.Atoi(idAttr[2])
-		if err != nil {
-			return nil, err
-		}
-		d.Set("action_id", actionID)
-		d.Set("rule_id", ruleID)
-		d.Set("rule_type", "bola_counter")
-
-		existingID := fmt.Sprintf("%d/%d/%d", clientID, actionID, ruleID)
-		d.SetId(existingID)
-
-	} else {
-		return nil, fmt.Errorf("invalid id (%q) specified, should be in format \"{clientID}/{actionID}/{ruleID}\"", d.Id())
-	}
-
-	return []*schema.ResourceData{d}, nil
 }

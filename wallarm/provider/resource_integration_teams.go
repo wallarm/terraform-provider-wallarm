@@ -19,7 +19,7 @@ func resourceWallarmTeams() *schema.Resource {
 		DeleteContext: resourceWallarmTeamsDelete,
 
 		Importer: &schema.ResourceImporter{
-			StateContext: schema.ImportStatePassthroughContext,
+			StateContext: importIntegration("ms_teams"),
 		},
 
 		Schema: map[string]*schema.Schema{

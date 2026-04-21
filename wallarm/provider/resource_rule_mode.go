@@ -29,7 +29,7 @@ func resourceWallarmMode() *schema.Resource {
 	return &schema.Resource{
 		CreateContext: resourceWallarmModeCreate,
 		ReadContext:   resourceWallarmModeRead,
-		UpdateContext: resourceWallarmModeUpdate,
+		UpdateContext: resourcerule.Update(apiClient),
 		DeleteContext: resourceWallarmModeDelete,
 		Importer: &schema.ResourceImporter{
 			StateContext: resourceWallarmModeImport,
@@ -95,7 +95,7 @@ func resourceWallarmModeRead(_ context.Context, d *schema.ResourceData, m interf
 	if err != nil {
 		return diag.FromErr(err)
 	}
-	return diag.FromErr(resourcerule.ResourceRuleWallarmRead(d, clientID, apiClient(m), resourcerule.ReadOptionWithAction))
+	return diag.FromErr(resourcerule.Read(d, clientID, apiClient(m), resourcerule.ReadOptionWithAction))
 }
 
 func resourceWallarmModeDelete(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
@@ -116,17 +116,6 @@ func resourceWallarmModeDelete(_ context.Context, d *schema.ResourceData, m inte
 	}
 
 	return nil
-}
-
-func resourceWallarmModeUpdate(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
-	client := apiClient(m)
-	variativityDisabled, _ := d.Get("variativity_disabled").(bool)
-	comment, _ := d.Get("comment").(string)
-	_, err := client.HintUpdateV3(d.Get("rule_id").(int), &wallarm.HintUpdateV3Params{
-		VariativityDisabled: lo.ToPtr(variativityDisabled),
-		Comment:             lo.ToPtr(comment),
-	})
-	return diag.FromErr(err)
 }
 
 func resourceWallarmModeImport(_ context.Context, d *schema.ResourceData, _ interface{}) ([]*schema.ResourceData, error) {

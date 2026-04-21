@@ -19,7 +19,7 @@ func resourceWallarmPagerDuty() *schema.Resource {
 		DeleteContext: resourceWallarmPagerDutyDelete,
 
 		Importer: &schema.ResourceImporter{
-			StateContext: schema.ImportStatePassthroughContext,
+			StateContext: importIntegration("pager_duty"),
 		},
 
 		Schema: map[string]*schema.Schema{

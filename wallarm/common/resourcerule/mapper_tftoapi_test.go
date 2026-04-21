@@ -95,3 +95,133 @@ func TestAdvancedConditionsToAPI_Values(t *testing.T) {
 		t.Errorf("wrong value: %v", got[0].Value)
 	}
 }
+
+func TestEnumeratedParametersToAPI_RegexpMode(t *testing.T) {
+	input := []interface{}{
+		map[string]interface{}{
+			"mode":                  "regexp",
+			"name_regexps":          []interface{}{"^user_"},
+			"value_regexps":         []interface{}{"\\d+"},
+			"plain_parameters":      true,
+			"additional_parameters": false,
+		},
+	}
+	got, err := EnumeratedParametersToAPI(input)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if got.Mode != "regexp" {
+		t.Errorf("mode: got %q, want regexp", got.Mode)
+	}
+	if len(got.NameRegexps) != 1 || got.NameRegexps[0] != "^user_" {
+		t.Errorf("name_regexps: got %v", got.NameRegexps)
+	}
+	if got.PlainParameters == nil || !*got.PlainParameters {
+		t.Errorf("plain_parameters: got %v", got.PlainParameters)
+	}
+	if got.AdditionalParameters == nil || *got.AdditionalParameters {
+		t.Errorf("additional_parameters: got %v", got.AdditionalParameters)
+	}
+}
+
+func TestEnumeratedParametersToAPI_RegexpModeDefaultsEmpty(t *testing.T) {
+	// Empty name/value regexps lists → helper injects [""] so the API receives a list.
+	input := []interface{}{
+		map[string]interface{}{
+			"mode":          "regexp",
+			"name_regexps":  []interface{}{},
+			"value_regexps": []interface{}{},
+		},
+	}
+	got, err := EnumeratedParametersToAPI(input)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(got.NameRegexps) != 1 || got.NameRegexps[0] != "" {
+		t.Errorf("expected NameRegexps=[\"\"], got %v", got.NameRegexps)
+	}
+	if len(got.ValueRegexp) != 1 || got.ValueRegexp[0] != "" {
+		t.Errorf("expected ValueRegexp=[\"\"], got %v", got.ValueRegexp)
+	}
+}
+
+func TestEnumeratedParametersToAPI_ExactMode(t *testing.T) {
+	input := []interface{}{
+		map[string]interface{}{
+			"mode": "exact",
+			"points": []interface{}{
+				map[string]interface{}{
+					"point":     []interface{}{"get", "password"},
+					"sensitive": true,
+				},
+			},
+		},
+	}
+	got, err := EnumeratedParametersToAPI(input)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if got.Mode != "exact" {
+		t.Errorf("mode: got %q, want exact", got.Mode)
+	}
+	if len(got.Points) != 1 {
+		t.Fatalf("expected 1 points, got %d", len(got.Points))
+	}
+	if !got.Points[0].Sensitive {
+		t.Errorf("expected sensitive=true, got false")
+	}
+}
+
+func TestEnumeratedParametersToAPI_ExactModeEmptyPoints(t *testing.T) {
+	input := []interface{}{
+		map[string]interface{}{"mode": "exact", "points": []interface{}{}},
+	}
+	got, err := EnumeratedParametersToAPI(input)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if got.Mode != "exact" {
+		t.Errorf("mode: got %q, want exact", got.Mode)
+	}
+	if got.Points != nil {
+		t.Errorf("expected nil points for empty input, got %v", got.Points)
+	}
+}
+
+func TestArbitraryConditionsToAPI_Empty(t *testing.T) {
+	got, err := ArbitraryConditionsToAPI([]interface{}{})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if got != nil {
+		t.Errorf("expected nil, got %v", got)
+	}
+}
+
+func TestArbitraryConditionsToAPI_SingleCondition(t *testing.T) {
+	input := []interface{}{
+		map[string]interface{}{
+			"point": []interface{}{
+				[]interface{}{"header", "HOST"},
+			},
+			"operator": "eq",
+			"value":    []interface{}{"example.com"},
+		},
+	}
+	got, err := ArbitraryConditionsToAPI(input)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(got) != 1 {
+		t.Fatalf("expected 1 condition, got %d", len(got))
+	}
+	if got[0].Operator != "eq" {
+		t.Errorf("operator: got %q, want eq", got[0].Operator)
+	}
+	if len(got[0].Value) != 1 || got[0].Value[0] != "example.com" {
+		t.Errorf("value: got %v", got[0].Value)
+	}
+	if len(got[0].Point) != 1 || len(got[0].Point[0]) != 2 {
+		t.Errorf("point shape: got %v", got[0].Point)
+	}
+}

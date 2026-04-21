@@ -40,5 +40,14 @@ resource "wallarm_user" "user" {
 * `user_id` - Unique ID of the created user.
 * `username` - Username for authentication in Wallarm Console. User email is used as the username.
 
+## Import
+
+```
+$ terraform import wallarm_user.example 1111/2222
+```
+
+* `1111` - Client ID.
+* `2222` - User ID.
+
 [1]: https://docs.wallarm.com/user-guides/settings/users/
 [2]: https://docs.wallarm.com/installation/multi-tenant/overview/

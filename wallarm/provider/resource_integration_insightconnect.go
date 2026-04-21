@@ -19,7 +19,7 @@ func resourceWallarmInsightConnect() *schema.Resource {
 		DeleteContext: resourceWallarmInsightConnectDelete,
 
 		Importer: &schema.ResourceImporter{
-			StateContext: schema.ImportStatePassthroughContext,
+			StateContext: importIntegration("insight_connect"),
 		},
 
 		CustomizeDiff: validateWithHeadersOnlySiem(),

@@ -46,7 +46,7 @@ func resourceWallarmCredentialStuffingRegex() *schema.Resource {
 	return &schema.Resource{
 		CreateContext: resourceWallarmCredentialStuffingRegexCreate,
 		ReadContext:   resourceWallarmCredentialStuffingRegexRead,
-		UpdateContext: resourceWallarmCredentialStuffingRegexUpdate,
+		UpdateContext: resourcerule.Update(apiClient),
 		DeleteContext: resourceWallarmCredentialStuffingRegexDelete,
 		Importer: &schema.ResourceImporter{
 			StateContext: resourceWallarmCredentialStuffingRegexImport,
@@ -172,17 +172,6 @@ func resourceWallarmCredentialStuffingRegexDelete(_ context.Context, d *schema.R
 
 	m.(*ProviderMeta).CredentialStuffingCache.Invalidate()
 	return nil
-}
-
-func resourceWallarmCredentialStuffingRegexUpdate(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
-	client := apiClient(m)
-	variativityDisabled, _ := d.Get("variativity_disabled").(bool)
-	comment, _ := d.Get("comment").(string)
-	_, err := client.HintUpdateV3(d.Get("rule_id").(int), &wallarm.HintUpdateV3Params{
-		VariativityDisabled: lo.ToPtr(variativityDisabled),
-		Comment:             lo.ToPtr(comment),
-	})
-	return diag.FromErr(err)
 }
 
 func resourceWallarmCredentialStuffingRegexImport(_ context.Context, d *schema.ResourceData, m interface{}) ([]*schema.ResourceData, error) {

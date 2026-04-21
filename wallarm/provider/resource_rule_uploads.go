@@ -3,8 +3,6 @@ package wallarm
 import (
 	"context"
 	"fmt"
-	"strconv"
-	"strings"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/samber/lo"
@@ -31,10 +29,10 @@ func resourceWallarmUploads() *schema.Resource {
 	return &schema.Resource{
 		CreateContext: resourceWallarmUploadsCreate,
 		ReadContext:   resourceWallarmUploadsRead,
-		UpdateContext: resourceWallarmUploadsUpdate,
+		UpdateContext: resourcerule.Update(apiClient),
 		DeleteContext: resourceWallarmUploadsDelete,
 		Importer: &schema.ResourceImporter{
-			StateContext: resourceWallarmUploadsImport,
+			StateContext: resourcerule.Import("uploads"),
 		},
 		CustomizeDiff: resourcerule.ActionScopeCustomizeDiff,
 		Schema:        lo.Assign(fields, commonResourceRuleFields, resourcerule.ActionScopeFields),
@@ -100,7 +98,7 @@ func resourceWallarmUploadsRead(_ context.Context, d *schema.ResourceData, m int
 	if err != nil {
 		return diag.FromErr(err)
 	}
-	return diag.FromErr(resourcerule.ResourceRuleWallarmRead(d, clientID, apiClient(m),
+	return diag.FromErr(resourcerule.Read(d, clientID, apiClient(m),
 		resourcerule.ReadOptionWithPoint))
 }
 
@@ -123,43 +121,4 @@ func resourceWallarmUploadsDelete(_ context.Context, d *schema.ResourceData, m i
 	return nil
 }
 
-func resourceWallarmUploadsUpdate(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
-	client := apiClient(m)
-	variativityDisabled, _ := d.Get("variativity_disabled").(bool)
-	comment, _ := d.Get("comment").(string)
-	_, err := client.HintUpdateV3(d.Get("rule_id").(int), &wallarm.HintUpdateV3Params{
-		VariativityDisabled: lo.ToPtr(variativityDisabled),
-		Comment:             lo.ToPtr(comment),
-	})
-	return diag.FromErr(err)
-}
-
 // nolint:dupl
-func resourceWallarmUploadsImport(_ context.Context, d *schema.ResourceData, _ interface{}) ([]*schema.ResourceData, error) {
-	idAttr := strings.SplitN(d.Id(), "/", 3)
-	if len(idAttr) == 3 {
-		clientID, err := strconv.Atoi(idAttr[0])
-		if err != nil {
-			return nil, err
-		}
-		actionID, err := strconv.Atoi(idAttr[1])
-		if err != nil {
-			return nil, err
-		}
-		ruleID, err := strconv.Atoi(idAttr[2])
-		if err != nil {
-			return nil, err
-		}
-		d.Set("action_id", actionID)
-		d.Set("rule_id", ruleID)
-		d.Set("rule_type", "uploads")
-
-		existingID := fmt.Sprintf("%d/%d/%d", clientID, actionID, ruleID)
-		d.SetId(existingID)
-
-	} else {
-		return nil, fmt.Errorf("invalid id (%q) specified, should be in format \"{clientID}/{actionID}/{ruleID}\"", d.Id())
-	}
-
-	return []*schema.ResourceData{d}, nil
-}

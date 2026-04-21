@@ -19,7 +19,7 @@ func resourceWallarmWebhook() *schema.Resource {
 		DeleteContext: resourceWallarmWebhookDelete,
 
 		Importer: &schema.ResourceImporter{
-			StateContext: schema.ImportStatePassthroughContext,
+			StateContext: importIntegration("web_hooks"),
 		},
 
 		CustomizeDiff: validateWithHeadersOnlySiem(),

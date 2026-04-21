@@ -19,7 +19,7 @@ func resourceWallarmOpsGenie() *schema.Resource {
 		DeleteContext: resourceWallarmOpsGenieDelete,
 
 		Importer: &schema.ResourceImporter{
-			StateContext: schema.ImportStatePassthroughContext,
+			StateContext: importIntegration("opsgenie"),
 		},
 
 		Schema: map[string]*schema.Schema{

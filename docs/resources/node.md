@@ -33,5 +33,14 @@ resource "wallarm_node" "terraform" {
 * `node_uuid` - Unique UUID of the created node.
 * `token` - Token of the Wallarm node.
 
+## Import
+
+```
+$ terraform import wallarm_node.example 1111/2222
+```
+
+* `1111` - Client ID.
+* `2222` - Node ID.
+
 [1]: https://docs.wallarm.com/user-guides/nodes/nodes/
 [2]: https://docs.wallarm.com/installation/multi-tenant/overview/

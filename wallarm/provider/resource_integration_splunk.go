@@ -19,7 +19,7 @@ func resourceWallarmSplunk() *schema.Resource {
 		DeleteContext: resourceWallarmSplunkDelete,
 
 		Importer: &schema.ResourceImporter{
-			StateContext: schema.ImportStatePassthroughContext,
+			StateContext: importIntegration("splunk"),
 		},
 
 		CustomizeDiff: validateWithHeadersOnlySiem(),

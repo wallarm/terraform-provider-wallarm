@@ -31,4 +31,12 @@ resource "wallarm_tenant" "tenant1" {
 
 * `tenant_id` - client ID of the created tenant.
 
+## Import
+
+```
+$ terraform import wallarm_tenant.example 42
+```
+
+* `42` - Tenant client ID (the ID of the tenant account itself, not the parent client).
+
 [1]: https://docs.wallarm.com/installation/multi-tenant/overview/

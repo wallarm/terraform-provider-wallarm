@@ -9,6 +9,8 @@ import (
 	"log"
 	"math/big"
 	"regexp"
+	"strconv"
+	"strings"
 	"unicode"
 
 	"github.com/wallarm/wallarm-go"
@@ -25,7 +27,7 @@ func resourceWallarmUser() *schema.Resource {
 		UpdateContext: resourceWallarmUserUpdate,
 		DeleteContext: resourceWallarmUserDelete,
 		Importer: &schema.ResourceImporter{
-			StateContext: schema.ImportStatePassthroughContext,
+			StateContext: resourceWallarmUserImport,
 		},
 
 		Schema: map[string]*schema.Schema{
@@ -310,4 +312,24 @@ func resourceWallarmUserDelete(_ context.Context, d *schema.ResourceData, m inte
 		return diag.FromErr(err)
 	}
 	return nil
+}
+
+// resourceWallarmUserImport parses a 2-part import ID "{client_id}/{user_id}".
+func resourceWallarmUserImport(_ context.Context, d *schema.ResourceData, _ interface{}) ([]*schema.ResourceData, error) {
+	parts := strings.SplitN(d.Id(), "/", 3)
+	if len(parts) != 2 {
+		return nil, fmt.Errorf("invalid id (%q) specified, should be in format \"{client_id}/{user_id}\"", d.Id())
+	}
+	clientID, err := strconv.Atoi(parts[0])
+	if err != nil {
+		return nil, fmt.Errorf("invalid client_id: %w", err)
+	}
+	userID, err := strconv.Atoi(parts[1])
+	if err != nil {
+		return nil, fmt.Errorf("invalid user_id: %w", err)
+	}
+	d.Set("client_id", clientID)
+	d.Set("user_id", userID)
+	d.SetId(fmt.Sprintf("%d/%d", clientID, userID))
+	return []*schema.ResourceData{d}, nil
 }

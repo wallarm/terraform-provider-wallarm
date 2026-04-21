@@ -19,7 +19,7 @@ func resourceWallarmTelegram() *schema.Resource {
 		DeleteContext: resourceWallarmTelegramDelete,
 
 		Importer: &schema.ResourceImporter{
-			StateContext: schema.ImportStatePassthroughContext,
+			StateContext: importIntegration("telegram"),
 		},
 
 		Schema: map[string]*schema.Schema{

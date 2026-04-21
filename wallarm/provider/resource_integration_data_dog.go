@@ -19,7 +19,7 @@ func resourceWallarmDataDog() *schema.Resource {
 		DeleteContext: resourceWallarmDataDogDelete,
 
 		Importer: &schema.ResourceImporter{
-			StateContext: schema.ImportStatePassthroughContext,
+			StateContext: importIntegration("data_dog"),
 		},
 
 		CustomizeDiff: validateWithHeadersOnlySiem(),

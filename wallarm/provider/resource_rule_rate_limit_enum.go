@@ -2,9 +2,6 @@ package wallarm
 
 import (
 	"context"
-	"fmt"
-	"strconv"
-	"strings"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
@@ -35,10 +32,10 @@ func resourceWallarmRateLimitEnum() *schema.Resource {
 	return &schema.Resource{
 		CreateContext: resourceWallarmRateLimitEnumCreate,
 		ReadContext:   resourceWallarmRateLimitEnumRead,
-		UpdateContext: resourceWallarmRateLimitEnumUpdate,
+		UpdateContext: resourcerule.Update(apiClient),
 		DeleteContext: resourceWallarmRateLimitEnumDelete,
 		Importer: &schema.ResourceImporter{
-			StateContext: resourceWallarmRateLimitEnumImport,
+			StateContext: resourcerule.Import("rate_limit_enum"),
 		},
 		CustomizeDiff: resourcerule.ActionScopeCustomizeDiff,
 		Schema:        sh,
@@ -50,7 +47,7 @@ func resourceWallarmRateLimitEnumCreate(ctx context.Context, d *schema.ResourceD
 	if err != nil {
 		return diag.FromErr(err)
 	}
-	return resourcerule.ResourceRuleWallarmCreate(ctx, d, apiClient(m), clientID,
+	return resourcerule.Create(ctx, d, apiClient(m), clientID,
 		"rate_limit_enum", "rate_limit", resourceWallarmRateLimitEnumRead, m)
 }
 
@@ -59,7 +56,7 @@ func resourceWallarmRateLimitEnumRead(_ context.Context, d *schema.ResourceData,
 	if err != nil {
 		return diag.FromErr(err)
 	}
-	return diag.FromErr(resourcerule.ResourceRuleWallarmRead(d, clientID, apiClient(m),
+	return diag.FromErr(resourcerule.Read(d, clientID, apiClient(m),
 		resourcerule.ReadOptionWithMode,
 		resourcerule.ReadOptionWithAction,
 		resourcerule.ReadOptionWithThreshold,
@@ -85,44 +82,4 @@ func resourceWallarmRateLimitEnumDelete(_ context.Context, d *schema.ResourceDat
 		return diag.FromErr(err)
 	}
 	return nil
-}
-
-func resourceWallarmRateLimitEnumUpdate(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
-	client := apiClient(m)
-	variativityDisabled, _ := d.Get("variativity_disabled").(bool)
-	comment, _ := d.Get("comment").(string)
-	_, err := client.HintUpdateV3(d.Get("rule_id").(int), &wallarm.HintUpdateV3Params{
-		VariativityDisabled: lo.ToPtr(variativityDisabled),
-		Comment:             lo.ToPtr(comment),
-	})
-	return diag.FromErr(err)
-}
-
-func resourceWallarmRateLimitEnumImport(_ context.Context, d *schema.ResourceData, _ interface{}) ([]*schema.ResourceData, error) {
-	idAttr := strings.SplitN(d.Id(), "/", 3)
-	if len(idAttr) == 3 {
-		clientID, err := strconv.Atoi(idAttr[0])
-		if err != nil {
-			return nil, err
-		}
-		actionID, err := strconv.Atoi(idAttr[1])
-		if err != nil {
-			return nil, err
-		}
-		ruleID, err := strconv.Atoi(idAttr[2])
-		if err != nil {
-			return nil, err
-		}
-		d.Set("action_id", actionID)
-		d.Set("rule_id", ruleID)
-		d.Set("rule_type", "rate_limit_enum")
-
-		existingID := fmt.Sprintf("%d/%d/%d", clientID, actionID, ruleID)
-		d.SetId(existingID)
-
-	} else {
-		return nil, fmt.Errorf("invalid id (%q) specified, should be in format \"{clientID}/{actionID}/{ruleID}\"", d.Id())
-	}
-
-	return []*schema.ResourceData{d}, nil
 }
