@@ -2,8 +2,8 @@ package wallarm
 
 import (
 	"fmt"
-	"regexp"
 	"strconv"
+	"strings"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
@@ -185,17 +185,27 @@ func TestAccRuleAPIAbuseModeForceNewOnMode(t *testing.T) {
 	})
 }
 
-func TestAccRuleAPIAbuseModeInvalidMode(t *testing.T) {
-	resource.Test(t, resource.TestCase{
-		IsUnitTest:               true,
-		ProtoV5ProviderFactories: testAccProtoV5ProviderFactories,
-		Steps: []resource.TestStep{
-			{
-				Config:      testAccRuleAPIAbuseModeConfigBasic("bad", "bad.example.com", "monitoring"),
-				ExpectError: regexp.MustCompile(`expected mode to be one of \["enabled" "disabled"\]`),
-			},
-		},
-	})
+// Pure unit test — exercises the `mode` ValidateFunc directly without
+// booting the plugintest harness (which otherwise pulls Terraform via
+// hc-install and fails on expired HashiCorp GPG keys).
+func TestAPIAbuseModeValidation(t *testing.T) {
+	t.Parallel()
+	schema := resourceWallarmAPIAbuseMode().Schema["mode"]
+
+	_, errs := schema.ValidateFunc("monitoring", "mode")
+	if len(errs) == 0 {
+		t.Fatal("expected validation error for invalid mode, got none")
+	}
+	want := `expected mode to be one of ["enabled" "disabled"]`
+	if !strings.Contains(errs[0].Error(), want) {
+		t.Errorf("want error containing %q, got %q", want, errs[0].Error())
+	}
+
+	for _, good := range []string{"enabled", "disabled"} {
+		if _, errs := schema.ValidateFunc(good, "mode"); len(errs) != 0 {
+			t.Errorf("valid value %q rejected: %v", good, errs)
+		}
+	}
 }
 
 func TestAccRuleAPIAbuseModeImport(t *testing.T) {
