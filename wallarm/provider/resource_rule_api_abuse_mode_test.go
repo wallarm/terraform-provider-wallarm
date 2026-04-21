@@ -15,16 +15,16 @@ import (
 // Shared HCL — minimal "enabled" rule with a single header match.
 func testAccRuleAPIAbuseModeConfigBasic(name, host, mode string) string {
 	return fmt.Sprintf(`
-resource "wallarm_rule_api_abuse_mode" %q {
-  mode  = %q
+resource "wallarm_rule_api_abuse_mode" %[1]q {
+  mode  = %[3]q
   title = "acc test %[1]s"
   action {
     type  = "iequal"
-    value = %q
+    value = %[2]q
     point = { header = "HOST" }
   }
 }
-`, name, mode, host)
+`, name, host, mode)
 }
 
 // Pinterest-style scope from the design spec.
