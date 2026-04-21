@@ -102,7 +102,7 @@ Session-based rules for real-time threat mitigation. In the Wallarm Console UI t
 | `wallarm_rule_rate_limit_enum` | DoS protection (rate limiting) |
 | `wallarm_rule_file_upload_size_limit` | File upload restriction policy |
 
-### Rules (20 resources)
+### Rules (21 resources)
 
 Request-level rules for detection tuning, virtual patching, and data handling. These appear under the Rules section in the Wallarm Console UI.
 
@@ -130,6 +130,7 @@ Request-level rules for detection tuning, virtual patching, and data handling. T
 | `wallarm_rule_bola_counter` | BOLA counter |
 | `wallarm_rule_credential_stuffing_regex` | Credential stuffing regex |
 | `wallarm_rule_credential_stuffing_point` | Credential stuffing detection points |
+| `wallarm_rule_api_abuse_mode` | Toggle API Abuse Prevention per request scope |
 
 ### IP Lists (3 resources)
 

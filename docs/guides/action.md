@@ -161,8 +161,7 @@ resource "wallarm_rule_mode" "example" {
 
 The Wallarm API reuses Actions (scope definitions). If two rules have identical conditions, they share the same Action. This means:
 - Creating a rule with the same conditions as an existing one will not create a duplicate Action.
-- The provider checks for existing Actions before creating (the `existsAction` check).
-- If the Action already exists, the provider returns an error suggesting to import the existing resource.
+- The provider checks for existing rules on the same Action before creating. If a rule of the same type already exists on the matching scope, the provider returns an error suggesting to import it instead.
 
 ## Common fields on all rule resources
 

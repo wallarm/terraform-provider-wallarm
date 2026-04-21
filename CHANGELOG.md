@@ -1,3 +1,25 @@
+# v2.3.5 (Apr 22, 2026)
+
+## FEATURES:
+
+* New resource `wallarm_rule_api_abuse_mode` — toggles [API Abuse Prevention](https://docs.wallarm.com/api-abuse-prevention/overview/) for requests matching an action scope. Primary use case: allowlist trusted crawlers (Pinterest, Google, monitoring agents) with `mode = "disabled"`. `mode` is `ForceNew` — changing it destroys and recreates the rule.
+
+## IMPROVEMENTS:
+
+* Extracted shared `existingHintForAction` helper for duplicate-rule detection on Create. Used by `wallarm_rule_mode` and `wallarm_rule_api_abuse_mode`; replaces the per-resource `existsAction` + `existsHint` pair.
+* Replaced hand-rolled action-conditions comparison (`equalWithoutOrder`, `compareActionDetails`, `actionPointsEqual`, `convertToStringSlice`) with a single `resourcerule.ConditionsHash` compare. Matches the Wallarm API's own canonical action identity and removes ~85 lines of per-field equality logic.
+* Added `testAccNewAPIClient()` test helper for CheckDestroy in tests that use `ProtoV5ProviderFactories`. Constructs an API client from `WALLARM_API_TOKEN` / `WALLARM_API_HOST` without going through the shared `testAccProvider`, avoiding a `Configure` race under `-race`.
+
+## BUG FIXES:
+
+* `CachedClient.HintDelete` now invalidates the hint cache on success. Previously the cache could return stale entries for just-deleted rules, surfacing in acceptance tests as "dangling resource" errors in CheckDestroy after a Create path that populated the cache.
+
+## DOCUMENTATION:
+
+* New `docs/resources/rule_api_abuse_mode.md` with Pinterest allowlist example, Argument/Attributes reference, and 3-part (`{client_id}/{action_id}/{rule_id}`) Import section.
+* New `examples/wallarm_rule_api_abuse_mode.tf` with three scope patterns (enable per instance, enable per host, Pinterest allowlist).
+* README Rules table: added `wallarm_rule_api_abuse_mode` entry; Rules count bumped 20 → 21.
+
 # v2.3.4 (Apr 20, 2026)
 
 ## IMPROVEMENTS:

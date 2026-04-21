@@ -55,7 +55,7 @@ func TestAccRuleWmodeCreate_DefaultBranch(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(name, "action.#", "0"),
 				),
-				ExpectError: ResourceExistsError("[0-9]+/[0-9]+/[0-9]+/wallarm_mode", "wallarm_rule_mode"),
+				ExpectError: ResourceExistsError("[0-9]+/[0-9]+/[0-9]+/\\w+", "wallarm_rule_mode"),
 			},
 		},
 	})
