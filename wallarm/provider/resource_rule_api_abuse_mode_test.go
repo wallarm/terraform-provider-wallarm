@@ -87,10 +87,13 @@ func testAccCheckWallarmRuleAPIAbuseModeDestroy(s *terraform.State) error {
 			return fmt.Errorf("invalid client_id for %s: %w", rs.Primary.ID, err)
 		}
 
-		// Ground-truth: bypass cache, go straight to wallarm-go API
+		// Ground-truth: bypass cache, go straight to wallarm-go API.
+		// OrderBy is REQUIRED — API returns 400 without it.
 		rawReq := &wallarm.HintRead{
 			Limit: 1, Offset: 0,
-			Filter: &wallarm.HintFilter{Clientid: []int{clientID}, ID: []int{ruleID}},
+			OrderBy:   "updated_at",
+			OrderDesc: true,
+			Filter:    &wallarm.HintFilter{Clientid: []int{clientID}, ID: []int{ruleID}},
 		}
 		rawResp, rawErr := cached.API.HintRead(rawReq)
 		rawCount := 0
