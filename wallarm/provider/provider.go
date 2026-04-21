@@ -148,7 +148,7 @@ func Provider() *schema.Provider {
 			"wallarm_integration_telegram":           resourceWallarmTelegram(),
 			"wallarm_integration_teams":              resourceWallarmTeams(),
 			"wallarm_trigger":                        resourceWallarmTrigger(),
-			"wallarm_rule_api_abuse_mode":             resourceWallarmAPIAbuseMode(),
+			"wallarm_rule_api_abuse_mode":            resourceWallarmAPIAbuseMode(),
 			"wallarm_rule_binary_data":               resourceWallarmBinaryData(),
 			"wallarm_rule_enum":                      resourceWallarmEnum(),
 			"wallarm_rule_disable_attack_type":       resourceWallarmDisableAttackType(),

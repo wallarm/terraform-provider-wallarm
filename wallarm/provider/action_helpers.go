@@ -2,93 +2,11 @@ package wallarm
 
 import (
 	"fmt"
-	"reflect"
-	"sort"
-	"strings"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/wallarm/terraform-provider-wallarm/wallarm/common/resourcerule"
 	"github.com/wallarm/wallarm-go"
 )
-
-// equalWithoutOrder tells whether a and b contain
-// the same elements regardless the order.
-// Applicable only for []wallarm.ActionDetails
-func equalWithoutOrder(conditionsA, conditionsB []wallarm.ActionDetails) bool {
-	if len(conditionsA) != len(conditionsB) {
-		return false
-	}
-
-	// To embrace the default branch without conditions
-	if len(conditionsA) == 0 && len(conditionsB) == 0 {
-		return true
-	}
-
-	sort.Slice(conditionsA, func(i, j int) bool {
-		pointStrI := strings.Join(convertToStringSlice(conditionsA[i].Point), "/")
-		pointStrJ := strings.Join(convertToStringSlice(conditionsA[j].Point), "/")
-		return pointStrI < pointStrJ
-	})
-
-	sort.Slice(conditionsB, func(i, j int) bool {
-		pointStrI := strings.Join(convertToStringSlice(conditionsB[i].Point), "/")
-		pointStrJ := strings.Join(convertToStringSlice(conditionsB[j].Point), "/")
-		return pointStrI < pointStrJ
-	})
-
-	for i := range conditionsA {
-		if !compareActionDetails(conditionsA[i], conditionsB[i]) {
-			return false
-		}
-	}
-
-	return true
-}
-
-func convertToStringSlice(input []interface{}) []string {
-	result := make([]string, 0, len(input))
-	for _, v := range input {
-		result = append(result, fmt.Sprintf("%v", v))
-	}
-	return result
-}
-
-// compareActionDetails compares two action conditions for equality.
-func compareActionDetails(condition1, condition2 wallarm.ActionDetails) bool {
-	return condition1.Type == condition2.Type &&
-		actionPointsEqual(condition1.Point, condition2.Point) &&
-		reflect.DeepEqual(condition1.Value, condition2.Value)
-}
-
-func actionPointsEqual(listA, listB []interface{}) bool {
-	aLen := len(listA)
-	bLen := len(listB)
-
-	if aLen != bLen {
-		return false
-	}
-
-	visited := make([]bool, bLen)
-
-	for i := 0; i < aLen; i++ {
-		found := false
-		element := listA[i]
-		for j := 0; j < bLen; j++ {
-			if visited[j] {
-				continue
-			}
-			if element == listB[j] {
-				visited[j] = true
-				found = true
-				break
-			}
-		}
-		if !found {
-			return false
-		}
-	}
-	return true
-}
 
 // existingHintForAction looks for a rule of the given hintType attached to an
 // action whose conditions match the resource's current `action {}` blocks,
@@ -101,7 +19,7 @@ func actionPointsEqual(listA, listB []interface{}) bool {
 // Returns:
 //   - actionID: the ID of the matched action (so callers can build a full ID)
 //   - rule:     the existing rule itself (callers read fields like Mode for ID
-//               formatting when needed)
+//     formatting when needed)
 //   - exists:   true iff a match was found
 func existingHintForAction(d *schema.ResourceData, m interface{}, hintType string) (actionID int, rule *wallarm.ActionBody, exists bool, err error) {
 	client := apiClient(m)
@@ -128,10 +46,11 @@ func existingHintForAction(d *schema.ResourceData, m interface{}, hintType strin
 		return 0, nil, false, err
 	}
 
+	wantHash := resourcerule.ConditionsHash(action)
 	var matchedAction *wallarm.ActionEntry
-	for _, entry := range listResp.Body {
-		if equalWithoutOrder(action, entry.Conditions) {
-			matchedAction = &entry
+	for i, entry := range listResp.Body {
+		if resourcerule.ConditionsHash(entry.Conditions) == wantHash {
+			matchedAction = &listResp.Body[i]
 			break
 		}
 	}
