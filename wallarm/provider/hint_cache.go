@@ -363,10 +363,17 @@ func (c *CachedClient) HintCreate(body *wallarm.ActionCreate) (*wallarm.ActionCr
 	return resp, nil
 }
 
-// TODO: add test — mock API, verify delegation
-// HintDelete delegates to the underlying API.
+// HintDelete delegates to the underlying API and invalidates the hint cache
+// on success. Without invalidation, a subsequent HintRead could return stale
+// entries for the just-deleted rule — surfaces in acceptance tests as
+// "dangling resource" failures in CheckDestroy after a Create path that also
+// populated the cache (e.g., existingHintForAction → HintRead).
 func (c *CachedClient) HintDelete(body *wallarm.HintDelete) error {
-	return c.API.HintDelete(body)
+	if err := c.API.HintDelete(body); err != nil {
+		return err
+	}
+	c.hintCache.Invalidate("HintDelete")
+	return nil
 }
 
 // TODO: add test — mock API, verify response cached via Insert
