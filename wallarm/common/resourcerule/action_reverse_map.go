@@ -508,6 +508,7 @@ func ActionValueString(a wallarm.ActionDetails) string {
 
 // APITypeToTerraformResource maps Wallarm API rule types to Terraform resource names.
 var APITypeToTerraformResource = map[string]string{
+	"api_abuse_mode":         "wallarm_rule_api_abuse_mode",
 	"binary_data":            "wallarm_rule_binary_data",
 	"bola":                   "wallarm_rule_bola",
 	"bola_counter":           "wallarm_rule_bola_counter",
