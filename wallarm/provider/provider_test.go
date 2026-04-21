@@ -12,6 +12,7 @@ import (
 	"strconv"
 	"testing"
 
+	"github.com/hashicorp/terraform-plugin-go/tfprotov5"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	// wallarm "github.com/wallarm/terraform-provider-wallarm/wallarm/provider"
@@ -19,11 +20,17 @@ import (
 
 var testAccProviders map[string]*schema.Provider
 var testAccProvider *schema.Provider
+var testAccProtoV5ProviderFactories map[string]func() (tfprotov5.ProviderServer, error)
 
 func TestMain(m *testing.M) {
 	testAccProvider = Provider()
 	testAccProviders = map[string]*schema.Provider{
 		"wallarm": testAccProvider,
+	}
+	testAccProtoV5ProviderFactories = map[string]func() (tfprotov5.ProviderServer, error){
+		"wallarm": func() (tfprotov5.ProviderServer, error) {
+			return schema.NewGRPCProviderServer(Provider()), nil
+		},
 	}
 	os.Exit(m.Run())
 }
