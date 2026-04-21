@@ -2,7 +2,6 @@ package wallarm
 
 import (
 	"fmt"
-	"log"
 	"regexp"
 	"strconv"
 	"testing"
@@ -73,7 +72,10 @@ func testAccCheckWallarmRuleAPIAbuseModeExists(resourceName string) resource.Tes
 }
 
 func testAccCheckWallarmRuleAPIAbuseModeDestroy(s *terraform.State) error {
-	cached := testAccProvider.Meta().(*ProviderMeta).Client.(*CachedClient)
+	cached, err := testAccNewCachedClient()
+	if err != nil {
+		return err
+	}
 	for _, rs := range s.RootModule().Resources {
 		if rs.Type != "wallarm_rule_api_abuse_mode" {
 			continue
@@ -87,39 +89,18 @@ func testAccCheckWallarmRuleAPIAbuseModeDestroy(s *terraform.State) error {
 			return fmt.Errorf("invalid client_id for %s: %w", rs.Primary.ID, err)
 		}
 
-		// Ground-truth: bypass cache, go straight to wallarm-go API.
-		// OrderBy is REQUIRED — API returns 400 without it.
-		rawReq := &wallarm.HintRead{
-			Limit: 1, Offset: 0,
+		// OrderBy is required by the API — HintRead returns 400 without it.
+		resp, err := cached.API.HintRead(&wallarm.HintRead{
+			Limit:     1,
 			OrderBy:   "updated_at",
 			OrderDesc: true,
 			Filter:    &wallarm.HintFilter{Clientid: []int{clientID}, ID: []int{ruleID}},
+		})
+		if err != nil {
+			return fmt.Errorf("checking hint %d still exists: %w", ruleID, err)
 		}
-		rawResp, rawErr := cached.API.HintRead(rawReq)
-		rawCount := 0
-		if rawErr == nil && rawResp != nil && rawResp.Body != nil {
-			rawCount = len(*rawResp.Body)
-		}
-		log.Printf("[TRACE] CheckDestroy: RAW api.HintRead(client=%d, id=%d) → err=%v count=%d",
-			clientID, ruleID, rawErr, rawCount)
-
-		// Cached path (same call the real provider code uses)
-		cachedResp, cachedErr := cached.HintRead(rawReq)
-		cachedCount := 0
-		if cachedErr == nil && cachedResp != nil && cachedResp.Body != nil {
-			cachedCount = len(*cachedResp.Body)
-		}
-		log.Printf("[TRACE] CheckDestroy: CACHED client.HintRead(client=%d, id=%d) → err=%v count=%d",
-			clientID, ruleID, cachedErr, cachedCount)
-
-		if rawCount != cachedCount {
-			log.Printf("[TRACE] CheckDestroy: DISAGREEMENT raw=%d vs cached=%d for id=%d",
-				rawCount, cachedCount, ruleID)
-		}
-
-		if cachedErr == nil && cachedCount > 0 {
-			return fmt.Errorf("wallarm_rule_api_abuse_mode %s still exists (raw_count=%d, cached_count=%d)",
-				rs.Primary.ID, rawCount, cachedCount)
+		if resp != nil && resp.Body != nil && len(*resp.Body) > 0 {
+			return fmt.Errorf("wallarm_rule_api_abuse_mode %s still exists", rs.Primary.ID)
 		}
 	}
 	return nil

@@ -323,7 +323,6 @@ func (c *CachedClient) HintRead(body *wallarm.HintRead) (*wallarm.HintReadResp, 
 
 		clientID := body.Filter.Clientid[0]
 		hintID := body.Filter.ID[0]
-		log.Printf("[TRACE] HintRead: CACHE path for hint_id=%d clientid=%d", hintID, clientID)
 
 		hint, err := c.hintCache.GetOrFetch(hintID, clientID, c.API)
 		if err != nil {
@@ -332,15 +331,12 @@ func (c *CachedClient) HintRead(body *wallarm.HintRead) (*wallarm.HintReadResp, 
 		}
 
 		if hint == nil {
-			log.Printf("[TRACE] HintRead: GetOrFetch returned nil (not found) for hint_id=%d", hintID)
-			// Not found — return empty response (rule may be deleted)
 			return &wallarm.HintReadResp{
 				Status: 200,
 				Body:   &[]wallarm.ActionBody{},
 			}, nil
 		}
 
-		log.Printf("[TRACE] HintRead: GetOrFetch returned hint_id=%d type=%s", hint.ID, hint.Type)
 		return &wallarm.HintReadResp{
 			Status: 200,
 			Body:   &[]wallarm.ActionBody{*hint},
@@ -372,18 +368,9 @@ func (c *CachedClient) HintCreate(body *wallarm.ActionCreate) (*wallarm.ActionCr
 // "dangling resource" failures in CheckDestroy after a Create path that also
 // populated the cache (e.g., existingHintForAction → HintRead).
 func (c *CachedClient) HintDelete(body *wallarm.HintDelete) error {
-	var ids []int
-	var cids []int
-	if body != nil && body.Filter != nil {
-		ids = body.Filter.ID
-		cids = body.Filter.Clientid
-	}
-	log.Printf("[TRACE] HintDelete: calling API clientid=%v ids=%v", cids, ids)
 	if err := c.API.HintDelete(body); err != nil {
-		log.Printf("[TRACE] HintDelete: API returned error=%v for ids=%v", err, ids)
 		return err
 	}
-	log.Printf("[TRACE] HintDelete: API OK for ids=%v — invalidating cache", ids)
 	c.hintCache.Invalidate("HintDelete")
 	return nil
 }
