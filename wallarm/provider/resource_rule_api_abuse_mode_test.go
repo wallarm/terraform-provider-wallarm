@@ -13,18 +13,18 @@ import (
 )
 
 // Shared HCL — minimal "enabled" rule with a single header match.
-func testAccRuleAPIAbuseModeConfigBasic(name, mode string) string {
+func testAccRuleAPIAbuseModeConfigBasic(name, host, mode string) string {
 	return fmt.Sprintf(`
 resource "wallarm_rule_api_abuse_mode" %q {
   mode  = %q
   title = "acc test %[1]s"
   action {
     type  = "iequal"
-    value = "example.com"
+    value = %q
     point = { header = "HOST" }
   }
 }
-`, name, mode)
+`, name, mode, host)
 }
 
 // Pinterest-style scope from the design spec.
@@ -103,7 +103,7 @@ func TestAccRuleAPIAbuseModeCreate_Basic(t *testing.T) {
 		CheckDestroy:             testAccCheckWallarmRuleAPIAbuseModeDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccRuleAPIAbuseModeConfigBasic("basic", "enabled"),
+				Config: testAccRuleAPIAbuseModeConfigBasic("basic", "basic.example.com", "enabled"),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckWallarmRuleAPIAbuseModeExists("wallarm_rule_api_abuse_mode.basic"),
 					resource.TestCheckResourceAttr("wallarm_rule_api_abuse_mode.basic", "mode", "enabled"),
@@ -149,7 +149,7 @@ func TestAccRuleAPIAbuseModeForceNewOnMode(t *testing.T) {
 		CheckDestroy:             testAccCheckWallarmRuleAPIAbuseModeDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccRuleAPIAbuseModeConfigBasic("force_new", "enabled"),
+				Config: testAccRuleAPIAbuseModeConfigBasic("force_new", "force_new.example.com", "enabled"),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckWallarmRuleAPIAbuseModeExists("wallarm_rule_api_abuse_mode.force_new"),
 					func(s *terraform.State) error {
@@ -159,7 +159,7 @@ func TestAccRuleAPIAbuseModeForceNewOnMode(t *testing.T) {
 				),
 			},
 			{
-				Config: testAccRuleAPIAbuseModeConfigBasic("force_new", "disabled"),
+				Config: testAccRuleAPIAbuseModeConfigBasic("force_new", "force_new.example.com", "disabled"),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckWallarmRuleAPIAbuseModeExists("wallarm_rule_api_abuse_mode.force_new"),
 					resource.TestCheckResourceAttr("wallarm_rule_api_abuse_mode.force_new", "mode", "disabled"),
@@ -182,7 +182,7 @@ func TestAccRuleAPIAbuseModeInvalidMode(t *testing.T) {
 		ProtoV5ProviderFactories: testAccProtoV5ProviderFactories,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccRuleAPIAbuseModeConfigBasic("bad", "monitoring"),
+				Config:      testAccRuleAPIAbuseModeConfigBasic("bad", "bad.example.com", "monitoring"),
 				ExpectError: regexp.MustCompile(`expected mode to be one of \["enabled" "disabled"\]`),
 			},
 		},
@@ -196,7 +196,7 @@ func TestAccRuleAPIAbuseModeImport(t *testing.T) {
 		CheckDestroy:             testAccCheckWallarmRuleAPIAbuseModeDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccRuleAPIAbuseModeConfigBasic("import_me", "disabled"),
+				Config: testAccRuleAPIAbuseModeConfigBasic("import_me", "import_me.example.com", "disabled"),
 				Check:  testAccCheckWallarmRuleAPIAbuseModeExists("wallarm_rule_api_abuse_mode.import_me"),
 			},
 			{
@@ -211,8 +211,8 @@ func TestAccRuleAPIAbuseModeImport(t *testing.T) {
 
 func TestAccRuleAPIAbuseModeExistsError(t *testing.T) {
 	// Same action scope, different "resource" label → existsAction must block the second create.
-	configFirst := testAccRuleAPIAbuseModeConfigBasic("first", "enabled")
-	configDup := configFirst + testAccRuleAPIAbuseModeConfigBasic("duplicate", "disabled")
+	configFirst := testAccRuleAPIAbuseModeConfigBasic("first", "exists.example.com", "enabled")
+	configDup := configFirst + testAccRuleAPIAbuseModeConfigBasic("duplicate", "exists.example.com", "disabled")
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
@@ -225,7 +225,7 @@ func TestAccRuleAPIAbuseModeExistsError(t *testing.T) {
 			},
 			{
 				Config:      configDup,
-				ExpectError: ResourceExistsError(`[0-9]+/[0-9]+/[0-9]+`, "wallarm_rule_api_abuse_mode"),
+				ExpectError: ResourceExistsError(`[0-9]+/[0-9]+/[0-9]+/api_abuse_mode`, "wallarm_rule_api_abuse_mode"),
 			},
 		},
 	})
