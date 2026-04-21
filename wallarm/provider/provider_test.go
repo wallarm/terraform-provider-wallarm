@@ -80,12 +80,14 @@ func generateRandomUUID() string {
 		b[0:4], b[4:6], b[6:8], b[8:10], b[10:])
 }
 
-// testAccNewCachedClient builds a *CachedClient from WALLARM_API_TOKEN and
+// testAccNewAPIClient builds a wallarm.API from WALLARM_API_TOKEN and
 // WALLARM_API_HOST. Use it in CheckDestroy when the test uses
 // ProtoV5ProviderFactories (each factory call returns a fresh provider whose
 // meta is not reachable via testAccProvider.Meta()). The client is independent
 // of the provider under test, so parallel tests do not race on its Configure.
-func testAccNewCachedClient() (*CachedClient, error) {
+// Returns an uncached client — CheckDestroy wants ground truth from the API,
+// not a potentially-stale entry from a different provider's cache.
+func testAccNewAPIClient() (wallarm.API, error) {
 	host := os.Getenv("WALLARM_API_HOST")
 	token := os.Getenv("WALLARM_API_TOKEN")
 	if host == "" || token == "" {
@@ -100,7 +102,7 @@ func testAccNewCachedClient() (*CachedClient, error) {
 	if err != nil {
 		return nil, fmt.Errorf("creating Wallarm client: %w", err)
 	}
-	return NewCachedClient(api), nil
+	return api, nil
 }
 
 // ResourceExistsError returns regexp to be used inside TestStep with ExpectError state.

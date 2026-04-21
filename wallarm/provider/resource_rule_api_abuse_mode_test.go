@@ -72,7 +72,7 @@ func testAccCheckWallarmRuleAPIAbuseModeExists(resourceName string) resource.Tes
 }
 
 func testAccCheckWallarmRuleAPIAbuseModeDestroy(s *terraform.State) error {
-	cached, err := testAccNewCachedClient()
+	api, err := testAccNewAPIClient()
 	if err != nil {
 		return err
 	}
@@ -90,16 +90,15 @@ func testAccCheckWallarmRuleAPIAbuseModeDestroy(s *terraform.State) error {
 		}
 
 		// OrderBy is required by the API — HintRead returns 400 without it.
-		resp, err := cached.API.HintRead(&wallarm.HintRead{
-			Limit:     1,
-			OrderBy:   "updated_at",
-			OrderDesc: true,
-			Filter:    &wallarm.HintFilter{Clientid: []int{clientID}, ID: []int{ruleID}},
+		resp, err := api.HintRead(&wallarm.HintRead{
+			Limit:   1,
+			OrderBy: "updated_at",
+			Filter:  &wallarm.HintFilter{Clientid: []int{clientID}, ID: []int{ruleID}},
 		})
 		if err != nil {
 			return fmt.Errorf("checking hint %d still exists: %w", ruleID, err)
 		}
-		if resp != nil && resp.Body != nil && len(*resp.Body) > 0 {
+		if resp.Body != nil && len(*resp.Body) > 0 {
 			return fmt.Errorf("wallarm_rule_api_abuse_mode %s still exists", rs.Primary.ID)
 		}
 	}

@@ -49,6 +49,9 @@ func existingHintForAction(d *schema.ResourceData, m interface{}, hintType strin
 	wantHash := resourcerule.ConditionsHash(action)
 	var matchedAction *wallarm.ActionEntry
 	for i, entry := range listResp.Body {
+		if len(entry.Conditions) != len(action) {
+			continue
+		}
 		if resourcerule.ConditionsHash(entry.Conditions) == wantHash {
 			matchedAction = &listResp.Body[i]
 			break
@@ -86,8 +89,8 @@ func existingHintForAction(d *schema.ResourceData, m interface{}, hintType strin
 		return 0, nil, false, err
 	}
 
-	for _, r := range *hintResp.Body {
-		return matchedAction.ID, &r, true, nil
+	if body := *hintResp.Body; len(body) > 0 {
+		return matchedAction.ID, &body[0], true, nil
 	}
 	return 0, nil, false, nil
 }
