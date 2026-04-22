@@ -77,7 +77,7 @@ func testAccCheckWallarmAPISpecDestroy(s *terraform.State) error {
 			return err
 		}
 
-		_, err = client.ApiSpecRead(clientID, apiSpecID)
+		_, err = client.APISpecReadByID(clientID, apiSpecID)
 		if err == nil {
 			return fmt.Errorf("API Spec %d still exists", apiSpecID)
 		}

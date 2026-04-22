@@ -88,18 +88,18 @@ func resourceWallarmAPISpec() *schema.Resource {
 func resourceWallarmAPISpecCreate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	client := apiClient(m)
 
-	apiSpecBody := wallarm.ApiSpecCreate{
+	apiSpecBody := wallarm.APISpecCreate{
 		Title:             d.Get("title").(string),
 		Description:       d.Get("description").(string),
 		FileRemoteURL:     d.Get("file_remote_url").(string),
 		RegularFileUpdate: d.Get("regular_file_update").(bool),
-		ApiDetection:      d.Get("api_detection").(bool),
+		APIDetection:      d.Get("api_detection").(bool),
 		ClientID:          d.Get("client_id").(int),
 		Instances:         d.Get("instances").([]interface{}),
 		Domains:           d.Get("domains").([]interface{}),
 	}
 
-	createRes, err := client.ApiSpecCreate(&apiSpecBody)
+	createRes, err := client.APISpecCreate(&apiSpecBody)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -115,7 +115,7 @@ func resourceWallarmAPISpecRead(_ context.Context, d *schema.ResourceData, m int
 	clientID := d.Get("client_id").(int)
 	apiSpecID := d.Get("api_spec_id").(int)
 
-	apiSpec, err := client.ApiSpecRead(clientID, apiSpecID)
+	apiSpec, err := client.APISpecReadByID(clientID, apiSpecID)
 	if err != nil {
 		if errors.Is(err, wallarm.ErrNotFound) {
 			d.SetId("")
@@ -128,7 +128,7 @@ func resourceWallarmAPISpecRead(_ context.Context, d *schema.ResourceData, m int
 	d.Set("description", apiSpec.Description)
 	d.Set("file_remote_url", apiSpec.FileRemoteURL)
 	d.Set("regular_file_update", apiSpec.RegularFileUpdate)
-	d.Set("api_detection", apiSpec.ApiDetection)
+	d.Set("api_detection", apiSpec.APIDetection)
 	d.Set("client_id", apiSpec.ClientID)
 	if err := d.Set("instances", apiSpec.Instances); err != nil {
 		return diag.FromErr(fmt.Errorf("error setting instances: %w", err))
@@ -145,7 +145,7 @@ func resourceWallarmAPISpecDelete(_ context.Context, d *schema.ResourceData, m i
 	clientID := d.Get("client_id").(int)
 	apiSpecID := d.Get("api_spec_id").(int)
 
-	err := client.ApiSpecDelete(clientID, apiSpecID)
+	err := client.APISpecDelete(clientID, apiSpecID)
 	if err != nil {
 		return diag.FromErr(err)
 	}
