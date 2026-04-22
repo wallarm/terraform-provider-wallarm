@@ -13,6 +13,27 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
+func flattenAPISpecAuthHeaders(hdrs []wallarm.APISpecAuthHeader) []interface{} {
+	out := make([]interface{}, 0, len(hdrs))
+	for _, h := range hdrs {
+		out = append(out, map[string]interface{}{"key": h.Key, "value": h.Value})
+	}
+	return out
+}
+
+func flattenAPISpecFile(f *wallarm.APISpecFile) []interface{} {
+	if f == nil {
+		return nil
+	}
+	return []interface{}{map[string]interface{}{
+		"name":       f.Name,
+		"signed_url": f.SignedURL,
+		"checksum":   f.Checksum,
+		"mime_type":  f.MimeType,
+		"version":    f.Version,
+	}}
+}
+
 func resourceWallarmAPISpec() *schema.Resource {
 	return &schema.Resource{
 		CreateContext: resourceWallarmAPISpecCreate,
@@ -146,7 +167,7 @@ func resourceWallarmAPISpecRead(_ context.Context, d *schema.ResourceData, m int
 	clientID := d.Get("client_id").(int)
 	apiSpecID := d.Get("api_spec_id").(int)
 
-	apiSpec, err := client.APISpecReadByID(clientID, apiSpecID)
+	spec, err := client.APISpecReadByID(clientID, apiSpecID)
 	if err != nil {
 		if errors.Is(err, wallarm.ErrNotFound) {
 			d.SetId("")
@@ -155,17 +176,39 @@ func resourceWallarmAPISpecRead(_ context.Context, d *schema.ResourceData, m int
 		return diag.FromErr(err)
 	}
 
-	d.Set("title", apiSpec.Title)
-	d.Set("description", apiSpec.Description)
-	d.Set("file_remote_url", apiSpec.FileRemoteURL)
-	d.Set("regular_file_update", apiSpec.RegularFileUpdate)
-	d.Set("api_detection", apiSpec.APIDetection)
-	d.Set("client_id", apiSpec.ClientID)
-	if err := d.Set("instances", apiSpec.Instances); err != nil {
+	d.Set("client_id", spec.ClientID)
+	d.Set("title", spec.Title)
+	d.Set("description", spec.Description)
+	d.Set("file_remote_url", spec.FileRemoteURL)
+	d.Set("regular_file_update", spec.RegularFileUpdate)
+	d.Set("api_detection", spec.APIDetection)
+	if err := d.Set("domains", spec.Domains); err != nil {
+		return diag.FromErr(fmt.Errorf("error setting domains: %w", err))
+	}
+	if err := d.Set("instances", spec.Instances); err != nil {
 		return diag.FromErr(fmt.Errorf("error setting instances: %w", err))
 	}
-	if err := d.Set("domains", apiSpec.Domains); err != nil {
-		return diag.FromErr(fmt.Errorf("error setting domains: %w", err))
+	if err := d.Set("auth_headers", flattenAPISpecAuthHeaders(spec.AuthHeaders)); err != nil {
+		return diag.FromErr(fmt.Errorf("error setting auth_headers: %w", err))
+	}
+
+	d.Set("status", spec.Status)
+	d.Set("spec_version", spec.SpecVersion)
+	d.Set("openapi_version", spec.OpenAPIVersion)
+	d.Set("endpoints_count", spec.EndpointsCount)
+	d.Set("shadow_endpoints_count", spec.ShadowEndpointsCount)
+	d.Set("orphan_endpoints_count", spec.OrphanEndpointsCount)
+	d.Set("zombie_endpoints_count", spec.ZombieEndpointsCount)
+	d.Set("format", spec.Format)
+	d.Set("version", spec.Version)
+	d.Set("node_sync_version", spec.NodeSyncVersion)
+	d.Set("last_synced_at", spec.LastSyncedAt)
+	d.Set("last_compared_at", spec.LastComparedAt)
+	d.Set("updated_at", spec.UpdatedAt)
+	d.Set("created_at", spec.CreatedAt)
+	d.Set("file_changed_at", spec.FileChangedAt)
+	if err := d.Set("file", flattenAPISpecFile(spec.File)); err != nil {
+		return diag.FromErr(fmt.Errorf("error setting file: %w", err))
 	}
 
 	return nil
