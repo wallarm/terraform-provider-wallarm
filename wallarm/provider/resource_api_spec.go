@@ -21,6 +21,18 @@ func flattenAPISpecAuthHeaders(hdrs []wallarm.APISpecAuthHeader) []interface{} {
 	return out
 }
 
+func expandAPISpecAuthHeaders(raw []interface{}) []wallarm.APISpecAuthHeader {
+	out := make([]wallarm.APISpecAuthHeader, 0, len(raw))
+	for _, r := range raw {
+		m := r.(map[string]interface{})
+		out = append(out, wallarm.APISpecAuthHeader{
+			Key:   m["key"].(string),
+			Value: m["value"].(string),
+		})
+	}
+	return out
+}
+
 func flattenAPISpecFile(f *wallarm.APISpecFile) []interface{} {
 	if f == nil {
 		return nil
@@ -38,6 +50,7 @@ func resourceWallarmAPISpec() *schema.Resource {
 	return &schema.Resource{
 		CreateContext: resourceWallarmAPISpecCreate,
 		ReadContext:   resourceWallarmAPISpecRead,
+		UpdateContext: resourceWallarmAPISpecUpdate,
 		DeleteContext: resourceWallarmAPISpecDelete,
 		Importer: &schema.ResourceImporter{
 			StateContext: resourceWallarmAPISpecImport,
@@ -149,6 +162,7 @@ func resourceWallarmAPISpecCreate(ctx context.Context, d *schema.ResourceData, m
 		ClientID:          d.Get("client_id").(int),
 		Instances:         d.Get("instances").([]interface{}),
 		Domains:           d.Get("domains").([]interface{}),
+		AuthHeaders:       expandAPISpecAuthHeaders(d.Get("auth_headers").([]interface{})),
 	}
 
 	createRes, err := client.APISpecCreate(&apiSpecBody)
@@ -212,6 +226,45 @@ func resourceWallarmAPISpecRead(_ context.Context, d *schema.ResourceData, m int
 	}
 
 	return nil
+}
+
+func resourceWallarmAPISpecUpdate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+	client := apiClient(m)
+	clientID := d.Get("client_id").(int)
+	apiSpecID := d.Get("api_spec_id").(int)
+
+	body := &wallarm.APISpecUpdate{}
+	if d.HasChange("title") {
+		body.Title = d.Get("title").(string)
+	}
+	if d.HasChange("description") {
+		body.Description = d.Get("description").(string)
+	}
+	if d.HasChange("file_remote_url") {
+		body.FileRemoteURL = d.Get("file_remote_url").(string)
+	}
+	if d.HasChange("regular_file_update") {
+		v := d.Get("regular_file_update").(bool)
+		body.RegularFileUpdate = &v
+	}
+	if d.HasChange("api_detection") {
+		v := d.Get("api_detection").(bool)
+		body.APIDetection = &v
+	}
+	if d.HasChange("domains") {
+		body.Domains = d.Get("domains").([]interface{})
+	}
+	if d.HasChange("instances") {
+		body.Instances = d.Get("instances").([]interface{})
+	}
+	if d.HasChange("auth_headers") {
+		body.AuthHeaders = expandAPISpecAuthHeaders(d.Get("auth_headers").([]interface{}))
+	}
+
+	if _, err := client.APISpecUpdate(clientID, apiSpecID, body); err != nil {
+		return diag.FromErr(err)
+	}
+	return resourceWallarmAPISpecRead(ctx, d, m)
 }
 
 func resourceWallarmAPISpecDelete(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
