@@ -1,52 +1,82 @@
 ---
 layout: "wallarm"
 page_title: "Wallarm: wallarm_api_spec"
-subcategory: "Common"
+subcategory: "API Specification Enforcement"
 description: |-
-  Provides the resource to manage API Specs[1] in Wallarm.
+  Manages an uploaded OpenAPI specification used by Wallarm's API Specification Enforcement.
 ---
 
 # wallarm_api_spec
 
-Provides the resource to manage API Spec in Wallarm.
+Provides the resource to upload and manage an [OpenAPI specification][1] used by Wallarm's [API Specification Enforcement][2] feature. Wallarm validates incoming requests against the spec and can apply a policy (see `wallarm_api_spec_policy`) that decides what to do on each violation type.
+
+Only URL-hosted specs are supported by this provider. For specs uploaded directly via the Wallarm console, import the existing resource (see the Import section).
 
 ## Example Usage
 
 ```hcl
-# Creates an API specification for Wallarm
-resource "wallarm_api_spec" "api_spec" {
-  client_id          = 1
-  title              = "Example API Spec"
-  description        = "This is an example API specification created by Terraform."
-  file_remote_url    = "https://raw.githubusercontent.com/OAI/OpenAPI-Specification/main/examples/v3.0/api-with-examples.yaml"
+resource "wallarm_api_spec" "petstore" {
+  client_id           = 6039
+  title               = "Petstore"
+  description         = "Public-facing Petstore API"
+  file_remote_url     = "https://raw.githubusercontent.com/acme/petstore/main/openapi.yaml"
   regular_file_update = true
-  api_detection      = true
-  domains            = ["ex.com"]
-  instances          = [1]
+  api_detection       = true
+  domains             = ["petstore.example.com"]
+  instances           = [1]
+
+  auth_headers {
+    key   = "X-Source-Token"
+    value = var.source_token
+  }
 }
 ```
 
 ## Argument Reference
 
-* `client_id` -  (required) ID of the client to apply the API specification to.
-* `title` - (required) The title of the API specification.
-* `description` - (optional) A description of the API specification.
-* `file_remote_url` - (required) The remote URL to the API specification file. This is useful for pulling specifications from external sources.
-* `regular_file_update` - (optional) Indicator of whether the API specification file should be regularly updated from the file_remote_url. Can be true or false. Default: false.
-* `api_detection` - (optional) Indicator of whether Wallarm should automatically detect APIs based on this specification.
-* `domains` - (required) List of domains associated with the API.
-* `instances` - (required) List of Wallarm node instances where the API specification should be applied.
+### Required
+
+* `client_id` - (required, ForceNew) ID of the client to apply changes. Immutable.
+* `title` - (required) human-readable spec title.
+* `file_remote_url` - (required) URL that serves the OpenAPI 3.0 / 3.1 spec in JSON or YAML.
+* `domains` - (required) list of domains the spec applies to.
+* `instances` - (required) list of instance (application) IDs the spec applies to.
+
+### Optional
+
+* `description` - (optional) free-text description.
+* `regular_file_update` - (optional) when `true`, Wallarm refreshes the spec from `file_remote_url` hourly. Default: `false`.
+* `api_detection` - (optional) when `true`, Wallarm uses the spec for API discovery. Default: `false`.
+* `auth_headers` - (optional) list of `{key, value}` blocks sent when Wallarm fetches `file_remote_url`. `value` is marked Sensitive.
 
 ## Attributes Reference
-* `api_spec_id` - Integer ID of the created API specification.
+
+* `api_spec_id` - ID of the uploaded specification.
+* `status` - upload status, e.g. `ready`.
+* `spec_version` - version declared in the OpenAPI spec's `info.version`.
+* `openapi_version` - OpenAPI format version (`3.0.0`, `3.1.0`, ...).
+* `endpoints_count` - number of endpoints parsed from the spec.
+* `shadow_endpoints_count`, `orphan_endpoints_count`, `zombie_endpoints_count` - Wallarm-specific endpoint categorization counts.
+* `format` - Wallarm-internal spec format discriminator.
+* `version` - internal version counter incremented on spec updates.
+* `node_sync_version` - internal sync version used by filtering nodes.
+* `last_synced_at`, `last_compared_at`, `updated_at`, `created_at`, `file_changed_at` - timestamps (RFC 3339).
+* `file` - metadata of the stored spec file: `name`, `signed_url`, `checksum`, `mime_type`, `version`. `signed_url` is Sensitive and **regenerates on every Read** (expires ~10 minutes after the last refresh). Use it immediately after `terraform refresh`; for durable access, download via the Wallarm console.
 
 ## Import
 
 ```
-$ terraform import wallarm_api_spec.example 1111/42
+$ terraform import wallarm_api_spec.petstore 6039/134172
 ```
 
-* `1111` - Client ID.
-* `42` - API Spec ID.
+* `6039` - Client ID.
+* `134172` - API Spec ID.
 
-[1]: https://docs.wallarm.com/api-specification-enforcement/overview/
+Every field is populated on import; the only field excluded from `ImportStateVerify` is `file.signed_url` (see note above).
+
+## Limitations
+
+File-upload mode (local `.yaml`/`.json` file without a URL) is not supported by this provider in v2.3.6. Use a URL-hosted spec or import a console-uploaded spec.
+
+[1]: https://spec.openapis.org/oas/latest.html
+[2]: https://docs.wallarm.com/api-specification-enforcement/overview/
