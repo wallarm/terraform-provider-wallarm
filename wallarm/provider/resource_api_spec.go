@@ -46,6 +46,47 @@ func flattenAPISpecFile(f *wallarm.APISpecFile) []interface{} {
 	}}
 }
 
+// setStateFromAPISpecBody writes every API-returned field onto the Terraform
+// resource state. Shared by Read, Create, and Update so Create/Update can reuse
+// the body returned by their own API calls instead of issuing a follow-up GET.
+func setStateFromAPISpecBody(d *schema.ResourceData, spec wallarm.APISpecBody) error {
+	d.Set("client_id", spec.ClientID)
+	d.Set("title", spec.Title)
+	d.Set("description", spec.Description)
+	d.Set("file_remote_url", spec.FileRemoteURL)
+	d.Set("regular_file_update", spec.RegularFileUpdate)
+	d.Set("api_detection", spec.APIDetection)
+	if err := d.Set("domains", spec.Domains); err != nil {
+		return fmt.Errorf("error setting domains: %w", err)
+	}
+	if err := d.Set("instances", spec.Instances); err != nil {
+		return fmt.Errorf("error setting instances: %w", err)
+	}
+	if err := d.Set("auth_headers", flattenAPISpecAuthHeaders(spec.AuthHeaders)); err != nil {
+		return fmt.Errorf("error setting auth_headers: %w", err)
+	}
+
+	d.Set("status", spec.Status)
+	d.Set("spec_version", spec.SpecVersion)
+	d.Set("openapi_version", spec.OpenAPIVersion)
+	d.Set("endpoints_count", spec.EndpointsCount)
+	d.Set("shadow_endpoints_count", spec.ShadowEndpointsCount)
+	d.Set("orphan_endpoints_count", spec.OrphanEndpointsCount)
+	d.Set("zombie_endpoints_count", spec.ZombieEndpointsCount)
+	d.Set("format", spec.Format)
+	d.Set("version", spec.Version)
+	d.Set("node_sync_version", spec.NodeSyncVersion)
+	d.Set("last_synced_at", spec.LastSyncedAt)
+	d.Set("last_compared_at", spec.LastComparedAt)
+	d.Set("updated_at", spec.UpdatedAt)
+	d.Set("created_at", spec.CreatedAt)
+	d.Set("file_changed_at", spec.FileChangedAt)
+	if err := d.Set("file", flattenAPISpecFile(spec.File)); err != nil {
+		return fmt.Errorf("error setting file: %w", err)
+	}
+	return nil
+}
+
 func resourceWallarmAPISpec() *schema.Resource {
 	return &schema.Resource{
 		CreateContext: resourceWallarmAPISpecCreate,
@@ -105,44 +146,107 @@ func resourceWallarmAPISpec() *schema.Resource {
 				},
 			},
 			"auth_headers": {
-				Type:     schema.TypeList,
-				Optional: true,
+				Type:        schema.TypeList,
+				Optional:    true,
+				Description: "Authorization headers sent by the spec fetcher when downloading the file_remote_url.",
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
-						"key":   {Type: schema.TypeString, Required: true},
-						"value": {Type: schema.TypeString, Required: true, Sensitive: true},
+						"key":   {Type: schema.TypeString, Required: true, Description: "Header name."},
+						"value": {Type: schema.TypeString, Required: true, Sensitive: true, Description: "Header value (sensitive)."},
 					},
 				},
 			},
 			"api_spec_id": {
-				Type:     schema.TypeInt,
-				Computed: true,
+				Type:        schema.TypeInt,
+				Computed:    true,
+				Description: "Server-assigned ID of the API specification.",
 			},
-			"status":                 {Type: schema.TypeString, Computed: true},
-			"spec_version":           {Type: schema.TypeString, Computed: true},
-			"openapi_version":        {Type: schema.TypeString, Computed: true},
-			"endpoints_count":        {Type: schema.TypeInt, Computed: true},
-			"shadow_endpoints_count": {Type: schema.TypeInt, Computed: true},
-			"orphan_endpoints_count": {Type: schema.TypeInt, Computed: true},
-			"zombie_endpoints_count": {Type: schema.TypeInt, Computed: true},
-			"format":                 {Type: schema.TypeInt, Computed: true},
-			"version":                {Type: schema.TypeInt, Computed: true},
-			"node_sync_version":      {Type: schema.TypeInt, Computed: true},
-			"last_synced_at":         {Type: schema.TypeString, Computed: true},
-			"last_compared_at":       {Type: schema.TypeString, Computed: true},
-			"updated_at":             {Type: schema.TypeString, Computed: true},
-			"created_at":             {Type: schema.TypeString, Computed: true},
-			"file_changed_at":        {Type: schema.TypeString, Computed: true},
+			"status": {
+				Type:        schema.TypeString,
+				Computed:    true,
+				Description: "Upload and processing status reported by the API (e.g., 'ready', 'pending').",
+			},
+			"spec_version": {
+				Type:        schema.TypeString,
+				Computed:    true,
+				Description: "The 'info.version' value declared inside the uploaded OpenAPI document.",
+			},
+			"openapi_version": {
+				Type:        schema.TypeString,
+				Computed:    true,
+				Description: "The OpenAPI/Swagger version declared by the uploaded document (e.g., '3.0.3').",
+			},
+			"endpoints_count": {
+				Type:        schema.TypeInt,
+				Computed:    true,
+				Description: "Total number of endpoints parsed from the specification.",
+			},
+			"shadow_endpoints_count": {
+				Type:        schema.TypeInt,
+				Computed:    true,
+				Description: "Number of shadow endpoints (live but not in the spec).",
+			},
+			"orphan_endpoints_count": {
+				Type:        schema.TypeInt,
+				Computed:    true,
+				Description: "Number of orphan endpoints (in the spec but not seen live).",
+			},
+			"zombie_endpoints_count": {
+				Type:        schema.TypeInt,
+				Computed:    true,
+				Description: "Number of zombie endpoints (previously live, no longer seen).",
+			},
+			"format": {
+				Type:        schema.TypeInt,
+				Computed:    true,
+				Description: "Internal format code of the stored specification file.",
+			},
+			"version": {
+				Type:        schema.TypeInt,
+				Computed:    true,
+				Description: "Monotonically increasing revision of this specification.",
+			},
+			"node_sync_version": {
+				Type:        schema.TypeInt,
+				Computed:    true,
+				Description: "Revision most recently synchronized to filtering nodes.",
+			},
+			"last_synced_at": {
+				Type:        schema.TypeString,
+				Computed:    true,
+				Description: "Timestamp of the last successful spec sync to nodes.",
+			},
+			"last_compared_at": {
+				Type:        schema.TypeString,
+				Computed:    true,
+				Description: "Timestamp of the last live-traffic comparison against the spec.",
+			},
+			"updated_at": {
+				Type:        schema.TypeString,
+				Computed:    true,
+				Description: "Timestamp of the last modification to this resource.",
+			},
+			"created_at": {
+				Type:        schema.TypeString,
+				Computed:    true,
+				Description: "Creation timestamp of this resource.",
+			},
+			"file_changed_at": {
+				Type:        schema.TypeString,
+				Computed:    true,
+				Description: "Timestamp when the underlying spec file was last changed.",
+			},
 			"file": {
-				Type:     schema.TypeList,
-				Computed: true,
+				Type:        schema.TypeList,
+				Computed:    true,
+				Description: "Metadata of the stored specification file.",
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
-						"name":       {Type: schema.TypeString, Computed: true},
-						"signed_url": {Type: schema.TypeString, Computed: true, Sensitive: true},
-						"checksum":   {Type: schema.TypeString, Computed: true},
-						"mime_type":  {Type: schema.TypeString, Computed: true},
-						"version":    {Type: schema.TypeInt, Computed: true},
+						"name":       {Type: schema.TypeString, Computed: true, Description: "Stored filename of the specification."},
+						"signed_url": {Type: schema.TypeString, Computed: true, Sensitive: true, Description: "Time-limited signed URL for downloading the raw file."},
+						"checksum":   {Type: schema.TypeString, Computed: true, Description: "Checksum of the stored file, used to detect content changes."},
+						"mime_type":  {Type: schema.TypeString, Computed: true, Description: "MIME type of the stored file."},
+						"version":    {Type: schema.TypeInt, Computed: true, Description: "Monotonically increasing revision of the stored file."},
 					},
 				},
 			},
@@ -150,7 +254,7 @@ func resourceWallarmAPISpec() *schema.Resource {
 	}
 }
 
-func resourceWallarmAPISpecCreate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceWallarmAPISpecCreate(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	client := apiClient(m)
 
 	apiSpecBody := wallarm.APISpecCreate{
@@ -169,11 +273,17 @@ func resourceWallarmAPISpecCreate(ctx context.Context, d *schema.ResourceData, m
 	if err != nil {
 		return diag.FromErr(err)
 	}
+	if createRes.Body == nil {
+		return diag.Errorf("APISpecCreate: empty response body")
+	}
 
 	d.Set("api_spec_id", createRes.Body.ID)
 	d.SetId(fmt.Sprintf("%d/%d", d.Get("client_id").(int), createRes.Body.ID))
 
-	return resourceWallarmAPISpecRead(ctx, d, m)
+	if err := setStateFromAPISpecBody(d, *createRes.Body); err != nil {
+		return diag.FromErr(err)
+	}
+	return nil
 }
 
 func resourceWallarmAPISpecRead(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
@@ -190,58 +300,29 @@ func resourceWallarmAPISpecRead(_ context.Context, d *schema.ResourceData, m int
 		return diag.FromErr(err)
 	}
 
-	d.Set("client_id", spec.ClientID)
-	d.Set("title", spec.Title)
-	d.Set("description", spec.Description)
-	d.Set("file_remote_url", spec.FileRemoteURL)
-	d.Set("regular_file_update", spec.RegularFileUpdate)
-	d.Set("api_detection", spec.APIDetection)
-	if err := d.Set("domains", spec.Domains); err != nil {
-		return diag.FromErr(fmt.Errorf("error setting domains: %w", err))
+	if err := setStateFromAPISpecBody(d, spec); err != nil {
+		return diag.FromErr(err)
 	}
-	if err := d.Set("instances", spec.Instances); err != nil {
-		return diag.FromErr(fmt.Errorf("error setting instances: %w", err))
-	}
-	if err := d.Set("auth_headers", flattenAPISpecAuthHeaders(spec.AuthHeaders)); err != nil {
-		return diag.FromErr(fmt.Errorf("error setting auth_headers: %w", err))
-	}
-
-	d.Set("status", spec.Status)
-	d.Set("spec_version", spec.SpecVersion)
-	d.Set("openapi_version", spec.OpenAPIVersion)
-	d.Set("endpoints_count", spec.EndpointsCount)
-	d.Set("shadow_endpoints_count", spec.ShadowEndpointsCount)
-	d.Set("orphan_endpoints_count", spec.OrphanEndpointsCount)
-	d.Set("zombie_endpoints_count", spec.ZombieEndpointsCount)
-	d.Set("format", spec.Format)
-	d.Set("version", spec.Version)
-	d.Set("node_sync_version", spec.NodeSyncVersion)
-	d.Set("last_synced_at", spec.LastSyncedAt)
-	d.Set("last_compared_at", spec.LastComparedAt)
-	d.Set("updated_at", spec.UpdatedAt)
-	d.Set("created_at", spec.CreatedAt)
-	d.Set("file_changed_at", spec.FileChangedAt)
-	if err := d.Set("file", flattenAPISpecFile(spec.File)); err != nil {
-		return diag.FromErr(fmt.Errorf("error setting file: %w", err))
-	}
-
 	return nil
 }
 
-func resourceWallarmAPISpecUpdate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceWallarmAPISpecUpdate(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	client := apiClient(m)
 	clientID := d.Get("client_id").(int)
 	apiSpecID := d.Get("api_spec_id").(int)
 
 	body := &wallarm.APISpecUpdate{}
 	if d.HasChange("title") {
-		body.Title = d.Get("title").(string)
+		v := d.Get("title").(string)
+		body.Title = &v
 	}
 	if d.HasChange("description") {
-		body.Description = d.Get("description").(string)
+		v := d.Get("description").(string)
+		body.Description = &v
 	}
 	if d.HasChange("file_remote_url") {
-		body.FileRemoteURL = d.Get("file_remote_url").(string)
+		v := d.Get("file_remote_url").(string)
+		body.FileRemoteURL = &v
 	}
 	if d.HasChange("regular_file_update") {
 		v := d.Get("regular_file_update").(bool)
@@ -261,10 +342,17 @@ func resourceWallarmAPISpecUpdate(ctx context.Context, d *schema.ResourceData, m
 		body.AuthHeaders = expandAPISpecAuthHeaders(d.Get("auth_headers").([]interface{}))
 	}
 
-	if _, err := client.APISpecUpdate(clientID, apiSpecID, body); err != nil {
+	updateRes, err := client.APISpecUpdate(clientID, apiSpecID, body)
+	if err != nil {
 		return diag.FromErr(err)
 	}
-	return resourceWallarmAPISpecRead(ctx, d, m)
+	if updateRes.Body == nil {
+		return diag.Errorf("APISpecUpdate: empty response body")
+	}
+	if err := setStateFromAPISpecBody(d, *updateRes.Body); err != nil {
+		return diag.FromErr(err)
+	}
+	return nil
 }
 
 func resourceWallarmAPISpecDelete(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
@@ -283,7 +371,7 @@ func resourceWallarmAPISpecDelete(_ context.Context, d *schema.ResourceData, m i
 
 // resourceWallarmAPISpecImport parses a 2-part import ID "{client_id}/{api_spec_id}".
 func resourceWallarmAPISpecImport(_ context.Context, d *schema.ResourceData, _ interface{}) ([]*schema.ResourceData, error) {
-	parts := strings.SplitN(d.Id(), "/", 3)
+	parts := strings.Split(d.Id(), "/")
 	if len(parts) != 2 {
 		return nil, fmt.Errorf("invalid id (%q) specified, should be in format \"{client_id}/{api_spec_id}\"", d.Id())
 	}

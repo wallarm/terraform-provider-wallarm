@@ -170,6 +170,8 @@ func TestAccWallarmAPISpec_AuthHeaders(t *testing.T) {
 			{
 				Config: testAccWallarmAPISpecWithAuthHeader(rnd, clientID, "X-Token", "second-value"),
 				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "auth_headers.#", "1"),
+					resource.TestCheckResourceAttr(resourceName, "auth_headers.0.key", "X-Token"),
 					resource.TestCheckResourceAttr(resourceName, "auth_headers.0.value", "second-value"),
 				),
 			},
