@@ -33,35 +33,29 @@ func resourceWallarmAPISpec() *schema.Resource {
 				Type:        schema.TypeString,
 				Required:    true,
 				Description: "The title of the API specification",
-				ForceNew:    true,
 			},
 			"description": {
 				Type:        schema.TypeString,
 				Optional:    true,
 				Description: "The description of the API specification",
-				ForceNew:    true,
 			},
 			"file_remote_url": {
 				Type:        schema.TypeString,
 				Required:    true,
 				Description: "The remote URL of the API specification file",
-				ForceNew:    true,
 			},
 			"regular_file_update": {
 				Type:        schema.TypeBool,
 				Optional:    true,
 				Description: "Indicates if the file should be updated regularly",
-				ForceNew:    true,
 			},
 			"api_detection": {
 				Type:        schema.TypeBool,
 				Optional:    true,
 				Description: "Indicates if API detection is enabled",
-				ForceNew:    true,
 			},
 			"domains": {
 				Type:        schema.TypeList,
-				ForceNew:    true,
 				Required:    true,
 				Description: "List of domains",
 				Elem: &schema.Schema{
@@ -70,16 +64,53 @@ func resourceWallarmAPISpec() *schema.Resource {
 			},
 			"instances": {
 				Type:        schema.TypeList,
-				ForceNew:    true,
 				Required:    true,
 				Description: "List of instance IDs",
 				Elem: &schema.Schema{
 					Type: schema.TypeInt,
 				},
 			},
+			"auth_headers": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"key":   {Type: schema.TypeString, Required: true},
+						"value": {Type: schema.TypeString, Required: true, Sensitive: true},
+					},
+				},
+			},
 			"api_spec_id": {
 				Type:     schema.TypeInt,
 				Computed: true,
+			},
+			"status":                 {Type: schema.TypeString, Computed: true},
+			"spec_version":           {Type: schema.TypeString, Computed: true},
+			"openapi_version":        {Type: schema.TypeString, Computed: true},
+			"endpoints_count":        {Type: schema.TypeInt, Computed: true},
+			"shadow_endpoints_count": {Type: schema.TypeInt, Computed: true},
+			"orphan_endpoints_count": {Type: schema.TypeInt, Computed: true},
+			"zombie_endpoints_count": {Type: schema.TypeInt, Computed: true},
+			"format":                 {Type: schema.TypeInt, Computed: true},
+			"version":                {Type: schema.TypeInt, Computed: true},
+			"node_sync_version":      {Type: schema.TypeInt, Computed: true},
+			"last_synced_at":         {Type: schema.TypeString, Computed: true},
+			"last_compared_at":       {Type: schema.TypeString, Computed: true},
+			"updated_at":             {Type: schema.TypeString, Computed: true},
+			"created_at":             {Type: schema.TypeString, Computed: true},
+			"file_changed_at":        {Type: schema.TypeString, Computed: true},
+			"file": {
+				Type:     schema.TypeList,
+				Computed: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"name":       {Type: schema.TypeString, Computed: true},
+						"signed_url": {Type: schema.TypeString, Computed: true, Sensitive: true},
+						"checksum":   {Type: schema.TypeString, Computed: true},
+						"mime_type":  {Type: schema.TypeString, Computed: true},
+						"version":    {Type: schema.TypeInt, Computed: true},
+					},
+				},
 			},
 		},
 	}
