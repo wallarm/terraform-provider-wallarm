@@ -45,8 +45,8 @@ resource "wallarm_api_spec" "petstore" {
 * `description` - (optional) free-text description.
 * `regular_file_update` - (optional) when `true`, Wallarm refreshes the spec from `file_remote_url` hourly. Default: `false`.
 * `api_detection` - (optional) when `true`, Wallarm uses the spec for API discovery. Default: `false`.
-* `domains` - (optional, computed) legacy list of domains the spec applies to. Not surfaced in the Wallarm console UI; use `wallarm_api_spec_policy` to scope enforcement instead. Omit in most cases; the provider preserves any value returned by the API. To clear the list on the server, set explicitly to `[]`.
-* `instances` - (optional, computed) legacy list of instance (application) IDs the spec applies to. Not surfaced in the Wallarm console UI; use `wallarm_api_spec_policy` to scope enforcement instead. Omit in most cases; the provider preserves any value returned by the API. To clear, set explicitly to `[]`.
+* `domains` - (optional) list of domains the spec applies to.
+* `instances` - (optional) list of instance (application) IDs the spec applies to.
 * `auth_headers` - (optional) list of `{key, value}` blocks sent when Wallarm fetches `file_remote_url`. `value` is marked Sensitive.
 
 ## Attributes Reference

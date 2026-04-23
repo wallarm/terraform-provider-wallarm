@@ -133,8 +133,7 @@ func resourceWallarmAPISpec() *schema.Resource {
 			"domains": {
 				Type:        schema.TypeList,
 				Optional:    true,
-				Computed:    true,
-				Description: "Legacy list of domains the spec applies to (not surfaced in the Wallarm console UI). Use wallarm_api_spec_policy to scope enforcement instead. Omit in most cases; the provider preserves any value the API returned. Set explicitly to [] to clear on the server.",
+				Description: "List of domains the spec applies to.",
 				Elem: &schema.Schema{
 					Type: schema.TypeString,
 				},
@@ -142,8 +141,7 @@ func resourceWallarmAPISpec() *schema.Resource {
 			"instances": {
 				Type:        schema.TypeList,
 				Optional:    true,
-				Computed:    true,
-				Description: "Legacy list of instance (application) IDs the spec applies to (not surfaced in the Wallarm console UI). Use wallarm_api_spec_policy to scope enforcement instead. Omit in most cases; the provider preserves any value the API returned. Set explicitly to [] to clear on the server.",
+				Description: "List of instance (application) IDs the spec applies to.",
 				Elem: &schema.Schema{
 					Type: schema.TypeInt,
 				},
