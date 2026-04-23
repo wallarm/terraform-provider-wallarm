@@ -1,3 +1,32 @@
+## [v2.3.6] - 2026-04-23
+
+> Full Terraform support for Wallarm's API Specification Enforcement: expanded `wallarm_api_spec` schema, new `wallarm_api_spec_policy` resource for per-violation block/monitor/ignore controls, and wallarm-go v0.11.0 with the backing endpoints.
+
+### Upgrade Steps
+
+* Bump the provider to `v2.3.6`. No HCL migration is required — existing `wallarm_api_spec` configurations continue to apply unchanged.
+* `wallarm_api_spec.domains` and `wallarm_api_spec.instances` changed from Required to Optional. If you relied on Terraform failing fast when these were missing, add `validation` blocks on your input variables instead.
+* [ACTION REQUIRED] Provider developers consuming `wallarm-go` directly must update imports: the `Api*` prefix is gone. Rename `ApiSpec` → `APISpec`, `ApiSpecBody` → `APISpecBody`, `ApiDetection` → `APIDetection`, etc. JSON tags are unchanged, so API payloads are wire-compatible. End users writing only HCL are unaffected.
+
+### New Features
+
+* New resource `wallarm_api_spec_policy` — manages the [API Specification Enforcement][api-spec-enf] policy attached to an uploaded spec. Six violation modes (`undefined_endpoint_mode`, `undefined_parameter_mode`, `missing_parameter_mode`, `invalid_parameter_value_mode`, `missing_auth_mode`, `invalid_request_mode`), two threshold modes (`timeout_mode`, `max_request_size_mode`), and a `conditions` TypeSet that reuses the rule action-scope schema. Destroy is a soft-delete (PUT `enabled: false`) — the policy record is removed only when the parent spec is deleted.
+* `wallarm_api_spec`: extended schema with `auth_headers` (list of `{key, value}` blocks, sensitive values) used when Wallarm fetches the spec URL, plus API-computed attributes — `status`, `spec_version`, `openapi_version`, `endpoints_count`, `shadow_endpoints_count`, `orphan_endpoints_count`, `zombie_endpoints_count`, `format`, `version`, `node_sync_version`, `last_synced_at`, `last_compared_at`, `updated_at`, `created_at`, `file_changed_at`, and a nested `file` block (`name`, `signed_url`, `checksum`, `mime_type`, `version`). `file.signed_url` is Sensitive and regenerates on every Read (short-lived, ~10 min).
+* `wallarm_api_spec`: Update is now wired via `APISpecUpdate` (partial PUT), so fields can be mutated in place instead of forcing destroy/recreate.
+
+### Other Changes
+
+* **build(deps):** bump `wallarm-go` to `v0.11.0` — adds `APISpecReadByID`, `APISpecUpdate`, `APISpecPolicyPut` endpoints; extends `APISpecBody` with `AuthHeaders` and the new computed fields; renames `Api*` Go identifiers to `API*` for idiomatic Go initialisms (JSON tags unchanged).
+* **refactor(api_spec):** `domains` and `instances` relaxed from Required to Optional. The Wallarm console now hides these legacy fields and Wallarm computes the applicable scope from other signals, so forcing a value in HCL was misleading.
+* **test(api_spec):** acceptance-test suite migrated to v2.3.5 patterns (`ProtoV5ProviderFactories`, `testAccNewAPIClient`, unique per-test `title`). Added Update-in-place, Import-round-trip, and `auth_headers` lifecycle coverage. New `resource_api_spec_policy_test.go` covers Create, Update-mode-flip, scoped `conditions`, soft-delete, and import.
+* **docs(api_spec):** resource doc rewritten against the v2.3.6 schema — full attribute list including the nested `file` block with `signed_url` caveat; example updated.
+* **docs(api_spec_policy):** new resource doc with Example Usage, Argument Reference split into Scope / Violation Modes / Threshold Limits, Import (2-part ID), and a Limitations section documenting soft-delete behaviour and the one-policy-per-spec constraint.
+* **docs(examples):** new `examples/wallarm_api_spec_policy.tf` with three scenarios (observation-mode rollout, block on undefined endpoints with host scope, paused policy preserving settings).
+* **docs(readme):** added `wallarm_api_spec_policy` to the Infrastructure & Tooling table; resource count bumped 11 → 12.
+* **chore(schema):** added `Description` strings to 15+ previously-undocumented `wallarm_api_spec` fields so `terraform providers schema` and registry docs surface helpful text.
+
+[api-spec-enf]: https://docs.wallarm.com/api-specification-enforcement/overview/
+
 # v2.3.5 (Apr 22, 2026)
 
 ## FEATURES:

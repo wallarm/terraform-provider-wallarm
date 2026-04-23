@@ -156,7 +156,7 @@ Request-level rules for detection tuning, virtual patching, and data handling. T
 | `wallarm_integration_insightconnect` | InsightConnect integration |
 | `wallarm_integration_webhook` | Custom webhook notifications |
 
-### Infrastructure & Tooling (11 resources)
+### Infrastructure & Tooling (12 resources)
 
 | Resource | Description |
 |----------|-------------|
@@ -168,6 +168,7 @@ Request-level rules for detection tuning, virtual patching, and data handling. T
 | `wallarm_global_mode` | Global filtration mode |
 | `wallarm_rules_settings` | Rules engine settings |
 | `wallarm_api_spec` | API specification management |
+| `wallarm_api_spec_policy` | API Specification Enforcement policy attached to an uploaded spec |
 | `wallarm_action` | Rule action scope tracking |
 | `wallarm_rule_generator` | Generate HCL config files from hits or existing API rules |
 | `wallarm_hits_index` | Track fetched request IDs for the [hits-to-rules workflow](docs/guides/hits_to_rules.md) |
