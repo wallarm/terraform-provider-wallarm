@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
 	"strconv"
 	"strings"
 
@@ -48,7 +49,7 @@ func resourceWallarmAPISpecPolicy() *schema.Resource {
 				Default:     true,
 				Description: "Whether the policy is actively enforced. Setting to false (or destroying the resource) soft-disables enforcement while preserving all other settings on the spec.",
 			},
-			"conditions": resourcerule.ScopeActionSchema(),
+			"conditions": resourcerule.ScopeActionSchemaMutable(),
 
 			"undefined_endpoint_mode":      violationModeSchema("Action when a request hits an endpoint not defined in the spec."),
 			"undefined_parameter_mode":     violationModeSchema("Action when a request carries a parameter not defined in the spec."),
@@ -96,7 +97,7 @@ func thresholdModeSchema(desc string) *schema.Schema {
 	}
 }
 
-func resourceWallarmAPISpecPolicyPut(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceWallarmAPISpecPolicyPut(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	client := apiClient(m)
 	clientID := d.Get("client_id").(int)
 	apiSpecID := d.Get("api_spec_id").(int)
@@ -121,12 +122,19 @@ func resourceWallarmAPISpecPolicyPut(ctx context.Context, d *schema.ResourceData
 		MaxRequestSize:            d.Get("max_request_size").(int),
 	}
 
-	if _, err := client.APISpecPolicyPut(clientID, apiSpecID, body); err != nil {
+	resp, err := client.APISpecPolicyPut(clientID, apiSpecID, body)
+	if err != nil {
 		return diag.FromErr(err)
 	}
 
 	d.SetId(fmt.Sprintf("%d/%d", clientID, apiSpecID))
-	return resourceWallarmAPISpecPolicyRead(ctx, d, m)
+
+	// Populate state from the PUT response — it echoes all 11 fields, so the
+	// extra APISpecReadByID roundtrip is unnecessary.
+	if resp.Body != nil {
+		return setPolicyToState(d, resp.Body)
+	}
+	return nil
 }
 
 func resourceWallarmAPISpecPolicyRead(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
@@ -147,7 +155,13 @@ func resourceWallarmAPISpecPolicyRead(_ context.Context, d *schema.ResourceData,
 		return nil
 	}
 
-	p := spec.Policy
+	return setPolicyToState(d, spec.Policy)
+}
+
+// setPolicyToState writes every policy field from the API response into state.
+// Shared between Read and Put so the PUT response can populate state without
+// an extra APISpecReadByID call.
+func setPolicyToState(d *schema.ResourceData, p *wallarm.APISpecPolicy) diag.Diagnostics {
 	d.Set("enabled", p.Enabled)
 	d.Set("undefined_endpoint_mode", p.UndefinedEndpointMode)
 	d.Set("undefined_parameter_mode", p.UndefinedParameterMode)
@@ -170,12 +184,25 @@ func resourceWallarmAPISpecPolicyDelete(_ context.Context, d *schema.ResourceDat
 	clientID := d.Get("client_id").(int)
 	apiSpecID := d.Get("api_spec_id").(int)
 
-	// Soft-delete: PUT with enabled=false, preserving other settings so the
-	// user can re-enable without reconfiguring. The API keeps the policy
-	// record tied to the spec; it's cleared only when the spec is deleted.
-	body := &wallarm.APISpecPolicy{Enabled: false}
-	if _, err := client.APISpecPolicyPut(clientID, apiSpecID, body); err != nil {
-		// If the parent spec is already gone, treat as success.
+	// Soft-delete: read current policy, then PUT back with Enabled=false so all
+	// other settings are preserved. Lets the user re-enable later without
+	// reconfiguring.
+	spec, err := client.APISpecReadByID(clientID, apiSpecID)
+	if err != nil {
+		// Parent spec gone → policy gone with it.
+		if errors.Is(err, wallarm.ErrNotFound) {
+			return nil
+		}
+		return diag.FromErr(err)
+	}
+	if spec.Policy == nil {
+		// No policy on this spec → nothing to disable.
+		return nil
+	}
+
+	body := *spec.Policy
+	body.Enabled = false
+	if _, err := client.APISpecPolicyPut(clientID, apiSpecID, &body); err != nil {
 		if errors.Is(err, wallarm.ErrNotFound) {
 			return nil
 		}
@@ -233,6 +260,8 @@ func flattenPolicyConditions(conds []wallarm.APISpecPolicyCondition) *schema.Set
 		ad := wallarm.ActionDetails{Type: c.Type, Value: c.Value, Point: c.Point}
 		m, err := resourcerule.ActionDetailsToMap(ad)
 		if err != nil {
+			log.Printf("[WARN] wallarm_api_spec_policy: dropping unrepresentable condition (type=%q point=%v value=%v): %s",
+				c.Type, c.Point, c.Value, err)
 			continue
 		}
 		resourcerule.TransformAPIActionToSchema(m)

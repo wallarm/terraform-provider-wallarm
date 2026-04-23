@@ -101,12 +101,25 @@ var ActionScopeFields = map[string]*schema.Schema{
 
 // ScopeActionSchema returns the action schema modified to be Optional+Computed,
 // so it can be either set directly by the user or computed from scope fields.
+// Used by rule hints where a scope change means a different hint (ForceNew).
 func ScopeActionSchema() *schema.Schema {
+	return scopeActionSchema(true)
+}
+
+// ScopeActionSchemaMutable returns the action schema without ForceNew, for
+// resources whose API supports updating conditions in place (e.g. API spec
+// policy PUT). Uses the same element shape and HashActionDetails set function
+// so all existing expand/flatten helpers continue to work.
+func ScopeActionSchemaMutable() *schema.Schema {
+	return scopeActionSchema(false)
+}
+
+func scopeActionSchema(forceNew bool) *schema.Schema {
 	return &schema.Schema{
 		Type:     schema.TypeSet,
 		Optional: true,
 		Computed: true,
-		ForceNew: true,
+		ForceNew: forceNew,
 		Set:      HashActionDetails,
 		Elem: &schema.Resource{
 			Schema: map[string]*schema.Schema{
@@ -114,19 +127,19 @@ func ScopeActionSchema() *schema.Schema {
 					Type:         schema.TypeString,
 					Optional:     true,
 					Computed:     true,
-					ForceNew:     true,
+					ForceNew:     forceNew,
 					ValidateFunc: validation.StringInSlice([]string{"equal", "iequal", "regex", "absent", ""}, false),
 				},
 				"value": {
 					Type:     schema.TypeString,
 					Optional: true,
-					ForceNew: true,
+					ForceNew: forceNew,
 					Computed: true,
 				},
 				"point": {
 					Type:     schema.TypeMap,
 					Optional: true,
-					ForceNew: true,
+					ForceNew: forceNew,
 					Elem: &schema.Schema{
 						Type: schema.TypeString,
 					},
