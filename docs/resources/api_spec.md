@@ -39,14 +39,14 @@ resource "wallarm_api_spec" "petstore" {
 * `client_id` - (required, ForceNew) ID of the client to apply changes. Immutable.
 * `title` - (required) human-readable spec title.
 * `file_remote_url` - (required) URL that serves the OpenAPI 3.0 / 3.1 spec in JSON or YAML.
-* `domains` - (required) list of domains the spec applies to.
-* `instances` - (required) list of instance (application) IDs the spec applies to.
 
 ### Optional
 
 * `description` - (optional) free-text description.
 * `regular_file_update` - (optional) when `true`, Wallarm refreshes the spec from `file_remote_url` hourly. Default: `false`.
 * `api_detection` - (optional) when `true`, Wallarm uses the spec for API discovery. Default: `false`.
+* `domains` - (optional) legacy list of domains the spec applies to. Not surfaced in the Wallarm console UI; use `wallarm_api_spec_policy` to scope enforcement instead. Leave empty in most cases.
+* `instances` - (optional) legacy list of instance (application) IDs the spec applies to. Not surfaced in the Wallarm console UI; use `wallarm_api_spec_policy` to scope enforcement instead. Leave empty in most cases.
 * `auth_headers` - (optional) list of `{key, value}` blocks sent when Wallarm fetches `file_remote_url`. `value` is marked Sensitive.
 
 ## Attributes Reference

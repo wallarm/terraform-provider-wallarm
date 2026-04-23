@@ -132,16 +132,16 @@ func resourceWallarmAPISpec() *schema.Resource {
 			},
 			"domains": {
 				Type:        schema.TypeList,
-				Required:    true,
-				Description: "List of domains",
+				Optional:    true,
+				Description: "Optional list of domains the spec applies to. Leave empty if scoping is handled by wallarm_api_spec_policy.",
 				Elem: &schema.Schema{
 					Type: schema.TypeString,
 				},
 			},
 			"instances": {
 				Type:        schema.TypeList,
-				Required:    true,
-				Description: "List of instance IDs",
+				Optional:    true,
+				Description: "Optional list of instance (application) IDs the spec applies to. Leave empty if scoping is handled by wallarm_api_spec_policy.",
 				Elem: &schema.Schema{
 					Type: schema.TypeInt,
 				},
