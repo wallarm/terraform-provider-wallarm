@@ -81,16 +81,17 @@ The following fields are **managed by Wallarm** and require elevated (administra
 * `max_request_size` - max inspected request body size, in kilobytes.
 * `max_request_size_mode` - reaction when `max_request_size` is exceeded. `block` or `monitor`.
 
-The resource ID is `{client_id}/{api_spec_id}`; ingestion metadata (status, endpoint counts, etc.) lives on the parent `wallarm_api_spec`.
+The resource ID is `{client_id}/{api_spec_id}/policy`; ingestion metadata (status, endpoint counts, etc.) lives on the parent `wallarm_api_spec`.
 
 ## Import
 
 ```
-$ terraform import wallarm_api_spec_policy.petstore 6039/134172
+$ terraform import wallarm_api_spec_policy.petstore 6039/134172/policy
 ```
 
 * `6039` - Client ID.
 * `134172` - API Spec ID.
+* `policy` - Literal suffix disambiguating the policy sub-resource from the parent spec.
 
 All fields are populated on import; the resource is fully compatible with `ImportStateVerify`.
 

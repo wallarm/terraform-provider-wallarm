@@ -133,7 +133,7 @@ func TestAPISpecPolicyValidation(t *testing.T) {
 
 // TestAccWallarmAPISpecPolicy_Basic creates a policy with all six violation
 // modes + both threshold modes set to "monitor", enabled=true, and verifies
-// state + ID format {client_id}/{api_spec_id}.
+// state + ID format {client_id}/{api_spec_id}/policy.
 func TestAccWallarmAPISpecPolicy_Basic(t *testing.T) {
 	rnd := generateRandomResourceName(5)
 	resourceName := "wallarm_api_spec_policy." + rnd
@@ -165,7 +165,7 @@ func TestAccWallarmAPISpecPolicy_Basic(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "invalid_parameter_value_mode", "monitor"),
 					resource.TestCheckResourceAttr(resourceName, "missing_auth_mode", "monitor"),
 					resource.TestCheckResourceAttr(resourceName, "invalid_request_mode", "monitor"),
-					resource.TestMatchResourceAttr(resourceName, "id", regexp.MustCompile(fmt.Sprintf(`^%s/[0-9]+$`, clientID))),
+					resource.TestMatchResourceAttr(resourceName, "id", regexp.MustCompile(fmt.Sprintf(`^%s/[0-9]+/policy$`, clientID))),
 				),
 			},
 		},

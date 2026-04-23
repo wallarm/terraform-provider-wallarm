@@ -118,7 +118,7 @@ func resourceWallarmAPISpecPolicyPut(_ context.Context, d *schema.ResourceData, 
 		return diag.FromErr(err)
 	}
 
-	d.SetId(fmt.Sprintf("%d/%d", clientID, apiSpecID))
+	d.SetId(fmt.Sprintf("%d/%d/policy", clientID, apiSpecID))
 
 	// Populate state from the PUT response — it echoes all 11 fields, so the
 	// extra APISpecReadByID roundtrip is unnecessary.
@@ -211,8 +211,8 @@ func resourceWallarmAPISpecPolicyDelete(_ context.Context, d *schema.ResourceDat
 
 func resourceWallarmAPISpecPolicyImport(_ context.Context, d *schema.ResourceData, _ interface{}) ([]*schema.ResourceData, error) {
 	parts := strings.Split(d.Id(), "/")
-	if len(parts) != 2 {
-		return nil, fmt.Errorf("invalid id %q, expected {client_id}/{api_spec_id}", d.Id())
+	if len(parts) != 3 || parts[2] != "policy" {
+		return nil, fmt.Errorf("invalid id %q, expected {client_id}/{api_spec_id}/policy", d.Id())
 	}
 	clientID, err := strconv.Atoi(parts[0])
 	if err != nil {
@@ -224,7 +224,7 @@ func resourceWallarmAPISpecPolicyImport(_ context.Context, d *schema.ResourceDat
 	}
 	d.Set("client_id", clientID)
 	d.Set("api_spec_id", apiSpecID)
-	d.SetId(fmt.Sprintf("%d/%d", clientID, apiSpecID))
+	d.SetId(fmt.Sprintf("%d/%d/policy", clientID, apiSpecID))
 	return []*schema.ResourceData{d}, nil
 }
 
