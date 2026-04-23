@@ -35,12 +35,6 @@ resource "wallarm_api_spec_policy" "petstore" {
   missing_auth_mode            = "block"
   invalid_request_mode         = "monitor"
 
-  # Enforcement thresholds — fall back to monitor on runaway processing.
-  timeout_mode          = "monitor"
-  max_request_size_mode = "monitor"
-  timeout               = 50
-  max_request_size      = 1024
-
   # Restrict enforcement to the production host.
   conditions {
     type  = "iequal"
@@ -78,18 +72,16 @@ Each violation mode accepts `block`, `monitor`, or `ignore` and defaults to `mon
 * `missing_auth_mode` - request lacks the authentication declared by the matched endpoint (API key, bearer token, etc.).
 * `invalid_request_mode` - request body does not validate against the declared request schema.
 
-#### Threshold Limits
-
-Threshold modes accept `block` or `monitor` (default `monitor`). `ignore` is **not** supported for thresholds.
-
-* `timeout_mode` - action when spec-enforcement processing exceeds `timeout`.
-* `max_request_size_mode` - action when the request body exceeds `max_request_size`.
-* `timeout` - (optional) max spec-processing time per request, in milliseconds. Default: `50`.
-* `max_request_size` - (optional) max inspected request body size, in kilobytes. Default: `1024`.
-
 ## Attributes Reference
 
-No computed-only attributes. Every field round-trips through Read — the resource ID is `{client_id}/{api_spec_id}` and ingestion metadata (status, endpoint counts, etc.) lives on the parent `wallarm_api_spec`.
+The following fields are **managed by Wallarm** and require elevated (administrator) permissions to change. They cannot be set through this resource — adjust them via the Wallarm console if needed. Regular-user PUTs that include these fields are silently ignored by the API, which is why the provider exposes them as read-only to avoid perpetual plan drift. Read still populates them from the API so the current values are visible in state.
+
+* `timeout` - max spec-processing time per request, in milliseconds.
+* `timeout_mode` - reaction when `timeout` is exceeded. `block` or `monitor`.
+* `max_request_size` - max inspected request body size, in kilobytes.
+* `max_request_size_mode` - reaction when `max_request_size` is exceeded. `block` or `monitor`.
+
+The resource ID is `{client_id}/{api_spec_id}`; ingestion metadata (status, endpoint counts, etc.) lives on the parent `wallarm_api_spec`.
 
 ## Import
 

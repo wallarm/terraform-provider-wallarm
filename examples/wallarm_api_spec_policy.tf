@@ -31,11 +31,6 @@ resource "wallarm_api_spec_policy" "petstore_block_undefined" {
   missing_parameter_mode       = "monitor"
   invalid_parameter_value_mode = "monitor"
   invalid_request_mode         = "monitor"
-  timeout_mode                 = "monitor"
-  max_request_size_mode        = "monitor"
-
-  timeout          = 50
-  max_request_size = 1024
 
   conditions {
     type  = "iequal"
@@ -62,9 +57,4 @@ resource "wallarm_api_spec_policy" "petstore_paused" {
   invalid_parameter_value_mode = "block"
   missing_auth_mode            = "block"
   invalid_request_mode         = "block"
-  timeout_mode                 = "monitor"
-  max_request_size_mode        = "monitor"
-
-  timeout          = 100
-  max_request_size = 2048
 }

@@ -16,10 +16,7 @@ import (
 	wallarm "github.com/wallarm/wallarm-go"
 )
 
-var (
-	violationModes = []string{"block", "monitor", "ignore"}
-	thresholdModes = []string{"block", "monitor"}
-)
+var violationModes = []string{"block", "monitor", "ignore"}
 
 func resourceWallarmAPISpecPolicy() *schema.Resource {
 	return &schema.Resource{
@@ -58,20 +55,25 @@ func resourceWallarmAPISpecPolicy() *schema.Resource {
 			"missing_auth_mode":            violationModeSchema("Action when the request lacks the authentication declared by the spec."),
 			"invalid_request_mode":         violationModeSchema("Action when the request body does not match the declared schema."),
 
-			"timeout_mode":          thresholdModeSchema("Action when spec-enforcement processing exceeds the configured timeout."),
-			"max_request_size_mode": thresholdModeSchema("Action when the request exceeds the configured size limit."),
-
 			"timeout": {
 				Type:        schema.TypeInt,
-				Optional:    true,
-				Default:     50,
-				Description: "Maximum spec-processing time per request in milliseconds.",
+				Computed:    true,
+				Description: "Max spec-processing time per request in milliseconds. Managed by Wallarm; requires elevated permissions to modify (not settable through this resource).",
+			},
+			"timeout_mode": {
+				Type:        schema.TypeString,
+				Computed:    true,
+				Description: "Reaction when the timeout is exceeded. Managed by Wallarm; requires elevated permissions to modify.",
 			},
 			"max_request_size": {
 				Type:        schema.TypeInt,
-				Optional:    true,
-				Default:     1024,
-				Description: "Maximum inspected request size in KB.",
+				Computed:    true,
+				Description: "Max inspected request size in KB. Managed by Wallarm; requires elevated permissions to modify.",
+			},
+			"max_request_size_mode": {
+				Type:        schema.TypeString,
+				Computed:    true,
+				Description: "Reaction when the request-size limit is exceeded. Managed by Wallarm; requires elevated permissions to modify.",
 			},
 		},
 	}
@@ -84,16 +86,6 @@ func violationModeSchema(desc string) *schema.Schema {
 		Default:      "monitor",
 		ValidateFunc: validation.StringInSlice(violationModes, false),
 		Description:  desc + " One of: block, monitor, ignore.",
-	}
-}
-
-func thresholdModeSchema(desc string) *schema.Schema {
-	return &schema.Schema{
-		Type:         schema.TypeString,
-		Optional:     true,
-		Default:      "monitor",
-		ValidateFunc: validation.StringInSlice(thresholdModes, false),
-		Description:  desc + " One of: block, monitor.",
 	}
 }
 
@@ -116,10 +108,9 @@ func resourceWallarmAPISpecPolicyPut(_ context.Context, d *schema.ResourceData, 
 		InvalidParameterValueMode: d.Get("invalid_parameter_value_mode").(string),
 		MissingAuthMode:           d.Get("missing_auth_mode").(string),
 		InvalidRequestMode:        d.Get("invalid_request_mode").(string),
-		TimeoutMode:               d.Get("timeout_mode").(string),
-		MaxRequestSizeMode:        d.Get("max_request_size_mode").(string),
-		Timeout:                   d.Get("timeout").(int),
-		MaxRequestSize:            d.Get("max_request_size").(int),
+		// Timeout/TimeoutMode/MaxRequestSize/MaxRequestSizeMode deliberately omitted —
+		// those fields are admin-only on the Wallarm API side and ignored for regular
+		// users. Exposed as Computed-only in the schema so state still reflects API values.
 	}
 
 	resp, err := client.APISpecPolicyPut(clientID, apiSpecID, body)
@@ -202,6 +193,13 @@ func resourceWallarmAPISpecPolicyDelete(_ context.Context, d *schema.ResourceDat
 
 	body := *spec.Policy
 	body.Enabled = false
+	// Zero out the 4 admin-only threshold fields so they drop out of the JSON
+	// via omitempty — regular users cannot PUT them back, even to the same
+	// values the API just returned, without tripping the admin-only check.
+	body.Timeout = 0
+	body.TimeoutMode = ""
+	body.MaxRequestSize = 0
+	body.MaxRequestSizeMode = ""
 	if _, err := client.APISpecPolicyPut(clientID, apiSpecID, &body); err != nil {
 		if errors.Is(err, wallarm.ErrNotFound) {
 			return nil

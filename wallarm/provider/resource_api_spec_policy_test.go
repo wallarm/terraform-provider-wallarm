@@ -90,8 +90,10 @@ func testAccCheckWallarmAPISpecPolicyDestroy(s *terraform.State) error {
 }
 
 // TestAPISpecPolicyValidation — pure unit test for the StringInSlice validators
-// on the violation mode and threshold mode fields. Does not boot the plugintest
-// harness, so it runs without Terraform installed.
+// on the violation mode fields. Does not boot the plugintest harness, so it
+// runs without Terraform installed. The threshold fields (timeout/timeout_mode/
+// max_request_size/max_request_size_mode) are Computed-only (admin-managed),
+// so they have no ValidateFunc.
 func TestAPISpecPolicyValidation(t *testing.T) {
 	t.Parallel()
 
@@ -102,10 +104,6 @@ func TestAPISpecPolicyValidation(t *testing.T) {
 		"invalid_parameter_value_mode",
 		"missing_auth_mode",
 		"invalid_request_mode",
-	}
-	thresholdModeFields := []string{
-		"timeout_mode",
-		"max_request_size_mode",
 	}
 
 	// Violation modes — block | monitor | ignore
@@ -131,30 +129,6 @@ func TestAPISpecPolicyValidation(t *testing.T) {
 			}
 		}
 	}
-
-	// Threshold modes — block | monitor (no "ignore")
-	for _, field := range thresholdModeFields {
-		sch := resourceWallarmAPISpecPolicy().Schema[field]
-		if sch == nil || sch.ValidateFunc == nil {
-			t.Fatalf("threshold mode field %q has no ValidateFunc", field)
-		}
-		for _, good := range []string{"block", "monitor"} {
-			if _, errs := sch.ValidateFunc(good, field); len(errs) != 0 {
-				t.Errorf("threshold %s: valid value %q rejected: %v", field, good, errs)
-			}
-		}
-		for _, bad := range []string{"ignore", "off"} {
-			_, errs := sch.ValidateFunc(bad, field)
-			if len(errs) == 0 {
-				t.Errorf("threshold %s: expected error for invalid value %q, got none", field, bad)
-				continue
-			}
-			want := fmt.Sprintf(`expected %s to be one of`, field)
-			if !strings.Contains(errs[0].Error(), want) {
-				t.Errorf("threshold %s: want error containing %q, got %q", field, want, errs[0].Error())
-			}
-		}
-	}
 }
 
 // TestAccWallarmAPISpecPolicy_Basic creates a policy with all six violation
@@ -173,8 +147,6 @@ func TestAccWallarmAPISpecPolicy_Basic(t *testing.T) {
   invalid_parameter_value_mode = "monitor"
   missing_auth_mode            = "monitor"
   invalid_request_mode         = "monitor"
-  timeout_mode                 = "monitor"
-  max_request_size_mode        = "monitor"
 `
 
 	resource.ParallelTest(t, resource.TestCase{
@@ -193,8 +165,6 @@ func TestAccWallarmAPISpecPolicy_Basic(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "invalid_parameter_value_mode", "monitor"),
 					resource.TestCheckResourceAttr(resourceName, "missing_auth_mode", "monitor"),
 					resource.TestCheckResourceAttr(resourceName, "invalid_request_mode", "monitor"),
-					resource.TestCheckResourceAttr(resourceName, "timeout_mode", "monitor"),
-					resource.TestCheckResourceAttr(resourceName, "max_request_size_mode", "monitor"),
 					resource.TestMatchResourceAttr(resourceName, "id", regexp.MustCompile(fmt.Sprintf(`^%s/[0-9]+$`, clientID))),
 				),
 			},
@@ -218,8 +188,6 @@ func TestAccWallarmAPISpecPolicy_Update(t *testing.T) {
   invalid_parameter_value_mode = "monitor"
   missing_auth_mode            = "monitor"
   invalid_request_mode         = "monitor"
-  timeout_mode                 = "monitor"
-  max_request_size_mode        = "monitor"
 `
 
 	bodyMixed := `
@@ -230,8 +198,6 @@ func TestAccWallarmAPISpecPolicy_Update(t *testing.T) {
   invalid_parameter_value_mode = "monitor"
   missing_auth_mode            = "monitor"
   invalid_request_mode         = "monitor"
-  timeout_mode                 = "monitor"
-  max_request_size_mode        = "monitor"
 `
 
 	var firstID string
@@ -390,10 +356,6 @@ func TestAccWallarmAPISpecPolicy_Import(t *testing.T) {
   invalid_parameter_value_mode = "ignore"
   missing_auth_mode            = "monitor"
   invalid_request_mode         = "monitor"
-  timeout_mode                 = "block"
-  max_request_size_mode        = "monitor"
-  timeout                      = 30
-  max_request_size             = 1024
 `
 
 	resource.ParallelTest(t, resource.TestCase{
