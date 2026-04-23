@@ -47,8 +47,9 @@ func flattenAPISpecFile(f *wallarm.APISpecFile) []interface{} {
 }
 
 // setStateFromAPISpecBody writes every API-returned field onto the Terraform
-// resource state. Shared by Read, Create, and Update so Create/Update can reuse
-// the body returned by their own API calls instead of issuing a follow-up GET.
+// resource state. Used by Read after APISpecReadByID; Create and Update delegate
+// to Read because POST/PUT responses omit some fields (file_remote_url,
+// auth_headers, file, policy) that only GET returns.
 func setStateFromAPISpecBody(d *schema.ResourceData, spec wallarm.APISpecBody) error {
 	d.Set("client_id", spec.ClientID)
 	d.Set("title", spec.Title)
@@ -254,7 +255,7 @@ func resourceWallarmAPISpec() *schema.Resource {
 	}
 }
 
-func resourceWallarmAPISpecCreate(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceWallarmAPISpecCreate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	client := apiClient(m)
 
 	apiSpecBody := wallarm.APISpecCreate{
@@ -280,10 +281,7 @@ func resourceWallarmAPISpecCreate(_ context.Context, d *schema.ResourceData, m i
 	d.Set("api_spec_id", createRes.Body.ID)
 	d.SetId(fmt.Sprintf("%d/%d", d.Get("client_id").(int), createRes.Body.ID))
 
-	if err := setStateFromAPISpecBody(d, *createRes.Body); err != nil {
-		return diag.FromErr(err)
-	}
-	return nil
+	return resourceWallarmAPISpecRead(ctx, d, m)
 }
 
 func resourceWallarmAPISpecRead(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
@@ -306,7 +304,7 @@ func resourceWallarmAPISpecRead(_ context.Context, d *schema.ResourceData, m int
 	return nil
 }
 
-func resourceWallarmAPISpecUpdate(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceWallarmAPISpecUpdate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	client := apiClient(m)
 	clientID := d.Get("client_id").(int)
 	apiSpecID := d.Get("api_spec_id").(int)
@@ -342,17 +340,10 @@ func resourceWallarmAPISpecUpdate(_ context.Context, d *schema.ResourceData, m i
 		body.AuthHeaders = expandAPISpecAuthHeaders(d.Get("auth_headers").([]interface{}))
 	}
 
-	updateRes, err := client.APISpecUpdate(clientID, apiSpecID, body)
-	if err != nil {
+	if _, err := client.APISpecUpdate(clientID, apiSpecID, body); err != nil {
 		return diag.FromErr(err)
 	}
-	if updateRes.Body == nil {
-		return diag.Errorf("APISpecUpdate: empty response body")
-	}
-	if err := setStateFromAPISpecBody(d, *updateRes.Body); err != nil {
-		return diag.FromErr(err)
-	}
-	return nil
+	return resourceWallarmAPISpecRead(ctx, d, m)
 }
 
 func resourceWallarmAPISpecDelete(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
