@@ -337,7 +337,8 @@ func resourceWallarmAPISpecUpdate(ctx context.Context, d *schema.ResourceData, m
 		body.Instances = d.Get("instances").([]interface{})
 	}
 	if d.HasChange("auth_headers") {
-		body.AuthHeaders = expandAPISpecAuthHeaders(d.Get("auth_headers").([]interface{}))
+		ah := expandAPISpecAuthHeaders(d.Get("auth_headers").([]interface{}))
+		body.AuthHeaders = &ah
 	}
 
 	if _, err := client.APISpecUpdate(clientID, apiSpecID, body); err != nil {
