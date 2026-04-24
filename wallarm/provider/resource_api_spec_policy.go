@@ -46,7 +46,7 @@ func resourceWallarmAPISpecPolicy() *schema.Resource {
 				Default:     true,
 				Description: "Whether the policy is actively enforced. Setting to false (or destroying the resource) soft-disables enforcement while preserving all other settings on the spec.",
 			},
-			"conditions": resourcerule.ScopeActionSchemaMutable(),
+			"condition": resourcerule.ScopeActionSchemaMutable(),
 
 			"undefined_endpoint_mode":      violationModeSchema("Action when a request hits an endpoint not defined in the spec."),
 			"undefined_parameter_mode":     violationModeSchema("Action when a request carries a parameter not defined in the spec."),
@@ -94,7 +94,7 @@ func resourceWallarmAPISpecPolicyPut(_ context.Context, d *schema.ResourceData, 
 	clientID := d.Get("client_id").(int)
 	apiSpecID := d.Get("api_spec_id").(int)
 
-	conditions, err := expandPolicyConditions(d.Get("conditions").(*schema.Set))
+	conditions, err := expandPolicyConditions(d.Get("condition").(*schema.Set))
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -164,8 +164,8 @@ func setPolicyToState(d *schema.ResourceData, p *wallarm.APISpecPolicy) diag.Dia
 	d.Set("max_request_size_mode", p.MaxRequestSizeMode)
 	d.Set("timeout", p.Timeout)
 	d.Set("max_request_size", p.MaxRequestSize)
-	if err := d.Set("conditions", flattenPolicyConditions(p.Conditions)); err != nil {
-		return diag.FromErr(fmt.Errorf("error setting conditions: %w", err))
+	if err := d.Set("condition", flattenPolicyConditions(p.Conditions)); err != nil {
+		return diag.FromErr(fmt.Errorf("error setting condition: %w", err))
 	}
 	return nil
 }
@@ -228,7 +228,7 @@ func resourceWallarmAPISpecPolicyImport(_ context.Context, d *schema.ResourceDat
 	return []*schema.ResourceData{d}, nil
 }
 
-// expandPolicyConditions converts the HCL conditions TypeSet into the
+// expandPolicyConditions converts the HCL condition TypeSet into the
 // []APISpecPolicyCondition wire shape. It reuses the rule scope expansion
 // helper (same TypeSet hash + schema) and then copies fields across.
 func expandPolicyConditions(set *schema.Set) ([]wallarm.APISpecPolicyCondition, error) {
@@ -248,7 +248,7 @@ func expandPolicyConditions(set *schema.Set) ([]wallarm.APISpecPolicyCondition, 
 }
 
 // flattenPolicyConditions converts []APISpecPolicyCondition back into the
-// schema-compatible form used by the conditions TypeSet. It constructs an
+// schema-compatible form used by the condition TypeSet. It constructs an
 // intermediate wallarm.ActionDetails so the existing ActionDetailsToMap +
 // TransformAPIActionToSchema helpers (which drive rule reads) can be reused —
 // this guarantees the same hash used by ScopeActionSchema's Set function.

@@ -10,7 +10,7 @@ description: |-
 
 Provides the resource to configure [API Specification Enforcement][1] for an uploaded spec — how Wallarm reacts when a request violates the OpenAPI contract (undefined endpoints, missing parameters, schema mismatches, oversized bodies, enforcement timeouts). The parent spec is managed by [`wallarm_api_spec`](./api_spec.md); each spec has at most one policy.
 
-Every violation/threshold category has its own mode, letting you pick which classes of misuse to block, which to only log (`monitor`), and which to pass through (`ignore`). Scope the policy with `conditions` to limit enforcement to specific hosts, paths, methods, or applications.
+Every violation/threshold category has its own mode, letting you pick which classes of misuse to block, which to only log (`monitor`), and which to pass through (`ignore`). Scope the policy with `condition` blocks to limit enforcement to specific hosts, paths, methods, or applications.
 
 ## Example Usage
 
@@ -36,7 +36,7 @@ resource "wallarm_api_spec_policy" "petstore" {
   invalid_request_mode         = "monitor"
 
   # Restrict enforcement to the production host.
-  conditions {
+  condition {
     type  = "iequal"
     value = "petstore.example.com"
     point = {
@@ -59,7 +59,7 @@ resource "wallarm_api_spec_policy" "petstore" {
 
 #### Scope
 
-* `conditions` - (optional) set of scope conditions limiting where the policy applies. Same schema and semantics as the `action {}` block on rule resources — see the [Action Guide](../guides/action) for full documentation on condition types (`equal`, `iequal`, `regex`, `absent`) and points (`header`, `path`, `method`, `instance`, etc.). If omitted, the policy applies to all traffic covered by the parent spec's `domains` / `instances`.
+* `condition` - (optional) set of scope conditions limiting where the policy applies — repeat the block to add more conditions. Same schema and semantics as the `action {}` block on rule resources — see the [Action Guide](../guides/action) for full documentation on condition types (`equal`, `iequal`, `regex`, `absent`) and points (`header`, `path`, `method`, `instance`, etc.). If omitted, the policy applies to all traffic covered by the parent spec's `domains` / `instances`.
 
 #### Violation Modes
 

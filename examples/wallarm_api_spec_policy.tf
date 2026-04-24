@@ -32,7 +32,7 @@ resource "wallarm_api_spec_policy" "petstore_block_undefined" {
   invalid_parameter_value_mode = "monitor"
   invalid_request_mode         = "monitor"
 
-  conditions {
+  condition {
     type  = "iequal"
     value = "petstore.example.com"
     point = {
