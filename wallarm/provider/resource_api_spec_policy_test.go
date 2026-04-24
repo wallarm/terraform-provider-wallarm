@@ -239,6 +239,94 @@ func TestAccWallarmAPISpecPolicy_Update(t *testing.T) {
 	})
 }
 
+// TestAccWallarmAPISpecPolicy_ConditionsLifecycle exercises the condition {}
+// block lifecycle (zero -> one -> two -> one -> zero) on a single resource
+// instance. It is a regression gate for two bugs fixed just before v2.3.6:
+//   - #7a: shrinking from 2 -> 1 conditions must not send a phantom/empty
+//     condition element to the API (would return HTTP 400).
+//   - #7b: removing all condition {} blocks must detect drift and clear the
+//     server-side set (the TypeSet must not be Computed, otherwise the plan
+//     after apply is non-empty).
+func TestAccWallarmAPISpecPolicy_ConditionsLifecycle(t *testing.T) {
+	rnd := generateRandomResourceName(5)
+	resourceName := "wallarm_api_spec_policy." + rnd
+	clientID := os.Getenv("WALLARM_API_CLIENT_ID")
+
+	modes := `
+  enabled                      = true
+  undefined_endpoint_mode      = "monitor"
+  undefined_parameter_mode     = "monitor"
+  missing_parameter_mode       = "monitor"
+  invalid_parameter_value_mode = "monitor"
+  missing_auth_mode            = "monitor"
+  invalid_request_mode         = "monitor"
+`
+	conditionHost := `
+  condition {
+    type  = "iequal"
+    value = "example-%[1]s.com"
+    point = { header = "HOST" }
+  }
+`
+	conditionPath := `
+  condition {
+    type  = "equal"
+    value = "api"
+    point = { path = 0 }
+  }
+`
+
+	none := modes
+	one := modes + fmt.Sprintf(conditionHost, rnd)
+	two := modes + fmt.Sprintf(conditionHost, rnd) + conditionPath
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheckAPISpec(t) },
+		ProtoV5ProviderFactories: testAccProtoV5ProviderFactories,
+		CheckDestroy:             testAccCheckWallarmAPISpecPolicyDestroy,
+		Steps: []resource.TestStep{
+			// Step 1: create with zero conditions.
+			{
+				Config: testAccWallarmAPISpecPolicyConfig(rnd, clientID, none),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckWallarmAPISpecPolicyExists(resourceName),
+					resource.TestCheckResourceAttr(resourceName, "condition.#", "0"),
+				),
+			},
+			// Step 2: add one condition — drift detected, apply works.
+			{
+				Config: testAccWallarmAPISpecPolicyConfig(rnd, clientID, one),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "condition.#", "1"),
+				),
+			},
+			// Step 3: add a second.
+			{
+				Config: testAccWallarmAPISpecPolicyConfig(rnd, clientID, two),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "condition.#", "2"),
+				),
+			},
+			// Step 4: 2 -> 1 (removing the path condition). Exercises bug #7a —
+			// expand must not inject a phantom second element into the PUT body.
+			{
+				Config: testAccWallarmAPISpecPolicyConfig(rnd, clientID, one),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "condition.#", "1"),
+				),
+			},
+			// Step 5: 1 -> 0. Exercises bug #7b — removing all condition blocks
+			// must detect drift and clear server-side (TypeSet not Computed).
+			{
+				Config: testAccWallarmAPISpecPolicyConfig(rnd, clientID, none),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "condition.#", "0"),
+				),
+			},
+		},
+	})
+}
+
 // TestAccWallarmAPISpecPolicy_Disable flips enabled=true → false in a second
 // step and verifies that the non-default mode set in step 1 persists on the
 // spec (soft-delete semantics: the policy record stays, enabled goes false).
