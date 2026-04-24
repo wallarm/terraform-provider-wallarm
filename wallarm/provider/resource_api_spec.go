@@ -342,6 +342,10 @@ func resourceWallarmAPISpecUpdate(ctx context.Context, d *schema.ResourceData, m
 	}
 
 	if _, err := client.APISpecUpdate(clientID, apiSpecID, body); err != nil {
+		if errors.Is(err, wallarm.ErrNotFound) {
+			d.SetId("")
+			return nil
+		}
 		return diag.FromErr(err)
 	}
 	return resourceWallarmAPISpecRead(ctx, d, m)

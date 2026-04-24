@@ -89,7 +89,7 @@ func violationModeSchema(desc string) *schema.Schema {
 	}
 }
 
-func resourceWallarmAPISpecPolicyPut(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceWallarmAPISpecPolicyPut(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	client := apiClient(m)
 	clientID := d.Get("client_id").(int)
 	apiSpecID := d.Get("api_spec_id").(int)
@@ -125,7 +125,11 @@ func resourceWallarmAPISpecPolicyPut(_ context.Context, d *schema.ResourceData, 
 	if resp.Body != nil {
 		return setPolicyToState(d, resp.Body)
 	}
-	return nil
+	// Defensive fallback: should not happen (successful PUT always echoes the
+	// policy), but if it does, hydrate from a fresh GET so state isn't left
+	// with an ID and otherwise empty fields (which would show full drift on
+	// the next plan).
+	return resourceWallarmAPISpecPolicyRead(ctx, d, m)
 }
 
 func resourceWallarmAPISpecPolicyRead(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {

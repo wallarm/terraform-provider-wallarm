@@ -12,8 +12,10 @@ resource "wallarm_api_spec" "petstore" {
 resource "wallarm_api_spec_policy" "petstore_monitor" {
   client_id   = wallarm_api_spec.petstore.client_id
   api_spec_id = wallarm_api_spec.petstore.api_spec_id
-  # All defaults = "monitor", so only enabled needs to be set explicitly here.
-  enabled = true
+  # Block hits on endpoints missing from the spec; keep all other violation
+  # modes at their default ("monitor") so the rest of the traffic is only
+  # logged while the rollout is validated.
+  undefined_endpoint_mode = "block"
 }
 
 # Strict block on undefined endpoints, everything else observed.

@@ -61,6 +61,8 @@ resource "wallarm_api_spec_policy" "petstore" {
 
 * `condition` - (optional) set of scope conditions limiting where the policy applies — repeat the block to add more conditions. Same schema and semantics as the `action {}` block on rule resources — see the [Action Guide](../guides/action) for full documentation on condition types (`equal`, `iequal`, `regex`, `absent`) and points (`header`, `path`, `method`, `instance`, etc.). If omitted, the policy applies to all traffic covered by the parent spec's `domains` / `instances`.
 
+  Note: every `condition` block must set `type` explicitly — the provider silently drops condition entries with no `type` set.
+
 #### Violation Modes
 
 Each violation mode accepts `block`, `monitor`, or `ignore` and defaults to `monitor`.

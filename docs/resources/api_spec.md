@@ -72,7 +72,7 @@ $ terraform import wallarm_api_spec.petstore 6039/134172
 * `6039` - Client ID.
 * `134172` - API Spec ID.
 
-Every field is populated on import; the only field excluded from `ImportStateVerify` is `file.signed_url` (see note above).
+Every field is populated on import; the only field excluded from `ImportStateVerify` is `file.0.signed_url` (see note above).
 
 ## Limitations
 
