@@ -9,7 +9,7 @@ require (
 	github.com/hashicorp/terraform-plugin-sdk/v2 v2.39.0
 	github.com/pkg/errors v0.9.1
 	github.com/samber/lo v1.51.0
-	github.com/wallarm/wallarm-go v0.10.0
+	github.com/wallarm/wallarm-go v0.11.0
 	github.com/zclconf/go-cty v1.17.0
 )
 
@@ -62,5 +62,3 @@ require (
 	google.golang.org/grpc v1.79.1 // indirect
 	google.golang.org/protobuf v1.36.11 // indirect
 )
-
-replace github.com/wallarm/wallarm-go => ../wallarm-go
