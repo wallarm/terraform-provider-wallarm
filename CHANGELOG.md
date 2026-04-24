@@ -1,4 +1,4 @@
-## [v2.3.6] - 2026-04-23
+## [v2.3.6] - 2026-04-24
 
 > Full Terraform support for Wallarm's API Specification Enforcement: expanded `wallarm_api_spec` schema, new `wallarm_api_spec_policy` resource for per-violation block/monitor/ignore controls, and wallarm-go v0.11.0 with the backing endpoints.
 
