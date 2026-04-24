@@ -133,6 +133,7 @@ func Provider() *schema.Provider {
 			"wallarm_application":                    resourceWallarmApp(),
 			"wallarm_user":                           resourceWallarmUser(),
 			"wallarm_api_spec":                       resourceWallarmAPISpec(),
+			"wallarm_api_spec_policy":                resourceWallarmAPISpecPolicy(),
 			"wallarm_denylist":                       resourceWallarmDenylist(),
 			"wallarm_allowlist":                      resourceWallarmAllowlist(),
 			"wallarm_graylist":                       resourceWallarmGraylist(),
