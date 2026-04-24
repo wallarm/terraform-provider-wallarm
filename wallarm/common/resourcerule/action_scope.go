@@ -103,22 +103,23 @@ var ActionScopeFields = map[string]*schema.Schema{
 // so it can be either set directly by the user or computed from scope fields.
 // Used by rule hints where a scope change means a different hint (ForceNew).
 func ScopeActionSchema() *schema.Schema {
-	return scopeActionSchema(true)
+	return scopeActionSchema(true, true)
 }
 
-// ScopeActionSchemaMutable returns the action schema without ForceNew, for
-// resources whose API supports updating conditions in place (e.g. API spec
-// policy PUT). Uses the same element shape and HashActionDetails set function
-// so all existing expand/flatten helpers continue to work.
+// ScopeActionSchemaMutable returns the action schema without ForceNew and
+// without Computed, for resources whose API supports updating conditions in
+// place (e.g. API spec policy PUT) and where the user config is authoritative.
+// Uses the same element shape and HashActionDetails set function so all
+// existing expand/flatten helpers continue to work.
 func ScopeActionSchemaMutable() *schema.Schema {
-	return scopeActionSchema(false)
+	return scopeActionSchema(false, false)
 }
 
-func scopeActionSchema(forceNew bool) *schema.Schema {
+func scopeActionSchema(forceNew, computed bool) *schema.Schema {
 	return &schema.Schema{
 		Type:     schema.TypeSet,
 		Optional: true,
-		Computed: true,
+		Computed: computed,
 		ForceNew: forceNew,
 		Set:      HashActionDetails,
 		Elem: &schema.Resource{
@@ -126,7 +127,7 @@ func scopeActionSchema(forceNew bool) *schema.Schema {
 				"type": {
 					Type:         schema.TypeString,
 					Optional:     true,
-					Computed:     true,
+					Computed:     computed,
 					ForceNew:     forceNew,
 					ValidateFunc: validation.StringInSlice([]string{"equal", "iequal", "regex", "absent", ""}, false),
 				},
@@ -134,7 +135,7 @@ func scopeActionSchema(forceNew bool) *schema.Schema {
 					Type:     schema.TypeString,
 					Optional: true,
 					ForceNew: forceNew,
-					Computed: true,
+					Computed: computed,
 				},
 				"point": {
 					Type:     schema.TypeMap,
