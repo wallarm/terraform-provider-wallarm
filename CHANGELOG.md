@@ -1,3 +1,9 @@
+## [Unreleased] - v2.3.7
+
+### Bug Fixes
+
+* Fixed `data.wallarm_rules` double-counting `wallarm_rule_credential_stuffing_regex` and `wallarm_rule_credential_stuffing_point` rules when Create and the data source read happen in the same `terraform apply`. The v2.3.2 dedup fix added the `isCredentialStuffingType` filter at three cache-population sites but missed `HintCache.Insert`; this completes the fix at the fourth site so credential_stuffing rules never enter the generic hint cache.
+
 ## [v2.3.6] - 2026-04-24
 
 > Full Terraform support for Wallarm's API Specification Enforcement: expanded `wallarm_api_spec` schema, new `wallarm_api_spec_policy` resource for per-violation block/monitor/ignore controls, and wallarm-go v0.11.0 with the backing endpoints.

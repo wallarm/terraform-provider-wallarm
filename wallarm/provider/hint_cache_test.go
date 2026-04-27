@@ -360,3 +360,32 @@ func TestHintCache_StatsTrackInvalidationCycle(t *testing.T) {
 	// Verify LogHintCacheStats doesn't panic
 	cached.LogHintCacheStats()
 }
+
+func TestHintCache_InsertSkipsCredentialStuffingTypes(t *testing.T) {
+	cache := NewHintCache()
+
+	cases := []struct {
+		hintType   string
+		shouldHold bool
+	}{
+		{"credentials_regex", false},
+		{"credentials_point", false},
+		{"wallarm_mode", true},
+		{"vpatch", true},
+		{"disable_stamp", true},
+	}
+
+	id := 1000
+	for _, tc := range cases {
+		id++
+		cache.Insert(&wallarm.ActionBody{ID: id, Type: tc.hintType})
+		_, held := cache.hints[id]
+		if held != tc.shouldHold {
+			t.Errorf("Insert(type=%q): held=%v, want %v", tc.hintType, held, tc.shouldHold)
+		}
+	}
+
+	if got, want := len(cache.hints), 3; got != want {
+		t.Errorf("cache size = %d, want %d", got, want)
+	}
+}

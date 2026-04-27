@@ -213,6 +213,9 @@ func (c *HintCache) All() []wallarm.ActionBody {
 // Insert adds or updates a single hint in the cache without invalidating.
 // Used by HintCreate and HintUpdateV3 to keep the cache warm during batch operations.
 func (c *HintCache) Insert(hint *wallarm.ActionBody) {
+	if isCredentialStuffingType(hint.Type) {
+		return
+	}
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	if c.hints == nil {
