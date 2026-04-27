@@ -86,19 +86,19 @@ var (
 		},
 	}
 
-	// counterFieldOverrides makes comment and variativity_disabled read-only
+	// counterFieldOverrides makes the user-mutable common fields read-only
 	// for counter resources (bola_counter, bruteforce_counter, dirbust_counter).
-	// Counters are immutable — the API returns 403 on any update attempt.
+	// Counters have no UpdateContext (state-only Delete, no Update path), so
+	// every common field that v2.3.7 made mutable must be overridden to
+	// Computed-only here — otherwise Terraform plans an update-in-place and
+	// the SDK invokes a nil UpdateContext at apply time.
 	// Merge after commonResourceRuleFields via lo.Assign to override.
 	counterFieldOverrides = map[string]*schema.Schema{
-		"comment": {
-			Type:     schema.TypeString,
-			Computed: true,
-		},
-		"variativity_disabled": {
-			Type:     schema.TypeBool,
-			Computed: true,
-		},
+		"comment":              {Type: schema.TypeString, Computed: true},
+		"variativity_disabled": {Type: schema.TypeBool, Computed: true},
+		"title":                {Type: schema.TypeString, Computed: true},
+		"active":               {Type: schema.TypeBool, Computed: true},
+		"set":                  {Type: schema.TypeString, Computed: true},
 	}
 
 	thresholdSchema = &schema.Schema{

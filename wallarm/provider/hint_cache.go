@@ -135,7 +135,6 @@ func (c *HintCache) GetOrFetch(hintID, clientID int, api wallarm.API) (*wallarm.
 	}
 }
 
-// TODO: add test — mock API returning 2 pages then empty, verify fullyLoaded, credential stuffing filtered
 // LoadAll fetches ALL hints into cache. Used by data.wallarm_rules which needs
 // the complete set. After this call, fullyLoaded is true.
 func (c *HintCache) LoadAll(clientID int, api wallarm.API) error {
@@ -190,7 +189,6 @@ func (c *HintCache) LoadAll(clientID int, api wallarm.API) error {
 	return nil
 }
 
-// TODO: add test — before LoadAll returns nil, after LoadAll returns sorted hints
 // All returns all cached hints sorted by ID descending.
 // Returns nil if not fully loaded.
 func (c *HintCache) All() []wallarm.ActionBody {
@@ -209,7 +207,6 @@ func (c *HintCache) All() []wallarm.ActionBody {
 	return result
 }
 
-// TODO: add test — insert single hint, verify retrievable via GetOrFetch
 // Insert adds or updates a single hint in the cache without invalidating.
 // Used by HintCreate and HintUpdateV3 to keep the cache warm during batch operations.
 func (c *HintCache) Insert(hint *wallarm.ActionBody) {
