@@ -389,3 +389,53 @@ func TestHintCache_InsertSkipsCredentialStuffingTypes(t *testing.T) {
 		t.Errorf("cache size = %d, want %d", got, want)
 	}
 }
+
+// LoadAll fetches every page until a short page signals the end. Verifies
+// (1) all hints land in the map, (2) credential_stuffing types are filtered
+// out (per the v2.3.2 dedup fix), (3) fullyLoaded is set on completion.
+func TestHintCache_LoadAll(t *testing.T) {
+	hints := makeHints(50)
+	hints = append(hints, wallarm.ActionBody{ID: 9001, Type: "credentials_regex"})
+	hints = append(hints, wallarm.ActionBody{ID: 9002, Type: "credentials_point"})
+	mock := &mockHintAPI{hints: hints}
+
+	cache := NewHintCache()
+	if err := cache.LoadAll(1, mock); err != nil {
+		t.Fatalf("LoadAll: %v", err)
+	}
+	if !cache.fullyLoaded {
+		t.Errorf("fullyLoaded should be true after LoadAll")
+	}
+	if got := len(cache.hints); got != 50 {
+		t.Errorf("cache size = %d, want 50 (credential_stuffing types filtered)", got)
+	}
+	for _, t2 := range []int{9001, 9002} {
+		if _, held := cache.hints[t2]; held {
+			t.Errorf("credential_stuffing hint %d should be filtered out of cache", t2)
+		}
+	}
+}
+
+// All returns nil before LoadAll completes, sorted-desc-by-ID after.
+func TestHintCache_All(t *testing.T) {
+	cache := NewHintCache()
+	if got := cache.All(); got != nil {
+		t.Errorf("All() before LoadAll: got %v, want nil", got)
+	}
+
+	hints := makeHints(5) // IDs 1000..1004
+	mock := &mockHintAPI{hints: hints}
+	if err := cache.LoadAll(1, mock); err != nil {
+		t.Fatalf("LoadAll: %v", err)
+	}
+
+	got := cache.All()
+	if len(got) != 5 {
+		t.Fatalf("expected 5 hints, got %d", len(got))
+	}
+	for i := 1; i < len(got); i++ {
+		if got[i-1].ID <= got[i].ID {
+			t.Errorf("not sorted desc: got[%d].ID=%d <= got[%d].ID=%d", i-1, got[i-1].ID, i, got[i].ID)
+		}
+	}
+}
