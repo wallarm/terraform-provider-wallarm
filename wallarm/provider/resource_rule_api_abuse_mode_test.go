@@ -228,6 +228,61 @@ func TestAccRuleAPIAbuseModeImport(t *testing.T) {
 	})
 }
 
+// Pinterest-style scope mixes four action condition types in one resource:
+// regex on USER-AGENT, equal on path[0], regex on path[1], absent on action_ext.
+// Catches regressions in (a) multi-condition scope hashing, (b) point map
+// validation under heterogeneous types, (c) Read round-trip preserving all
+// four blocks.
+func TestAccRuleAPIAbuseMode_PinterestScope(t *testing.T) {
+	resourceName := "wallarm_rule_api_abuse_mode.pinterest"
+	config := `
+resource "wallarm_rule_api_abuse_mode" "pinterest" {
+  mode    = "disabled"
+  comment = "Allow Pinterest through protections"
+
+  action {
+    type  = "regex"
+    value = ".*(Pinterest|Pinterestbot)/(0.2|1.0);?\\s[(]?[+]https?://www[.]pinterest[.]com/bot[.]html[)].*"
+    point = { header = "USER-AGENT" }
+  }
+  action {
+    type  = "equal"
+    value = "api"
+    point = { path = "0" }
+  }
+  action {
+    type  = "regex"
+    value = "v\\d"
+    point = { path = "1" }
+  }
+  action {
+    type  = "absent"
+    point = { action_ext = "" }
+  }
+}
+`
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV5ProviderFactories: testAccProtoV5ProviderFactories,
+		CheckDestroy:             testAccCheckWallarmRuleAPIAbuseModeDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: config,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckWallarmRuleAPIAbuseModeExists(resourceName),
+					resource.TestCheckResourceAttr(resourceName, "action.#", "4"),
+				),
+			},
+			{
+				ResourceName:            resourceName,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"rule_type"},
+			},
+		},
+	})
+}
+
 func TestAccRuleAPIAbuseModeExistsError(t *testing.T) {
 	// Same action scope, different "resource" label → existingHintForAction must block the second create.
 	configFirst := testAccRuleAPIAbuseModeConfigBasic("first", "exists.example.com", "enabled")

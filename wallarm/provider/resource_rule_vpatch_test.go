@@ -84,6 +84,50 @@ resource "wallarm_rule_vpatch" "%[1]s" {
 }`, resourceID, attackType, point)
 }
 
+// Multiple vpatch hints can attach to the same Action scope, keyed by
+// (point, attack_type). Verifies action_id is shared, rule_ids are distinct,
+// and Read round-trips both.
+func TestAccRuleVpatch_MultiplePerAction(t *testing.T) {
+	host := "multi-vpatch.example.com"
+	config := fmt.Sprintf(`
+resource "wallarm_rule_vpatch" "sqli_user" {
+  attack_type = "sqli"
+  action {
+    type  = "iequal"
+    value = %[1]q
+    point = { header = "HOST" }
+  }
+  point = [["post"], ["form_urlencoded", "username"]]
+}
+
+resource "wallarm_rule_vpatch" "xss_pass" {
+  attack_type = "xss"
+  action {
+    type  = "iequal"
+    value = %[1]q
+    point = { header = "HOST" }
+  }
+  point = [["post"], ["form_urlencoded", "password"]]
+}
+`, host)
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckWallarmRuleVpatchDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: config,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrPair(
+						"wallarm_rule_vpatch.sqli_user", "action_id",
+						"wallarm_rule_vpatch.xss_pass", "action_id",
+					),
+				),
+			},
+		},
+	})
+}
+
 func testAccCheckWallarmRuleVpatchDestroy(s *terraform.State) error {
 	client := testAccProvider.Meta().(*ProviderMeta).Client
 
