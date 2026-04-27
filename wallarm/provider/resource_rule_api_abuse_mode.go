@@ -31,7 +31,7 @@ func resourceWallarmAPIAbuseMode() *schema.Resource {
 		CreateContext: resourceWallarmAPIAbuseModeCreate,
 		ReadContext:   resourceWallarmAPIAbuseModeRead,
 		UpdateContext: resourcerule.Update(apiClient),
-		DeleteContext: resourceWallarmAPIAbuseModeDelete,
+		DeleteContext: resourcerule.Delete(apiClient),
 		Importer: &schema.ResourceImporter{
 			StateContext: resourcerule.Import(ruleTypeAPIAbuseMode),
 		},
@@ -98,22 +98,4 @@ func resourceWallarmAPIAbuseModeRead(_ context.Context, d *schema.ResourceData, 
 		return diag.FromErr(err)
 	}
 	return diag.FromErr(resourcerule.Read(d, clientID, apiClient(m)))
-}
-
-func resourceWallarmAPIAbuseModeDelete(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
-	client := apiClient(m)
-	clientID, err := retrieveClientID(d, m)
-	if err != nil {
-		return diag.FromErr(err)
-	}
-	ruleID := d.Get("rule_id").(int)
-	if err := client.HintDelete(&wallarm.HintDelete{
-		Filter: &wallarm.HintDeleteFilter{
-			Clientid: []int{clientID},
-			ID:       []int{ruleID},
-		},
-	}); err != nil {
-		return diag.FromErr(err)
-	}
-	return nil
 }

@@ -6,7 +6,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 	"github.com/wallarm/terraform-provider-wallarm/wallarm/common/resourcerule"
-	"github.com/wallarm/wallarm-go"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/samber/lo"
@@ -64,7 +63,7 @@ func resourceWallarmGraphqlDetection() *schema.Resource {
 		CreateContext: resourceWallarmGraphqlDetectionCreate,
 		ReadContext:   resourceWallarmGraphqlDetectionRead,
 		UpdateContext: resourcerule.Update(apiClient),
-		DeleteContext: resourceWallarmGraphqlDetectionDelete,
+		DeleteContext: resourcerule.Delete(apiClient),
 		Importer: &schema.ResourceImporter{
 			StateContext: resourcerule.Import("graphql_detection"),
 		},
@@ -88,23 +87,4 @@ func resourceWallarmGraphqlDetectionRead(_ context.Context, d *schema.ResourceDa
 		return diag.FromErr(err)
 	}
 	return diag.FromErr(resourcerule.Read(d, clientID, apiClient(m)))
-}
-
-func resourceWallarmGraphqlDetectionDelete(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
-	client := apiClient(m)
-	clientID, err := retrieveClientID(d, m)
-	if err != nil {
-		return diag.FromErr(err)
-	}
-	ruleID := d.Get("rule_id").(int)
-	h := &wallarm.HintDelete{
-		Filter: &wallarm.HintDeleteFilter{
-			Clientid: []int{clientID},
-			ID:       []int{ruleID},
-		},
-	}
-	if err := client.HintDelete(h); err != nil {
-		return diag.FromErr(err)
-	}
-	return nil
 }

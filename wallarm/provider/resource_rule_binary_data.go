@@ -21,7 +21,7 @@ func resourceWallarmBinaryData() *schema.Resource {
 	return &schema.Resource{
 		CreateContext: resourceWallarmBinaryDataCreate,
 		ReadContext:   resourceWallarmBinaryDataRead,
-		DeleteContext: resourceWallarmBinaryDataDelete,
+		DeleteContext: resourcerule.Delete(apiClient),
 		Importer: &schema.ResourceImporter{
 			StateContext: resourcerule.Import("binary_data"),
 		},
@@ -90,23 +90,4 @@ func resourceWallarmBinaryDataRead(_ context.Context, d *schema.ResourceData, m 
 		return diag.FromErr(err)
 	}
 	return diag.FromErr(resourcerule.Read(d, clientID, apiClient(m), resourcerule.ReadOptionWithPoint))
-}
-
-func resourceWallarmBinaryDataDelete(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
-	client := apiClient(m)
-	clientID, err := retrieveClientID(d, m)
-	if err != nil {
-		return diag.FromErr(err)
-	}
-	ruleID := d.Get("rule_id").(int)
-	h := &wallarm.HintDelete{
-		Filter: &wallarm.HintDeleteFilter{
-			Clientid: []int{clientID},
-			ID:       []int{ruleID},
-		},
-	}
-	if err := client.HintDelete(h); err != nil {
-		return diag.FromErr(err)
-	}
-	return nil
 }

@@ -35,7 +35,7 @@ func resourceWallarmOverlimitResSettings() *schema.Resource {
 		CreateContext: resourceWallarmOverlimitResSettingsCreate,
 		ReadContext:   resourceWallarmOverlimitResSettingsRead,
 		UpdateContext: resourcerule.Update(apiClient),
-		DeleteContext: resourceWallarmOverlimitResSettingsDelete,
+		DeleteContext: resourcerule.Delete(apiClient),
 		Importer: &schema.ResourceImporter{
 			StateContext: resourcerule.Import("overlimit_res_settings"),
 		},
@@ -97,26 +97,4 @@ func resourceWallarmOverlimitResSettingsRead(_ context.Context, d *schema.Resour
 		return diag.FromErr(err)
 	}
 	return diag.FromErr(resourcerule.Read(d, clientID, apiClient(m), resourcerule.ReadOptionWithAction))
-}
-
-func resourceWallarmOverlimitResSettingsDelete(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
-	client := apiClient(m)
-	clientID, err := retrieveClientID(d, m)
-	if err != nil {
-		return diag.FromErr(err)
-	}
-	ruleID := d.Get("rule_id").(int)
-
-	h := &wallarm.HintDelete{
-		Filter: &wallarm.HintDeleteFilter{
-			Clientid: []int{clientID},
-			ID:       []int{ruleID},
-		},
-	}
-
-	if err := client.HintDelete(h); err != nil {
-		return diag.FromErr(err)
-	}
-
-	return nil
 }

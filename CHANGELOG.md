@@ -4,6 +4,12 @@
 
 * Fixed `data.wallarm_rules` double-counting `wallarm_rule_credential_stuffing_regex` and `wallarm_rule_credential_stuffing_point` rules when Create and the data source read happen in the same `terraform apply`. The v2.3.2 dedup fix added the `isCredentialStuffingType` filter at three cache-population sites but missed `HintCache.Insert`; this completes the fix at the fourth site so credential_stuffing rules never enter the generic hint cache.
 * `terraform destroy` of `wallarm_rule_bruteforce_counter`, `wallarm_rule_dirbust_counter`, and `wallarm_rule_bola_counter` is now state-only. The Wallarm API rejects on-demand counter deletes (returns HTTP 200 with empty body) and counters auto-clean ~30 seconds after their last trigger reference is removed; the previous Delete implementation issued a no-op API call and falsely reported destroy success while the counter persisted server-side. The new behavior drops the resource from state and emits an `[INFO]` log line directing operators to the auto-clean lifecycle.
+* `terraform destroy` on every other rule resource now emits a `[WARN]` log line when the API returns an empty response body — the rule was already absent server-side (deleted out-of-band, never existed, or silently rejected). The destroy still succeeds, but operators get a signal that their delete may not have changed anything. Previously this case was indistinguishable from a successful delete because wallarm-go discarded the response body.
+
+### Other Changes
+
+* Bumped `wallarm-go` to `v0.12.0` for the new `HintDelete` response surface (`*HintDeleteResp{Status, Body []ActionBody}`). End users writing only HCL are unaffected; downstream Go consumers calling `wallarm.API.HintDelete(...)` see the breaking signature change documented in the wallarm-go changelog.
+* Extracted shared `resourcerule.Delete` factory used by 21 rule resources (replaces ~17 lines of identical Delete boilerplate per resource). The 2 `wallarm_rule_credential_stuffing_*` resources keep custom Deletes because they additionally invalidate `CredentialStuffingCache` after the API call.
 
 ## [v2.3.6] - 2026-04-24
 

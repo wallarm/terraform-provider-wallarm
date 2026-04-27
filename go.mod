@@ -62,3 +62,7 @@ require (
 	google.golang.org/grpc v1.79.1 // indirect
 	google.golang.org/protobuf v1.36.11 // indirect
 )
+
+// Local development against wallarm-go feature/v0.12.0 — consumes the new
+// HintDeleteResp signature. Comment out before tagging a release.
+replace github.com/wallarm/wallarm-go => ../wallarm-go

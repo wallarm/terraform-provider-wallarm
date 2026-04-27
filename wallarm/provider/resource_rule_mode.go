@@ -30,7 +30,7 @@ func resourceWallarmMode() *schema.Resource {
 		CreateContext: resourceWallarmModeCreate,
 		ReadContext:   resourceWallarmModeRead,
 		UpdateContext: resourcerule.Update(apiClient),
-		DeleteContext: resourceWallarmModeDelete,
+		DeleteContext: resourcerule.Delete(apiClient),
 		Importer: &schema.ResourceImporter{
 			StateContext: resourceWallarmModeImport,
 		},
@@ -101,26 +101,6 @@ func resourceWallarmModeRead(_ context.Context, d *schema.ResourceData, m interf
 		return diag.FromErr(err)
 	}
 	return diag.FromErr(resourcerule.Read(d, clientID, apiClient(m), resourcerule.ReadOptionWithAction))
-}
-
-func resourceWallarmModeDelete(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
-	client := apiClient(m)
-	clientID, err := retrieveClientID(d, m)
-	if err != nil {
-		return diag.FromErr(err)
-	}
-	ruleID := d.Get("rule_id").(int)
-	h := &wallarm.HintDelete{
-		Filter: &wallarm.HintDeleteFilter{
-			Clientid: []int{clientID},
-			ID:       []int{ruleID},
-		},
-	}
-	if err := client.HintDelete(h); err != nil {
-		return diag.FromErr(err)
-	}
-
-	return nil
 }
 
 func resourceWallarmModeImport(_ context.Context, d *schema.ResourceData, _ interface{}) ([]*schema.ResourceData, error) {

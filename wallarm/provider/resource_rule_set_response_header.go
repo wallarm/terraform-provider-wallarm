@@ -41,7 +41,7 @@ func resourceWallarmSetResponseHeader() *schema.Resource {
 		CreateContext: resourceWallarmSetResponseHeaderCreate,
 		ReadContext:   resourceWallarmSetResponseHeaderRead,
 		UpdateContext: resourcerule.Update(apiClient),
-		DeleteContext: resourceWallarmSetResponseHeaderDelete,
+		DeleteContext: resourcerule.Delete(apiClient),
 		Importer: &schema.ResourceImporter{
 			StateContext: resourcerule.Import("set_response_header"),
 		},
@@ -109,26 +109,4 @@ func resourceWallarmSetResponseHeaderRead(_ context.Context, d *schema.ResourceD
 	}
 	return diag.FromErr(resourcerule.Read(d, clientID, apiClient(m),
 		resourcerule.ReadOptionWithMode, resourcerule.ReadOptionWithName, resourcerule.ReadOptionWithValues))
-}
-
-func resourceWallarmSetResponseHeaderDelete(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
-	client := apiClient(m)
-	clientID, err := retrieveClientID(d, m)
-	if err != nil {
-		return diag.FromErr(err)
-	}
-	ruleID := d.Get("rule_id").(int)
-
-	h := &wallarm.HintDelete{
-		Filter: &wallarm.HintDeleteFilter{
-			Clientid: []int{clientID},
-			ID:       []int{ruleID},
-		},
-	}
-
-	if err := client.HintDelete(h); err != nil {
-		return diag.FromErr(err)
-	}
-
-	return nil
 }

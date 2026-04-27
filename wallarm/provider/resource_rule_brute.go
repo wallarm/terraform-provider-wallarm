@@ -6,7 +6,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 	"github.com/wallarm/terraform-provider-wallarm/wallarm/common/resourcerule"
-	"github.com/wallarm/wallarm-go"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/samber/lo"
@@ -34,7 +33,7 @@ func resourceWallarmBrute() *schema.Resource {
 		CreateContext: resourceWallarmBruteCreate,
 		ReadContext:   resourceWallarmBruteRead,
 		UpdateContext: resourcerule.Update(apiClient),
-		DeleteContext: resourceWallarmBruteDelete,
+		DeleteContext: resourcerule.Delete(apiClient),
 		Importer: &schema.ResourceImporter{
 			StateContext: resourcerule.Import("brute"),
 		},
@@ -65,23 +64,4 @@ func resourceWallarmBruteRead(_ context.Context, d *schema.ResourceData, m inter
 		resourcerule.ReadOptionWithEnumeratedParameters,
 		resourcerule.ReadOptionWithArbitraryConditions,
 	))
-}
-
-func resourceWallarmBruteDelete(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
-	client := apiClient(m)
-	clientID, err := retrieveClientID(d, m)
-	if err != nil {
-		return diag.FromErr(err)
-	}
-	ruleID := d.Get("rule_id").(int)
-	h := &wallarm.HintDelete{
-		Filter: &wallarm.HintDeleteFilter{
-			Clientid: []int{clientID},
-			ID:       []int{ruleID},
-		},
-	}
-	if err := client.HintDelete(h); err != nil {
-		return diag.FromErr(err)
-	}
-	return nil
 }

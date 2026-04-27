@@ -30,7 +30,7 @@ func resourceWallarmIgnoreRegex() *schema.Resource {
 		CreateContext: resourceWallarmIgnoreRegexCreate,
 		ReadContext:   resourceWallarmIgnoreRegexRead,
 		UpdateContext: resourcerule.Update(apiClient),
-		DeleteContext: resourceWallarmIgnoreRegexDelete,
+		DeleteContext: resourcerule.Delete(apiClient),
 		Importer: &schema.ResourceImporter{
 			StateContext: resourceWallarmIgnoreRegexImport,
 		},
@@ -100,26 +100,6 @@ func resourceWallarmIgnoreRegexRead(_ context.Context, d *schema.ResourceData, m
 	}
 	return diag.FromErr(resourcerule.Read(d, clientID, apiClient(m),
 		resourcerule.ReadOptionWithPoint, resourcerule.ReadOptionWithRegexID))
-}
-
-func resourceWallarmIgnoreRegexDelete(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
-	client := apiClient(m)
-	clientID, err := retrieveClientID(d, m)
-	if err != nil {
-		return diag.FromErr(err)
-	}
-	ruleID := d.Get("rule_id").(int)
-	h := &wallarm.HintDelete{
-		Filter: &wallarm.HintDeleteFilter{
-			Clientid: []int{clientID},
-			ID:       []int{ruleID},
-		},
-	}
-	if err := client.HintDelete(h); err != nil {
-		return diag.FromErr(err)
-	}
-
-	return nil
 }
 
 func resourceWallarmIgnoreRegexImport(_ context.Context, d *schema.ResourceData, _ interface{}) ([]*schema.ResourceData, error) {

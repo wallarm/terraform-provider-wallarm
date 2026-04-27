@@ -28,7 +28,7 @@ func resourceWallarmVpatch() *schema.Resource {
 		CreateContext: resourceWallarmVpatchCreate,
 		ReadContext:   resourceWallarmVpatchRead,
 		UpdateContext: resourcerule.Update(apiClient),
-		DeleteContext: resourceWallarmVpatchDelete,
+		DeleteContext: resourcerule.Delete(apiClient),
 		Importer: &schema.ResourceImporter{
 			StateContext: resourcerule.Import("vpatch"),
 		},
@@ -100,25 +100,6 @@ func resourceWallarmVpatchRead(_ context.Context, d *schema.ResourceData, m inte
 	}
 	return diag.FromErr(resourcerule.Read(d, clientID, apiClient(m),
 		resourcerule.ReadOptionWithPoint))
-}
-
-func resourceWallarmVpatchDelete(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
-	client := apiClient(m)
-	clientID, err := retrieveClientID(d, m)
-	if err != nil {
-		return diag.FromErr(err)
-	}
-	ruleID := d.Get("rule_id").(int)
-	h := &wallarm.HintDelete{
-		Filter: &wallarm.HintDeleteFilter{
-			Clientid: []int{clientID},
-			ID:       []int{ruleID},
-		},
-	}
-	if err := client.HintDelete(h); err != nil {
-		return diag.FromErr(err)
-	}
-	return nil
 }
 
 // nolint:dupl
