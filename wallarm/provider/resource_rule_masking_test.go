@@ -128,7 +128,6 @@ func TestAccRuleMaskingCreate_FullSettings(t *testing.T) {
 					resource.TestCheckResourceAttr(name, "point.3.0", "xml_attr"),
 					resource.TestCheckResourceAttr(name, "point.3.1", "CDATA"),
 				),
-				ExpectNonEmptyPlan: true,
 			},
 		},
 	})

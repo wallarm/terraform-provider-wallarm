@@ -136,13 +136,20 @@ func suppressIequalValueCaseDiff(k, old, newVal string, d *schema.ResourceData) 
 }
 
 // suppressIequalPointValueCaseDiff suppresses case-only diffs on
-// action.point.<key> entries when <key> is a value-bearing point type
-// (action_name, action_ext, method, instance, scheme, uri, proto — where the
-// matched string lives inside the point map).
+// action.point.<key> entries:
+//   - <key> in PointValuePoints (action_name, action_ext, method, instance,
+//     scheme, uri, proto): suppressed only when the sibling type is iequal
+//     (the API downcases iequal values server-side).
+//   - <key> == "header": always suppressed. HTTP header names are
+//     case-insensitive per RFC 7230; the Wallarm API uppercases them on
+//     receive, so config "referer" vs state "REFERER" is the same name.
 func suppressIequalPointValueCaseDiff(k, old, newVal string, d *schema.ResourceData) bool {
 	idx := strings.LastIndex(k, ".point.")
 	parent := k[:idx]
 	pointKey := k[idx+len(".point."):]
+	if pointKey == Header {
+		return strings.EqualFold(old, newVal)
+	}
 	if !PointValuePoints[pointKey] {
 		return false
 	}

@@ -84,7 +84,6 @@ func TestAccRuleWmodeCreate_FullSettings(t *testing.T) {
 					resource.TestCheckResourceAttr(name, "mode", "off"),
 					resource.TestCheckResourceAttr(name, "action.#", "9"),
 				),
-				ExpectNonEmptyPlan: true,
 			},
 		},
 	})

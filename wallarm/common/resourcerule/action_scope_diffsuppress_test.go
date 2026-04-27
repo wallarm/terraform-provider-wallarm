@@ -100,11 +100,27 @@ func TestSuppressIequalPointValueCaseDiff(t *testing.T) {
 			want:     true,
 		},
 		{
-			name:     "iequal + header: NOT suppressed (header NAME, not value-bearing)",
+			name:     "header: case-only diff suppressed (HTTP names are case-insensitive)",
 			setItem:  map[string]interface{}{"type": "iequal", "value": "example.com", "point": map[string]interface{}{"header": "HOST"}},
 			pointKey: "header",
 			old:      "HOST",
 			newVal:   "host",
+			want:     true,
+		},
+		{
+			name:     "header: case-only diff suppressed even with type=equal (header is always case-insensitive)",
+			setItem:  map[string]interface{}{"type": "equal", "value": "x", "point": map[string]interface{}{"header": "X-Foo"}},
+			pointKey: "header",
+			old:      "X-Foo",
+			newVal:   "X-FOO",
+			want:     true,
+		},
+		{
+			name:     "header: substantive diff NOT suppressed",
+			setItem:  map[string]interface{}{"type": "iequal", "value": "example.com", "point": map[string]interface{}{"header": "HOST"}},
+			pointKey: "header",
+			old:      "HOST",
+			newVal:   "REFERER",
 			want:     false,
 		},
 		{

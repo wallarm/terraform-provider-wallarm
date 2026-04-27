@@ -123,6 +123,7 @@ func HashActionDetails(v interface{}) int {
 			if condType == "iequal" {
 				p = lowercaseValueBearingPointEntries(p)
 			}
+			p = uppercaseHeaderName(p)
 			pointStr = fmt.Sprintf("%v", p)
 		case map[string]interface{}:
 			// Config format from Terraform SDK.
@@ -132,6 +133,7 @@ func HashActionDetails(v interface{}) int {
 			if condType == "iequal" {
 				p = lowercaseValueBearingPointEntriesIface(p)
 			}
+			p = uppercaseHeaderNameIface(p)
 			pointStr = fmt.Sprintf("%v", p)
 		}
 	}
@@ -178,6 +180,38 @@ func lowercaseValueBearingPointEntriesIface(p map[string]interface{}) map[string
 			out[k] = v
 		}
 	}
+	return out
+}
+
+// uppercaseHeaderName / uppercaseHeaderNameIface normalize the `header` point
+// value to uppercase. HTTP header names are case-insensitive per RFC 7230,
+// and the Wallarm API uppercases them on receive. Without this, HCL
+// `header = "referer"` and state `header = "REFERER"` produce different
+// TypeSet hashes — perpetual destroy+recreate diff. Pairs with the
+// suppressHeaderNameCaseDiff DiffSuppressFunc on the point TypeMap.
+func uppercaseHeaderName(p map[string]string) map[string]string {
+	hdr, ok := p["header"]
+	if !ok || strings.ToUpper(hdr) == hdr {
+		return p
+	}
+	out := make(map[string]string, len(p))
+	for k, v := range p {
+		out[k] = v
+	}
+	out["header"] = strings.ToUpper(hdr)
+	return out
+}
+
+func uppercaseHeaderNameIface(p map[string]interface{}) map[string]interface{} {
+	hdr, ok := p["header"].(string)
+	if !ok || strings.ToUpper(hdr) == hdr {
+		return p
+	}
+	out := make(map[string]interface{}, len(p))
+	for k, v := range p {
+		out[k] = v
+	}
+	out["header"] = strings.ToUpper(hdr)
 	return out
 }
 
