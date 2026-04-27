@@ -3,6 +3,7 @@
 ### Bug Fixes
 
 * Fixed `data.wallarm_rules` double-counting `wallarm_rule_credential_stuffing_regex` and `wallarm_rule_credential_stuffing_point` rules when Create and the data source read happen in the same `terraform apply`. The v2.3.2 dedup fix added the `isCredentialStuffingType` filter at three cache-population sites but missed `HintCache.Insert`; this completes the fix at the fourth site so credential_stuffing rules never enter the generic hint cache.
+* `terraform destroy` of `wallarm_rule_bruteforce_counter`, `wallarm_rule_dirbust_counter`, and `wallarm_rule_bola_counter` is now state-only. The Wallarm API rejects on-demand counter deletes (returns HTTP 200 with empty body) and counters auto-clean ~30 seconds after their last trigger reference is removed; the previous Delete implementation issued a no-op API call and falsely reported destroy success while the counter persisted server-side. The new behavior drops the resource from state and emits an `[INFO]` log line directing operators to the auto-clean lifecycle.
 
 ## [v2.3.6] - 2026-04-24
 
