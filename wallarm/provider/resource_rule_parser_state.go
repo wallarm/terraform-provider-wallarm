@@ -19,14 +19,12 @@ func resourceWallarmParserState() *schema.Resource {
 			Type:         schema.TypeString,
 			Required:     true,
 			ValidateFunc: validation.StringInSlice([]string{"base64", "cookie", "form_urlencoded", "gzip", "grpc", "json_doc", "multipart", "percent", "protobuf", "htmljs", "viewstate", "xml", "jwt", "gql"}, false),
-			ForceNew:     true,
 		},
 
 		"state": {
 			Type:         schema.TypeString,
 			Required:     true,
 			ValidateFunc: validation.StringInSlice([]string{"enabled", "disabled"}, false),
-			ForceNew:     true,
 		},
 
 		"action": resourcerule.ScopeActionSchema(),
@@ -36,7 +34,7 @@ func resourceWallarmParserState() *schema.Resource {
 	return &schema.Resource{
 		CreateContext: resourceWallarmParserStateCreate,
 		ReadContext:   resourceWallarmParserStateRead,
-		UpdateContext: resourcerule.Update(apiClient),
+		UpdateContext: resourcerule.Update(apiClient, resourcerule.WithParser, resourcerule.WithState),
 		DeleteContext: resourcerule.Delete(apiClient),
 		Importer: &schema.ResourceImporter{
 			StateContext: resourcerule.Import("parser_state"),

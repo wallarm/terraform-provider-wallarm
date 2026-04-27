@@ -21,28 +21,24 @@ func resourceWallarmRateLimit() *schema.Resource {
 
 		"delay": {
 			Type:         schema.TypeInt,
-			ForceNew:     true,
 			Optional:     true,
 			ValidateFunc: validation.IntBetween(0, 1000),
 		},
 
 		"burst": {
 			Type:         schema.TypeInt,
-			ForceNew:     true,
 			Required:     true,
 			ValidateFunc: validation.IntBetween(0, 1000),
 		},
 
 		"rate": {
 			Type:         schema.TypeInt,
-			ForceNew:     true,
 			Required:     true,
 			ValidateFunc: validation.IntBetween(0, 1000),
 		},
 
 		"rsp_status": {
 			Type:         schema.TypeInt,
-			ForceNew:     true,
 			Optional:     true,
 			ValidateFunc: validation.IntBetween(400, 599),
 		},
@@ -50,14 +46,13 @@ func resourceWallarmRateLimit() *schema.Resource {
 		"time_unit": {
 			Type:         schema.TypeString,
 			Required:     true,
-			ForceNew:     true,
 			ValidateFunc: validation.StringInSlice([]string{"rps", "rpm"}, false),
 		},
 	}
 	return &schema.Resource{
 		CreateContext: resourceWallarmRateLimitCreate,
 		ReadContext:   resourceWallarmRateLimitRead,
-		UpdateContext: resourcerule.Update(apiClient),
+		UpdateContext: resourcerule.Update(apiClient, resourcerule.WithDelay, resourcerule.WithBurst, resourcerule.WithRate, resourcerule.WithRspStatus, resourcerule.WithTimeUnit),
 		DeleteContext: resourcerule.Delete(apiClient),
 		Importer: &schema.ResourceImporter{
 			StateContext: resourcerule.Import("rate_limit"),

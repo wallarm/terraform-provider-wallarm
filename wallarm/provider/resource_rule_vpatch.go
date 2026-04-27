@@ -17,7 +17,6 @@ func resourceWallarmVpatch() *schema.Resource {
 		"attack_type": {
 			Type:     schema.TypeString,
 			Required: true,
-			ForceNew: true,
 			Description: `Possible values: "any", "sqli", "rce", "crlf", "nosqli", "ptrav",
 				"xxe", "xss", "scanner", "redir", "ldapi"`,
 		},
@@ -27,7 +26,7 @@ func resourceWallarmVpatch() *schema.Resource {
 	return &schema.Resource{
 		CreateContext: resourceWallarmVpatchCreate,
 		ReadContext:   resourceWallarmVpatchRead,
-		UpdateContext: resourcerule.Update(apiClient),
+		UpdateContext: resourcerule.Update(apiClient, resourcerule.WithAttackType),
 		DeleteContext: resourcerule.Delete(apiClient),
 		Importer: &schema.ResourceImporter{
 			StateContext: resourcerule.Import("vpatch"),

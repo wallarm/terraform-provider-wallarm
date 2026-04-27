@@ -21,24 +21,20 @@ func resourceWallarmCredentialStuffingRegex() *schema.Resource {
 		"regex": {
 			Type:     schema.TypeString,
 			Required: true,
-			ForceNew: true,
 		},
 		"cred_stuff_type": {
 			Type:         schema.TypeString,
 			Optional:     true,
 			Default:      "default",
-			ForceNew:     true,
 			ValidateFunc: validation.StringInSlice([]string{"custom", "default"}, false),
 		},
 		"case_sensitive": {
 			Type:     schema.TypeBool,
 			Required: true,
-			ForceNew: true,
 		},
 		"login_regex": {
 			Type:         schema.TypeString,
 			Required:     true,
-			ForceNew:     true,
 			ValidateFunc: validation.StringLenBetween(1, 4096),
 		},
 		"action": resourcerule.ScopeActionSchema(),
@@ -46,7 +42,7 @@ func resourceWallarmCredentialStuffingRegex() *schema.Resource {
 	return &schema.Resource{
 		CreateContext: resourceWallarmCredentialStuffingRegexCreate,
 		ReadContext:   resourceWallarmCredentialStuffingRegexRead,
-		UpdateContext: resourcerule.Update(apiClient),
+		UpdateContext: resourcerule.Update(apiClient, resourcerule.WithRegex, resourcerule.WithLoginRegex, resourcerule.WithCredStuffType, resourcerule.WithCaseSensitive),
 		DeleteContext: resourceWallarmCredentialStuffingRegexDelete,
 		Importer: &schema.ResourceImporter{
 			StateContext: resourceWallarmCredentialStuffingRegexImport,

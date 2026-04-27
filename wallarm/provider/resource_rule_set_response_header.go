@@ -18,20 +18,17 @@ func resourceWallarmSetResponseHeader() *schema.Resource {
 		"mode": {
 			Type:         schema.TypeString,
 			Required:     true,
-			ForceNew:     true,
 			ValidateFunc: validation.StringInSlice([]string{"append", "replace"}, false),
 		},
 
 		"name": {
 			Type:     schema.TypeString,
 			Required: true,
-			ForceNew: true,
 		},
 
 		"values": {
 			Type:     schema.TypeSet,
 			Required: true,
-			ForceNew: true,
 			Elem:     &schema.Schema{Type: schema.TypeString},
 		},
 
@@ -40,7 +37,7 @@ func resourceWallarmSetResponseHeader() *schema.Resource {
 	return &schema.Resource{
 		CreateContext: resourceWallarmSetResponseHeaderCreate,
 		ReadContext:   resourceWallarmSetResponseHeaderRead,
-		UpdateContext: resourcerule.Update(apiClient),
+		UpdateContext: resourcerule.Update(apiClient, resourcerule.WithMode, resourcerule.WithName, resourcerule.WithValues),
 		DeleteContext: resourcerule.Delete(apiClient),
 		Importer: &schema.ResourceImporter{
 			StateContext: resourcerule.Import("set_response_header"),

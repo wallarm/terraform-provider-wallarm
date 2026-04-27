@@ -21,7 +21,6 @@ func resourceWallarmAPIAbuseMode() *schema.Resource {
 			Type:         schema.TypeString,
 			Optional:     true,
 			Default:      "enabled",
-			ForceNew:     true,
 			ValidateFunc: validation.StringInSlice([]string{"enabled", "disabled"}, false),
 			Description:  "API abuse mode. One of: enabled, disabled. Default: enabled. Changing this destroys and recreates the rule.",
 		},
@@ -30,7 +29,7 @@ func resourceWallarmAPIAbuseMode() *schema.Resource {
 	return &schema.Resource{
 		CreateContext: resourceWallarmAPIAbuseModeCreate,
 		ReadContext:   resourceWallarmAPIAbuseModeRead,
-		UpdateContext: resourcerule.Update(apiClient),
+		UpdateContext: resourcerule.Update(apiClient, resourcerule.WithMode),
 		DeleteContext: resourcerule.Delete(apiClient),
 		Importer: &schema.ResourceImporter{
 			StateContext: resourcerule.Import(ruleTypeAPIAbuseMode),

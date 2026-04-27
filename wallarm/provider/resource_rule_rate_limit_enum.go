@@ -31,7 +31,7 @@ func resourceWallarmRateLimitEnum() *schema.Resource {
 	return &schema.Resource{
 		CreateContext: resourceWallarmRateLimitEnumCreate,
 		ReadContext:   resourceWallarmRateLimitEnumRead,
-		UpdateContext: resourcerule.Update(apiClient),
+		UpdateContext: resourcerule.Update(apiClient, resourcerule.WithThreshold, resourcerule.WithReaction),
 		DeleteContext: resourcerule.Delete(apiClient),
 		Importer: &schema.ResourceImporter{
 			StateContext: resourcerule.Import("rate_limit_enum"),

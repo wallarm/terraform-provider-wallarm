@@ -17,7 +17,6 @@ func resourceWallarmDisableAttackType() *schema.Resource {
 		"attack_type": {
 			Type:     schema.TypeString,
 			Required: true,
-			ForceNew: true,
 			Description: `Possible values: "any", "sqli", "rce", "crlf", "nosqli", "ptrav",
 				"xxe", "xss", "scanner", "redir", "ldapi", "mass_assignment", "ssrf"`,
 		},
@@ -29,7 +28,7 @@ func resourceWallarmDisableAttackType() *schema.Resource {
 	return &schema.Resource{
 		CreateContext: resourceWallarmDisableAttackTypeCreate,
 		ReadContext:   resourceWallarmDisableAttackTypeRead,
-		UpdateContext: resourcerule.Update(apiClient),
+		UpdateContext: resourcerule.Update(apiClient, resourcerule.WithAttackType),
 		DeleteContext: resourcerule.Delete(apiClient),
 		Importer: &schema.ResourceImporter{
 			StateContext: resourcerule.Import("disable_attack_type"),

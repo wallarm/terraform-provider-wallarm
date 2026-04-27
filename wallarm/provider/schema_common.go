@@ -58,21 +58,18 @@ var (
 			Type:        schema.TypeString,
 			Computed:    true,
 			Optional:    true,
-			ForceNew:    true,
 			Description: "The rule set name. Used to group related rules together.",
 		},
 		"active": {
 			Type:        schema.TypeBool,
 			Optional:    true,
 			Computed:    true,
-			ForceNew:    true,
 			Description: "Whether the rule is active.",
 		},
 		"title": {
 			Type:        schema.TypeString,
 			Computed:    true,
 			Optional:    true,
-			ForceNew:    true,
 			Description: "A short title for the rule.",
 		},
 		"mitigation": {
@@ -108,7 +105,6 @@ var (
 		Type:     schema.TypeList,
 		MaxItems: 1,
 		Required: true,
-		ForceNew: true,
 		Elem: &schema.Resource{
 			Schema: map[string]*schema.Schema{
 				"period": {
@@ -127,26 +123,22 @@ var (
 		Type:     schema.TypeList,
 		MaxItems: 1,
 		Required: true,
-		ForceNew: true,
 		Elem: &schema.Resource{
 			Schema: map[string]*schema.Schema{
 				"block_by_session": {
 					Type:     schema.TypeInt,
 					Optional: true,
 					Computed: true,
-					ForceNew: true,
 				},
 				"block_by_ip": {
 					Type:     schema.TypeInt,
 					Optional: true,
 					Computed: true,
-					ForceNew: true,
 				},
 				"graylist_by_ip": {
 					Type:     schema.TypeInt,
 					Optional: true,
 					Computed: true,
-					ForceNew: true,
 				},
 			},
 		},
@@ -156,13 +148,11 @@ var (
 		Type:     schema.TypeList,
 		MaxItems: 1,
 		Required: true,
-		ForceNew: true,
 		Elem: &schema.Resource{
 			Schema: map[string]*schema.Schema{
 				"mode": {
 					Type:         schema.TypeString,
 					Required:     true,
-					ForceNew:     true,
 					ValidateFunc: validation.StringInSlice([]string{"regexp", "exact"}, false),
 				},
 				"points": {
@@ -173,14 +163,12 @@ var (
 							"point": {
 								Type:     schema.TypeList,
 								Required: true,
-								ForceNew: true,
 								Elem:     &schema.Schema{Type: schema.TypeString},
 							},
 							"sensitive": {
 								Type:     schema.TypeBool,
 								Default:  false,
 								Optional: true,
-								ForceNew: true,
 							},
 						},
 					},
@@ -190,26 +178,22 @@ var (
 					Optional: true,
 					Computed: true,
 					Elem:     &schema.Schema{Type: schema.TypeString},
-					ForceNew: true,
 				},
 				"value_regexps": {
 					Type:     schema.TypeList,
 					Optional: true,
 					Computed: true,
 					Elem:     &schema.Schema{Type: schema.TypeString},
-					ForceNew: true,
 				},
 				"additional_parameters": {
 					Type:     schema.TypeBool,
 					Optional: true,
 					Computed: true,
-					ForceNew: true,
 				},
 				"plain_parameters": {
 					Type:     schema.TypeBool,
 					Optional: true,
 					Computed: true,
-					ForceNew: true,
 				},
 			},
 		},

@@ -29,6 +29,9 @@ func testUpdateSchema() *schema.Resource {
 			"rule_id":              {Type: schema.TypeInt, Optional: true},
 			"variativity_disabled": {Type: schema.TypeBool, Optional: true},
 			"comment":              {Type: schema.TypeString, Optional: true},
+			"title":                {Type: schema.TypeString, Optional: true},
+			"active":               {Type: schema.TypeBool, Optional: true},
+			"set":                  {Type: schema.TypeString, Optional: true},
 		},
 	}
 }

@@ -19,7 +19,6 @@ func resourceWallarmUploads() *schema.Resource {
 			Type:         schema.TypeString,
 			Required:     true,
 			ValidateFunc: validation.StringInSlice([]string{"docs", "html", "images", "music", "video"}, false),
-			ForceNew:     true,
 		},
 
 		"action": resourcerule.ScopeActionSchema(),
@@ -29,7 +28,7 @@ func resourceWallarmUploads() *schema.Resource {
 	return &schema.Resource{
 		CreateContext: resourceWallarmUploadsCreate,
 		ReadContext:   resourceWallarmUploadsRead,
-		UpdateContext: resourcerule.Update(apiClient),
+		UpdateContext: resourcerule.Update(apiClient, resourcerule.WithFileType),
 		DeleteContext: resourcerule.Delete(apiClient),
 		Importer: &schema.ResourceImporter{
 			StateContext: resourcerule.Import("uploads"),

@@ -19,7 +19,6 @@ func resourceWallarmOverlimitResSettings() *schema.Resource {
 
 		"overlimit_time": {
 			Type:         schema.TypeInt,
-			ForceNew:     true,
 			Required:     true,
 			ValidateFunc: validation.IntBetween(0, 2_147_483_647),
 		},
@@ -27,14 +26,13 @@ func resourceWallarmOverlimitResSettings() *schema.Resource {
 		"mode": {
 			Type:         schema.TypeString,
 			Required:     true,
-			ForceNew:     true,
 			ValidateFunc: validation.StringInSlice([]string{"off", "monitoring", "blocking"}, false),
 		},
 	}
 	return &schema.Resource{
 		CreateContext: resourceWallarmOverlimitResSettingsCreate,
 		ReadContext:   resourceWallarmOverlimitResSettingsRead,
-		UpdateContext: resourcerule.Update(apiClient),
+		UpdateContext: resourcerule.Update(apiClient, resourcerule.WithMode, resourcerule.WithOverlimitTime),
 		DeleteContext: resourcerule.Delete(apiClient),
 		Importer: &schema.ResourceImporter{
 			StateContext: resourcerule.Import("overlimit_res_settings"),

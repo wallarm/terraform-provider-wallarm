@@ -31,7 +31,7 @@ func resourceWallarmForcedBrowsing() *schema.Resource {
 	return &schema.Resource{
 		CreateContext: resourceWallarmForcedBrowsingCreate,
 		ReadContext:   resourceWallarmForcedBrowsingRead,
-		UpdateContext: resourcerule.Update(apiClient),
+		UpdateContext: resourcerule.Update(apiClient, resourcerule.WithThreshold, resourcerule.WithReaction),
 		DeleteContext: resourcerule.Delete(apiClient),
 		Importer: &schema.ResourceImporter{
 			StateContext: resourcerule.Import("forced_browsing"),

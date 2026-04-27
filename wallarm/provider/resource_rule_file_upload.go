@@ -20,12 +20,10 @@ func resourceWallarmFileUploadSizeLimit() *schema.Resource {
 			Type:         schema.TypeString,
 			Required:     true,
 			ValidateFunc: validation.StringInSlice([]string{"monitoring", "block", "off", "default"}, false),
-			ForceNew:     true,
 		},
 		"size": {
 			Type:     schema.TypeInt,
 			Optional: true,
-			ForceNew: true,
 		},
 		"size_unit": {
 			Type:         schema.TypeString,
@@ -39,7 +37,7 @@ func resourceWallarmFileUploadSizeLimit() *schema.Resource {
 	return &schema.Resource{
 		CreateContext: resourceWallarmFileUploadSizeLimitCreate,
 		ReadContext:   resourceWallarmFileUploadSizeLimitRead,
-		UpdateContext: resourcerule.Update(apiClient),
+		UpdateContext: resourcerule.Update(apiClient, resourcerule.WithMode, resourcerule.WithSize),
 		DeleteContext: resourcerule.Delete(apiClient),
 		Importer: &schema.ResourceImporter{
 			StateContext: resourcerule.Import("file_upload_size_limit"),

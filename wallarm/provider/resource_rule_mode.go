@@ -21,7 +21,6 @@ func resourceWallarmMode() *schema.Resource {
 			Type:         schema.TypeString,
 			Required:     true,
 			ValidateFunc: validation.StringInSlice([]string{"default", "off", "monitoring", "block", "safe_blocking"}, false),
-			ForceNew:     true,
 		},
 
 		"action": resourcerule.ScopeActionSchema(),
@@ -29,7 +28,7 @@ func resourceWallarmMode() *schema.Resource {
 	return &schema.Resource{
 		CreateContext: resourceWallarmModeCreate,
 		ReadContext:   resourceWallarmModeRead,
-		UpdateContext: resourcerule.Update(apiClient),
+		UpdateContext: resourcerule.Update(apiClient, resourcerule.WithMode),
 		DeleteContext: resourcerule.Delete(apiClient),
 		Importer: &schema.ResourceImporter{
 			StateContext: resourceWallarmModeImport,

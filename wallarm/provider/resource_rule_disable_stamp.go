@@ -18,7 +18,6 @@ func resourceWallarmDisableStamp() *schema.Resource {
 		"stamp": {
 			Type:         schema.TypeInt,
 			Required:     true,
-			ForceNew:     true,
 			ValidateFunc: validation.IntAtLeast(1),
 		},
 
@@ -29,7 +28,7 @@ func resourceWallarmDisableStamp() *schema.Resource {
 	return &schema.Resource{
 		CreateContext: resourceWallarmDisableStampCreate,
 		ReadContext:   resourceWallarmDisableStampRead,
-		UpdateContext: resourcerule.Update(apiClient),
+		UpdateContext: resourcerule.Update(apiClient, resourcerule.WithStamp),
 		DeleteContext: resourcerule.Delete(apiClient),
 		Importer: &schema.ResourceImporter{
 			StateContext: resourcerule.Import("disable_stamp"),

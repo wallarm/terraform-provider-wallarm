@@ -31,7 +31,6 @@ func resourceWallarmRegex() *schema.Resource {
 		"regex": {
 			Type:     schema.TypeString,
 			Required: true,
-			ForceNew: true,
 		},
 
 		"point": defaultPointSchema,
@@ -46,7 +45,7 @@ func resourceWallarmRegex() *schema.Resource {
 	return &schema.Resource{
 		CreateContext: resourceWallarmRegexCreate,
 		ReadContext:   resourceWallarmRegexRead,
-		UpdateContext: resourcerule.Update(apiClient),
+		UpdateContext: resourcerule.Update(apiClient, resourcerule.WithRegex),
 		DeleteContext: resourcerule.Delete(apiClient),
 		Importer: &schema.ResourceImporter{
 			StateContext: resourceWallarmRegexImport,

@@ -19,42 +19,36 @@ func resourceWallarmGraphqlDetection() *schema.Resource {
 			Type:         schema.TypeString,
 			Required:     true,
 			ValidateFunc: validation.StringInSlice([]string{"off", "default", "monitoring", "block"}, false),
-			ForceNew:     true,
 		},
 		"max_depth": {
 			Type:     schema.TypeInt,
 			Optional: true,
-			ForceNew: true,
 		},
 		"max_value_size_kb": {
 			Type:     schema.TypeInt,
 			Optional: true,
-			ForceNew: true,
 		},
 		"max_doc_size_kb": {
 			Type:     schema.TypeInt,
 			Optional: true,
-			ForceNew: true,
 		},
 		"max_alias_size_kb": {
 			Type:     schema.TypeInt,
 			Optional: true,
+			Computed: true,
 			ForceNew: true,
 		},
 		"max_doc_per_batch": {
 			Type:     schema.TypeInt,
 			Optional: true,
-			ForceNew: true,
 		},
 		"introspection": {
 			Type:     schema.TypeBool,
 			Optional: true,
-			ForceNew: true,
 		},
 		"debug_enabled": {
 			Type:     schema.TypeBool,
 			Optional: true,
-			ForceNew: true,
 		},
 	}
 	sh := lo.Assign(fields, commonResourceRuleFields, resourcerule.ActionScopeFields)
@@ -62,7 +56,7 @@ func resourceWallarmGraphqlDetection() *schema.Resource {
 	return &schema.Resource{
 		CreateContext: resourceWallarmGraphqlDetectionCreate,
 		ReadContext:   resourceWallarmGraphqlDetectionRead,
-		UpdateContext: resourcerule.Update(apiClient),
+		UpdateContext: resourcerule.Update(apiClient, resourcerule.WithMode, resourcerule.WithMaxDepth, resourcerule.WithMaxValueSizeKb, resourcerule.WithMaxDocSizeKb, resourcerule.WithMaxDocPerBatch, resourcerule.WithIntrospection, resourcerule.WithDebugEnabled),
 		DeleteContext: resourcerule.Delete(apiClient),
 		Importer: &schema.ResourceImporter{
 			StateContext: resourcerule.Import("graphql_detection"),

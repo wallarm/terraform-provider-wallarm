@@ -24,7 +24,6 @@ func resourceWallarmCredentialStuffingPoint() *schema.Resource {
 			Type:         schema.TypeString,
 			Optional:     true,
 			Default:      "default",
-			ForceNew:     true,
 			ValidateFunc: validation.StringInSlice([]string{"custom", "default"}, false),
 		},
 		"action": resourcerule.ScopeActionSchema(),
@@ -32,7 +31,7 @@ func resourceWallarmCredentialStuffingPoint() *schema.Resource {
 	return &schema.Resource{
 		CreateContext: resourceWallarmCredentialStuffingPointCreate,
 		ReadContext:   resourceWallarmCredentialStuffingPointRead,
-		UpdateContext: resourcerule.Update(apiClient),
+		UpdateContext: resourcerule.Update(apiClient, resourcerule.WithCredStuffType),
 		DeleteContext: resourceWallarmCredentialStuffingPointDelete,
 		Importer: &schema.ResourceImporter{
 			StateContext: resourceWallarmCredentialStuffingPointImport,
