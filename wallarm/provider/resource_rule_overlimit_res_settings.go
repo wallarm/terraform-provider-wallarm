@@ -43,6 +43,10 @@ func resourceWallarmOverlimitResSettings() *schema.Resource {
 }
 
 func resourceWallarmOverlimitResSettingsCreate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+	if diags := guardExistingHint(d, m, "overlimit_res_settings", "wallarm_rule_overlimit_res_settings", nil); diags.HasError() {
+		return diags
+	}
+
 	client := apiClient(m)
 	clientID, err := retrieveClientID(d, m)
 	if err != nil {

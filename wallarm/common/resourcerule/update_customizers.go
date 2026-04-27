@@ -125,7 +125,19 @@ func WithName(d *schema.ResourceData, p *wallarm.HintUpdateV3Params) error {
 }
 
 func WithValues(d *schema.ResourceData, p *wallarm.HintUpdateV3Params) error {
-	out := ConvertToStringSlice(d.Get("values").([]interface{}))
+	// `values` is TypeSet on wallarm_rule_set_response_header — extract the
+	// underlying []interface{} via .List() before string conversion.
+	raw := d.Get("values")
+	var items []interface{}
+	switch v := raw.(type) {
+	case *schema.Set:
+		items = v.List()
+	case []interface{}:
+		items = v
+	default:
+		return nil
+	}
+	out := ConvertToStringSlice(items)
 	p.Values = &out
 	return nil
 }

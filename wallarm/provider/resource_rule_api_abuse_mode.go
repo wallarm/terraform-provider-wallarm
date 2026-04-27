@@ -40,19 +40,8 @@ func resourceWallarmAPIAbuseMode() *schema.Resource {
 }
 
 func resourceWallarmAPIAbuseModeCreate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
-	if d.IsNewResource() {
-		actionID, rule, exists, err := existingHintForAction(d, m, ruleTypeAPIAbuseMode)
-		if err != nil {
-			return diag.FromErr(err)
-		}
-		if exists {
-			clientID, err := retrieveClientID(d, m)
-			if err != nil {
-				return diag.FromErr(err)
-			}
-			existingID := fmt.Sprintf("%d/%d/%d", clientID, actionID, rule.ID)
-			return diag.FromErr(ImportAsExistsError("wallarm_rule_api_abuse_mode", existingID))
-		}
+	if diags := guardExistingHint(d, m, ruleTypeAPIAbuseMode, "wallarm_rule_api_abuse_mode", nil); diags.HasError() {
+		return diags
 	}
 
 	client := apiClient(m)
