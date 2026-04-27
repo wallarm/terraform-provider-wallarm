@@ -115,6 +115,40 @@ func ScopeActionSchemaMutable() *schema.Schema {
 	return scopeActionSchema(false, false)
 }
 
+// iequalSiblingMatchesCaseInsensitive returns true when the action element at
+// `parent` has type "iequal" and old/newVal differ only in case. The API
+// downcases iequal values server-side, so mixed-case HCL is equivalent to
+// lowercased state.
+func iequalSiblingMatchesCaseInsensitive(d *schema.ResourceData, parent, old, newVal string) bool {
+	siblingType, _ := d.Get(parent + ".type").(string)
+	if siblingType != "iequal" {
+		return false
+	}
+	return strings.EqualFold(old, newVal)
+}
+
+// suppressIequalValueCaseDiff suppresses case-only diffs on action.value
+// (paired-element points: header, query — where the matched string is in
+// the value field).
+func suppressIequalValueCaseDiff(k, old, newVal string, d *schema.ResourceData) bool {
+	parent := strings.TrimSuffix(k, ".value")
+	return iequalSiblingMatchesCaseInsensitive(d, parent, old, newVal)
+}
+
+// suppressIequalPointValueCaseDiff suppresses case-only diffs on
+// action.point.<key> entries when <key> is a value-bearing point type
+// (action_name, action_ext, method, instance, scheme, uri, proto — where the
+// matched string lives inside the point map).
+func suppressIequalPointValueCaseDiff(k, old, newVal string, d *schema.ResourceData) bool {
+	idx := strings.LastIndex(k, ".point.")
+	parent := k[:idx]
+	pointKey := k[idx+len(".point."):]
+	if !PointValuePoints[pointKey] {
+		return false
+	}
+	return iequalSiblingMatchesCaseInsensitive(d, parent, old, newVal)
+}
+
 func scopeActionSchema(forceNew, computed bool) *schema.Schema {
 	return &schema.Schema{
 		Type:     schema.TypeSet,
@@ -132,15 +166,17 @@ func scopeActionSchema(forceNew, computed bool) *schema.Schema {
 					ValidateFunc: validation.StringInSlice([]string{"equal", "iequal", "regex", "absent", ""}, false),
 				},
 				"value": {
-					Type:     schema.TypeString,
-					Optional: true,
-					ForceNew: forceNew,
-					Computed: computed,
+					Type:             schema.TypeString,
+					Optional:         true,
+					ForceNew:         forceNew,
+					Computed:         computed,
+					DiffSuppressFunc: suppressIequalValueCaseDiff,
 				},
 				"point": {
-					Type:     schema.TypeMap,
-					Optional: true,
-					ForceNew: forceNew,
+					Type:             schema.TypeMap,
+					Optional:         true,
+					ForceNew:         forceNew,
+					DiffSuppressFunc: suppressIequalPointValueCaseDiff,
 					Elem: &schema.Schema{
 						Type: schema.TypeString,
 					},

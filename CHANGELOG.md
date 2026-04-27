@@ -6,6 +6,11 @@
 * `terraform destroy` of `wallarm_rule_bruteforce_counter`, `wallarm_rule_dirbust_counter`, and `wallarm_rule_bola_counter` is now state-only. The Wallarm API rejects on-demand counter deletes (returns HTTP 200 with empty body) and counters auto-clean ~30 seconds after their last trigger reference is removed; the previous Delete implementation issued a no-op API call and falsely reported destroy success while the counter persisted server-side. The new behavior drops the resource from state and emits an `[INFO]` log line directing operators to the auto-clean lifecycle.
 * `terraform destroy` on every other rule resource now emits a `[WARN]` log line when the API returns an empty response body — the rule was already absent server-side (deleted out-of-band, never existed, or silently rejected). The destroy still succeeds, but operators get a signal that their delete may not have changed anything. Previously this case was indistinguishable from a successful delete because wallarm-go discarded the response body.
 
+* Fixed perpetual destroy+recreate plan diff for `iequal`-typed action conditions with mixed-case values. The Wallarm API downcases `iequal` values server-side, so any mixed-case literal in HCL would drift against the lowercased state on every plan. The fix covers both shapes the matched string can take:
+  - **`value` field** for paired-element points (`header`, `query`): e.g. `point = { header = "HOST" }, value = "Example.com"`.
+  - **point map value** for value-bearing points (`action_name`, `action_ext`, `method`, `instance`, `proto`, `scheme`, `uri`): e.g. `point = { action_name = "TEST" }`.
+  The action TypeSet hash now lowercases iequal values in both shapes (set membership stable), and `DiffSuppressFunc`s on `action.value` and `action.point` treat case-only differences as equivalent when the sibling `type` is `iequal`. Affects every rule resource using `ScopeActionSchema` / `ScopeActionSchemaMutable`.
+
 ### Other Changes
 
 * Bumped `wallarm-go` to `v0.12.0` for the new `HintDelete` response surface (`*HintDeleteResp{Status, Body []ActionBody}`). End users writing only HCL are unaffected; downstream Go consumers calling `wallarm.API.HintDelete(...)` see the breaking signature change documented in the wallarm-go changelog.
