@@ -128,6 +128,59 @@ resource "wallarm_rule_vpatch" "xss_pass" {
 	})
 }
 
+func TestAccRuleVpatchUpdateInPlaceComment(t *testing.T) {
+	rnd := generateRandomResourceName(5)
+	name := "wallarm_rule_vpatch." + rnd
+	var firstRuleID string
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckWallarmRuleVpatchDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccRuleVpatchUpdateCommentConfig(rnd, "first comment"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(name, "comment", "first comment"),
+					func(s *terraform.State) error {
+						firstRuleID = s.RootModule().Resources[name].Primary.Attributes["rule_id"]
+						return nil
+					},
+				),
+			},
+			{
+				Config: testAccRuleVpatchUpdateCommentConfig(rnd, "second comment"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(name, "comment", "second comment"),
+					func(s *terraform.State) error {
+						newID := s.RootModule().Resources[name].Primary.Attributes["rule_id"]
+						if newID != firstRuleID {
+							return fmt.Errorf("expected rule_id to stay stable on in-place update, was %s now %s", firstRuleID, newID)
+						}
+						return nil
+					},
+				),
+			},
+		},
+	})
+}
+
+func testAccRuleVpatchUpdateCommentConfig(resourceID, comment string) string {
+	return fmt.Sprintf(`
+resource "wallarm_rule_vpatch" %[1]q {
+  attack_type = "xss"
+  comment     = %[2]q
+  action {
+    type  = "iequal"
+    value = "vpatch_comment_update.example.com"
+    point = {
+      header = "HOST"
+    }
+  }
+  point = [["get_all"]]
+}`, resourceID, comment)
+}
+
 func testAccCheckWallarmRuleVpatchDestroy(s *terraform.State) error {
 	client := testAccProvider.Meta().(*ProviderMeta).Client
 

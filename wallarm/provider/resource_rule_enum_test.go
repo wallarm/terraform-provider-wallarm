@@ -230,6 +230,76 @@ resource "wallarm_rule_enum" "wallarm_rule_enum_arbitrary_conditions" {
 	})
 }
 
+func testAccRuleEnumUpdateConfig(additional bool) string {
+	return fmt.Sprintf(`
+resource "wallarm_rule_enum" "update_additional" {
+  mode = "block"
+
+  action {
+    type = "iequal"
+    value = "wenum_update.example.com"
+    point = {
+      header = "HOST"
+    }
+  }
+
+  reaction {
+    block_by_session = 3000
+    block_by_ip = 4000
+  }
+
+  threshold {
+    count = 5
+    period = 30
+  }
+
+  enumerated_parameters {
+    mode                  = "regexp"
+    name_regexps          = ["foo", "bar"]
+    value_regexps         = ["baz"]
+    additional_parameters = %[1]t
+    plain_parameters      = false
+  }
+}
+`, additional)
+}
+
+func TestAccRuleEnumUpdateInPlaceAdditionalParameters(t *testing.T) {
+	resourceName := "wallarm_rule_enum.update_additional"
+	var firstRuleID string
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV5ProviderFactories: testAccProtoV5ProviderFactories,
+		CheckDestroy:             testAccCheckWallarmRuleEnumDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccRuleEnumUpdateConfig(false),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "enumerated_parameters.0.additional_parameters", "false"),
+					func(s *terraform.State) error {
+						firstRuleID = s.RootModule().Resources[resourceName].Primary.Attributes["rule_id"]
+						return nil
+					},
+				),
+			},
+			{
+				Config: testAccRuleEnumUpdateConfig(true),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "enumerated_parameters.0.additional_parameters", "true"),
+					func(s *terraform.State) error {
+						newID := s.RootModule().Resources[resourceName].Primary.Attributes["rule_id"]
+						if newID != firstRuleID {
+							return fmt.Errorf("expected rule_id to stay stable on in-place update, was %s now %s", firstRuleID, newID)
+						}
+						return nil
+					},
+				),
+			},
+		},
+	})
+}
+
 func testAccCheckWallarmRuleEnumDestroy(s *terraform.State) error {
 	client := testAccProvider.Meta().(*ProviderMeta).Client
 

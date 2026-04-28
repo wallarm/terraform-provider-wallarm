@@ -177,6 +177,76 @@ resource "wallarm_rule_brute" "wallarm_rule_brute_arbitrary_conditions" {
 	})
 }
 
+func testAccRuleBruteUpdateConfig(mode string) string {
+	return fmt.Sprintf(`
+resource "wallarm_rule_brute" "update_mode" {
+  mode = %[1]q
+
+  action {
+    type = "iequal"
+    value = "wbrute_update.example.com"
+    point = {
+      header = "HOST"
+    }
+  }
+
+  reaction {
+    block_by_session = 3000
+    block_by_ip = 4000
+  }
+
+  threshold {
+    count = 5
+    period = 30
+  }
+
+  enumerated_parameters {
+    mode                  = "regexp"
+    name_regexps          = ["foo", "bar"]
+    value_regexps         = ["baz"]
+    additional_parameters = false
+    plain_parameters      = false
+  }
+}
+`, mode)
+}
+
+func TestAccRuleBruteUpdateInPlaceMode(t *testing.T) {
+	resourceName := "wallarm_rule_brute.update_mode"
+	var firstRuleID string
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV5ProviderFactories: testAccProtoV5ProviderFactories,
+		CheckDestroy:             testAccCheckWallarmRuleBruteDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccRuleBruteUpdateConfig("default"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "mode", "default"),
+					func(s *terraform.State) error {
+						firstRuleID = s.RootModule().Resources[resourceName].Primary.Attributes["rule_id"]
+						return nil
+					},
+				),
+			},
+			{
+				Config: testAccRuleBruteUpdateConfig("off"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "mode", "off"),
+					func(s *terraform.State) error {
+						newID := s.RootModule().Resources[resourceName].Primary.Attributes["rule_id"]
+						if newID != firstRuleID {
+							return fmt.Errorf("expected rule_id to stay stable on in-place update, was %s now %s", firstRuleID, newID)
+						}
+						return nil
+					},
+				),
+			},
+		},
+	})
+}
+
 func testAccCheckWallarmRuleBruteDestroy(s *terraform.State) error {
 	client := testAccProvider.Meta().(*ProviderMeta).Client
 

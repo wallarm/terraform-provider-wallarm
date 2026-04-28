@@ -258,6 +258,58 @@ resource "wallarm_rule_binary_data" "%[7]s" {
 }`, equal, iequal, regex, absent, rule.value, rule.point, resourceID)
 }
 
+func TestAccRuleBinaryDataUpdateInPlaceComment(t *testing.T) {
+	rnd := generateRandomResourceName(5)
+	name := "wallarm_rule_binary_data." + rnd
+	var firstRuleID string
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckWallarmRuleBinaryDataDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccRuleBinaryDataUpdateCommentConfig(rnd, "first comment"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(name, "comment", "first comment"),
+					func(s *terraform.State) error {
+						firstRuleID = s.RootModule().Resources[name].Primary.Attributes["rule_id"]
+						return nil
+					},
+				),
+			},
+			{
+				Config: testAccRuleBinaryDataUpdateCommentConfig(rnd, "second comment"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(name, "comment", "second comment"),
+					func(s *terraform.State) error {
+						newID := s.RootModule().Resources[name].Primary.Attributes["rule_id"]
+						if newID != firstRuleID {
+							return fmt.Errorf("expected rule_id to stay stable on in-place update, was %s now %s", firstRuleID, newID)
+						}
+						return nil
+					},
+				),
+			},
+		},
+	})
+}
+
+func testAccRuleBinaryDataUpdateCommentConfig(resourceID, comment string) string {
+	return fmt.Sprintf(`
+resource "wallarm_rule_binary_data" %[1]q {
+  comment = %[2]q
+  action {
+    type  = "iequal"
+    value = "binary_data_comment_update.example.com"
+    point = {
+      header = "HOST"
+    }
+  }
+  point = [["post"], ["form_urlencoded", "query"]]
+}`, resourceID, comment)
+}
+
 func testAccCheckWallarmRuleBinaryDataDestroy(s *terraform.State) error {
 	client := testAccProvider.Meta().(*ProviderMeta).Client
 

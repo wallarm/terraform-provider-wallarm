@@ -56,6 +56,43 @@ func TestAccOverlimitResSettings_ExistsError(t *testing.T) {
 	})
 }
 
+func TestAccOverlimitResSettingsUpdateInPlaceOverlimitTime(t *testing.T) {
+	resourceName := generateRandomResourceName(5)
+	resourceAddress := "wallarm_rule_overlimit_res_settings." + resourceName
+	var firstRuleID string
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		CheckDestroy: testAccRuleOverlimitResSettingsDestroy(),
+		Providers:    testAccProviders,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccRuleOverlimitResSettingsConfig(resourceName, "overlimit_update.example.com", "monitoring", 1000),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceAddress, "overlimit_time", "1000"),
+					func(s *terraform.State) error {
+						firstRuleID = s.RootModule().Resources[resourceAddress].Primary.Attributes["rule_id"]
+						return nil
+					},
+				),
+			},
+			{
+				Config: testAccRuleOverlimitResSettingsConfig(resourceName, "overlimit_update.example.com", "monitoring", 2000),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceAddress, "overlimit_time", "2000"),
+					func(s *terraform.State) error {
+						newID := s.RootModule().Resources[resourceAddress].Primary.Attributes["rule_id"]
+						if newID != firstRuleID {
+							return fmt.Errorf("expected rule_id to stay stable on in-place update, was %s now %s", firstRuleID, newID)
+						}
+						return nil
+					},
+				),
+			},
+		},
+	})
+}
+
 func testAccRuleOverlimitResSettingsConfig(label, host, mode string, overlimitTime int) string {
 	return fmt.Sprintf(`
 resource "wallarm_rule_overlimit_res_settings" %[1]q {

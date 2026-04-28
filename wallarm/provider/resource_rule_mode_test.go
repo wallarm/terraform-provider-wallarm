@@ -195,6 +195,43 @@ resource "wallarm_rule_mode" "%[7]s" {
 }`, rule.mode, equal, iequal, regex, absent, rule.value, resourceID)
 }
 
+func TestAccRuleModeUpdateInPlaceMode(t *testing.T) {
+	rnd := generateRandomResourceName(5)
+	name := "wallarm_rule_mode." + rnd
+	var firstRuleID string
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV5ProviderFactories: testAccProtoV5ProviderFactories,
+		CheckDestroy:             testAccCheckWallarmRuleWmodeDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testWallarmRuleWmodeBasicConfig(rnd, "monitoring", "iequal", "wmode_update.example.com", "HOST"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(name, "mode", "monitoring"),
+					func(s *terraform.State) error {
+						firstRuleID = s.RootModule().Resources[name].Primary.Attributes["rule_id"]
+						return nil
+					},
+				),
+			},
+			{
+				Config: testWallarmRuleWmodeBasicConfig(rnd, "block", "iequal", "wmode_update.example.com", "HOST"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(name, "mode", "block"),
+					func(s *terraform.State) error {
+						newID := s.RootModule().Resources[name].Primary.Attributes["rule_id"]
+						if newID != firstRuleID {
+							return fmt.Errorf("expected rule_id to stay stable on in-place update, was %s now %s", firstRuleID, newID)
+						}
+						return nil
+					},
+				),
+			},
+		},
+	})
+}
+
 func testAccCheckWallarmRuleWmodeDestroy(s *terraform.State) error {
 	client := testAccProvider.Meta().(*ProviderMeta).Client
 
