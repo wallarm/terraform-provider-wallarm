@@ -31,7 +31,6 @@ func resourceWallarmRegex() *schema.Resource {
 		"regex": {
 			Type:     schema.TypeString,
 			Required: true,
-			ForceNew: true,
 		},
 
 		"point": defaultPointSchema,
@@ -46,8 +45,8 @@ func resourceWallarmRegex() *schema.Resource {
 	return &schema.Resource{
 		CreateContext: resourceWallarmRegexCreate,
 		ReadContext:   resourceWallarmRegexRead,
-		UpdateContext: resourcerule.Update(apiClient),
-		DeleteContext: resourceWallarmRegexDelete,
+		UpdateContext: resourcerule.Update(apiClient, resourcerule.WithRegex),
+		DeleteContext: resourcerule.Delete(apiClient),
 		Importer: &schema.ResourceImporter{
 			StateContext: resourceWallarmRegexImport,
 		},
@@ -126,28 +125,6 @@ func resourceWallarmRegexRead(_ context.Context, d *schema.ResourceData, m inter
 		return diag.FromErr(err)
 	}
 	return diag.FromErr(resourcerule.Read(d, clientID, apiClient(m)))
-}
-
-func resourceWallarmRegexDelete(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
-	client := apiClient(m)
-	clientID, err := retrieveClientID(d, m)
-	if err != nil {
-		return diag.FromErr(err)
-	}
-
-	ruleID := d.Get("rule_id").(int)
-	h := &wallarm.HintDelete{
-		Filter: &wallarm.HintDeleteFilter{
-			Clientid: []int{clientID},
-			ID:       []int{ruleID},
-		},
-	}
-
-	if err := client.HintDelete(h); err != nil {
-		return diag.FromErr(err)
-	}
-
-	return nil
 }
 
 func resourceWallarmRegexImport(_ context.Context, d *schema.ResourceData, _ interface{}) ([]*schema.ResourceData, error) {

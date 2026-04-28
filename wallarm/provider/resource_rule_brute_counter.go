@@ -25,7 +25,7 @@ func resourceWallarmBruteForceCounter() *schema.Resource {
 	return &schema.Resource{
 		CreateContext: resourceWallarmBruteForceCounterCreate,
 		ReadContext:   resourceWallarmBruteForceCounterRead,
-		DeleteContext: resourceWallarmBruteForceCounterDelete,
+		DeleteContext: resourcerule.CounterDelete("wallarm_rule_bruteforce_counter"),
 		Importer: &schema.ResourceImporter{
 			StateContext: resourcerule.Import("brute_counter"),
 		},
@@ -80,24 +80,4 @@ func resourceWallarmBruteForceCounterRead(_ context.Context, d *schema.ResourceD
 		return diag.FromErr(err)
 	}
 	return diag.FromErr(resourcerule.Read(d, clientID, apiClient(m), resourcerule.ReadOptionWithAction))
-}
-
-func resourceWallarmBruteForceCounterDelete(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
-	client := apiClient(m)
-	clientID, err := retrieveClientID(d, m)
-	if err != nil {
-		return diag.FromErr(err)
-	}
-	ruleID := d.Get("rule_id").(int)
-	h := &wallarm.HintDelete{
-		Filter: &wallarm.HintDeleteFilter{
-			Clientid: []int{clientID},
-			ID:       []int{ruleID},
-		},
-	}
-	if err := client.HintDelete(h); err != nil {
-		return diag.FromErr(err)
-	}
-
-	return nil
 }

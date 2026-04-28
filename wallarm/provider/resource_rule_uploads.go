@@ -19,7 +19,6 @@ func resourceWallarmUploads() *schema.Resource {
 			Type:         schema.TypeString,
 			Required:     true,
 			ValidateFunc: validation.StringInSlice([]string{"docs", "html", "images", "music", "video"}, false),
-			ForceNew:     true,
 		},
 
 		"action": resourcerule.ScopeActionSchema(),
@@ -29,8 +28,8 @@ func resourceWallarmUploads() *schema.Resource {
 	return &schema.Resource{
 		CreateContext: resourceWallarmUploadsCreate,
 		ReadContext:   resourceWallarmUploadsRead,
-		UpdateContext: resourcerule.Update(apiClient),
-		DeleteContext: resourceWallarmUploadsDelete,
+		UpdateContext: resourcerule.Update(apiClient, resourcerule.WithFileType),
+		DeleteContext: resourcerule.Delete(apiClient),
 		Importer: &schema.ResourceImporter{
 			StateContext: resourcerule.Import("uploads"),
 		},
@@ -100,25 +99,6 @@ func resourceWallarmUploadsRead(_ context.Context, d *schema.ResourceData, m int
 	}
 	return diag.FromErr(resourcerule.Read(d, clientID, apiClient(m),
 		resourcerule.ReadOptionWithPoint))
-}
-
-func resourceWallarmUploadsDelete(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
-	client := apiClient(m)
-	clientID, err := retrieveClientID(d, m)
-	if err != nil {
-		return diag.FromErr(err)
-	}
-	ruleID := d.Get("rule_id").(int)
-	h := &wallarm.HintDelete{
-		Filter: &wallarm.HintDeleteFilter{
-			Clientid: []int{clientID},
-			ID:       []int{ruleID},
-		},
-	}
-	if err := client.HintDelete(h); err != nil {
-		return diag.FromErr(err)
-	}
-	return nil
 }
 
 // nolint:dupl

@@ -6,7 +6,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 	"github.com/wallarm/terraform-provider-wallarm/wallarm/common/resourcerule"
-	"github.com/wallarm/wallarm-go"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/samber/lo"
@@ -20,42 +19,36 @@ func resourceWallarmGraphqlDetection() *schema.Resource {
 			Type:         schema.TypeString,
 			Required:     true,
 			ValidateFunc: validation.StringInSlice([]string{"off", "default", "monitoring", "block"}, false),
-			ForceNew:     true,
 		},
 		"max_depth": {
 			Type:     schema.TypeInt,
 			Optional: true,
-			ForceNew: true,
 		},
 		"max_value_size_kb": {
 			Type:     schema.TypeInt,
 			Optional: true,
-			ForceNew: true,
 		},
 		"max_doc_size_kb": {
 			Type:     schema.TypeInt,
 			Optional: true,
-			ForceNew: true,
 		},
 		"max_alias_size_kb": {
 			Type:     schema.TypeInt,
 			Optional: true,
+			Computed: true,
 			ForceNew: true,
 		},
 		"max_doc_per_batch": {
 			Type:     schema.TypeInt,
 			Optional: true,
-			ForceNew: true,
 		},
 		"introspection": {
 			Type:     schema.TypeBool,
 			Optional: true,
-			ForceNew: true,
 		},
 		"debug_enabled": {
 			Type:     schema.TypeBool,
 			Optional: true,
-			ForceNew: true,
 		},
 	}
 	sh := lo.Assign(fields, commonResourceRuleFields, resourcerule.ActionScopeFields)
@@ -63,8 +56,8 @@ func resourceWallarmGraphqlDetection() *schema.Resource {
 	return &schema.Resource{
 		CreateContext: resourceWallarmGraphqlDetectionCreate,
 		ReadContext:   resourceWallarmGraphqlDetectionRead,
-		UpdateContext: resourcerule.Update(apiClient),
-		DeleteContext: resourceWallarmGraphqlDetectionDelete,
+		UpdateContext: resourcerule.Update(apiClient, resourcerule.WithMode, resourcerule.WithMaxDepth, resourcerule.WithMaxValueSizeKb, resourcerule.WithMaxDocSizeKb, resourcerule.WithMaxDocPerBatch, resourcerule.WithIntrospection, resourcerule.WithDebugEnabled),
+		DeleteContext: resourcerule.Delete(apiClient),
 		Importer: &schema.ResourceImporter{
 			StateContext: resourcerule.Import("graphql_detection"),
 		},
@@ -88,23 +81,4 @@ func resourceWallarmGraphqlDetectionRead(_ context.Context, d *schema.ResourceDa
 		return diag.FromErr(err)
 	}
 	return diag.FromErr(resourcerule.Read(d, clientID, apiClient(m)))
-}
-
-func resourceWallarmGraphqlDetectionDelete(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
-	client := apiClient(m)
-	clientID, err := retrieveClientID(d, m)
-	if err != nil {
-		return diag.FromErr(err)
-	}
-	ruleID := d.Get("rule_id").(int)
-	h := &wallarm.HintDelete{
-		Filter: &wallarm.HintDeleteFilter{
-			Clientid: []int{clientID},
-			ID:       []int{ruleID},
-		},
-	}
-	if err := client.HintDelete(h); err != nil {
-		return diag.FromErr(err)
-	}
-	return nil
 }

@@ -24,7 +24,6 @@ func resourceWallarmCredentialStuffingPoint() *schema.Resource {
 			Type:         schema.TypeString,
 			Optional:     true,
 			Default:      "default",
-			ForceNew:     true,
 			ValidateFunc: validation.StringInSlice([]string{"custom", "default"}, false),
 		},
 		"action": resourcerule.ScopeActionSchema(),
@@ -32,7 +31,7 @@ func resourceWallarmCredentialStuffingPoint() *schema.Resource {
 	return &schema.Resource{
 		CreateContext: resourceWallarmCredentialStuffingPointCreate,
 		ReadContext:   resourceWallarmCredentialStuffingPointRead,
-		UpdateContext: resourcerule.Update(apiClient),
+		UpdateContext: resourcerule.Update(apiClient, resourcerule.WithCredStuffType),
 		DeleteContext: resourceWallarmCredentialStuffingPointDelete,
 		Importer: &schema.ResourceImporter{
 			StateContext: resourceWallarmCredentialStuffingPointImport,
@@ -157,7 +156,7 @@ func resourceWallarmCredentialStuffingPointDelete(_ context.Context, d *schema.R
 	}
 	ruleID := d.Get("rule_id").(int)
 
-	err = client.HintDelete(&wallarm.HintDelete{
+	resp, err := client.HintDelete(&wallarm.HintDelete{
 		Filter: &wallarm.HintDeleteFilter{
 			Clientid: []int{clientID},
 			ID:       []int{ruleID},
@@ -166,6 +165,7 @@ func resourceWallarmCredentialStuffingPointDelete(_ context.Context, d *schema.R
 	if err != nil {
 		return diag.FromErr(err)
 	}
+	resourcerule.LogIfHintDeleteNoOp(resp, ruleID)
 
 	m.(*ProviderMeta).CredentialStuffingCache.Invalidate()
 	return nil

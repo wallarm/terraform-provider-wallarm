@@ -132,6 +132,62 @@ resource "wallarm_rule_disable_stamp" "%[1]s" {
 }`, resourceID, stamp)
 }
 
+func TestAccRuleDisableStampUpdateInPlaceComment(t *testing.T) {
+	if os.Getenv("WALLARM_EXTRA_PERMISSIONS") == "" {
+		t.Skip("Skipping not test as it requires WALLARM_EXTRA_PERMISSIONS set")
+	}
+	rnd := generateRandomResourceName(5)
+	name := "wallarm_rule_disable_stamp." + rnd
+	var firstRuleID string
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckWallarmRuleDisableStampDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccRuleDisableStampUpdateCommentConfig(rnd, "first comment"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(name, "comment", "first comment"),
+					func(s *terraform.State) error {
+						firstRuleID = s.RootModule().Resources[name].Primary.Attributes["rule_id"]
+						return nil
+					},
+				),
+			},
+			{
+				Config: testAccRuleDisableStampUpdateCommentConfig(rnd, "second comment"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(name, "comment", "second comment"),
+					func(s *terraform.State) error {
+						newID := s.RootModule().Resources[name].Primary.Attributes["rule_id"]
+						if newID != firstRuleID {
+							return fmt.Errorf("expected rule_id to stay stable on in-place update, was %s now %s", firstRuleID, newID)
+						}
+						return nil
+					},
+				),
+			},
+		},
+	})
+}
+
+func testAccRuleDisableStampUpdateCommentConfig(resourceID, comment string) string {
+	return fmt.Sprintf(`
+resource "wallarm_rule_disable_stamp" %[1]q {
+  comment = %[2]q
+  stamp   = 1234
+  action {
+    type  = "iequal"
+    value = "disable_stamp_comment_update.example.com"
+    point = {
+      header = "HOST"
+    }
+  }
+  point = [["post"], ["form_urlencoded", "query"]]
+}`, resourceID, comment)
+}
+
 func testAccCheckWallarmRuleDisableStampDestroy(s *terraform.State) error {
 	client := testAccProvider.Meta().(*ProviderMeta).Client
 

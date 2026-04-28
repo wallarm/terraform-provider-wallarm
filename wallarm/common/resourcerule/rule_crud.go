@@ -253,16 +253,33 @@ func GetPointerWithTypeCastingOrDefault[T any](d *schema.ResourceData, name stri
 	return &v
 }
 
-// Update returns an UpdateContextFunc that writes the two
-// user-mutable fields (variativity_disabled, comment) via HintUpdateV3.
-// cp is a provider-supplied function that extracts the wallarm.API client
-// from the SDK's untyped meta value.
-func Update(cp func(m interface{}) wallarm.API) schema.UpdateContextFunc {
+// UpdateCustomizer mutates HintUpdateV3Params with per-resource fields
+// before the request is sent. Used by Update() to let each rule resource
+// add its specific mutable fields (mode, attack_type, threshold, etc.)
+// on top of the common surface. Customizers may return an error to abort
+// the update — useful for nested-block expanders that can fail on bad input.
+type UpdateCustomizer func(*schema.ResourceData, *wallarm.HintUpdateV3Params) error
+
+// Update returns an UpdateContextFunc that writes the user-mutable common
+// fields via HintUpdateV3 plus any per-resource fields contributed by
+// customizers.
+//
+// cp extracts the wallarm.API client from the SDK's untyped meta value.
+func Update(cp func(m interface{}) wallarm.API, customizers ...UpdateCustomizer) schema.UpdateContextFunc {
 	return func(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
-		_, err := cp(m).HintUpdateV3(d.Get("rule_id").(int), &wallarm.HintUpdateV3Params{
+		params := &wallarm.HintUpdateV3Params{
 			VariativityDisabled: lo.ToPtr(d.Get("variativity_disabled").(bool)),
 			Comment:             lo.ToPtr(d.Get("comment").(string)),
-		})
+			Title:               lo.ToPtr(d.Get("title").(string)),
+			Active:              lo.ToPtr(d.Get("active").(bool)),
+			Set:                 lo.ToPtr(d.Get("set").(string)),
+		}
+		for _, c := range customizers {
+			if err := c(d, params); err != nil {
+				return diag.FromErr(err)
+			}
+		}
+		_, err := cp(m).HintUpdateV3(d.Get("rule_id").(int), params)
 		return diag.FromErr(err)
 	}
 }

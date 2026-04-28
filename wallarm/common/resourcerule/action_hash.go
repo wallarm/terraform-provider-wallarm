@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	wallarm "github.com/wallarm/wallarm-go"
 )
@@ -88,6 +89,11 @@ func HashActionDetails(v interface{}) int {
 	condType := m["type"].(string)
 	value := m["value"].(string)
 
+	// `iequal` values are downcased server-side (CLAUDE.md "Condition.iequal").
+	if condType == "iequal" {
+		value = strings.ToLower(value)
+	}
+
 	// Detect point format: []interface{} (API) or map (config/transformed).
 	var pointStr string
 	if val, ok := m["point"]; ok {
@@ -114,12 +120,20 @@ func HashActionDetails(v interface{}) int {
 			if _, isInstance := p["instance"]; isInstance {
 				condType = normalizeInstanceType(condType)
 			}
+			if condType == "iequal" {
+				p = lowercaseValueBearingPointEntries(p)
+			}
+			p = uppercaseHeaderName(p)
 			pointStr = fmt.Sprintf("%v", p)
 		case map[string]interface{}:
 			// Config format from Terraform SDK.
 			if _, isInstance := p["instance"]; isInstance {
 				condType = normalizeInstanceType(condType)
 			}
+			if condType == "iequal" {
+				p = lowercaseValueBearingPointEntriesIface(p)
+			}
+			p = uppercaseHeaderNameIface(p)
 			pointStr = fmt.Sprintf("%v", p)
 		}
 	}
@@ -140,6 +154,65 @@ func normalizeInstanceType(t string) string {
 		return ""
 	}
 	return t
+}
+
+// lowercaseValueBearingPointEntries returns a copy of p with values for
+// PointValuePoints keys (action_name, action_ext, method, instance, etc.)
+// lowercased — matches the API's iequal downcase rule.
+func lowercaseValueBearingPointEntries(p map[string]string) map[string]string {
+	out := make(map[string]string, len(p))
+	for k, v := range p {
+		if PointValuePoints[k] {
+			out[k] = strings.ToLower(v)
+		} else {
+			out[k] = v
+		}
+	}
+	return out
+}
+
+func lowercaseValueBearingPointEntriesIface(p map[string]interface{}) map[string]interface{} {
+	out := make(map[string]interface{}, len(p))
+	for k, v := range p {
+		if s, ok := v.(string); ok && PointValuePoints[k] {
+			out[k] = strings.ToLower(s)
+		} else {
+			out[k] = v
+		}
+	}
+	return out
+}
+
+// uppercaseHeaderName / uppercaseHeaderNameIface normalize the `header` point
+// value to uppercase. HTTP header names are case-insensitive per RFC 7230,
+// and the Wallarm API uppercases them on receive. Without this, HCL
+// `header = "referer"` and state `header = "REFERER"` produce different
+// TypeSet hashes — perpetual destroy+recreate diff. Pairs with the
+// suppressHeaderNameCaseDiff DiffSuppressFunc on the point TypeMap.
+func uppercaseHeaderName(p map[string]string) map[string]string {
+	hdr, ok := p["header"]
+	if !ok || strings.ToUpper(hdr) == hdr {
+		return p
+	}
+	out := make(map[string]string, len(p))
+	for k, v := range p {
+		out[k] = v
+	}
+	out["header"] = strings.ToUpper(hdr)
+	return out
+}
+
+func uppercaseHeaderNameIface(p map[string]interface{}) map[string]interface{} {
+	hdr, ok := p["header"].(string)
+	if !ok || strings.ToUpper(hdr) == hdr {
+		return p
+	}
+	out := make(map[string]interface{}, len(p))
+	for k, v := range p {
+		out[k] = v
+	}
+	out["header"] = strings.ToUpper(hdr)
+	return out
 }
 
 // TransformAPIActionToSchema transforms an API-format action map (point as

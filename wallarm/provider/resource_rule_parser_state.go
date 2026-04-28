@@ -19,14 +19,12 @@ func resourceWallarmParserState() *schema.Resource {
 			Type:         schema.TypeString,
 			Required:     true,
 			ValidateFunc: validation.StringInSlice([]string{"base64", "cookie", "form_urlencoded", "gzip", "grpc", "json_doc", "multipart", "percent", "protobuf", "htmljs", "viewstate", "xml", "jwt", "gql"}, false),
-			ForceNew:     true,
 		},
 
 		"state": {
 			Type:         schema.TypeString,
 			Required:     true,
 			ValidateFunc: validation.StringInSlice([]string{"enabled", "disabled"}, false),
-			ForceNew:     true,
 		},
 
 		"action": resourcerule.ScopeActionSchema(),
@@ -36,8 +34,8 @@ func resourceWallarmParserState() *schema.Resource {
 	return &schema.Resource{
 		CreateContext: resourceWallarmParserStateCreate,
 		ReadContext:   resourceWallarmParserStateRead,
-		UpdateContext: resourcerule.Update(apiClient),
-		DeleteContext: resourceWallarmParserStateDelete,
+		UpdateContext: resourcerule.Update(apiClient, resourcerule.WithParser, resourcerule.WithState),
+		DeleteContext: resourcerule.Delete(apiClient),
 		Importer: &schema.ResourceImporter{
 			StateContext: resourcerule.Import("parser_state"),
 		},
@@ -108,23 +106,4 @@ func resourceWallarmParserStateRead(_ context.Context, d *schema.ResourceData, m
 		return diag.FromErr(err)
 	}
 	return diag.FromErr(resourcerule.Read(d, clientID, apiClient(m), resourcerule.ReadOptionWithPoint))
-}
-
-func resourceWallarmParserStateDelete(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
-	client := apiClient(m)
-	clientID, err := retrieveClientID(d, m)
-	if err != nil {
-		return diag.FromErr(err)
-	}
-	ruleID := d.Get("rule_id").(int)
-	h := &wallarm.HintDelete{
-		Filter: &wallarm.HintDeleteFilter{
-			Clientid: []int{clientID},
-			ID:       []int{ruleID},
-		},
-	}
-	if err := client.HintDelete(h); err != nil {
-		return diag.FromErr(err)
-	}
-	return nil
 }

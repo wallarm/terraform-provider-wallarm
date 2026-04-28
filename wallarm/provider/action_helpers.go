@@ -3,6 +3,7 @@ package wallarm
 import (
 	"fmt"
 
+	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/wallarm/terraform-provider-wallarm/wallarm/common/resourcerule"
 	"github.com/wallarm/wallarm-go"
@@ -100,4 +101,38 @@ func existingHintForAction(d *schema.ResourceData, m interface{}, hintType strin
 // and should be imported into Terraform state first.
 func ImportAsExistsError(resourceName, id string) error {
 	return fmt.Errorf("the resource with the ID %q already exists - to be managed via Terraform this resource needs to be imported into the State. Please see the resource documentation for %q for more information", id, resourceName)
+}
+
+// guardExistingHint runs the existingHintForAction collision check on Create
+// and returns ImportAsExistsError diagnostics if a hint of `hintType` is
+// already attached to a matching action scope. idFmt formats the import-id
+// from (clientID, actionID, matched rule); pass nil for the default 3-part
+// `{clientID}/{actionID}/{ruleID}` format. Resources with a 4-part import ID
+// (e.g., wallarm_rule_mode) pass an idFmt that appends their suffix.
+func guardExistingHint(
+	d *schema.ResourceData, m interface{},
+	hintType, resourceName string,
+	idFmt func(clientID, actionID int, r *wallarm.ActionBody) string,
+) diag.Diagnostics {
+	if !d.IsNewResource() {
+		return nil
+	}
+	actionID, rule, exists, err := existingHintForAction(d, m, hintType)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+	if !exists {
+		return nil
+	}
+	clientID, err := retrieveClientID(d, m)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+	var existingID string
+	if idFmt != nil {
+		existingID = idFmt(clientID, actionID, rule)
+	} else {
+		existingID = fmt.Sprintf("%d/%d/%d", clientID, actionID, rule.ID)
+	}
+	return diag.FromErr(ImportAsExistsError(resourceName, existingID))
 }

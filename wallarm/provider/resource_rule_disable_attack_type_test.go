@@ -122,6 +122,59 @@ resource "wallarm_rule_disable_attack_type" "%[1]s" {
 }`, resourceID, attackType)
 }
 
+func TestAccRuleDisableAttackTypeUpdateInPlaceComment(t *testing.T) {
+	rnd := generateRandomResourceName(5)
+	name := "wallarm_rule_disable_attack_type." + rnd
+	var firstRuleID string
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckWallarmRuleDisableAttackTypeDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccRuleDisableAttackTypeUpdateCommentConfig(rnd, "first comment"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(name, "comment", "first comment"),
+					func(s *terraform.State) error {
+						firstRuleID = s.RootModule().Resources[name].Primary.Attributes["rule_id"]
+						return nil
+					},
+				),
+			},
+			{
+				Config: testAccRuleDisableAttackTypeUpdateCommentConfig(rnd, "second comment"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(name, "comment", "second comment"),
+					func(s *terraform.State) error {
+						newID := s.RootModule().Resources[name].Primary.Attributes["rule_id"]
+						if newID != firstRuleID {
+							return fmt.Errorf("expected rule_id to stay stable on in-place update, was %s now %s", firstRuleID, newID)
+						}
+						return nil
+					},
+				),
+			},
+		},
+	})
+}
+
+func testAccRuleDisableAttackTypeUpdateCommentConfig(resourceID, comment string) string {
+	return fmt.Sprintf(`
+resource "wallarm_rule_disable_attack_type" %[1]q {
+  comment     = %[2]q
+  attack_type = "sqli"
+  action {
+    type  = "iequal"
+    value = "disable_attack_type_comment_update.example.com"
+    point = {
+      header = "HOST"
+    }
+  }
+  point = [["post"], ["form_urlencoded", "query"]]
+}`, resourceID, comment)
+}
+
 func testAccCheckWallarmRuleDisableAttackTypeDestroy(s *terraform.State) error {
 	client := testAccProvider.Meta().(*ProviderMeta).Client
 

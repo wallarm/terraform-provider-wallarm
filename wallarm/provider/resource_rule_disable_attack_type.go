@@ -17,7 +17,6 @@ func resourceWallarmDisableAttackType() *schema.Resource {
 		"attack_type": {
 			Type:     schema.TypeString,
 			Required: true,
-			ForceNew: true,
 			Description: `Possible values: "any", "sqli", "rce", "crlf", "nosqli", "ptrav",
 				"xxe", "xss", "scanner", "redir", "ldapi", "mass_assignment", "ssrf"`,
 		},
@@ -29,8 +28,8 @@ func resourceWallarmDisableAttackType() *schema.Resource {
 	return &schema.Resource{
 		CreateContext: resourceWallarmDisableAttackTypeCreate,
 		ReadContext:   resourceWallarmDisableAttackTypeRead,
-		UpdateContext: resourcerule.Update(apiClient),
-		DeleteContext: resourceWallarmDisableAttackTypeDelete,
+		UpdateContext: resourcerule.Update(apiClient, resourcerule.WithAttackType),
+		DeleteContext: resourcerule.Delete(apiClient),
 		Importer: &schema.ResourceImporter{
 			StateContext: resourcerule.Import("disable_attack_type"),
 		},
@@ -99,25 +98,6 @@ func resourceWallarmDisableAttackTypeRead(_ context.Context, d *schema.ResourceD
 		return diag.FromErr(err)
 	}
 	return diag.FromErr(resourcerule.Read(d, clientID, apiClient(m), resourcerule.ReadOptionWithPoint))
-}
-
-func resourceWallarmDisableAttackTypeDelete(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
-	client := apiClient(m)
-	clientID, err := retrieveClientID(d, m)
-	if err != nil {
-		return diag.FromErr(err)
-	}
-	ruleID := d.Get("rule_id").(int)
-	h := &wallarm.HintDelete{
-		Filter: &wallarm.HintDeleteFilter{
-			Clientid: []int{clientID},
-			ID:       []int{ruleID},
-		},
-	}
-	if err := client.HintDelete(h); err != nil {
-		return diag.FromErr(err)
-	}
-	return nil
 }
 
 // nolint:dupl

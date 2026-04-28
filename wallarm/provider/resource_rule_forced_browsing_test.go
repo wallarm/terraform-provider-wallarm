@@ -154,6 +154,68 @@ resource "wallarm_rule_forced_browsing" "wallarm_forced_browsing_arbitrary_condi
 	})
 }
 
+func testAccRuleForcedBrowsingUpdateConfig(period int) string {
+	return fmt.Sprintf(`
+resource "wallarm_rule_forced_browsing" "update_period" {
+  mode = "block"
+
+  action {
+    type = "iequal"
+    value = "wfb_update.example.com"
+    point = {
+      header = "HOST"
+    }
+  }
+
+  reaction {
+    block_by_session = 3000
+    block_by_ip = 4000
+  }
+
+  threshold {
+    count = 5
+    period = %[1]d
+  }
+}
+`, period)
+}
+
+func TestAccRuleForcedBrowsingUpdateInPlaceThresholdPeriod(t *testing.T) {
+	resourceName := "wallarm_rule_forced_browsing.update_period"
+	var firstRuleID string
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckWallarmRuleForcedBrowsingDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccRuleForcedBrowsingUpdateConfig(30),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "threshold.0.period", "30"),
+					func(s *terraform.State) error {
+						firstRuleID = s.RootModule().Resources[resourceName].Primary.Attributes["rule_id"]
+						return nil
+					},
+				),
+			},
+			{
+				Config: testAccRuleForcedBrowsingUpdateConfig(60),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "threshold.0.period", "60"),
+					func(s *terraform.State) error {
+						newID := s.RootModule().Resources[resourceName].Primary.Attributes["rule_id"]
+						if newID != firstRuleID {
+							return fmt.Errorf("expected rule_id to stay stable on in-place update, was %s now %s", firstRuleID, newID)
+						}
+						return nil
+					},
+				),
+			},
+		},
+	})
+}
+
 func testAccCheckWallarmRuleForcedBrowsingDestroy(s *terraform.State) error {
 	client := testAccProvider.Meta().(*ProviderMeta).Client
 

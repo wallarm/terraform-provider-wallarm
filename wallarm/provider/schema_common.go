@@ -58,21 +58,18 @@ var (
 			Type:        schema.TypeString,
 			Computed:    true,
 			Optional:    true,
-			ForceNew:    true,
 			Description: "The rule set name. Used to group related rules together.",
 		},
 		"active": {
 			Type:        schema.TypeBool,
 			Optional:    true,
 			Computed:    true,
-			ForceNew:    true,
 			Description: "Whether the rule is active.",
 		},
 		"title": {
 			Type:        schema.TypeString,
 			Computed:    true,
 			Optional:    true,
-			ForceNew:    true,
 			Description: "A short title for the rule.",
 		},
 		"mitigation": {
@@ -89,26 +86,25 @@ var (
 		},
 	}
 
-	// counterFieldOverrides makes comment and variativity_disabled read-only
+	// counterFieldOverrides makes the user-mutable common fields read-only
 	// for counter resources (bola_counter, bruteforce_counter, dirbust_counter).
-	// Counters are immutable — the API returns 403 on any update attempt.
+	// Counters have no UpdateContext (state-only Delete, no Update path), so
+	// every common field that v2.3.7 made mutable must be overridden to
+	// Computed-only here — otherwise Terraform plans an update-in-place and
+	// the SDK invokes a nil UpdateContext at apply time.
 	// Merge after commonResourceRuleFields via lo.Assign to override.
 	counterFieldOverrides = map[string]*schema.Schema{
-		"comment": {
-			Type:     schema.TypeString,
-			Computed: true,
-		},
-		"variativity_disabled": {
-			Type:     schema.TypeBool,
-			Computed: true,
-		},
+		"comment":              {Type: schema.TypeString, Computed: true},
+		"variativity_disabled": {Type: schema.TypeBool, Computed: true},
+		"title":                {Type: schema.TypeString, Computed: true},
+		"active":               {Type: schema.TypeBool, Computed: true},
+		"set":                  {Type: schema.TypeString, Computed: true},
 	}
 
 	thresholdSchema = &schema.Schema{
 		Type:     schema.TypeList,
 		MaxItems: 1,
 		Required: true,
-		ForceNew: true,
 		Elem: &schema.Resource{
 			Schema: map[string]*schema.Schema{
 				"period": {
@@ -127,26 +123,22 @@ var (
 		Type:     schema.TypeList,
 		MaxItems: 1,
 		Required: true,
-		ForceNew: true,
 		Elem: &schema.Resource{
 			Schema: map[string]*schema.Schema{
 				"block_by_session": {
 					Type:     schema.TypeInt,
 					Optional: true,
 					Computed: true,
-					ForceNew: true,
 				},
 				"block_by_ip": {
 					Type:     schema.TypeInt,
 					Optional: true,
 					Computed: true,
-					ForceNew: true,
 				},
 				"graylist_by_ip": {
 					Type:     schema.TypeInt,
 					Optional: true,
 					Computed: true,
-					ForceNew: true,
 				},
 			},
 		},
@@ -156,13 +148,11 @@ var (
 		Type:     schema.TypeList,
 		MaxItems: 1,
 		Required: true,
-		ForceNew: true,
 		Elem: &schema.Resource{
 			Schema: map[string]*schema.Schema{
 				"mode": {
 					Type:         schema.TypeString,
 					Required:     true,
-					ForceNew:     true,
 					ValidateFunc: validation.StringInSlice([]string{"regexp", "exact"}, false),
 				},
 				"points": {
@@ -173,14 +163,12 @@ var (
 							"point": {
 								Type:     schema.TypeList,
 								Required: true,
-								ForceNew: true,
 								Elem:     &schema.Schema{Type: schema.TypeString},
 							},
 							"sensitive": {
 								Type:     schema.TypeBool,
 								Default:  false,
 								Optional: true,
-								ForceNew: true,
 							},
 						},
 					},
@@ -190,26 +178,22 @@ var (
 					Optional: true,
 					Computed: true,
 					Elem:     &schema.Schema{Type: schema.TypeString},
-					ForceNew: true,
 				},
 				"value_regexps": {
 					Type:     schema.TypeList,
 					Optional: true,
 					Computed: true,
 					Elem:     &schema.Schema{Type: schema.TypeString},
-					ForceNew: true,
 				},
 				"additional_parameters": {
 					Type:     schema.TypeBool,
 					Optional: true,
 					Computed: true,
-					ForceNew: true,
 				},
 				"plain_parameters": {
 					Type:     schema.TypeBool,
 					Optional: true,
 					Computed: true,
-					ForceNew: true,
 				},
 			},
 		},

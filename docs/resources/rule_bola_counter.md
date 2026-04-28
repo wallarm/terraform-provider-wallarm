@@ -45,6 +45,10 @@ resource "wallarm_rule_bola_counter" "example" {
 * `action_id` - The action ID (computed).
 * `rule_type` - The type of the created rule.
 
+## Destroy
+
+`terraform destroy` removes the counter from Terraform state but does not delete it from the Wallarm API. The Wallarm API rejects on-demand counter deletes; counters auto-clean approximately 30 seconds after their last trigger reference is removed (longer when a `wallarm_trigger` referencing the counter is destroyed in the same apply). If you re-create a counter with the same `action {}` scope before auto-clean fires, you will be reusing the original counter — same `rule_id` and same `counter` value. The provider emits an `[INFO]` log line during destroy to make this behavior explicit.
+
 ## Import
 
 ```

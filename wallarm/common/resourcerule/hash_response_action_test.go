@@ -468,6 +468,88 @@ func TestHashActionDetails_NoSideEffects(t *testing.T) {
 	}
 }
 
+// TestHashActionDetails_IequalValueCaseInsensitive: iequal values share a
+// hash regardless of case because the API downcases them server-side.
+func TestHashActionDetails_IequalValueCaseInsensitive(t *testing.T) {
+	mixed := map[string]interface{}{
+		"type":  "iequal",
+		"value": "Example.COM",
+		"point": map[string]interface{}{"header": "HOST"},
+	}
+	lower := map[string]interface{}{
+		"type":  "iequal",
+		"value": "example.com",
+		"point": map[string]interface{}{"header": "HOST"},
+	}
+	if HashActionDetails(mixed) != HashActionDetails(lower) {
+		t.Errorf("iequal: expected case-insensitive hashes\n  mixed=%d\n  lower=%d",
+			HashActionDetails(mixed), HashActionDetails(lower))
+	}
+}
+
+// TestHashActionDetails_IequalValueBearingPointCaseInsensitive: for point
+// types where the matched value lives inside the point map (action_name,
+// method, instance, etc.), iequal-typed conditions hash equal regardless
+// of case in the point-map value.
+func TestHashActionDetails_IequalValueBearingPointCaseInsensitive(t *testing.T) {
+	for _, key := range []string{"action_name", "action_ext", "method", "instance", "scheme", "uri", "proto"} {
+		mixed := map[string]interface{}{
+			"type":  "iequal",
+			"value": "",
+			"point": map[string]interface{}{key: "TEST"},
+		}
+		lower := map[string]interface{}{
+			"type":  "iequal",
+			"value": "",
+			"point": map[string]interface{}{key: "test"},
+		}
+		if HashActionDetails(mixed) != HashActionDetails(lower) {
+			t.Errorf("%s: expected case-insensitive hashes for iequal\n  mixed=%d\n  lower=%d",
+				key, HashActionDetails(mixed), HashActionDetails(lower))
+		}
+	}
+}
+
+// TestLowercaseValueBearingPointEntries verifies the map[string]string
+// variant (the iface variant is exercised via TestHashActionDetails_*).
+func TestLowercaseValueBearingPointEntries(t *testing.T) {
+	in := map[string]string{
+		"action_name": "TEST",
+		"method":      "GET",
+		"header":      "HOST", // not value-bearing — stays as-is
+	}
+	out := lowercaseValueBearingPointEntries(in)
+	if out["action_name"] != "test" {
+		t.Errorf("action_name: got %q, want test", out["action_name"])
+	}
+	if out["method"] != "get" {
+		t.Errorf("method: got %q, want get", out["method"])
+	}
+	if out["header"] != "HOST" {
+		t.Errorf("header (not value-bearing): got %q, want HOST", out["header"])
+	}
+}
+
+// TestHashActionDetails_NonIequalValueCaseSensitive: equal and regex stay
+// case-sensitive so a real value change still produces a different hash.
+func TestHashActionDetails_NonIequalValueCaseSensitive(t *testing.T) {
+	for _, condType := range []string{"equal", "regex"} {
+		mixed := map[string]interface{}{
+			"type":  condType,
+			"value": "Example.COM",
+			"point": map[string]interface{}{"header": "HOST"},
+		}
+		lower := map[string]interface{}{
+			"type":  condType,
+			"value": "example.com",
+			"point": map[string]interface{}{"header": "HOST"},
+		}
+		if HashActionDetails(mixed) == HashActionDetails(lower) {
+			t.Errorf("%s: expected case-sensitive hashes, got equal", condType)
+		}
+	}
+}
+
 // TestHashResponseActionDetails_ConfigFormatPanics documents that the current
 // HashResponseActionDetails panics when given config-format data (point as
 // map[string]interface{} instead of []interface{}). This is the limitation

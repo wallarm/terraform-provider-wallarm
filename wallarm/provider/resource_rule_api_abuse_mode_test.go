@@ -149,7 +149,7 @@ func TestAccRuleAPIAbuseModeCreate_Disabled(t *testing.T) {
 	})
 }
 
-func TestAccRuleAPIAbuseModeForceNewOnMode(t *testing.T) {
+func TestAccRuleAPIAbuseModeUpdateMode(t *testing.T) {
 	var firstRuleID string
 
 	resource.ParallelTest(t, resource.TestCase{
@@ -158,24 +158,24 @@ func TestAccRuleAPIAbuseModeForceNewOnMode(t *testing.T) {
 		CheckDestroy:             testAccCheckWallarmRuleAPIAbuseModeDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccRuleAPIAbuseModeConfigBasic("force_new", "force_new.example.com", "enabled"),
+				Config: testAccRuleAPIAbuseModeConfigBasic("update_mode", "update_mode.example.com", "enabled"),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckWallarmRuleAPIAbuseModeExists("wallarm_rule_api_abuse_mode.force_new"),
+					testAccCheckWallarmRuleAPIAbuseModeExists("wallarm_rule_api_abuse_mode.update_mode"),
 					func(s *terraform.State) error {
-						firstRuleID = s.RootModule().Resources["wallarm_rule_api_abuse_mode.force_new"].Primary.Attributes["rule_id"]
+						firstRuleID = s.RootModule().Resources["wallarm_rule_api_abuse_mode.update_mode"].Primary.Attributes["rule_id"]
 						return nil
 					},
 				),
 			},
 			{
-				Config: testAccRuleAPIAbuseModeConfigBasic("force_new", "force_new.example.com", "disabled"),
+				Config: testAccRuleAPIAbuseModeConfigBasic("update_mode", "update_mode.example.com", "disabled"),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckWallarmRuleAPIAbuseModeExists("wallarm_rule_api_abuse_mode.force_new"),
-					resource.TestCheckResourceAttr("wallarm_rule_api_abuse_mode.force_new", "mode", "disabled"),
+					testAccCheckWallarmRuleAPIAbuseModeExists("wallarm_rule_api_abuse_mode.update_mode"),
+					resource.TestCheckResourceAttr("wallarm_rule_api_abuse_mode.update_mode", "mode", "disabled"),
 					func(s *terraform.State) error {
-						newID := s.RootModule().Resources["wallarm_rule_api_abuse_mode.force_new"].Primary.Attributes["rule_id"]
-						if newID == firstRuleID {
-							return fmt.Errorf("expected rule_id to change on ForceNew, still %s", newID)
+						newID := s.RootModule().Resources["wallarm_rule_api_abuse_mode.update_mode"].Primary.Attributes["rule_id"]
+						if newID != firstRuleID {
+							return fmt.Errorf("expected rule_id to stay stable on in-place update, was %s now %s", firstRuleID, newID)
 						}
 						return nil
 					},
@@ -220,6 +220,61 @@ func TestAccRuleAPIAbuseModeImport(t *testing.T) {
 			},
 			{
 				ResourceName:            "wallarm_rule_api_abuse_mode.import_me",
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"rule_type"},
+			},
+		},
+	})
+}
+
+// Pinterest-style scope mixes four action condition types in one resource:
+// regex on USER-AGENT, equal on path[0], regex on path[1], absent on action_ext.
+// Catches regressions in (a) multi-condition scope hashing, (b) point map
+// validation under heterogeneous types, (c) Read round-trip preserving all
+// four blocks.
+func TestAccRuleAPIAbuseMode_PinterestScope(t *testing.T) {
+	resourceName := "wallarm_rule_api_abuse_mode.pinterest"
+	config := `
+resource "wallarm_rule_api_abuse_mode" "pinterest" {
+  mode    = "disabled"
+  comment = "Allow Pinterest through protections"
+
+  action {
+    type  = "regex"
+    value = ".*(Pinterest|Pinterestbot)/(0.2|1.0);?\\s[(]?[+]https?://www[.]pinterest[.]com/bot[.]html[)].*"
+    point = { header = "USER-AGENT" }
+  }
+  action {
+    type  = "equal"
+    value = "api"
+    point = { path = "0" }
+  }
+  action {
+    type  = "regex"
+    value = "v\\d"
+    point = { path = "1" }
+  }
+  action {
+    type  = "absent"
+    point = { action_ext = "" }
+  }
+}
+`
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV5ProviderFactories: testAccProtoV5ProviderFactories,
+		CheckDestroy:             testAccCheckWallarmRuleAPIAbuseModeDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: config,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckWallarmRuleAPIAbuseModeExists(resourceName),
+					resource.TestCheckResourceAttr(resourceName, "action.#", "4"),
+				),
+			},
+			{
+				ResourceName:            resourceName,
 				ImportState:             true,
 				ImportStateVerify:       true,
 				ImportStateVerifyIgnore: []string{"rule_type"},

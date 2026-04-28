@@ -6,7 +6,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 	"github.com/wallarm/terraform-provider-wallarm/wallarm/common/resourcerule"
-	"github.com/wallarm/wallarm-go"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/samber/lo"
@@ -32,8 +31,8 @@ func resourceWallarmRateLimitEnum() *schema.Resource {
 	return &schema.Resource{
 		CreateContext: resourceWallarmRateLimitEnumCreate,
 		ReadContext:   resourceWallarmRateLimitEnumRead,
-		UpdateContext: resourcerule.Update(apiClient),
-		DeleteContext: resourceWallarmRateLimitEnumDelete,
+		UpdateContext: resourcerule.Update(apiClient, resourcerule.WithThreshold, resourcerule.WithReaction),
+		DeleteContext: resourcerule.Delete(apiClient),
 		Importer: &schema.ResourceImporter{
 			StateContext: resourcerule.Import("rate_limit_enum"),
 		},
@@ -63,23 +62,4 @@ func resourceWallarmRateLimitEnumRead(_ context.Context, d *schema.ResourceData,
 		resourcerule.ReadOptionWithReaction,
 		resourcerule.ReadOptionWithArbitraryConditions,
 	))
-}
-
-func resourceWallarmRateLimitEnumDelete(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
-	client := apiClient(m)
-	clientID, err := retrieveClientID(d, m)
-	if err != nil {
-		return diag.FromErr(err)
-	}
-	ruleID := d.Get("rule_id").(int)
-	h := &wallarm.HintDelete{
-		Filter: &wallarm.HintDeleteFilter{
-			Clientid: []int{clientID},
-			ID:       []int{ruleID},
-		},
-	}
-	if err := client.HintDelete(h); err != nil {
-		return diag.FromErr(err)
-	}
-	return nil
 }

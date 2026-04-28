@@ -21,28 +21,24 @@ func resourceWallarmRateLimit() *schema.Resource {
 
 		"delay": {
 			Type:         schema.TypeInt,
-			ForceNew:     true,
 			Optional:     true,
 			ValidateFunc: validation.IntBetween(0, 1000),
 		},
 
 		"burst": {
 			Type:         schema.TypeInt,
-			ForceNew:     true,
 			Required:     true,
 			ValidateFunc: validation.IntBetween(0, 1000),
 		},
 
 		"rate": {
 			Type:         schema.TypeInt,
-			ForceNew:     true,
 			Required:     true,
 			ValidateFunc: validation.IntBetween(0, 1000),
 		},
 
 		"rsp_status": {
 			Type:         schema.TypeInt,
-			ForceNew:     true,
 			Optional:     true,
 			ValidateFunc: validation.IntBetween(400, 599),
 		},
@@ -50,15 +46,14 @@ func resourceWallarmRateLimit() *schema.Resource {
 		"time_unit": {
 			Type:         schema.TypeString,
 			Required:     true,
-			ForceNew:     true,
 			ValidateFunc: validation.StringInSlice([]string{"rps", "rpm"}, false),
 		},
 	}
 	return &schema.Resource{
 		CreateContext: resourceWallarmRateLimitCreate,
 		ReadContext:   resourceWallarmRateLimitRead,
-		UpdateContext: resourcerule.Update(apiClient),
-		DeleteContext: resourceWallarmRateLimitDelete,
+		UpdateContext: resourcerule.Update(apiClient, resourcerule.WithDelay, resourcerule.WithBurst, resourcerule.WithRate, resourcerule.WithRspStatus, resourcerule.WithTimeUnit),
+		DeleteContext: resourcerule.Delete(apiClient),
 		Importer: &schema.ResourceImporter{
 			StateContext: resourcerule.Import("rate_limit"),
 		},
@@ -135,26 +130,4 @@ func resourceWallarmRateLimitRead(_ context.Context, d *schema.ResourceData, m i
 		return diag.FromErr(err)
 	}
 	return diag.FromErr(resourcerule.Read(d, clientID, apiClient(m), resourcerule.ReadOptionWithAction))
-}
-
-func resourceWallarmRateLimitDelete(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
-	client := apiClient(m)
-	clientID, err := retrieveClientID(d, m)
-	if err != nil {
-		return diag.FromErr(err)
-	}
-	ruleID := d.Get("rule_id").(int)
-
-	h := &wallarm.HintDelete{
-		Filter: &wallarm.HintDeleteFilter{
-			Clientid: []int{clientID},
-			ID:       []int{ruleID},
-		},
-	}
-
-	if err := client.HintDelete(h); err != nil {
-		return diag.FromErr(err)
-	}
-
-	return nil
 }

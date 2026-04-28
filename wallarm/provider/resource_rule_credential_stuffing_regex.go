@@ -21,24 +21,20 @@ func resourceWallarmCredentialStuffingRegex() *schema.Resource {
 		"regex": {
 			Type:     schema.TypeString,
 			Required: true,
-			ForceNew: true,
 		},
 		"cred_stuff_type": {
 			Type:         schema.TypeString,
 			Optional:     true,
 			Default:      "default",
-			ForceNew:     true,
 			ValidateFunc: validation.StringInSlice([]string{"custom", "default"}, false),
 		},
 		"case_sensitive": {
 			Type:     schema.TypeBool,
 			Required: true,
-			ForceNew: true,
 		},
 		"login_regex": {
 			Type:         schema.TypeString,
 			Required:     true,
-			ForceNew:     true,
 			ValidateFunc: validation.StringLenBetween(1, 4096),
 		},
 		"action": resourcerule.ScopeActionSchema(),
@@ -46,7 +42,7 @@ func resourceWallarmCredentialStuffingRegex() *schema.Resource {
 	return &schema.Resource{
 		CreateContext: resourceWallarmCredentialStuffingRegexCreate,
 		ReadContext:   resourceWallarmCredentialStuffingRegexRead,
-		UpdateContext: resourcerule.Update(apiClient),
+		UpdateContext: resourcerule.Update(apiClient, resourcerule.WithRegex, resourcerule.WithLoginRegex, resourcerule.WithCredStuffType, resourcerule.WithCaseSensitive),
 		DeleteContext: resourceWallarmCredentialStuffingRegexDelete,
 		Importer: &schema.ResourceImporter{
 			StateContext: resourceWallarmCredentialStuffingRegexImport,
@@ -160,7 +156,7 @@ func resourceWallarmCredentialStuffingRegexDelete(_ context.Context, d *schema.R
 	}
 	ruleID := d.Get("rule_id").(int)
 
-	err = client.HintDelete(&wallarm.HintDelete{
+	resp, err := client.HintDelete(&wallarm.HintDelete{
 		Filter: &wallarm.HintDeleteFilter{
 			Clientid: []int{clientID},
 			ID:       []int{ruleID},
@@ -169,6 +165,7 @@ func resourceWallarmCredentialStuffingRegexDelete(_ context.Context, d *schema.R
 	if err != nil {
 		return diag.FromErr(err)
 	}
+	resourcerule.LogIfHintDeleteNoOp(resp, ruleID)
 
 	m.(*ProviderMeta).CredentialStuffingCache.Invalidate()
 	return nil

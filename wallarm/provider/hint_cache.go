@@ -135,7 +135,6 @@ func (c *HintCache) GetOrFetch(hintID, clientID int, api wallarm.API) (*wallarm.
 	}
 }
 
-// TODO: add test — mock API returning 2 pages then empty, verify fullyLoaded, credential stuffing filtered
 // LoadAll fetches ALL hints into cache. Used by data.wallarm_rules which needs
 // the complete set. After this call, fullyLoaded is true.
 func (c *HintCache) LoadAll(clientID int, api wallarm.API) error {
@@ -190,7 +189,6 @@ func (c *HintCache) LoadAll(clientID int, api wallarm.API) error {
 	return nil
 }
 
-// TODO: add test — before LoadAll returns nil, after LoadAll returns sorted hints
 // All returns all cached hints sorted by ID descending.
 // Returns nil if not fully loaded.
 func (c *HintCache) All() []wallarm.ActionBody {
@@ -209,10 +207,12 @@ func (c *HintCache) All() []wallarm.ActionBody {
 	return result
 }
 
-// TODO: add test — insert single hint, verify retrievable via GetOrFetch
 // Insert adds or updates a single hint in the cache without invalidating.
 // Used by HintCreate and HintUpdateV3 to keep the cache warm during batch operations.
 func (c *HintCache) Insert(hint *wallarm.ActionBody) {
+	if isCredentialStuffingType(hint.Type) {
+		return
+	}
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	if c.hints == nil {
@@ -367,12 +367,13 @@ func (c *CachedClient) HintCreate(body *wallarm.ActionCreate) (*wallarm.ActionCr
 // entries for the just-deleted rule — surfaces in acceptance tests as
 // "dangling resource" failures in CheckDestroy after a Create path that also
 // populated the cache (e.g., existingHintForAction → HintRead).
-func (c *CachedClient) HintDelete(body *wallarm.HintDelete) error {
-	if err := c.API.HintDelete(body); err != nil {
-		return err
+func (c *CachedClient) HintDelete(body *wallarm.HintDelete) (*wallarm.HintDeleteResp, error) {
+	resp, err := c.API.HintDelete(body)
+	if err != nil {
+		return resp, err
 	}
 	c.hintCache.Invalidate("HintDelete")
-	return nil
+	return resp, nil
 }
 
 // TODO: add test — mock API, verify response cached via Insert

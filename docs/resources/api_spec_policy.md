@@ -1,7 +1,7 @@
 ---
 layout: "wallarm"
 page_title: "Wallarm: wallarm_api_spec_policy"
-subcategory: "API Specification Enforcement"
+subcategory: "Common"
 description: |-
   Manages the enforcement policy attached to an uploaded API specification.
 ---

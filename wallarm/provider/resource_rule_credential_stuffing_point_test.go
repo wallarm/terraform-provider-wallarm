@@ -39,6 +39,62 @@ func TestAccRuleCredentialStuffingPoint_basic(t *testing.T) {
 	})
 }
 
+func TestAccRuleCredentialStuffingPointUpdateInPlaceComment(t *testing.T) {
+	resourceName := generateRandomResourceName(5)
+	resourceAddress := "wallarm_rule_credential_stuffing_point." + resourceName
+	var firstRuleID string
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccRuleCredentialStuffingPointDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccRuleCredentialStuffingPointUpdateCommentConfig(resourceName, "first comment"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceAddress, "comment", "first comment"),
+					func(s *terraform.State) error {
+						firstRuleID = s.RootModule().Resources[resourceAddress].Primary.Attributes["rule_id"]
+						return nil
+					},
+				),
+			},
+			{
+				Config: testAccRuleCredentialStuffingPointUpdateCommentConfig(resourceName, "second comment"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceAddress, "comment", "second comment"),
+					func(s *terraform.State) error {
+						newID := s.RootModule().Resources[resourceAddress].Primary.Attributes["rule_id"]
+						if newID != firstRuleID {
+							return fmt.Errorf("expected rule_id to stay stable on in-place update, was %s now %s", firstRuleID, newID)
+						}
+						return nil
+					},
+				),
+			},
+		},
+	})
+}
+
+func testAccRuleCredentialStuffingPointUpdateCommentConfig(resourceName, comment string) string {
+	return fmt.Sprintf(`
+resource "wallarm_rule_credential_stuffing_point" %[1]q {
+	point = [["header", "HOST"]]
+	login_point = [["header", "SESSION-ID"]]
+	cred_stuff_type = "custom"
+	comment = %[2]q
+
+	action {
+		type = "iequal"
+		value = "credstuff_point_comment_update.example.com"
+		point = {
+			header = "HOST"
+		}
+	}
+}
+`, resourceName, comment)
+}
+
 func testAccRuleCredentialStuffingPointBasic(resourceName string) string {
 	return fmt.Sprintf(`
 resource "wallarm_rule_credential_stuffing_point" %[1]q {

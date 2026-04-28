@@ -25,7 +25,7 @@ func resourceWallarmDirbustCounter() *schema.Resource {
 	return &schema.Resource{
 		CreateContext: resourceWallarmDirbustCounterCreate,
 		ReadContext:   resourceWallarmDirbustCounterRead,
-		DeleteContext: resourceWallarmDirbustCounterDelete,
+		DeleteContext: resourcerule.CounterDelete("wallarm_rule_dirbust_counter"),
 		Importer: &schema.ResourceImporter{
 			StateContext: resourcerule.Import("dirbust_counter"),
 		},
@@ -81,24 +81,4 @@ func resourceWallarmDirbustCounterRead(_ context.Context, d *schema.ResourceData
 		return diag.FromErr(err)
 	}
 	return diag.FromErr(resourcerule.Read(d, clientID, apiClient(m), resourcerule.ReadOptionWithAction))
-}
-
-func resourceWallarmDirbustCounterDelete(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
-	client := apiClient(m)
-	clientID, err := retrieveClientID(d, m)
-	if err != nil {
-		return diag.FromErr(err)
-	}
-	ruleID := d.Get("rule_id").(int)
-	h := &wallarm.HintDelete{
-		Filter: &wallarm.HintDeleteFilter{
-			Clientid: []int{clientID},
-			ID:       []int{ruleID},
-		},
-	}
-	if err := client.HintDelete(h); err != nil {
-		return diag.FromErr(err)
-	}
-
-	return nil
 }

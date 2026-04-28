@@ -80,6 +80,60 @@ func TestAccRuleSetResponseHeader_multipleValues(t *testing.T) {
 	})
 }
 
+func TestAccRuleSetResponseHeaderUpdateInPlaceMode(t *testing.T) {
+	rnd := generateRandomResourceName(5)
+	name := "wallarm_rule_set_response_header." + rnd
+	var firstRuleID string
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckWallarmRuleSetResponseHeaderDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccRuleSetResponseHeaderUpdateConfig(rnd, "set_response_header_update.example.com", "append"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(name, "mode", "append"),
+					func(s *terraform.State) error {
+						firstRuleID = s.RootModule().Resources[name].Primary.Attributes["rule_id"]
+						return nil
+					},
+				),
+			},
+			{
+				Config: testAccRuleSetResponseHeaderUpdateConfig(rnd, "set_response_header_update.example.com", "replace"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(name, "mode", "replace"),
+					func(s *terraform.State) error {
+						newID := s.RootModule().Resources[name].Primary.Attributes["rule_id"]
+						if newID != firstRuleID {
+							return fmt.Errorf("expected rule_id to stay stable on in-place update, was %s now %s", firstRuleID, newID)
+						}
+						return nil
+					},
+				),
+			},
+		},
+	})
+}
+
+func testAccRuleSetResponseHeaderUpdateConfig(resourceID, host, mode string) string {
+	return fmt.Sprintf(`
+resource "wallarm_rule_set_response_header" "%[1]s" {
+  mode   = "%[3]s"
+  name   = "X-Test-Header"
+  values = ["test-value"]
+
+  action {
+    type  = "iequal"
+    value = "%[2]s"
+    point = {
+      header = "HOST"
+    }
+  }
+}`, resourceID, host, mode)
+}
+
 func testAccRuleSetResponseHeaderBasic(resourceID string) string {
 	return fmt.Sprintf(`
 resource "wallarm_rule_set_response_header" "%[1]s" {

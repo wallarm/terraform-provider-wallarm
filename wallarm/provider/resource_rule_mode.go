@@ -21,7 +21,6 @@ func resourceWallarmMode() *schema.Resource {
 			Type:         schema.TypeString,
 			Required:     true,
 			ValidateFunc: validation.StringInSlice([]string{"default", "off", "monitoring", "block", "safe_blocking"}, false),
-			ForceNew:     true,
 		},
 
 		"action": resourcerule.ScopeActionSchema(),
@@ -29,8 +28,8 @@ func resourceWallarmMode() *schema.Resource {
 	return &schema.Resource{
 		CreateContext: resourceWallarmModeCreate,
 		ReadContext:   resourceWallarmModeRead,
-		UpdateContext: resourcerule.Update(apiClient),
-		DeleteContext: resourceWallarmModeDelete,
+		UpdateContext: resourcerule.Update(apiClient, resourcerule.WithMode),
+		DeleteContext: resourcerule.Delete(apiClient),
 		Importer: &schema.ResourceImporter{
 			StateContext: resourceWallarmModeImport,
 		},
@@ -40,19 +39,11 @@ func resourceWallarmMode() *schema.Resource {
 }
 
 func resourceWallarmModeCreate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
-	if d.IsNewResource() {
-		actionID, rule, exists, err := existingHintForAction(d, m, "wallarm_mode")
-		if err != nil {
-			return diag.FromErr(err)
-		}
-		if exists {
-			clientID, err := retrieveClientID(d, m)
-			if err != nil {
-				return diag.FromErr(err)
-			}
-			existingID := fmt.Sprintf("%d/%d/%d/%s", clientID, actionID, rule.ID, rule.Mode)
-			return diag.FromErr(ImportAsExistsError("wallarm_rule_mode", existingID))
-		}
+	if diags := guardExistingHint(d, m, "wallarm_mode", "wallarm_rule_mode",
+		func(c, a int, r *wallarm.ActionBody) string {
+			return fmt.Sprintf("%d/%d/%d/%s", c, a, r.ID, r.Mode)
+		}); diags.HasError() {
+		return diags
 	}
 	client := apiClient(m)
 	clientID, err := retrieveClientID(d, m)
@@ -101,26 +92,6 @@ func resourceWallarmModeRead(_ context.Context, d *schema.ResourceData, m interf
 		return diag.FromErr(err)
 	}
 	return diag.FromErr(resourcerule.Read(d, clientID, apiClient(m), resourcerule.ReadOptionWithAction))
-}
-
-func resourceWallarmModeDelete(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
-	client := apiClient(m)
-	clientID, err := retrieveClientID(d, m)
-	if err != nil {
-		return diag.FromErr(err)
-	}
-	ruleID := d.Get("rule_id").(int)
-	h := &wallarm.HintDelete{
-		Filter: &wallarm.HintDeleteFilter{
-			Clientid: []int{clientID},
-			ID:       []int{ruleID},
-		},
-	}
-	if err := client.HintDelete(h); err != nil {
-		return diag.FromErr(err)
-	}
-
-	return nil
 }
 
 func resourceWallarmModeImport(_ context.Context, d *schema.ResourceData, _ interface{}) ([]*schema.ResourceData, error) {

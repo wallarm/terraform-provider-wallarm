@@ -37,6 +37,10 @@ resource "wallarm_rule_dirbust_counter" "login_counter" {
 * `action_id` - the action ID (The conditions to apply on request).
 * `rule_type` - type of the created rule. For example, `rule_type = "dirbust_counter"`.
 
+## Destroy
+
+`terraform destroy` removes the counter from Terraform state but does not delete it from the Wallarm API. The Wallarm API rejects on-demand counter deletes; counters auto-clean approximately 30 seconds after their last trigger reference is removed (longer when a `wallarm_trigger` referencing the counter is destroyed in the same apply). If you re-create a counter with the same `action {}` scope before auto-clean fires, you will be reusing the original counter — same `rule_id` and same `counter` value. The provider emits an `[INFO]` log line during destroy to make this behavior explicit.
+
 ## Import
 
 ```

@@ -19,7 +19,7 @@ func TestAccOverlimitResSettings(t *testing.T) {
 		Providers:    testAccProviders,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccRuleOverlimitResSettings(resourceName),
+				Config: testAccRuleOverlimitResSettingsConfig(resourceName, "example.com", "monitoring", 1000),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceAddress, "overlimit_time", "1000"),
 					resource.TestCheckResourceAttr(resourceAddress, "mode", "monitoring"),
@@ -35,23 +35,76 @@ func TestAccOverlimitResSettings(t *testing.T) {
 	})
 }
 
-func testAccRuleOverlimitResSettings(resourceName string) string {
+// overlimit_res_settings has no per-rule discriminator (no point, no
+// enumerated_parameters), so two same-scope rules collide and existingHintForAction
+// must block the second create.
+func TestAccOverlimitResSettings_ExistsError(t *testing.T) {
+	first := testAccRuleOverlimitResSettingsConfig("first", "exists.example.com", "monitoring", 1000)
+	dup := first + testAccRuleOverlimitResSettingsConfig("duplicate", "exists.example.com", "blocking", 5000)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		CheckDestroy: testAccRuleOverlimitResSettingsDestroy(),
+		Providers:    testAccProviders,
+		Steps: []resource.TestStep{
+			{Config: first},
+			{
+				Config:      dup,
+				ExpectError: ResourceExistsError(`[0-9]+/[0-9]+/[0-9]+`, "wallarm_rule_overlimit_res_settings"),
+			},
+		},
+	})
+}
+
+func TestAccOverlimitResSettingsUpdateInPlaceOverlimitTime(t *testing.T) {
+	resourceName := generateRandomResourceName(5)
+	resourceAddress := "wallarm_rule_overlimit_res_settings." + resourceName
+	var firstRuleID string
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		CheckDestroy: testAccRuleOverlimitResSettingsDestroy(),
+		Providers:    testAccProviders,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccRuleOverlimitResSettingsConfig(resourceName, "overlimit_update.example.com", "monitoring", 1000),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceAddress, "overlimit_time", "1000"),
+					func(s *terraform.State) error {
+						firstRuleID = s.RootModule().Resources[resourceAddress].Primary.Attributes["rule_id"]
+						return nil
+					},
+				),
+			},
+			{
+				Config: testAccRuleOverlimitResSettingsConfig(resourceName, "overlimit_update.example.com", "monitoring", 2000),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceAddress, "overlimit_time", "2000"),
+					func(s *terraform.State) error {
+						newID := s.RootModule().Resources[resourceAddress].Primary.Attributes["rule_id"]
+						if newID != firstRuleID {
+							return fmt.Errorf("expected rule_id to stay stable on in-place update, was %s now %s", firstRuleID, newID)
+						}
+						return nil
+					},
+				),
+			},
+		},
+	})
+}
+
+func testAccRuleOverlimitResSettingsConfig(label, host, mode string, overlimitTime int) string {
 	return fmt.Sprintf(`
 resource "wallarm_rule_overlimit_res_settings" %[1]q {
-
-	mode = "monitoring"
-	overlimit_time = 1000
-	action {
-		type = "iequal"
-		value = "example.com"
-		point = {
-			header = "HOST"
-		}
-	}
-
-  comment = "My TF Overlimit Res Setting"
+  mode           = %[3]q
+  overlimit_time = %[4]d
+  action {
+    type  = "iequal"
+    value = %[2]q
+    point = { header = "HOST" }
+  }
 }
-`, resourceName)
+`, label, host, mode, overlimitTime)
 }
 
 func testAccRuleOverlimitResSettingsDestroy() resource.TestCheckFunc {
