@@ -180,7 +180,7 @@ resource "wallarm_rule_brute" "wallarm_rule_brute_arbitrary_conditions" {
 func testAccRuleBruteUpdateConfig(thresholdCount int) string {
 	return fmt.Sprintf(`
 resource "wallarm_rule_brute" "update_threshold" {
-  mode = "monitoring"
+  mode = "block"
 
   action {
     type = "iequal"
