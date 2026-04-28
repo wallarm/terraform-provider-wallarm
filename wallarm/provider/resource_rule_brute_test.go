@@ -177,10 +177,10 @@ resource "wallarm_rule_brute" "wallarm_rule_brute_arbitrary_conditions" {
 	})
 }
 
-func testAccRuleBruteUpdateConfig(mode string) string {
+func testAccRuleBruteUpdateConfig(thresholdCount int) string {
 	return fmt.Sprintf(`
-resource "wallarm_rule_brute" "update_mode" {
-  mode = %[1]q
+resource "wallarm_rule_brute" "update_threshold" {
+  mode = "monitoring"
 
   action {
     type = "iequal"
@@ -196,7 +196,7 @@ resource "wallarm_rule_brute" "update_mode" {
   }
 
   threshold {
-    count = 5
+    count = %[1]d
     period = 30
   }
 
@@ -208,11 +208,11 @@ resource "wallarm_rule_brute" "update_mode" {
     plain_parameters      = false
   }
 }
-`, mode)
+`, thresholdCount)
 }
 
-func TestAccRuleBruteUpdateInPlaceMode(t *testing.T) {
-	resourceName := "wallarm_rule_brute.update_mode"
+func TestAccRuleBruteUpdateInPlaceThresholdCount(t *testing.T) {
+	resourceName := "wallarm_rule_brute.update_threshold"
 	var firstRuleID string
 
 	resource.ParallelTest(t, resource.TestCase{
@@ -221,9 +221,9 @@ func TestAccRuleBruteUpdateInPlaceMode(t *testing.T) {
 		CheckDestroy:             testAccCheckWallarmRuleBruteDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccRuleBruteUpdateConfig("default"),
+				Config: testAccRuleBruteUpdateConfig(5),
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr(resourceName, "mode", "default"),
+					resource.TestCheckResourceAttr(resourceName, "threshold.0.count", "5"),
 					func(s *terraform.State) error {
 						firstRuleID = s.RootModule().Resources[resourceName].Primary.Attributes["rule_id"]
 						return nil
@@ -231,9 +231,9 @@ func TestAccRuleBruteUpdateInPlaceMode(t *testing.T) {
 				),
 			},
 			{
-				Config: testAccRuleBruteUpdateConfig("off"),
+				Config: testAccRuleBruteUpdateConfig(10),
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr(resourceName, "mode", "off"),
+					resource.TestCheckResourceAttr(resourceName, "threshold.0.count", "10"),
 					func(s *terraform.State) error {
 						newID := s.RootModule().Resources[resourceName].Primary.Attributes["rule_id"]
 						if newID != firstRuleID {
