@@ -1,7 +1,7 @@
 ---
 layout: "wallarm"
 page_title: "Wallarm: wallarm_api_spec"
-subcategory: "API Specification Enforcement"
+subcategory: "Common"
 description: |-
   Manages an uploaded OpenAPI specification used by Wallarm's API Specification Enforcement.
 ---
