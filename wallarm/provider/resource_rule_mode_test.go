@@ -201,9 +201,9 @@ func TestAccRuleModeUpdateInPlaceMode(t *testing.T) {
 	var firstRuleID string
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { testAccPreCheck(t) },
-		ProtoV5ProviderFactories: testAccProtoV5ProviderFactories,
-		CheckDestroy:             testAccCheckWallarmRuleWmodeDestroy,
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckWallarmRuleWmodeDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testWallarmRuleWmodeBasicConfig(rnd, "monitoring", "iequal", "wmode_update.example.com", "HOST"),

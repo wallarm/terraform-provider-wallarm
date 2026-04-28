@@ -185,9 +185,9 @@ func TestAccRuleRateLimitEnumUpdateInPlaceThresholdCount(t *testing.T) {
 	var firstRuleID string
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { testAccPreCheck(t) },
-		ProtoV5ProviderFactories: testAccProtoV5ProviderFactories,
-		CheckDestroy:             testAccCheckWallarmRuleRateLimitEnumDestroy,
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckWallarmRuleRateLimitEnumDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccRuleRateLimitEnumUpdateConfig(5),

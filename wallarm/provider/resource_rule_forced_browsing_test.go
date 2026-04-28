@@ -185,9 +185,9 @@ func TestAccRuleForcedBrowsingUpdateInPlaceThresholdPeriod(t *testing.T) {
 	var firstRuleID string
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { testAccPreCheck(t) },
-		ProtoV5ProviderFactories: testAccProtoV5ProviderFactories,
-		CheckDestroy:             testAccCheckWallarmRuleForcedBrowsingDestroy,
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckWallarmRuleForcedBrowsingDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccRuleForcedBrowsingUpdateConfig(30),

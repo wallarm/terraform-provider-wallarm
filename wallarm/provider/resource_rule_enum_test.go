@@ -269,9 +269,9 @@ func TestAccRuleEnumUpdateInPlaceAdditionalParameters(t *testing.T) {
 	var firstRuleID string
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { testAccPreCheck(t) },
-		ProtoV5ProviderFactories: testAccProtoV5ProviderFactories,
-		CheckDestroy:             testAccCheckWallarmRuleEnumDestroy,
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckWallarmRuleEnumDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccRuleEnumUpdateConfig(false),
