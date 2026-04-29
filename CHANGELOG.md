@@ -15,6 +15,7 @@
 * **build(makefile):** re-added `-race` to `make testacc`.
 * **test(hint_cache):** unit tests for `CachedClient.HintCreate` (insert / nil-body / credentials_* skip / API error) and `HintDelete` (cache invalidation / error preserves cache).
 * **test(action_helpers):** unit tests for `existingHintForAction` end-to-end (match, no-match, action-matches-but-no-hint) using `mockHintAPI`.
+* **refactor(test):** extracted shared `testAccCheckHintDestroyed(s, resourceType)` helper; 22 rule test files now use a one-line wrapper, eliminating ~700 LoC of duplicated CheckDestroy boilerplate.
 
 ## [v2.3.7] - 2026-04-28
 

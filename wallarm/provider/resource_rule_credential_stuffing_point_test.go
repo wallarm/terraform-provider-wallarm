@@ -2,12 +2,10 @@ package wallarm
 
 import (
 	"fmt"
-	"strconv"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
-	"github.com/wallarm/wallarm-go"
 )
 
 func TestAccRuleCredentialStuffingPoint_basic(t *testing.T) {
@@ -16,7 +14,7 @@ func TestAccRuleCredentialStuffingPoint_basic(t *testing.T) {
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV5ProviderFactories: testAccProtoV5ProviderFactories,
-		CheckDestroy:             testAccRuleCredentialStuffingPointDestroy(),
+		CheckDestroy:             testAccRuleCredentialStuffingPointDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccRuleCredentialStuffingPointBasic(resourceName),
@@ -47,7 +45,7 @@ func TestAccRuleCredentialStuffingPointUpdateInPlaceComment(t *testing.T) {
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV5ProviderFactories: testAccProtoV5ProviderFactories,
-		CheckDestroy:             testAccRuleCredentialStuffingPointDestroy(),
+		CheckDestroy:             testAccRuleCredentialStuffingPointDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccRuleCredentialStuffingPointUpdateCommentConfig(resourceName, "first comment"),
@@ -113,41 +111,6 @@ resource "wallarm_rule_credential_stuffing_point" %[1]q {
 `, resourceName)
 }
 
-func testAccRuleCredentialStuffingPointDestroy() resource.TestCheckFunc {
-	return func(s *terraform.State) error {
-		api, err := testAccNewAPIClient()
-		if err != nil {
-			return err
-		}
-
-		for _, rs := range s.RootModule().Resources {
-			if rs.Type != "wallarm_rule_credential_stuffing_point" {
-				continue
-			}
-
-			ruleID, err := strconv.Atoi(rs.Primary.Attributes["rule_id"])
-			if err != nil {
-				return fmt.Errorf("invalid rule_id for %s: %w", rs.Primary.ID, err)
-			}
-			clientID, err := strconv.Atoi(rs.Primary.Attributes["client_id"])
-			if err != nil {
-				return fmt.Errorf("invalid client_id for %s: %w", rs.Primary.ID, err)
-			}
-
-			// OrderBy is required by the API — HintRead returns 400 without it.
-			resp, err := api.HintRead(&wallarm.HintRead{
-				Limit:   1,
-				OrderBy: "updated_at",
-				Filter:  &wallarm.HintFilter{Clientid: []int{clientID}, ID: []int{ruleID}},
-			})
-			if err != nil {
-				return fmt.Errorf("checking hint %d still exists: %w", ruleID, err)
-			}
-			if resp.Body != nil && len(*resp.Body) > 0 {
-				return fmt.Errorf("wallarm_rule_credential_stuffing_point %s still exists", rs.Primary.ID)
-			}
-		}
-
-		return nil
-	}
+func testAccRuleCredentialStuffingPointDestroy(s *terraform.State) error {
+	return testAccCheckHintDestroyed(s, "wallarm_rule_credential_stuffing_point")
 }
