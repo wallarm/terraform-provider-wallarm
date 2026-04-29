@@ -13,10 +13,10 @@ import (
 func TestAccRuleRateLimit(t *testing.T) {
 	resourceName := generateRandomResourceName(5)
 	resourceAddress := "wallarm_rule_rate_limit." + resourceName
-	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		CheckDestroy: testAccRuleRateLimitDestroy(),
-		Providers:    testAccProviders,
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV5ProviderFactories: testAccProtoV5ProviderFactories,
+		CheckDestroy:             testAccRuleRateLimitDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccRuleRateLimit(resourceName),
@@ -43,7 +43,7 @@ resource "wallarm_rule_rate_limit" %[1]q {
 
 	action {
 		type = "iequal"
-		value = "example.com"
+		value = "rate_limit_basic.example.com"
 		point = {
 			header = "HOST"
 		}
@@ -64,10 +64,10 @@ func TestAccRuleRateLimitUpdateInPlaceDelay(t *testing.T) {
 	resourceAddress := "wallarm_rule_rate_limit." + resourceName
 	var firstRuleID string
 
-	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		CheckDestroy: testAccRuleRateLimitDestroy(),
-		Providers:    testAccProviders,
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV5ProviderFactories: testAccProtoV5ProviderFactories,
+		CheckDestroy:             testAccRuleRateLimitDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccRuleRateLimitUpdateConfig(resourceName, "rate_limit_update.example.com", 100),
@@ -118,41 +118,39 @@ resource "wallarm_rule_rate_limit" %[1]q {
 `, resourceName, host, delay)
 }
 
-func testAccRuleRateLimitDestroy() resource.TestCheckFunc {
-	return func(s *terraform.State) error {
-		client := testAccProvider.Meta().(*ProviderMeta).Client
+func testAccRuleRateLimitDestroy(s *terraform.State) error {
+	api, err := testAccNewAPIClient()
+	if err != nil {
+		return err
+	}
 
-		for _, resource := range s.RootModule().Resources {
-			if resource.Type != "wallarm_rule_rate_limit" {
-				continue
-			}
-
-			clientID, err := strconv.Atoi(resource.Primary.Attributes["client_id"])
-			if err != nil {
-				return err
-			}
-			ruleID, err := strconv.Atoi(resource.Primary.Attributes["rule_id"])
-			if err != nil {
-				return err
-			}
-
-			resp, err := client.HintRead(&wallarm.HintRead{
-				Limit:   1,
-				OrderBy: "updated_at",
-				Filter: &wallarm.HintFilter{
-					Clientid: []int{clientID},
-					ID:       []int{ruleID},
-				},
-			})
-			if err != nil {
-				return err
-			}
-
-			if resp != nil && resp.Body != nil && len(*resp.Body) != 0 {
-				return fmt.Errorf("Resource still exists: %s", resource.Primary.ID)
-			}
+	for _, rs := range s.RootModule().Resources {
+		if rs.Type != "wallarm_rule_rate_limit" {
+			continue
 		}
 
-		return nil
+		ruleID, err := strconv.Atoi(rs.Primary.Attributes["rule_id"])
+		if err != nil {
+			return fmt.Errorf("invalid rule_id for %s: %w", rs.Primary.ID, err)
+		}
+		clientID, err := strconv.Atoi(rs.Primary.Attributes["client_id"])
+		if err != nil {
+			return fmt.Errorf("invalid client_id for %s: %w", rs.Primary.ID, err)
+		}
+
+		// OrderBy is required by the API — HintRead returns 400 without it.
+		resp, err := api.HintRead(&wallarm.HintRead{
+			Limit:   1,
+			OrderBy: "updated_at",
+			Filter:  &wallarm.HintFilter{Clientid: []int{clientID}, ID: []int{ruleID}},
+		})
+		if err != nil {
+			return fmt.Errorf("checking hint %d still exists: %w", ruleID, err)
+		}
+		if resp.Body != nil && len(*resp.Body) > 0 {
+			return fmt.Errorf("wallarm_rule_rate_limit %s still exists", rs.Primary.ID)
+		}
 	}
+
+	return nil
 }

@@ -6,9 +6,9 @@ import (
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
-	"github.com/wallarm/wallarm-go"
-
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
+
+	"github.com/wallarm/wallarm-go"
 )
 
 // TODO add bola exact too
@@ -16,15 +16,15 @@ func TestAccRuleBolaRegexp(t *testing.T) {
 	const config = `
 resource "wallarm_rule_bola" "wallarm_rule_bola_regexp" {
   mode = "block"
-  
+
   action {
     type = "iequal"
-    value = "wbola.wallarm.com"
+    value = "bola_regexp.example.com"
     point = {
       header = "HOST"
     }
   }
-  
+
   reaction {
     block_by_session = 3000
     block_by_ip = 4000
@@ -44,10 +44,10 @@ resource "wallarm_rule_bola" "wallarm_rule_bola_regexp" {
   }
 }
 `
-	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckWallarmRuleBolaDestroy,
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV5ProviderFactories: testAccProtoV5ProviderFactories,
+		CheckDestroy:             testAccCheckWallarmRuleBolaDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: config,
@@ -70,15 +70,15 @@ func TestAccRuleBolaWithAdvancedConditions(t *testing.T) {
 	const config = `
 resource "wallarm_rule_bola" "wallarm_rule_bola_advanced_conditions" {
   mode = "block"
-  
+
   action {
     type = "iequal"
-    value = "wbola.wallarm.com"
+    value = "bola_advanced.example.com"
     point = {
       header = "HOST"
     }
   }
-  
+
   reaction {
     block_by_session = 3000
     block_by_ip = 4000
@@ -105,10 +105,10 @@ resource "wallarm_rule_bola" "wallarm_rule_bola_advanced_conditions" {
 
 }
 `
-	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckWallarmRuleBolaDestroy,
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV5ProviderFactories: testAccProtoV5ProviderFactories,
+		CheckDestroy:             testAccCheckWallarmRuleBolaDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: config,
@@ -125,19 +125,19 @@ func TestAccRuleBolaWithArbitraryConditions(t *testing.T) {
 	const config = `
 resource "wallarm_rule_bola" "wallarm_rule_bola_arbitrary_conditions" {
   mode = "block"
-  
+
   action {
     type = "iequal"
-    value = "wbola.wallarm.com"
+    value = "bola_arbitrary.example.com"
     point = {
       header = "HOST"
     }
   }
-  
+
   reaction {
     block_by_session = 3000
     block_by_ip = 4000
-	
+
   }
 
   threshold {
@@ -161,10 +161,10 @@ resource "wallarm_rule_bola" "wallarm_rule_bola_arbitrary_conditions" {
 
 }
 `
-	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckWallarmRuleBolaDestroy,
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV5ProviderFactories: testAccProtoV5ProviderFactories,
+		CheckDestroy:             testAccCheckWallarmRuleBolaDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: config,
@@ -184,7 +184,7 @@ resource "wallarm_rule_bola" "update_count" {
 
   action {
     type = "iequal"
-    value = "wbola_update.example.com"
+    value = "bola_update.example.com"
     point = {
       header = "HOST"
     }
@@ -216,9 +216,9 @@ func TestAccRuleBolaUpdateInPlaceThresholdCount(t *testing.T) {
 	var firstRuleID string
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckWallarmRuleBolaDestroy,
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV5ProviderFactories: testAccProtoV5ProviderFactories,
+		CheckDestroy:             testAccCheckWallarmRuleBolaDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccRuleBolaUpdateConfig(5),
@@ -248,36 +248,35 @@ func TestAccRuleBolaUpdateInPlaceThresholdCount(t *testing.T) {
 }
 
 func testAccCheckWallarmRuleBolaDestroy(s *terraform.State) error {
-	client := testAccProvider.Meta().(*ProviderMeta).Client
+	api, err := testAccNewAPIClient()
+	if err != nil {
+		return err
+	}
 
 	for _, rs := range s.RootModule().Resources {
 		if rs.Type != "wallarm_rule_bola" {
 			continue
 		}
-
+		ruleID, err := strconv.Atoi(rs.Primary.Attributes["rule_id"])
+		if err != nil {
+			return fmt.Errorf("invalid rule_id for %s: %w", rs.Primary.ID, err)
+		}
 		clientID, err := strconv.Atoi(rs.Primary.Attributes["client_id"])
 		if err != nil {
-			return err
+			return fmt.Errorf("invalid client_id for %s: %w", rs.Primary.ID, err)
 		}
-		actionID, err := strconv.Atoi(rs.Primary.Attributes["action_id"])
+
+		// OrderBy is required by the API — HintRead returns 400 without it.
+		resp, err := api.HintRead(&wallarm.HintRead{
+			Limit:   1,
+			OrderBy: "updated_at",
+			Filter:  &wallarm.HintFilter{Clientid: []int{clientID}, ID: []int{ruleID}},
+		})
 		if err != nil {
-			return err
+			return fmt.Errorf("checking hint %d still exists: %w", ruleID, err)
 		}
-
-		hint := &wallarm.HintRead{
-			Limit:     APIListLimit,
-			Offset:    0,
-			OrderBy:   "updated_at",
-			OrderDesc: true,
-			Filter: &wallarm.HintFilter{
-				Clientid: []int{clientID},
-				ActionID: []int{actionID},
-			},
-		}
-
-		rule, err := client.HintRead(hint)
-		if err != nil && rule != nil && len(*rule.Body) > 0 {
-			return fmt.Errorf("Wallarm Mode Rule still exists")
+		if resp.Body != nil && len(*resp.Body) > 0 {
+			return fmt.Errorf("wallarm_rule_bola %s still exists", rs.Primary.ID)
 		}
 	}
 

@@ -11,10 +11,10 @@ import (
 func TestAccRuleIgnoreRegexCreate(t *testing.T) {
 	rnd := generateRandomResourceName(5)
 	name := "wallarm_rule_ignore_regex." + rnd
-	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckWallarmRuleRegexDestroy,
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV5ProviderFactories: testAccProtoV5ProviderFactories,
+		CheckDestroy:             testAccCheckWallarmRuleRegexDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccRuleIgnoreRegexCreate(rnd, "/[.]example[.]com[.]php$"),
@@ -39,10 +39,10 @@ func TestAccRuleIgnoreRegexUpdateInPlaceComment(t *testing.T) {
 	name := "wallarm_rule_ignore_regex." + rnd
 	var firstRuleID string
 
-	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckWallarmRuleRegexDestroy,
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV5ProviderFactories: testAccProtoV5ProviderFactories,
+		CheckDestroy:             testAccCheckWallarmRuleRegexDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccRuleIgnoreRegexUpdateCommentConfig(rnd, "first comment"),
@@ -104,14 +104,14 @@ resource "wallarm_rule_ignore_regex" %[1]q {
 
 func testAccRuleIgnoreRegexCreate(resourceID, regex string) string {
 	return fmt.Sprintf(`
-resource "wallarm_rule_regex" "%[1]s" {
-	regex = "%[2]s"
+resource "wallarm_rule_regex" %[1]q {
+	regex = %[2]q
 	experimental = true
 	attack_type =  "scanner"
-	
+
 	action {
 		type = "iequal"
-		value = "%[1]s.wallarm.com"
+		value = "ignore_regex_basic.wallarm.com"
 		point = {
 			header = "HOST"
 		}
@@ -119,11 +119,11 @@ resource "wallarm_rule_regex" "%[1]s" {
 	point = [["header_all"]]
 }
 
-resource "wallarm_rule_ignore_regex" "%[1]s" {
+resource "wallarm_rule_ignore_regex" %[1]q {
 	regex_id =  wallarm_rule_regex.%[1]s.regex_id
 	action {
 		type = "iequal"
-		value = "%[1]s.wallarm.com"
+		value = "ignore_regex_basic.wallarm.com"
 		point = {
 			header = "HOST"
 		}

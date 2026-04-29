@@ -13,10 +13,10 @@ import (
 func TestAccRuleCredentialStuffingPoint_basic(t *testing.T) {
 	resourceName := generateRandomResourceName(5)
 	resourceAddress := "wallarm_rule_credential_stuffing_point." + resourceName
-	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		CheckDestroy: testAccRuleCredentialStuffingPointDestroy(),
-		Providers:    testAccProviders,
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV5ProviderFactories: testAccProtoV5ProviderFactories,
+		CheckDestroy:             testAccRuleCredentialStuffingPointDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccRuleCredentialStuffingPointBasic(resourceName),
@@ -44,10 +44,10 @@ func TestAccRuleCredentialStuffingPointUpdateInPlaceComment(t *testing.T) {
 	resourceAddress := "wallarm_rule_credential_stuffing_point." + resourceName
 	var firstRuleID string
 
-	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
-		CheckDestroy: testAccRuleCredentialStuffingPointDestroy(),
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV5ProviderFactories: testAccProtoV5ProviderFactories,
+		CheckDestroy:             testAccRuleCredentialStuffingPointDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccRuleCredentialStuffingPointUpdateCommentConfig(resourceName, "first comment"),
@@ -104,7 +104,7 @@ resource "wallarm_rule_credential_stuffing_point" %[1]q {
 
 	action {
 		type = "iequal"
-		value = "example.com"
+		value = "credstuff_point_basic.example.com"
 		point = {
 			header = "HOST"
 		}
@@ -115,36 +115,36 @@ resource "wallarm_rule_credential_stuffing_point" %[1]q {
 
 func testAccRuleCredentialStuffingPointDestroy() resource.TestCheckFunc {
 	return func(s *terraform.State) error {
-		client := testAccProvider.Meta().(*ProviderMeta).Client
+		api, err := testAccNewAPIClient()
+		if err != nil {
+			return err
+		}
 
-		for _, resource := range s.RootModule().Resources {
-			if resource.Type != "wallarm_rule_credential_stuffing_point" {
+		for _, rs := range s.RootModule().Resources {
+			if rs.Type != "wallarm_rule_credential_stuffing_point" {
 				continue
 			}
 
-			clientID, err := strconv.Atoi(resource.Primary.Attributes["client_id"])
+			ruleID, err := strconv.Atoi(rs.Primary.Attributes["rule_id"])
 			if err != nil {
-				return err
+				return fmt.Errorf("invalid rule_id for %s: %w", rs.Primary.ID, err)
 			}
-			ruleID, err := strconv.Atoi(resource.Primary.Attributes["rule_id"])
+			clientID, err := strconv.Atoi(rs.Primary.Attributes["client_id"])
 			if err != nil {
-				return err
+				return fmt.Errorf("invalid client_id for %s: %w", rs.Primary.ID, err)
 			}
 
-			resp, err := client.HintRead(&wallarm.HintRead{
+			// OrderBy is required by the API — HintRead returns 400 without it.
+			resp, err := api.HintRead(&wallarm.HintRead{
 				Limit:   1,
 				OrderBy: "updated_at",
-				Filter: &wallarm.HintFilter{
-					Clientid: []int{clientID},
-					ID:       []int{ruleID},
-				},
+				Filter:  &wallarm.HintFilter{Clientid: []int{clientID}, ID: []int{ruleID}},
 			})
 			if err != nil {
-				return err
+				return fmt.Errorf("checking hint %d still exists: %w", ruleID, err)
 			}
-
-			if resp != nil && resp.Body != nil && len(*resp.Body) != 0 {
-				return fmt.Errorf("Resource still exists: %s", resource.Primary.ID)
+			if resp.Body != nil && len(*resp.Body) > 0 {
+				return fmt.Errorf("wallarm_rule_credential_stuffing_point %s still exists", rs.Primary.ID)
 			}
 		}
 

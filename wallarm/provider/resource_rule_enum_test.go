@@ -6,9 +6,9 @@ import (
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
-	"github.com/wallarm/wallarm-go"
-
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
+
+	"github.com/wallarm/wallarm-go"
 )
 
 func TestAccRuleEnumExact(t *testing.T) {
@@ -18,7 +18,7 @@ resource "wallarm_rule_enum" "wallarm_rule_enum_exact" {
 
   action {
     type = "iequal"
-    value = "wenum-exact.wallarm.com"
+    value = "enum_exact.example.com"
     point = {
       header = "HOST"
     }
@@ -47,10 +47,10 @@ resource "wallarm_rule_enum" "wallarm_rule_enum_exact" {
   }
 }
 `
-	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckWallarmRuleEnumDestroy,
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV5ProviderFactories: testAccProtoV5ProviderFactories,
+		CheckDestroy:             testAccCheckWallarmRuleEnumDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: config,
@@ -75,15 +75,15 @@ func TestAccRuleEnumRegexp(t *testing.T) {
 	const config = `
 resource "wallarm_rule_enum" "wallarm_rule_enum_regexp" {
   mode = "block"
-  
+
   action {
     type = "iequal"
-    value = "wenum.wallarm.com"
+    value = "enum_regexp.example.com"
     point = {
       header = "HOST"
     }
   }
-  
+
   reaction {
     block_by_session = 3000
     block_by_ip = 4000
@@ -103,10 +103,10 @@ resource "wallarm_rule_enum" "wallarm_rule_enum_regexp" {
   }
 }
 `
-	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckWallarmRuleEnumDestroy,
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV5ProviderFactories: testAccProtoV5ProviderFactories,
+		CheckDestroy:             testAccCheckWallarmRuleEnumDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: config,
@@ -123,15 +123,15 @@ func TestAccRuleEnumWithAdvancedConditions(t *testing.T) {
 	const config = `
 resource "wallarm_rule_enum" "wallarm_rule_enum_advanced_conditions" {
   mode = "block"
-  
+
   action {
     type = "iequal"
-    value = "wenum.wallarm.com"
+    value = "enum_advanced.example.com"
     point = {
       header = "HOST"
     }
   }
-  
+
   reaction {
     block_by_session = 3000
     block_by_ip = 4000
@@ -158,10 +158,10 @@ resource "wallarm_rule_enum" "wallarm_rule_enum_advanced_conditions" {
 
 }
 `
-	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckWallarmRuleEnumDestroy,
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV5ProviderFactories: testAccProtoV5ProviderFactories,
+		CheckDestroy:             testAccCheckWallarmRuleEnumDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: config,
@@ -178,19 +178,19 @@ func TestAccRuleEnumWithArbitraryConditions(t *testing.T) {
 	const config = `
 resource "wallarm_rule_enum" "wallarm_rule_enum_arbitrary_conditions" {
   mode = "block"
-  
+
   action {
     type = "iequal"
-    value = "wenum.wallarm.com"
+    value = "enum_arbitrary.example.com"
     point = {
       header = "HOST"
     }
   }
-  
+
   reaction {
     block_by_session = 3000
     block_by_ip = 4000
-	
+
   }
 
   threshold {
@@ -214,10 +214,10 @@ resource "wallarm_rule_enum" "wallarm_rule_enum_arbitrary_conditions" {
 
 }
 `
-	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckWallarmRuleEnumDestroy,
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV5ProviderFactories: testAccProtoV5ProviderFactories,
+		CheckDestroy:             testAccCheckWallarmRuleEnumDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: config,
@@ -237,7 +237,7 @@ resource "wallarm_rule_enum" "update_additional" {
 
   action {
     type = "iequal"
-    value = "wenum_update.example.com"
+    value = "enum_update.example.com"
     point = {
       header = "HOST"
     }
@@ -269,9 +269,9 @@ func TestAccRuleEnumUpdateInPlaceAdditionalParameters(t *testing.T) {
 	var firstRuleID string
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckWallarmRuleEnumDestroy,
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV5ProviderFactories: testAccProtoV5ProviderFactories,
+		CheckDestroy:             testAccCheckWallarmRuleEnumDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccRuleEnumUpdateConfig(false),
@@ -301,36 +301,35 @@ func TestAccRuleEnumUpdateInPlaceAdditionalParameters(t *testing.T) {
 }
 
 func testAccCheckWallarmRuleEnumDestroy(s *terraform.State) error {
-	client := testAccProvider.Meta().(*ProviderMeta).Client
+	api, err := testAccNewAPIClient()
+	if err != nil {
+		return err
+	}
 
 	for _, rs := range s.RootModule().Resources {
 		if rs.Type != "wallarm_rule_enum" {
 			continue
 		}
-
+		ruleID, err := strconv.Atoi(rs.Primary.Attributes["rule_id"])
+		if err != nil {
+			return fmt.Errorf("invalid rule_id for %s: %w", rs.Primary.ID, err)
+		}
 		clientID, err := strconv.Atoi(rs.Primary.Attributes["client_id"])
 		if err != nil {
-			return err
+			return fmt.Errorf("invalid client_id for %s: %w", rs.Primary.ID, err)
 		}
-		actionID, err := strconv.Atoi(rs.Primary.Attributes["action_id"])
+
+		// OrderBy is required by the API — HintRead returns 400 without it.
+		resp, err := api.HintRead(&wallarm.HintRead{
+			Limit:   1,
+			OrderBy: "updated_at",
+			Filter:  &wallarm.HintFilter{Clientid: []int{clientID}, ID: []int{ruleID}},
+		})
 		if err != nil {
-			return err
+			return fmt.Errorf("checking hint %d still exists: %w", ruleID, err)
 		}
-
-		hint := &wallarm.HintRead{
-			Limit:     APIListLimit,
-			Offset:    0,
-			OrderBy:   "updated_at",
-			OrderDesc: true,
-			Filter: &wallarm.HintFilter{
-				Clientid: []int{clientID},
-				ActionID: []int{actionID},
-			},
-		}
-
-		rule, err := client.HintRead(hint)
-		if err != nil && rule != nil && len(*rule.Body) > 0 {
-			return fmt.Errorf("Wallarm Mode Rule still exists")
+		if resp.Body != nil && len(*resp.Body) > 0 {
+			return fmt.Errorf("wallarm_rule_enum %s still exists", rs.Primary.ID)
 		}
 	}
 

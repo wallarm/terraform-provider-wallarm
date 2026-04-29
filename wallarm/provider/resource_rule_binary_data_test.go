@@ -20,13 +20,13 @@ type binaryDataTestingRule struct {
 func TestAccRuleBinaryDataCreate_Basic(t *testing.T) {
 	rnd := generateRandomResourceName(5)
 	name := "wallarm_rule_binary_data." + rnd
-	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckWallarmRuleBinaryDataDestroy,
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV5ProviderFactories: testAccProtoV5ProviderFactories,
+		CheckDestroy:             testAccCheckWallarmRuleBinaryDataDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testWallarmRuleBinaryDataBasicConfig(rnd, "iequal", "binary.wallarm.com", "HOST", `["post"],["form_urlencoded","query"]`),
+				Config: testWallarmRuleBinaryDataBasicConfig(rnd, "iequal", "binary_data_basic.wallarm.com", "HOST", `["post"],["form_urlencoded","query"]`),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(name, "action.#", "1"),
 					resource.TestCheckResourceAttr(name, "point.0.0", "post"),
@@ -47,10 +47,10 @@ func TestAccRuleBinaryDataCreate_Basic(t *testing.T) {
 func TestAccRuleBinaryDataCreateRecreate(t *testing.T) {
 	rnd := generateRandomResourceName(5)
 	name := "wallarm_rule_binary_data." + rnd
-	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckWallarmRuleBinaryDataDestroy,
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV5ProviderFactories: testAccProtoV5ProviderFactories,
+		CheckDestroy:             testAccCheckWallarmRuleBinaryDataDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccRuleBinaryDataCreateRecreate(rnd),
@@ -77,10 +77,10 @@ func TestAccRuleBinaryDataCreate_DefaultBranch(t *testing.T) {
 	name := "wallarm_rule_binary_data." + rnd
 	point := `["header","HOST"],["pollution"]`
 
-	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckWallarmRuleBinaryDataDestroy,
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV5ProviderFactories: testAccProtoV5ProviderFactories,
+		CheckDestroy:             testAccCheckWallarmRuleBinaryDataDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testWallarmRuleBinaryDataDefaultBranchConfig(rnd, point),
@@ -108,10 +108,10 @@ func TestAccRuleBinaryDataCreate_FullSettings(t *testing.T) {
 		value:     value,
 	}
 
-	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckWallarmRuleBinaryDataDestroy,
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV5ProviderFactories: testAccProtoV5ProviderFactories,
+		CheckDestroy:             testAccCheckWallarmRuleBinaryDataDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testWallarmRuleBinaryDataFullSettingsConfig(rnd, rule),
@@ -135,12 +135,12 @@ func TestAccRuleBinaryDataCreate_FullSettings(t *testing.T) {
 
 func testWallarmRuleBinaryDataBasicConfig(resourceID, actionType, actionValue, actionPoint, point string) string {
 	return fmt.Sprintf(`
-resource "wallarm_rule_binary_data" "%[1]s" {
+resource "wallarm_rule_binary_data" %[1]q {
   action {
-    type = "%[2]s"
-    value = "%[3]s"
+    type = %[2]q
+    value = %[3]q
     point = {
-      header = "%[4]s"
+      header = %[4]q
     }
   }
   point = [%[5]s]
@@ -149,14 +149,14 @@ resource "wallarm_rule_binary_data" "%[1]s" {
 
 func testWallarmRuleBinaryDataDefaultBranchConfig(resourceID, point string) string {
 	return fmt.Sprintf(`
-resource "wallarm_rule_binary_data" "%[1]s" {
+resource "wallarm_rule_binary_data" %[1]q {
 	point = [%[2]s]
 }`, resourceID, point)
 }
 
 func testAccRuleBinaryDataCreateRecreate(resourceID string) string {
 	return fmt.Sprintf(`
-resource "wallarm_rule_binary_data" "%[1]s" {
+resource "wallarm_rule_binary_data" %[1]q {
 	action {
 		point = {
 		  method = "POST|GET|PATCH"
@@ -174,7 +174,7 @@ func testWallarmRuleBinaryDataFullSettingsConfig(resourceID string, rule binaryD
 	regex := rule.matchType[2]
 	absent := rule.matchType[3]
 	return fmt.Sprintf(`
-resource "wallarm_rule_binary_data" "%[7]s" {
+resource "wallarm_rule_binary_data" %[7]q {
 
 	action {
 		point = {
@@ -189,35 +189,35 @@ resource "wallarm_rule_binary_data" "%[7]s" {
 	}
 
 	action {
-		type = "%[2]s"
+		type = %[2]q
 		point = {
 		  action_name = "foobar"
 		}
 	}
 
 	action {
-		type = "%[2]s"
+		type = %[2]q
 		point = {
 		  action_name = "foobar"
 		}
 	}
 
 	action {
-		type = "%[4]s"
+		type = %[4]q
 		point = {
 		  action_ext = ""
 		}
 	}
 
 	action {
-		type = "%[4]s"
+		type = %[4]q
 		point = {
 		  path = 0
 		}
 	}
 
 	action {
-		type = "%[2]s"
+		type = %[2]q
 		point = {
 		  method = "GET"
 		}
@@ -225,7 +225,7 @@ resource "wallarm_rule_binary_data" "%[7]s" {
 
 	action {
 		value = "admin"
-		type = "%[1]s"
+		type = %[1]q
 
 		point = {
 			query = "user"
@@ -233,22 +233,22 @@ resource "wallarm_rule_binary_data" "%[7]s" {
 	}
 
 	action {
-		type = "%[1]s"
+		type = %[1]q
 		point = {
 		  scheme = "https"
 		}
 	}
 
 	action {
-		type = "%[1]s"
+		type = %[1]q
 		point = {
 		  proto = "1.1"
 		}
 	}
 
 	action {
-		type = "%[3]s"
-		value = "%[5]s"
+		type = %[3]q
+		value = %[5]q
 		point = {
 		  header = "HOST"
 		}
@@ -263,10 +263,10 @@ func TestAccRuleBinaryDataUpdateInPlaceComment(t *testing.T) {
 	name := "wallarm_rule_binary_data." + rnd
 	var firstRuleID string
 
-	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckWallarmRuleBinaryDataDestroy,
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV5ProviderFactories: testAccProtoV5ProviderFactories,
+		CheckDestroy:             testAccCheckWallarmRuleBinaryDataDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccRuleBinaryDataUpdateCommentConfig(rnd, "first comment"),
@@ -311,37 +311,36 @@ resource "wallarm_rule_binary_data" %[1]q {
 }
 
 func testAccCheckWallarmRuleBinaryDataDestroy(s *terraform.State) error {
-	client := testAccProvider.Meta().(*ProviderMeta).Client
+	api, err := testAccNewAPIClient()
+	if err != nil {
+		return err
+	}
 
 	for _, rs := range s.RootModule().Resources {
 		if rs.Type != "wallarm_rule_binary_data" {
 			continue
 		}
 
+		ruleID, err := strconv.Atoi(rs.Primary.Attributes["rule_id"])
+		if err != nil {
+			return fmt.Errorf("invalid rule_id for %s: %w", rs.Primary.ID, err)
+		}
 		clientID, err := strconv.Atoi(rs.Primary.Attributes["client_id"])
 		if err != nil {
-			return err
+			return fmt.Errorf("invalid client_id for %s: %w", rs.Primary.ID, err)
 		}
-		actionID, err := strconv.Atoi(rs.Primary.Attributes["action_id"])
+
+		// OrderBy is required by the API — HintRead returns 400 without it.
+		resp, err := api.HintRead(&wallarm.HintRead{
+			Limit:   1,
+			OrderBy: "updated_at",
+			Filter:  &wallarm.HintFilter{Clientid: []int{clientID}, ID: []int{ruleID}},
+		})
 		if err != nil {
-			return err
+			return fmt.Errorf("checking hint %d still exists: %w", ruleID, err)
 		}
-
-		hint := &wallarm.HintRead{
-			Limit:     APIListLimit,
-			Offset:    0,
-			OrderBy:   "updated_at",
-			OrderDesc: true,
-			Filter: &wallarm.HintFilter{
-				Clientid: []int{clientID},
-				ActionID: []int{actionID},
-				Type:     []string{"binary_data"},
-			},
-		}
-
-		rule, err := client.HintRead(hint)
-		if err != nil && len(*rule.Body) != 0 {
-			return fmt.Errorf("Allow Binary Data rule still exists")
+		if resp.Body != nil && len(*resp.Body) > 0 {
+			return fmt.Errorf("wallarm_rule_binary_data %s still exists", rs.Primary.ID)
 		}
 	}
 

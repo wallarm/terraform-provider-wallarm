@@ -14,26 +14,26 @@ func TestAccRuleFileUploadSizeLimit(t *testing.T) {
 	const config = `
 resource "wallarm_rule_file_upload_size_limit" "wallarm_rule_file_upload_size_limit_1" {
   mode = "block"
-  
+
   action {
     type = "iequal"
-    value = "wenum.wallarm.com"
+    value = "file_upload_basic.example.com"
     point = {
       header = "HOST"
     }
   }
-  
+
   point = [["header_all"]]
-  
+
   size = 1
   size_unit = "mb"
 
 }
 `
-	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckWallarmRuleFileUploadSizeLimitDestroy,
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV5ProviderFactories: testAccProtoV5ProviderFactories,
+		CheckDestroy:             testAccCheckWallarmRuleFileUploadSizeLimitDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: config,
@@ -56,10 +56,10 @@ func TestAccRuleFileUploadSizeLimitUpdateInPlaceSize(t *testing.T) {
 	resourceAddress := "wallarm_rule_file_upload_size_limit.update_size"
 	var firstRuleID string
 
-	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckWallarmRuleFileUploadSizeLimitDestroy,
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV5ProviderFactories: testAccProtoV5ProviderFactories,
+		CheckDestroy:             testAccCheckWallarmRuleFileUploadSizeLimitDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccRuleFileUploadSizeLimitUpdateConfig("file_upload_update.example.com", 1),
@@ -107,36 +107,35 @@ resource "wallarm_rule_file_upload_size_limit" "update_size" {
 }
 
 func testAccCheckWallarmRuleFileUploadSizeLimitDestroy(s *terraform.State) error {
-	client := testAccProvider.Meta().(*ProviderMeta).Client
+	api, err := testAccNewAPIClient()
+	if err != nil {
+		return err
+	}
 
 	for _, rs := range s.RootModule().Resources {
 		if rs.Type != "wallarm_rule_file_upload_size_limit" {
 			continue
 		}
-
+		ruleID, err := strconv.Atoi(rs.Primary.Attributes["rule_id"])
+		if err != nil {
+			return fmt.Errorf("invalid rule_id for %s: %w", rs.Primary.ID, err)
+		}
 		clientID, err := strconv.Atoi(rs.Primary.Attributes["client_id"])
 		if err != nil {
-			return err
+			return fmt.Errorf("invalid client_id for %s: %w", rs.Primary.ID, err)
 		}
-		actionID, err := strconv.Atoi(rs.Primary.Attributes["action_id"])
+
+		// OrderBy is required by the API — HintRead returns 400 without it.
+		resp, err := api.HintRead(&wallarm.HintRead{
+			Limit:   1,
+			OrderBy: "updated_at",
+			Filter:  &wallarm.HintFilter{Clientid: []int{clientID}, ID: []int{ruleID}},
+		})
 		if err != nil {
-			return err
+			return fmt.Errorf("checking hint %d still exists: %w", ruleID, err)
 		}
-
-		hint := &wallarm.HintRead{
-			Limit:     APIListLimit,
-			Offset:    0,
-			OrderBy:   "updated_at",
-			OrderDesc: true,
-			Filter: &wallarm.HintFilter{
-				Clientid: []int{clientID},
-				ActionID: []int{actionID},
-			},
-		}
-
-		rule, err := client.HintRead(hint)
-		if err != nil && rule != nil && len(*rule.Body) > 0 {
-			return fmt.Errorf("Wallarm Mode Rule still exists")
+		if resp.Body != nil && len(*resp.Body) > 0 {
+			return fmt.Errorf("wallarm_rule_file_upload_size_limit %s still exists", rs.Primary.ID)
 		}
 	}
 

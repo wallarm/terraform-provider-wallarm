@@ -15,13 +15,13 @@ import (
 func TestAccRuleParserStateCreate_Basic(t *testing.T) {
 	rnd := generateRandomResourceName(5)
 	name := "wallarm_rule_parser_state." + rnd
-	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckWallarmRuleParserStateDestroy,
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV5ProviderFactories: testAccProtoV5ProviderFactories,
+		CheckDestroy:             testAccCheckWallarmRuleParserStateDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testWallarmRuleParserStateBasicConfig(rnd, "base64", "enabled", "iequal", "parsers.wallarm.com", "HOST", `["post"],["form_urlencoded","query"]`),
+				Config: testWallarmRuleParserStateBasicConfig(rnd, "base64", "enabled", "iequal", "parser_state_basic.wallarm.com", "HOST", `["post"],["form_urlencoded","query"]`),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(name, "parser", "base64"),
 					resource.TestCheckResourceAttr(name, "state", "enabled"),
@@ -43,12 +43,12 @@ func TestAccRuleParserStateCreate_Basic(t *testing.T) {
 
 func TestAccRuleParserStateCreate_IncorrectState(t *testing.T) {
 	rnd := generateRandomResourceName(5)
-	resource.Test(t, resource.TestCase{
-		PreCheck:  func() { testAccPreCheck(t) },
-		Providers: testAccProviders,
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV5ProviderFactories: testAccProtoV5ProviderFactories,
 		Steps: []resource.TestStep{
 			{
-				Config:      testWallarmRuleParserStateBasicConfig(rnd, "base64", "incorrect", "iequal", "parsers.wallarm.com", "HOST", `["post"],["form_urlencoded","query"]`),
+				Config:      testWallarmRuleParserStateBasicConfig(rnd, "base64", "incorrect", "iequal", "parser_state_invalid.wallarm.com", "HOST", `["post"],["form_urlencoded","query"]`),
 				ExpectError: regexp.MustCompile(`expected state to be one of \["enabled" "disabled"\], got incorrect`),
 			},
 		},
@@ -58,10 +58,10 @@ func TestAccRuleParserStateCreate_IncorrectState(t *testing.T) {
 func TestAccRuleParserStateCreateRecreate(t *testing.T) {
 	rnd := generateRandomResourceName(5)
 	name := "wallarm_rule_parser_state." + rnd
-	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckWallarmRuleParserStateDestroy,
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV5ProviderFactories: testAccProtoV5ProviderFactories,
+		CheckDestroy:             testAccCheckWallarmRuleParserStateDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccRuleParserStateCreateRecreate(rnd, "htmljs", "enabled"),
@@ -88,10 +88,10 @@ func TestAccRuleParserStateCreate_DefaultBranch(t *testing.T) {
 	name := "wallarm_rule_parser_state." + rnd
 	point := `["header","HOST"],["pollution"]`
 
-	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckWallarmRuleParserStateDestroy,
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV5ProviderFactories: testAccProtoV5ProviderFactories,
+		CheckDestroy:             testAccCheckWallarmRuleParserStateDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testWallarmRuleParserStateDefaultBranchConfig(rnd, "gzip", "disabled", point),
@@ -113,10 +113,10 @@ func TestAccRuleParserStateUpdateInPlaceState(t *testing.T) {
 	name := "wallarm_rule_parser_state." + rnd
 	var firstRuleID string
 
-	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckWallarmRuleParserStateDestroy,
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV5ProviderFactories: testAccProtoV5ProviderFactories,
+		CheckDestroy:             testAccCheckWallarmRuleParserStateDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccRuleParserStateUpdateConfig(rnd, "parser_state_update.example.com", "enabled"),
@@ -147,86 +147,85 @@ func TestAccRuleParserStateUpdateInPlaceState(t *testing.T) {
 
 func testAccRuleParserStateUpdateConfig(resourceID, host, state string) string {
 	return fmt.Sprintf(`
-resource "wallarm_rule_parser_state" "%[1]s" {
+resource "wallarm_rule_parser_state" %[1]q {
   action {
     type  = "iequal"
-    value = "%[2]s"
+    value = %[2]q
     point = {
       header = "HOST"
     }
   }
   point  = [["post"],["form_urlencoded","query"]]
   parser = "base64"
-  state  = "%[3]s"
+  state  = %[3]q
 }`, resourceID, host, state)
 }
 
 func testWallarmRuleParserStateBasicConfig(resourceID, parser, state, actionType, actionValue, actionPoint, point string) string {
 	return fmt.Sprintf(`
-resource "wallarm_rule_parser_state" "%[1]s" {
+resource "wallarm_rule_parser_state" %[1]q {
   action {
-    type = "%[2]s"
-    value = "%[3]s"
+    type = %[2]q
+    value = %[3]q
     point = {
-      header = "%[4]s"
+      header = %[4]q
     }
   }
   point = [%[5]s]
-  parser = "%[6]s"
-  state = "%[7]s"
+  parser = %[6]q
+  state = %[7]q
 }`, resourceID, actionType, actionValue, actionPoint, point, parser, state)
 }
 
 func testWallarmRuleParserStateDefaultBranchConfig(resourceID, parser, state, point string) string {
 	return fmt.Sprintf(`
-resource "wallarm_rule_parser_state" "%[1]s" {
+resource "wallarm_rule_parser_state" %[1]q {
   point = [%[2]s]
-  parser = "%[3]s"
-  state = "%[4]s"
+  parser = %[3]q
+  state = %[4]q
 }`, resourceID, point, parser, state)
 }
 
 func testAccRuleParserStateCreateRecreate(resourceID, parser, state string) string {
 	return fmt.Sprintf(`
-resource "wallarm_rule_parser_state" "%[1]s" {
+resource "wallarm_rule_parser_state" %[1]q {
   point = [["uri"]]
-  parser = "%[2]s"
-  state = "%[3]s"
+  parser = %[2]q
+  state = %[3]q
 }`, resourceID, parser, state)
 }
 
 func testAccCheckWallarmRuleParserStateDestroy(s *terraform.State) error {
-	client := testAccProvider.Meta().(*ProviderMeta).Client
+	api, err := testAccNewAPIClient()
+	if err != nil {
+		return err
+	}
 
 	for _, rs := range s.RootModule().Resources {
 		if rs.Type != "wallarm_rule_parser_state" {
 			continue
 		}
 
+		ruleID, err := strconv.Atoi(rs.Primary.Attributes["rule_id"])
+		if err != nil {
+			return fmt.Errorf("invalid rule_id for %s: %w", rs.Primary.ID, err)
+		}
 		clientID, err := strconv.Atoi(rs.Primary.Attributes["client_id"])
 		if err != nil {
-			return err
+			return fmt.Errorf("invalid client_id for %s: %w", rs.Primary.ID, err)
 		}
-		actionID, err := strconv.Atoi(rs.Primary.Attributes["action_id"])
+
+		// OrderBy is required by the API — HintRead returns 400 without it.
+		resp, err := api.HintRead(&wallarm.HintRead{
+			Limit:   1,
+			OrderBy: "updated_at",
+			Filter:  &wallarm.HintFilter{Clientid: []int{clientID}, ID: []int{ruleID}},
+		})
 		if err != nil {
-			return err
+			return fmt.Errorf("checking hint %d still exists: %w", ruleID, err)
 		}
-
-		hint := &wallarm.HintRead{
-			Limit:     APIListLimit,
-			Offset:    0,
-			OrderBy:   "updated_at",
-			OrderDesc: true,
-			Filter: &wallarm.HintFilter{
-				Clientid: []int{clientID},
-				ActionID: []int{actionID},
-				Type:     []string{"parser_state"},
-			},
-		}
-
-		rule, err := client.HintRead(hint)
-		if err != nil && len(*rule.Body) != 0 {
-			return fmt.Errorf("Disable/Enable Parsers rule still exists")
+		if resp.Body != nil && len(*resp.Body) > 0 {
+			return fmt.Errorf("wallarm_rule_parser_state %s still exists", rs.Primary.ID)
 		}
 	}
 

@@ -14,10 +14,10 @@ import (
 func TestAccRuleRegexCreateUserAgent(t *testing.T) {
 	rnd := generateRandomResourceName(5)
 	name := "wallarm_rule_regex." + rnd
-	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckWallarmRuleRegexDestroy,
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV5ProviderFactories: testAccProtoV5ProviderFactories,
+		CheckDestroy:             testAccCheckWallarmRuleRegexDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testWallarmRuleRegexCreateUserAgent(rnd, "^(Mozilla(~(.*d833810e8a84cd2432e95893c36d8bff.*)))$"),
@@ -40,10 +40,10 @@ func TestAccRuleRegexCreateUserAgent(t *testing.T) {
 func TestAccRuleRegexCreateOpenDir(t *testing.T) {
 	rnd := generateRandomResourceName(5)
 	name := "wallarm_rule_regex." + rnd
-	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckWallarmRuleRegexDestroy,
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV5ProviderFactories: testAccProtoV5ProviderFactories,
+		CheckDestroy:             testAccCheckWallarmRuleRegexDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testWallarmRuleRegexCreateOpenDir(rnd, "/[.]git"),
@@ -68,10 +68,10 @@ func TestAccRuleRegexCreateOpenDir(t *testing.T) {
 func TestAccRuleRegexCreateNotANumber(t *testing.T) {
 	rnd := generateRandomResourceName(5)
 	name := "wallarm_rule_regex." + rnd
-	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckWallarmRuleRegexDestroy,
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV5ProviderFactories: testAccProtoV5ProviderFactories,
+		CheckDestroy:             testAccCheckWallarmRuleRegexDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testWallarmRuleRegexCreateNotANumber(rnd, "\\\\D"),
@@ -88,11 +88,11 @@ func TestAccRuleRegexCreateNotANumber(t *testing.T) {
 
 func testWallarmRuleRegexCreateUserAgent(resourceID, regex string) string {
 	return fmt.Sprintf(`
-resource "wallarm_rule_regex" "%[1]s" {
-	regex = "%[2]s"
+resource "wallarm_rule_regex" %[1]q {
+	regex = %[2]q
 	experimental = true
 	attack_type =  "scanner"
-	
+
 	action {
 		type = "iequal"
 		value = "%[1]s.wallarm-demo.com"
@@ -106,11 +106,11 @@ resource "wallarm_rule_regex" "%[1]s" {
 
 func testWallarmRuleRegexCreateOpenDir(resourceID, regex string) string {
 	return fmt.Sprintf(`
-resource "wallarm_rule_regex" "%[1]s" {
-	regex = "%[2]s"
+resource "wallarm_rule_regex" %[1]q {
+	regex = %[2]q
 	experimental = false
 	attack_type =  "vpatch"
-	
+
 	action {
 		type = "iequal"
 		value = "%[1]s.wallarm-demo.com"
@@ -124,11 +124,11 @@ resource "wallarm_rule_regex" "%[1]s" {
 
 func testWallarmRuleRegexCreateNotANumber(resourceID, regex string) string {
 	return fmt.Sprintf(`
-resource "wallarm_rule_regex" "%[1]s" {
-	regex = "%[2]s"
+resource "wallarm_rule_regex" %[1]q {
+	regex = %[2]q
 	experimental = false
 	attack_type =  "scanner"
-	
+
 	action {
 		type = "iequal"
 		value = "%[1]s.wallarm-demo.com"
@@ -141,37 +141,36 @@ resource "wallarm_rule_regex" "%[1]s" {
 }
 
 func testAccCheckWallarmRuleRegexDestroy(s *terraform.State) error {
-	client := testAccProvider.Meta().(*ProviderMeta).Client
+	api, err := testAccNewAPIClient()
+	if err != nil {
+		return err
+	}
 
 	for _, rs := range s.RootModule().Resources {
 		if rs.Type != "wallarm_rule_regex" {
 			continue
 		}
 
+		ruleID, err := strconv.Atoi(rs.Primary.Attributes["rule_id"])
+		if err != nil {
+			return fmt.Errorf("invalid rule_id for %s: %w", rs.Primary.ID, err)
+		}
 		clientID, err := strconv.Atoi(rs.Primary.Attributes["client_id"])
 		if err != nil {
-			return err
+			return fmt.Errorf("invalid client_id for %s: %w", rs.Primary.ID, err)
 		}
-		actionID, err := strconv.Atoi(rs.Primary.Attributes["action_id"])
+
+		// OrderBy is required by the API — HintRead returns 400 without it.
+		resp, err := api.HintRead(&wallarm.HintRead{
+			Limit:   1,
+			OrderBy: "updated_at",
+			Filter:  &wallarm.HintFilter{Clientid: []int{clientID}, ID: []int{ruleID}},
+		})
 		if err != nil {
-			return err
+			return fmt.Errorf("checking hint %d still exists: %w", ruleID, err)
 		}
-
-		hint := &wallarm.HintRead{
-			Limit:     APIListLimit,
-			Offset:    0,
-			OrderBy:   "updated_at",
-			OrderDesc: true,
-			Filter: &wallarm.HintFilter{
-				Clientid: []int{clientID},
-				ActionID: []int{actionID},
-				Type:     []string{"regex"},
-			},
-		}
-
-		rule, err := client.HintRead(hint)
-		if err != nil && len(*rule.Body) != 0 {
-			return fmt.Errorf("Regular Expression rule still exists")
+		if resp.Body != nil && len(*resp.Body) > 0 {
+			return fmt.Errorf("wallarm_rule_regex %s still exists", rs.Primary.ID)
 		}
 	}
 

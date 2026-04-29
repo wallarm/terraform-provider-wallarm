@@ -14,15 +14,15 @@ func TestAccRuleGraphqlDetection(t *testing.T) {
 	const config = `
 resource "wallarm_rule_graphql_detection" "wallarm_rule_graphql_detection_1" {
   mode = "block"
-  
+
   action {
     type = "iequal"
-    value = "wenum.wallarm.com"
+    value = "graphql_basic.example.com"
     point = {
       header = "HOST"
     }
   }
-  
+
   max_depth = 10
   max_value_size_kb = 10
   max_doc_size_kb = 100
@@ -33,10 +33,10 @@ resource "wallarm_rule_graphql_detection" "wallarm_rule_graphql_detection_1" {
 
 }
 `
-	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckWallarmRuleGraphqlDetectionDestroy,
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV5ProviderFactories: testAccProtoV5ProviderFactories,
+		CheckDestroy:             testAccCheckWallarmRuleGraphqlDetectionDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: config,
@@ -59,10 +59,10 @@ func TestAccRuleGraphqlDetectionUpdateInPlaceDebugEnabled(t *testing.T) {
 	resourceAddress := "wallarm_rule_graphql_detection.update_debug"
 	var firstRuleID string
 
-	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckWallarmRuleGraphqlDetectionDestroy,
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV5ProviderFactories: testAccProtoV5ProviderFactories,
+		CheckDestroy:             testAccCheckWallarmRuleGraphqlDetectionDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccRuleGraphqlDetectionUpdateConfig("graphql_update.example.com", false),
@@ -113,36 +113,35 @@ resource "wallarm_rule_graphql_detection" "update_debug" {
 }
 
 func testAccCheckWallarmRuleGraphqlDetectionDestroy(s *terraform.State) error {
-	client := testAccProvider.Meta().(*ProviderMeta).Client
+	api, err := testAccNewAPIClient()
+	if err != nil {
+		return err
+	}
 
 	for _, rs := range s.RootModule().Resources {
 		if rs.Type != "wallarm_rule_graphql_detection" {
 			continue
 		}
-
+		ruleID, err := strconv.Atoi(rs.Primary.Attributes["rule_id"])
+		if err != nil {
+			return fmt.Errorf("invalid rule_id for %s: %w", rs.Primary.ID, err)
+		}
 		clientID, err := strconv.Atoi(rs.Primary.Attributes["client_id"])
 		if err != nil {
-			return err
+			return fmt.Errorf("invalid client_id for %s: %w", rs.Primary.ID, err)
 		}
-		actionID, err := strconv.Atoi(rs.Primary.Attributes["action_id"])
+
+		// OrderBy is required by the API — HintRead returns 400 without it.
+		resp, err := api.HintRead(&wallarm.HintRead{
+			Limit:   1,
+			OrderBy: "updated_at",
+			Filter:  &wallarm.HintFilter{Clientid: []int{clientID}, ID: []int{ruleID}},
+		})
 		if err != nil {
-			return err
+			return fmt.Errorf("checking hint %d still exists: %w", ruleID, err)
 		}
-
-		hint := &wallarm.HintRead{
-			Limit:     APIListLimit,
-			Offset:    0,
-			OrderBy:   "updated_at",
-			OrderDesc: true,
-			Filter: &wallarm.HintFilter{
-				Clientid: []int{clientID},
-				ActionID: []int{actionID},
-			},
-		}
-
-		rule, err := client.HintRead(hint)
-		if err != nil && rule != nil && len(*rule.Body) > 0 {
-			return fmt.Errorf("Wallarm Mode Rule still exists")
+		if resp.Body != nil && len(*resp.Body) > 0 {
+			return fmt.Errorf("wallarm_rule_graphql_detection %s still exists", rs.Primary.ID)
 		}
 	}
 
