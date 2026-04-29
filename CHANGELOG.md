@@ -7,6 +7,7 @@
 * **fix(test/rule_*):** 12 `CheckDestroy` functions had inverted `if err != nil &&` condition that silently passed regardless of leftover rules; now use ID-lookup template.
 * **fix(test/rule_bola_counter, _dirbust_counter):** removed broken `CheckDestroy` stubs (wrong `rs.Type` filter — counter deletes are silent server-side anyway).
 * **fix(test/rule_api_abuse_mode):** `TestAccRuleAPIAbuseModeExistsError` flake — 3s `PreConfig` wait for action-commit propagation.
+* **fix(action_helpers):** `existingHintForAction` now paginates `ActionList`; tenants with >500 actions of a given hint_type previously silently missed page-2+ collisions.
 
 ### Other Changes
 

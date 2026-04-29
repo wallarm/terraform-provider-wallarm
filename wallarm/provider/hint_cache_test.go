@@ -9,13 +9,16 @@ import (
 	wallarm "github.com/wallarm/wallarm-go"
 )
 
-// mockAPI implements wallarm.API by embedding nil and only overriding HintRead.
-// We use a concrete mock that tracks call counts to verify caching behavior.
+// mockHintAPI implements wallarm.API by embedding nil and overriding the
+// methods exercised by the provider's helpers (HintRead, ActionList).
+// Concrete mock tracks call counts to verify caching/pagination behavior.
 type mockHintAPI struct {
-	wallarm.API // embed to satisfy interface; only HintRead is called
-	hints       []wallarm.ActionBody
-	callCount   atomic.Int32
-	failOnCall  int // if > 0, fail on the Nth call
+	wallarm.API     // embed to satisfy interface; only listed methods are called
+	hints           []wallarm.ActionBody
+	actions         []wallarm.ActionEntry // for ActionList pagination tests
+	callCount       atomic.Int32
+	actionCallCount atomic.Int32
+	failOnCall      int // if > 0, fail on the Nth HintRead call
 }
 
 func (m *mockHintAPI) HintRead(body *wallarm.HintRead) (*wallarm.HintReadResp, error) {
@@ -24,18 +27,22 @@ func (m *mockHintAPI) HintRead(body *wallarm.HintRead) (*wallarm.HintReadResp, e
 		return nil, fmt.Errorf("simulated API error on call %d", n)
 	}
 
-	// Paginate based on offset/limit
-	offset := body.Offset
-	limit := body.Limit
-	if offset >= len(m.hints) {
-		return &wallarm.HintReadResp{Status: 200, Body: &[]wallarm.ActionBody{}}, nil
-	}
-	end := offset + limit
-	if end > len(m.hints) {
-		end = len(m.hints)
+	// Filter by ActionID — used by existingHintForAction's HintRead step
+	if body.Filter != nil && len(body.Filter.ActionID) > 0 {
+		actionIDSet := make(map[int]bool)
+		for _, aid := range body.Filter.ActionID {
+			actionIDSet[aid] = true
+		}
+		var filtered []wallarm.ActionBody
+		for _, h := range m.hints {
+			if actionIDSet[h.ActionID] {
+				filtered = append(filtered, h)
+			}
+		}
+		return &wallarm.HintReadResp{Status: 200, Body: &filtered}, nil
 	}
 
-	// If filtering by specific IDs, return only matching hints
+	// Filter by specific IDs
 	if body.Filter != nil && len(body.Filter.ID) > 0 {
 		idSet := make(map[int]bool)
 		for _, id := range body.Filter.ID {
@@ -50,8 +57,35 @@ func (m *mockHintAPI) HintRead(body *wallarm.HintRead) (*wallarm.HintReadResp, e
 		return &wallarm.HintReadResp{Status: 200, Body: &filtered}, nil
 	}
 
+	// Default: paginate all hints by offset/limit
+	offset := body.Offset
+	limit := body.Limit
+	if offset >= len(m.hints) {
+		return &wallarm.HintReadResp{Status: 200, Body: &[]wallarm.ActionBody{}}, nil
+	}
+	end := offset + limit
+	if end > len(m.hints) {
+		end = len(m.hints)
+	}
 	page := m.hints[offset:end]
 	return &wallarm.HintReadResp{Status: 200, Body: &page}, nil
+}
+
+// ActionList paginates m.actions by Offset/Limit. Filter fields are not
+// honoured (tests load m.actions with the desired post-filter set).
+func (m *mockHintAPI) ActionList(params *wallarm.ActionListParams) (*wallarm.ActionListResponse, error) {
+	m.actionCallCount.Add(1)
+	offset := params.Offset
+	limit := params.Limit
+	if offset >= len(m.actions) {
+		return &wallarm.ActionListResponse{Status: 200, Body: []wallarm.ActionEntry{}}, nil
+	}
+	end := offset + limit
+	if end > len(m.actions) {
+		end = len(m.actions)
+	}
+	page := m.actions[offset:end]
+	return &wallarm.ActionListResponse{Status: 200, Body: page}, nil
 }
 
 func makeHints(n int) []wallarm.ActionBody {

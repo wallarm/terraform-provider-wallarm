@@ -35,28 +35,10 @@ func existingHintForAction(d *schema.ResourceData, m interface{}, hintType strin
 		return 0, nil, false, err
 	}
 
-	listResp, err := client.ActionList(&wallarm.ActionListParams{
-		Filter: &wallarm.ActionListFilter{
-			HintType: []string{hintType},
-			Clientid: []int{clientID},
-		},
-		Limit:  APIListLimit,
-		Offset: 0,
-	})
+	wantHash := resourcerule.ConditionsHash(action)
+	matchedAction, err := findActionByConditionsHash(client, clientID, hintType, wantHash, len(action))
 	if err != nil {
 		return 0, nil, false, err
-	}
-
-	wantHash := resourcerule.ConditionsHash(action)
-	var matchedAction *wallarm.ActionEntry
-	for i, entry := range listResp.Body {
-		if len(entry.Conditions) != len(action) {
-			continue
-		}
-		if resourcerule.ConditionsHash(entry.Conditions) == wantHash {
-			matchedAction = &listResp.Body[i]
-			break
-		}
 	}
 	if matchedAction == nil {
 		return 0, nil, false, nil
@@ -95,6 +77,42 @@ func existingHintForAction(d *schema.ResourceData, m interface{}, hintType strin
 		return matchedAction.ID, &body[0], true, nil
 	}
 	return 0, nil, false, nil
+}
+
+// findActionByConditionsHash paginates ActionList for (clientID, hintType) and
+// returns the first ActionEntry whose conditions hash matches wantHash, or nil
+// if no match. Pagination terminates on a short page or as soon as a match is
+// found — common case (match on page 1) makes a single API call.
+//
+// expectConditionCount is a cheap length pre-filter to skip the hash compute
+// for actions that can't possibly match. Pass len(action).
+func findActionByConditionsHash(client wallarm.API, clientID int, hintType, wantHash string, expectConditionCount int) (*wallarm.ActionEntry, error) {
+	const pageSize = APIListLimit
+	for offset := 0; ; offset += pageSize {
+		listResp, err := client.ActionList(&wallarm.ActionListParams{
+			Filter: &wallarm.ActionListFilter{
+				HintType: []string{hintType},
+				Clientid: []int{clientID},
+			},
+			Limit:  pageSize,
+			Offset: offset,
+		})
+		if err != nil {
+			return nil, err
+		}
+		for i, entry := range listResp.Body {
+			if len(entry.Conditions) != expectConditionCount {
+				continue
+			}
+			if resourcerule.ConditionsHash(entry.Conditions) == wantHash {
+				return &listResp.Body[i], nil
+			}
+		}
+		// Short page (including empty) → no more results.
+		if len(listResp.Body) < pageSize {
+			return nil, nil
+		}
+	}
 }
 
 // ImportAsExistsError returns an error when a resource already exists in the API
