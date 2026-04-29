@@ -8,7 +8,66 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
 
-// TODO add brute exact too
+func TestAccRuleBruteExact(t *testing.T) {
+	const config = `
+resource "wallarm_rule_brute" "wallarm_rule_brute_exact" {
+  mode = "block"
+
+  action {
+    type = "iequal"
+    value = "brute_exact.example.com"
+    point = {
+      header = "HOST"
+    }
+  }
+
+  reaction {
+    block_by_session = 3000
+    block_by_ip = 4000
+  }
+
+  threshold {
+    count = 5
+    period = 30
+  }
+
+  enumerated_parameters {
+    mode = "exact"
+    points {
+      point     = ["header", "REFERER"]
+      sensitive = false
+    }
+    points {
+      point     = ["get", "id"]
+      sensitive = true
+    }
+  }
+}
+`
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV5ProviderFactories: testAccProtoV5ProviderFactories,
+		CheckDestroy:             testAccCheckWallarmRuleBruteDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: config,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("wallarm_rule_brute.wallarm_rule_brute_exact", "mode", "block"),
+					resource.TestCheckResourceAttr("wallarm_rule_brute.wallarm_rule_brute_exact", "action.#", "1"),
+					resource.TestCheckResourceAttr("wallarm_rule_brute.wallarm_rule_brute_exact", "enumerated_parameters.0.mode", "exact"),
+					resource.TestCheckResourceAttr("wallarm_rule_brute.wallarm_rule_brute_exact", "enumerated_parameters.0.points.0.sensitive", "false"),
+				),
+			},
+			{
+				ResourceName:            "wallarm_rule_brute.wallarm_rule_brute_exact",
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"rule_type"},
+			},
+		},
+	})
+}
+
 func TestAccRuleBruteRegexp(t *testing.T) {
 	const config = `
 resource "wallarm_rule_brute" "wallarm_rule_brute_regexp" {
