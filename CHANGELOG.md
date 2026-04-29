@@ -13,6 +13,7 @@
 
 * **test(rule):** 26 rule test files migrated to v2.3.5 patterns (`ProtoV5ProviderFactories`, `testAccNewAPIClient`, `%[N]q`, unique scopes).
 * **build(makefile):** re-added `-race` to `make testacc`.
+* **test(hint_cache):** unit tests for `CachedClient.HintCreate` (insert / nil-body / credentials_* skip / API error) and `HintDelete` (cache invalidation / error preserves cache).
 
 ## [v2.3.7] - 2026-04-28
 
