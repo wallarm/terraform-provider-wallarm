@@ -181,3 +181,73 @@ resource "wallarm_rule_vpatch" %[1]q {
 func testAccCheckWallarmRuleVpatchDestroy(s *terraform.State) error {
 	return testAccCheckHintDestroyed(s, "wallarm_rule_vpatch")
 }
+
+// TestAccRuleVpatchActionScope_UriOnly exercises ActionScopeCustomizeDiff happy
+// path: a single `action {}` block with a `uri`-only point map. Verifies that
+// the customizer accepts uri as a standalone scope (PointValuePoint, value goes
+// in the point map; sibling `value` field must be empty).
+func TestAccRuleVpatchActionScope_UriOnly(t *testing.T) {
+	rnd := generateRandomResourceName(5)
+	name := "wallarm_rule_vpatch." + rnd
+	config := fmt.Sprintf(`
+resource "wallarm_rule_vpatch" %[1]q {
+  attack_type = "xss"
+  action {
+    type  = "iequal"
+    point = { uri = "/api/v1/uri-scope-test/%[1]s" }
+  }
+  point = [["get_all"]]
+}
+`, rnd)
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV5ProviderFactories: testAccProtoV5ProviderFactories,
+		CheckDestroy:             testAccCheckWallarmRuleVpatchDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: config,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(name, "action.#", "1"),
+					resource.TestCheckResourceAttr(name, "attack_type", "xss"),
+				),
+			},
+		},
+	})
+}
+
+// TestAccRuleVpatchActionScope_PathDecomposed exercises the decomposed-path
+// scope shape: separate `action {}` blocks for `path`/`action_name`/`action_ext`
+// (uriConflictPoints) without `uri`. Customizer must accept this — they only
+// conflict when paired with `uri`.
+func TestAccRuleVpatchActionScope_PathDecomposed(t *testing.T) {
+	rnd := generateRandomResourceName(5)
+	name := "wallarm_rule_vpatch." + rnd
+	config := fmt.Sprintf(`
+resource "wallarm_rule_vpatch" %[1]q {
+  attack_type = "xss"
+  action {
+    type  = "equal"
+    value = "0"
+    point = { path = "0" }
+  }
+  action {
+    type  = "iequal"
+    point = { action_name = "users" }
+  }
+  point = [["get_all"]]
+}
+`, rnd)
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV5ProviderFactories: testAccProtoV5ProviderFactories,
+		CheckDestroy:             testAccCheckWallarmRuleVpatchDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: config,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(name, "action.#", "2"),
+				),
+			},
+		},
+	})
+}
