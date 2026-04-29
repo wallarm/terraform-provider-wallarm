@@ -5,6 +5,7 @@ import (
 	"strconv"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
@@ -298,6 +299,11 @@ func TestAccRuleAPIAbuseModeExistsError(t *testing.T) {
 				Check:  testAccCheckWallarmRuleAPIAbuseModeExists("wallarm_rule_api_abuse_mode.first"),
 			},
 			{
+				// Brief wait lets the action commit propagate to read replicas
+				// before the duplicate-create runs existingHintForAction. Without
+				// this, ActionList may not yet see the rule from step 1, the
+				// duplicate Create proceeds, and ExpectError doesn't fire.
+				PreConfig:   func() { time.Sleep(3 * time.Second) },
 				Config:      configDup,
 				ExpectError: ResourceExistsError(`[0-9]+/[0-9]+/[0-9]+`, "wallarm_rule_api_abuse_mode"),
 			},
