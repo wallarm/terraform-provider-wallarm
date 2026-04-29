@@ -3,9 +3,28 @@ package wallarm
 import (
 	"testing"
 
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/wallarm/terraform-provider-wallarm/wallarm/common/resourcerule"
 	wallarm "github.com/wallarm/wallarm-go"
 )
+
+// newRuleResourceDataForTest builds a minimal *ResourceData with the action
+// TypeSet schema populated from the given action map. Used by
+// existingHintForAction tests to avoid pulling in any specific rule resource's
+// full schema.
+func newRuleResourceDataForTest(t *testing.T, actionMap map[string]interface{}, clientID int) *schema.ResourceData {
+	t.Helper()
+	res := &schema.Resource{
+		Schema: map[string]*schema.Schema{
+			"action":    resourcerule.ScopeActionSchema(),
+			"client_id": {Type: schema.TypeInt, Optional: true},
+		},
+	}
+	return schema.TestResourceDataRaw(t, res.Schema, map[string]interface{}{
+		"action":    []interface{}{actionMap},
+		"client_id": clientID,
+	})
+}
 
 func TestImportAsExistsError(t *testing.T) {
 	err := ImportAsExistsError("wallarm_rule_mode", "1/2/3")
@@ -118,5 +137,95 @@ func TestFindActionByConditionsHash_Page1Match(t *testing.T) {
 	}
 	if mock.actionCallCount.Load() != 1 {
 		t.Fatalf("expected exactly 1 ActionList call (matched on page 1), got %d", mock.actionCallCount.Load())
+	}
+}
+
+// TestExistingHintForAction_Match exercises the end-to-end path:
+// schema.ResourceData → ExpandSetToActionDetailsList → ConditionsHash →
+// findActionByConditionsHash → HintRead by ActionID+Type → matched rule returned.
+func TestExistingHintForAction_Match(t *testing.T) {
+	d := newRuleResourceDataForTest(t, map[string]interface{}{
+		"type":  "iequal",
+		"value": "test.example.com",
+		"point": map[string]interface{}{"header": "HOST"},
+	}, 1)
+
+	// Use the same expansion the production code will use, so hashes match.
+	wantedConditions, err := resourcerule.ExpandSetToActionDetailsList(d.Get("action").(*schema.Set))
+	if err != nil {
+		t.Fatalf("ExpandSetToActionDetailsList: %v", err)
+	}
+
+	mock := &mockHintAPI{
+		actions: []wallarm.ActionEntry{{ID: 42, Clientid: 1, Conditions: wantedConditions}},
+		hints:   []wallarm.ActionBody{{ID: 100, ActionID: 42, Clientid: 1, Type: "wallarm_mode"}},
+	}
+	meta := &ProviderMeta{Client: mock, DefaultClientID: 1}
+
+	actionID, rule, exists, err := existingHintForAction(d, meta, "wallarm_mode")
+	if err != nil {
+		t.Fatalf("existingHintForAction: %v", err)
+	}
+	if !exists {
+		t.Fatal("expected match to exist")
+	}
+	if actionID != 42 {
+		t.Errorf("expected actionID=42, got %d", actionID)
+	}
+	if rule == nil || rule.ID != 100 {
+		t.Errorf("expected rule ID=100, got %+v", rule)
+	}
+}
+
+// TestExistingHintForAction_NoMatch verifies the empty-tenant path: ActionList
+// returns nothing → (0, nil, false, nil), no HintRead call made.
+func TestExistingHintForAction_NoMatch(t *testing.T) {
+	d := newRuleResourceDataForTest(t, map[string]interface{}{
+		"type":  "iequal",
+		"value": "no-match.example.com",
+		"point": map[string]interface{}{"header": "HOST"},
+	}, 1)
+
+	mock := &mockHintAPI{} // no actions, no hints
+	meta := &ProviderMeta{Client: mock, DefaultClientID: 1}
+
+	actionID, rule, exists, err := existingHintForAction(d, meta, "wallarm_mode")
+	if err != nil {
+		t.Fatalf("existingHintForAction: %v", err)
+	}
+	if exists || actionID != 0 || rule != nil {
+		t.Errorf("expected (0, nil, false, nil), got (%d, %+v, %v)", actionID, rule, exists)
+	}
+	if mock.callCount.Load() != 0 {
+		t.Errorf("expected zero HintRead calls when no action matches, got %d", mock.callCount.Load())
+	}
+}
+
+// TestExistingHintForAction_ActionMatchesButNoHint exercises the partial-state
+// path: action exists with matching conditions, but no hint of the wanted type
+// is attached. Returns (0, nil, false, nil) — the action match alone isn't enough.
+func TestExistingHintForAction_ActionMatchesButNoHint(t *testing.T) {
+	d := newRuleResourceDataForTest(t, map[string]interface{}{
+		"type":  "iequal",
+		"value": "action-only.example.com",
+		"point": map[string]interface{}{"header": "HOST"},
+	}, 1)
+	wantedConditions, err := resourcerule.ExpandSetToActionDetailsList(d.Get("action").(*schema.Set))
+	if err != nil {
+		t.Fatalf("ExpandSetToActionDetailsList: %v", err)
+	}
+
+	mock := &mockHintAPI{
+		actions: []wallarm.ActionEntry{{ID: 42, Clientid: 1, Conditions: wantedConditions}},
+		// hints: empty — no rule attached to action 42
+	}
+	meta := &ProviderMeta{Client: mock, DefaultClientID: 1}
+
+	actionID, rule, exists, err := existingHintForAction(d, meta, "wallarm_mode")
+	if err != nil {
+		t.Fatalf("existingHintForAction: %v", err)
+	}
+	if exists || actionID != 0 || rule != nil {
+		t.Errorf("expected (0, nil, false, nil) when action matches but no hint, got (%d, %+v, %v)", actionID, rule, exists)
 	}
 }
