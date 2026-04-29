@@ -1,3 +1,18 @@
+## [v2.3.8] - 2026-04-29
+
+> Test infrastructure refactor — all 26 rule acceptance tests on the v2.3.5 pattern; `-race` re-enabled in `make testacc`; latent CheckDestroy bugs fixed.
+
+### Bug Fixes
+
+* **fix(test/rule_*):** 12 `CheckDestroy` functions had inverted `if err != nil &&` condition that silently passed regardless of leftover rules; now use ID-lookup template.
+* **fix(test/rule_bola_counter, _dirbust_counter):** removed broken `CheckDestroy` stubs (wrong `rs.Type` filter — counter deletes are silent server-side anyway).
+* **fix(test/rule_api_abuse_mode):** `TestAccRuleAPIAbuseModeExistsError` flake — 3s `PreConfig` wait for action-commit propagation.
+
+### Other Changes
+
+* **test(rule):** 26 rule test files migrated to v2.3.5 patterns (`ProtoV5ProviderFactories`, `testAccNewAPIClient`, `%[N]q`, unique scopes).
+* **build(makefile):** re-added `-race` to `make testacc`.
+
 ## [v2.3.7] - 2026-04-28
 
 > Rule lifecycle stability: 45 schema fields go mutable so `plan` reports update-in-place instead of destroy+recreate, several long-standing false-diff sources are fixed, and counter / empty-body destroy semantics are clarified.
