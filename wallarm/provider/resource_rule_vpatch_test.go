@@ -15,10 +15,10 @@ func TestAccRuleVpatchCreate_Basic(t *testing.T) {
 	rnd := generateRandomResourceName(5)
 	name := "wallarm_rule_vpatch." + rnd
 
-	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckWallarmRuleVpatchDestroy,
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV5ProviderFactories: testAccProtoV5ProviderFactories,
+		CheckDestroy:             testAccCheckWallarmRuleVpatchDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testWallarmRuleVpatchBasicConfig(rnd, "xss", "iequal", "vpatch.wallarm.com", "HOST", "get_all"),
@@ -43,13 +43,13 @@ func TestAccRuleVpatchCreate_DefaultBranch(t *testing.T) {
 	name := "wallarm_rule_vpatch." + rnd
 	point := `["get", "query"]`
 
-	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckWallarmRuleVpatchDestroy,
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV5ProviderFactories: testAccProtoV5ProviderFactories,
+		CheckDestroy:             testAccCheckWallarmRuleVpatchDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testWallarmRuleVpatchDefaultBranchConfig(rnd, `"crlf"`, point),
+				Config: testWallarmRuleVpatchDefaultBranchConfig(rnd, "crlf", point),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(name, "attack_type", "crlf"),
 					resource.TestCheckResourceAttr(name, "point.0.0", "get"),
@@ -63,23 +63,23 @@ func TestAccRuleVpatchCreate_DefaultBranch(t *testing.T) {
 
 func testWallarmRuleVpatchBasicConfig(resourceID, attackType, actionType, actionValue, actionPoint, point string) string {
 	return fmt.Sprintf(`
-resource "wallarm_rule_vpatch" "%[1]s" {
-  attack_type = "%[2]s"
+resource "wallarm_rule_vpatch" %[1]q {
+  attack_type = %[2]q
   action {
-    type = "%[3]s"
-    value = "%[4]s"
+    type = %[3]q
+    value = %[4]q
     point = {
-      header = "%[5]s"
+      header = %[5]q
     }
   }
-  point = [["%[6]s"]]
+  point = [[%[6]q]]
 }`, resourceID, attackType, actionType, actionValue, actionPoint, point)
 }
 
 func testWallarmRuleVpatchDefaultBranchConfig(resourceID, attackType, point string) string {
 	return fmt.Sprintf(`
-resource "wallarm_rule_vpatch" "%[1]s" {
-	attack_type = %[2]s
+resource "wallarm_rule_vpatch" %[1]q {
+	attack_type = %[2]q
 	point = [%[3]s]
 }`, resourceID, attackType, point)
 }
@@ -110,10 +110,10 @@ resource "wallarm_rule_vpatch" "xss_pass" {
   point = [["post"], ["form_urlencoded", "password"]]
 }
 `, host)
-	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckWallarmRuleVpatchDestroy,
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV5ProviderFactories: testAccProtoV5ProviderFactories,
+		CheckDestroy:             testAccCheckWallarmRuleVpatchDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: config,
@@ -133,10 +133,10 @@ func TestAccRuleVpatchUpdateInPlaceComment(t *testing.T) {
 	name := "wallarm_rule_vpatch." + rnd
 	var firstRuleID string
 
-	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckWallarmRuleVpatchDestroy,
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV5ProviderFactories: testAccProtoV5ProviderFactories,
+		CheckDestroy:             testAccCheckWallarmRuleVpatchDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccRuleVpatchUpdateCommentConfig(rnd, "first comment"),
@@ -182,37 +182,35 @@ resource "wallarm_rule_vpatch" %[1]q {
 }
 
 func testAccCheckWallarmRuleVpatchDestroy(s *terraform.State) error {
-	client := testAccProvider.Meta().(*ProviderMeta).Client
+	api, err := testAccNewAPIClient()
+	if err != nil {
+		return err
+	}
 
 	for _, rs := range s.RootModule().Resources {
 		if rs.Type != "wallarm_rule_vpatch" {
 			continue
 		}
-
+		ruleID, err := strconv.Atoi(rs.Primary.Attributes["rule_id"])
+		if err != nil {
+			return fmt.Errorf("invalid rule_id for %s: %w", rs.Primary.ID, err)
+		}
 		clientID, err := strconv.Atoi(rs.Primary.Attributes["client_id"])
 		if err != nil {
-			return err
+			return fmt.Errorf("invalid client_id for %s: %w", rs.Primary.ID, err)
 		}
-		actionID, err := strconv.Atoi(rs.Primary.Attributes["action_id"])
+
+		// OrderBy is required by the API — HintRead returns 400 without it.
+		resp, err := api.HintRead(&wallarm.HintRead{
+			Limit:   1,
+			OrderBy: "updated_at",
+			Filter:  &wallarm.HintFilter{Clientid: []int{clientID}, ID: []int{ruleID}},
+		})
 		if err != nil {
-			return err
+			return fmt.Errorf("checking hint %d still exists: %w", ruleID, err)
 		}
-
-		hint := &wallarm.HintRead{
-			Limit:     APIListLimit,
-			Offset:    0,
-			OrderBy:   "updated_at",
-			OrderDesc: true,
-			Filter: &wallarm.HintFilter{
-				Clientid: []int{clientID},
-				ActionID: []int{actionID},
-				Type:     []string{"vpatch"},
-			},
-		}
-
-		rule, err := client.HintRead(hint)
-		if err != nil && len(*rule.Body) != 0 {
-			return fmt.Errorf("Virtual Patch rule still exists")
+		if resp.Body != nil && len(*resp.Body) > 0 {
+			return fmt.Errorf("wallarm_rule_vpatch %s still exists", rs.Primary.ID)
 		}
 	}
 
