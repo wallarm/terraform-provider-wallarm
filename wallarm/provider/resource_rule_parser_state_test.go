@@ -195,3 +195,45 @@ resource "wallarm_rule_parser_state" %[1]q {
 func testAccCheckWallarmRuleParserStateDestroy(s *terraform.State) error {
 	return testAccCheckHintDestroyed(s, "wallarm_rule_parser_state")
 }
+
+// TestAccRuleParserState_UpdateSetToEmpty regression-tests the SDKv2
+// Optional+Computed zero-value bug: setting `set = ""` after a non-empty
+// value previously silently kept the old state. After the schema fix
+// (drop Computed on user-controlled string fields), Update fires correctly.
+func TestAccRuleParserState_UpdateSetToEmpty(t *testing.T) {
+	rnd := generateRandomResourceName(5)
+	name := "wallarm_rule_parser_state." + rnd
+	withSet := func(setVal string) string {
+		return fmt.Sprintf(`
+resource "wallarm_rule_parser_state" %[1]q {
+  parser = "htmljs"
+  state  = "disabled"
+  point  = [["get_all"]]
+  set    = %[2]q
+  action {
+    type  = "iequal"
+    value = "parser_state_empty_set.example.com"
+    point = { header = "HOST" }
+  }
+}`, rnd, setVal)
+	}
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV5ProviderFactories: testAccProtoV5ProviderFactories,
+		CheckDestroy:             testAccCheckWallarmRuleParserStateDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: withSet("aaa"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(name, "set", "aaa"),
+				),
+			},
+			{
+				Config: withSet(""),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(name, "set", ""),
+				),
+			},
+		},
+	})
+}

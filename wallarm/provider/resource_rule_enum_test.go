@@ -300,3 +300,56 @@ func TestAccRuleEnumUpdateInPlaceAdditionalParameters(t *testing.T) {
 func testAccCheckWallarmRuleEnumDestroy(s *terraform.State) error {
 	return testAccCheckHintDestroyed(s, "wallarm_rule_enum")
 }
+
+// TestAccRuleEnum_UpdateAdditionalParametersToFalse regression-tests the
+// Optional+Computed zero-value bug for booleans: flipping
+// `additional_parameters: true → false` previously silently preserved true.
+func TestAccRuleEnum_UpdateAdditionalParametersToFalse(t *testing.T) {
+	rnd := generateRandomResourceName(5)
+	name := "wallarm_rule_enum." + rnd
+	withParams := func(additional bool) string {
+		return fmt.Sprintf(`
+resource "wallarm_rule_enum" %[1]q {
+  mode = "block"
+  action {
+    type  = "iequal"
+    value = "enum_bool_update.example.com"
+    point = { header = "HOST" }
+  }
+  reaction {
+    block_by_session = 3000
+    block_by_ip      = 4000
+  }
+  threshold {
+    count  = 5
+    period = 30
+  }
+  enumerated_parameters {
+    mode                  = "regexp"
+    name_regexps          = ["foo"]
+    value_regexps         = ["bar"]
+    additional_parameters = %[2]t
+    plain_parameters      = false
+  }
+}`, rnd, additional)
+	}
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV5ProviderFactories: testAccProtoV5ProviderFactories,
+		CheckDestroy:             testAccCheckWallarmRuleEnumDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: withParams(true),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(name, "enumerated_parameters.0.additional_parameters", "true"),
+				),
+			},
+			{
+				Config: withParams(false),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(name, "enumerated_parameters.0.additional_parameters", "false"),
+				),
+			},
+		},
+	})
+}

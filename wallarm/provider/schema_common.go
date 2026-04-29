@@ -56,7 +56,6 @@ var (
 		},
 		"set": {
 			Type:        schema.TypeString,
-			Computed:    true,
 			Optional:    true,
 			Description: "The rule set name. Used to group related rules together.",
 		},
@@ -68,7 +67,6 @@ var (
 		},
 		"title": {
 			Type:        schema.TypeString,
-			Computed:    true,
 			Optional:    true,
 			Description: "A short title for the rule.",
 		},
@@ -128,17 +126,14 @@ var (
 				"block_by_session": {
 					Type:     schema.TypeInt,
 					Optional: true,
-					Computed: true,
 				},
 				"block_by_ip": {
 					Type:     schema.TypeInt,
 					Optional: true,
-					Computed: true,
 				},
 				"graylist_by_ip": {
 					Type:     schema.TypeInt,
 					Optional: true,
-					Computed: true,
 				},
 			},
 		},
@@ -176,24 +171,22 @@ var (
 				"name_regexps": {
 					Type:     schema.TypeList,
 					Optional: true,
-					Computed: true,
 					Elem:     &schema.Schema{Type: schema.TypeString},
 				},
 				"value_regexps": {
 					Type:     schema.TypeList,
 					Optional: true,
-					Computed: true,
 					Elem:     &schema.Schema{Type: schema.TypeString},
 				},
 				"additional_parameters": {
 					Type:     schema.TypeBool,
 					Optional: true,
-					Computed: true,
+					Default:  false,
 				},
 				"plain_parameters": {
 					Type:     schema.TypeBool,
 					Optional: true,
-					Computed: true,
+					Default:  false,
 				},
 			},
 		},

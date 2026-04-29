@@ -1,6 +1,10 @@
 ## [v2.3.8] - 2026-04-29
 
-> Test infrastructure refactor — all 26 rule acceptance tests on the v2.3.5 pattern; `-race` re-enabled in `make testacc`; latent CheckDestroy bugs fixed.
+> Test infrastructure refactor — all 26 rule acceptance tests on the v2.3.5 pattern; `-race` re-enabled in `make testacc`; latent CheckDestroy bugs fixed. Schema fix for `Optional+Computed` zero-value updates on user-controlled fields.
+
+### Breaking Changes
+
+* **schema(rule):** dropped `Computed: true` from user-controlled fields where it caused SDKv2 zero-value updates to be silently ignored: `set`, `title`, `enumerated_parameters.{name_regexps, value_regexps, additional_parameters, plain_parameters}`, `reaction.{block_by_session, block_by_ip, graylist_by_ip}`. `additional_parameters` and `plain_parameters` gain `Default: false`. **Effect:** existing imported state with these fields populated and HCL configs that don't include them will produce a one-time clearing diff on next plan. Add the fields to your HCL with desired values, or accept the clear. **Retained `Optional+Computed`:** `mitigation` (API-derived); `active` (migration risk for imports of disabled rules — tracked as follow-up); `max_alias_size_kb` (`ForceNew` + zero-value would force replace on existing tests; tracked as follow-up).
 
 ### Bug Fixes
 
