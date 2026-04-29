@@ -74,7 +74,7 @@ func TestAccRuleRegexCreateNotANumber(t *testing.T) {
 		CheckDestroy:             testAccCheckWallarmRuleRegexDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testWallarmRuleRegexCreateNotANumber(rnd, "\\\\D"),
+				Config: testWallarmRuleRegexCreateNotANumber(rnd, "\\D"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(name, "regex", "\\D"),
 					resource.TestCheckResourceAttr(name, "action.#", "1"),
