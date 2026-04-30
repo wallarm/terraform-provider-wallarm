@@ -1,59 +1,5 @@
-# Import Wallarm Rules
-#
-# Imports existing Wallarm rules into Terraform. Two import cases are supported:
-#
-# ─── Case 1: Native import (all rules) ─────────────────────────────────────
-#
-# Uses Terraform's built-in -generate-config-out to create resource configs.
-# Works for most rule types. Steps:
-#
-#   1. terraform apply -var='import_rules=true'
-#      -> Fetches rules from API, writes import blocks (local_file + output)
-#   2. terraform plan -generate-config-out=import_rule_configs.tf
-#      -> Terraform generates resource HCL from import blocks
-#   3. Fix generated configs (set defaults, remove nulls):
-#      sed -E \
-#        -e 's/(variativity_disabled[[:space:]]*)=[[:space:]]*false/\1= true/' \
-#        -e 's/(comment[[:space:]]*)=[[:space:]]*null/\1= "Managed by Terraform"/' \
-#        -e '/=[[:space:]]*null/d' \
-#        import_rule_configs.tf > import_rule_configs.tf.tmp && \
-#        mv import_rule_configs.tf.tmp import_rule_configs.tf
-#   4. terraform apply
-#      -> Imports all rules into state
-#
-# ─── Case 2: Native import + custom generator for stamps ───────────────────
-#
-# For disable_stamp rules with complex point values (e.g. XML namespace URIs),
-# -generate-config-out may fail to generate the point field. Use the custom
-# wallarm_rule_generator as a fallback for stamps, native import for the rest.
-#
-#   1. Import all rules EXCEPT stamps:
-#      terraform apply -var='import_rules=true' -var='exclude_rule_types=["disable_stamp"]'
-#      terraform plan -generate-config-out=import_rule_configs.tf
-#      (fix configs with sed as in Case 1)
-#      terraform apply
-#
-#   2. Generate stamp configs via wallarm_rule_generator:
-#      terraform apply -var='generate_configs=true' -var='import_rules=true' -var='rule_types=["disable_stamp"]'
-#      -> Writes import_rule_stamp_configs.tf (via rule_generator, handles complex points)
-#      -> Writes import_rule_blocks.tf (import blocks for stamps only)
-#      terraform apply
-#      -> Imports stamp rules using the generated configs
-#
-# ─── Other operations ──────────────────────────────────────────────────────
-#
-# Import specific rule types only:
-#   terraform apply -var='import_rules=true' -var='rule_types=["wallarm_mode"]'
-#
-# Check sync status (API vs state, read-only):
-#   terraform plan -refresh=false -var='sync_status=true'
-#
-# Re-importing existing resources is safe by default — `filter_rules_in_state`
-# (default true) skips rules whose rule_id is already in state. Disable
-# only when rebuilding state from scratch:
-#   terraform apply -var='import_rules=true' -var='filter_rules_in_state=false'
-#
-# See the Makefile for shorthand commands for all operations.
+# Import Wallarm Rules into Terraform. See docs/guides/rules_import.md and
+# the Makefile in this directory for shorthand commands.
 
 terraform {
   required_providers {
@@ -86,47 +32,42 @@ variable "client_id" {
 variable "import_rules" {
   type        = bool
   default     = false
-  description = "Must be true to activate rules import functionality."
+  description = "Activate rules import."
 }
 
 variable "rule_types" {
   type        = list(string)
   default     = []
-  description = "Include only these API rule type(s). Empty list means all types."
+  description = "Include only these API rule types. Empty = all."
 }
 
 variable "exclude_rule_types" {
   type        = list(string)
   default     = []
-  description = "Exclude these API rule type(s) from import blocks and sync status."
+  description = "Exclude these API rule types."
 }
 
 variable "sync_status" {
   type        = bool
   default     = false
-  description = "Must be true to activate rules sync status (API <-> TF state)"
+  description = "Output sync status (API vs state)."
 }
 
 variable "filter_rules_in_state" {
   type        = bool
   default     = true
-  description = <<-EOT
-    When true (default), import-block generation skips rules whose `rule_id`
-    already appears in Terraform state. Prevents the "two state entries with
-    the same physical ID" duplicate that occurs when an existing resource
-    lives at a different address (e.g. `wallarm_rule_mode.dvwa_block` instead
-    of the workflow's canonical `wallarm_rule_mode.rule_<id>`).
+  description = "Skip rules whose rule_id is already in state. Set false to rebuild from scratch."
+}
 
-    Set to false to regenerate import blocks for ALL API rules (e.g. when
-    rebuilding state from scratch).
-  EOT
+variable "generate_configs" {
+  type        = bool
+  default     = false
+  description = "Generate stamp configs via wallarm_rule_generator (fallback for complex points)."
 }
 
 
-# ─── Sync status: compare API rules vs Terraform state ──────────────────────
+# State lookup — shared by sync_status output and import-block filtering.
 
-# Fired whenever any feature that needs the existing-state rule-id set is
-# enabled: sync status reporting OR import-block filtering.
 locals {
   needs_state_lookup = var.sync_status || (var.import_rules && var.filter_rules_in_state)
 }
@@ -159,20 +100,17 @@ locals {
 }
 
 
-# ─── Fetch rules from API ───────────────────────────────────────────────────
+# Fetch rules from API.
 
 data "wallarm_rules" "all" {
   type  = var.rule_types
   count = var.import_rules || var.sync_status ? 1 : 0
 }
 
-# ─── Generate import blocks ─────────────────────────────────────────────────
-#
-# Method 1: via local_file
-#
-# When `filter_rules_in_state` is true (default), rules whose rule_id is
-# already in state are skipped — re-running the workflow won't generate
-# blocks for already-imported resources.
+
+# Generate import blocks. Filters out rule_ids already in state when
+# filter_rules_in_state = true (default).
+
 locals {
   import_blocks = var.import_rules ? join("\n", [
     for rule in data.wallarm_rules.all[0].rules :
@@ -189,23 +127,13 @@ resource "local_file" "imports" {
   count           = var.import_rules ? 1 : 0
 }
 
-# Method 2: via output (active)
-
 output "import_blocks" {
   value       = local.import_blocks
-  description = "Import blocks for existing rules"
+  description = "Import blocks for existing rules."
 }
 
-# ─── Generate HCL configs via rule_generator (fallback) ───────────────────────
-# Uses wallarm_rule_generator with source="api" to produce correct HCL for
-# disable_stamp/disable_attack_type rules. Unlike -generate-config-out, this
-# handles complex point values with special characters (XML namespaces, etc.).
 
-variable "generate_configs" {
-  type        = bool
-  default     = false
-  description = "Generate HCL configs via wallarm_rule_generator. Use as fallback when -generate-config-out fails on complex point values."
-}
+# Generator fallback for stamps with complex point values.
 
 resource "wallarm_rule_generator" "from_api" {
   count           = var.generate_configs ? 1 : 0
@@ -216,7 +144,6 @@ resource "wallarm_rule_generator" "from_api" {
   split           = false
 }
 
-# ─── Output Sync Status ────────────────────────────────────────────────────────────────
 
 output "sync_status" {
   value = var.sync_status ? {
