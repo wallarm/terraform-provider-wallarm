@@ -151,4 +151,52 @@ func TestArbitraryConditionsToTF_SingleCondition(t *testing.T) {
 	if values, _ := m["value"].([]string); len(values) != 1 || values[0] != "example.com" {
 		t.Errorf("value: got %v", m["value"])
 	}
+	// Paired point ("header", "HOST") wraps to one sub-array of two elements.
+	point := m["point"].([]interface{})
+	if len(point) != 1 {
+		t.Fatalf("expected 1 sub-array, got %d: %v", len(point), point)
+	}
+	inner := point[0].([]interface{})
+	if len(inner) != 2 || inner[0] != "header" || inner[1] != "HOST" {
+		t.Errorf("expected [[\"header\",\"HOST\"]], got %v", point)
+	}
+}
+
+// TestArbitraryConditionsToTF_MultiStepPointChain is a regression test for
+// the v2.3.8 round-trip bug: API returns `point` as a flat array, the
+// mapper used to wrap it as a single sub-array (e.g. [["post","json_doc",
+// "hash","user_id"]]), but the user's HCL expresses the same thing as a
+// 2D chain ([["post"], ["json_doc"], ["hash","user_id"]]). Plan saw a
+// force-replacement diff every cycle. ArbitraryConditionsToTF now uses
+// WrapPointElements to chunk the flat list per the paired/simple element
+// rules, matching what HCL writes.
+func TestArbitraryConditionsToTF_MultiStepPointChain(t *testing.T) {
+	got := ArbitraryConditionsToTF([]wallarm.ArbitraryConditionResp{
+		{
+			Point:    []interface{}{"post", "json_doc", "hash", "user_id"},
+			Operator: "imatch",
+			Value:    []string{"[0-9]+"},
+		},
+	})
+	point := got[0].(map[string]interface{})["point"].([]interface{})
+	want := [][]string{
+		{"post"},
+		{"json_doc"},
+		{"hash", "user_id"},
+	}
+	if len(point) != len(want) {
+		t.Fatalf("expected %d sub-arrays, got %d: %v", len(want), len(point), point)
+	}
+	for i, sub := range want {
+		inner := point[i].([]interface{})
+		if len(inner) != len(sub) {
+			t.Errorf("sub-array %d: expected %d elements, got %d", i, len(sub), len(inner))
+			continue
+		}
+		for j, s := range sub {
+			if inner[j] != s {
+				t.Errorf("sub-array %d[%d]: got %v, want %s", i, j, inner[j], s)
+			}
+		}
+	}
 }
