@@ -148,11 +148,8 @@ func Create(
 		return diag.FromErr(errors.WithMessage(err, "on ExpandSetToActionDetailsList"))
 	}
 
-	// Use the ResourceData-aware variant so that
-	// `additional_parameters`/`plain_parameters` are sent only when the user
-	// wrote them in HCL — preserves the API's `true` default in regexp mode
-	// when the user omits these bools.
-	enumeratedParameters, err := EnumeratedParametersFromResourceData(d)
+	enumeratedParametersFromState := GetValueWithTypeCastingOrDefault[[]interface{}](d, "enumerated_parameters")
+	enumeratedParameters, err := EnumeratedParametersToAPI(enumeratedParametersFromState)
 	if err != nil {
 		return diag.FromErr(err)
 	}

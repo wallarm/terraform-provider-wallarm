@@ -3,95 +3,9 @@ package resourcerule
 import (
 	"fmt"
 
-	"github.com/hashicorp/go-cty/cty"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/samber/lo"
 	"github.com/wallarm/wallarm-go"
 )
-
-// EnumeratedParametersFromResourceData wraps EnumeratedParametersToAPI with
-// raw-config awareness for the boolean fields. The schema declares both
-// `additional_parameters` and `plain_parameters` Optional+Computed, so SDK
-// fills `false` from the type zero when the user omits them. If we
-// unconditionally sent that to the API in regexp mode, we'd override the
-// API's `true` default. By stripping keys that are null in the user's raw
-// config, the mapper writes a nil pointer for those fields and `omitempty`
-// on the JSON tag drops them — the API default wins.
-//
-// Use this helper from Create/Update paths for resources that include the
-// `enumerated_parameters` block (`wallarm_rule_brute`, `_bola`, `_enum`).
-func EnumeratedParametersFromResourceData(d *schema.ResourceData) (*wallarm.EnumeratedParameters, error) {
-	list, ok := d.Get("enumerated_parameters").([]interface{})
-	if !ok || len(list) == 0 {
-		return nil, nil
-	}
-	cloned := cloneEnumeratedParameters(list)
-	stripUnsetEnumeratedBools(cloned, d.GetRawConfig())
-	return EnumeratedParametersToAPI(cloned)
-}
-
-// cloneEnumeratedParameters shallow-copies the outer list and the inner
-// block map so we can mutate without affecting d's cached value.
-func cloneEnumeratedParameters(list []interface{}) []interface{} {
-	if len(list) == 0 {
-		return list
-	}
-	block, ok := list[0].(map[string]interface{})
-	if !ok {
-		return list
-	}
-	dup := make(map[string]interface{}, len(block))
-	for k, v := range block {
-		dup[k] = v
-	}
-	return []interface{}{dup}
-}
-
-// stripUnsetEnumeratedBools removes `additional_parameters` and
-// `plain_parameters` from the inner block map when the user did not write
-// them in HCL (raw config has cty.NullVal at the path). The mapper's
-// `, ok` type-assert form then yields no value → nil pointer → omitempty.
-func stripUnsetEnumeratedBools(list []interface{}, rawCfg cty.Value) {
-	if len(list) == 0 {
-		return
-	}
-	block, ok := list[0].(map[string]interface{})
-	if !ok {
-		return
-	}
-	if rawCfg == cty.NilVal || rawCfg.IsNull() || !rawCfg.IsKnown() {
-		return
-	}
-	if !rawCfg.Type().IsObjectType() || !rawCfg.Type().HasAttribute("enumerated_parameters") {
-		return
-	}
-	ep := rawCfg.GetAttr("enumerated_parameters")
-	if ep.IsNull() || !ep.IsKnown() {
-		return
-	}
-	t := ep.Type()
-	if !t.IsListType() && !t.IsSetType() && !t.IsTupleType() {
-		return
-	}
-	elems := ep.AsValueSlice()
-	if len(elems) == 0 {
-		return
-	}
-	first := elems[0]
-	if first.IsNull() || !first.IsKnown() || !first.Type().IsObjectType() {
-		return
-	}
-	for _, key := range []string{"additional_parameters", "plain_parameters"} {
-		if !first.Type().HasAttribute(key) {
-			delete(block, key)
-			continue
-		}
-		v := first.GetAttr(key)
-		if v.IsNull() || !v.IsKnown() {
-			delete(block, key)
-		}
-	}
-}
 
 func EnumeratedParametersToAPI(enumeratedParameters []interface{}) (*wallarm.EnumeratedParameters, error) {
 	if len(enumeratedParameters) == 0 {

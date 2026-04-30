@@ -2,101 +2,20 @@ package resourcerule
 
 import (
 	"testing"
-
-	"github.com/hashicorp/go-cty/cty"
 )
 
-// epRawCfg builds a resource-level cty.Value with an `enumerated_parameters`
-// block whose first element has the given bool fields. Pass cty.NullVal for
-// "user did not set in HCL".
-func epRawCfg(addParam, plainParam cty.Value) cty.Value {
-	return cty.ObjectVal(map[string]cty.Value{
-		"enumerated_parameters": cty.ListVal([]cty.Value{
-			cty.ObjectVal(map[string]cty.Value{
-				"additional_parameters": addParam,
-				"plain_parameters":      plainParam,
-			}),
-		}),
-	})
-}
-
-func TestStripUnsetEnumeratedBools(t *testing.T) {
-	t.Parallel()
-	cases := []struct {
-		name    string
-		block   map[string]interface{}
-		rawCfg  cty.Value
-		wantHas []string
-		wantNo  []string
-	}{
-		{
-			name: "both bools null in raw config → both stripped",
-			block: map[string]interface{}{
-				"mode":                  "regexp",
-				"additional_parameters": false,
-				"plain_parameters":      false,
-			},
-			rawCfg:  epRawCfg(cty.NullVal(cty.Bool), cty.NullVal(cty.Bool)),
-			wantHas: []string{"mode"},
-			wantNo:  []string{"additional_parameters", "plain_parameters"},
-		},
-		{
-			name: "additional_parameters explicit false in raw config → kept",
-			block: map[string]interface{}{
-				"mode":                  "regexp",
-				"additional_parameters": false,
-				"plain_parameters":      false,
-			},
-			rawCfg:  epRawCfg(cty.False, cty.NullVal(cty.Bool)),
-			wantHas: []string{"mode", "additional_parameters"},
-			wantNo:  []string{"plain_parameters"},
-		},
-		{
-			name: "both true in raw config → both kept",
-			block: map[string]interface{}{
-				"mode":                  "regexp",
-				"additional_parameters": true,
-				"plain_parameters":      true,
-			},
-			rawCfg:  epRawCfg(cty.True, cty.True),
-			wantHas: []string{"additional_parameters", "plain_parameters"},
-		},
-		{
-			name:    "nil rawCfg → no-op",
-			block:   map[string]interface{}{"mode": "regexp", "additional_parameters": false},
-			rawCfg:  cty.NilVal,
-			wantHas: []string{"mode", "additional_parameters"},
-		},
-	}
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			list := []interface{}{tc.block}
-			stripUnsetEnumeratedBools(list, tc.rawCfg)
-			block := list[0].(map[string]interface{})
-			for _, k := range tc.wantHas {
-				if _, ok := block[k]; !ok {
-					t.Errorf("expected key %q to remain, was deleted", k)
-				}
-			}
-			for _, k := range tc.wantNo {
-				if _, ok := block[k]; ok {
-					t.Errorf("expected key %q to be deleted, still present (= %v)", k, block[k])
-				}
-			}
-		})
-	}
-}
-
-func TestEnumeratedParametersToAPI_RegexpModeOmitsUnsetBools(t *testing.T) {
-	// Regression for v2.3.8: when bool keys are absent from the block map,
-	// the mapper produces nil pointers (not &false). This lets omitempty
-	// drop them from the wire payload so the API's `true` default wins.
+func TestEnumeratedParametersToAPI_RegexpModeAbsentBoolsYieldNilPointer(t *testing.T) {
+	// Documents the mapper contract: keys absent from the block map produce
+	// nil pointers on the API struct (not &false). The SDK fills these
+	// keys with `false` from the type zero when the user omits them in
+	// HCL, so under normal Create/Update the keys ARE present and the
+	// mapper sends `&false`. This test asserts the contract for callers
+	// that build the map directly (unit tests, future helpers).
 	input := []interface{}{
 		map[string]interface{}{
 			"mode":          "regexp",
 			"name_regexps":  []interface{}{"foo"},
 			"value_regexps": []interface{}{"bar"},
-			// additional_parameters and plain_parameters intentionally absent
 		},
 	}
 	got, err := EnumeratedParametersToAPI(input)
