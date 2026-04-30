@@ -113,3 +113,106 @@ resource "wallarm_rule_graphql_detection" "update_debug" {
 func testAccCheckWallarmRuleGraphqlDetectionDestroy(s *terraform.State) error {
 	return testAccCheckHintDestroyed(s, "wallarm_rule_graphql_detection")
 }
+
+// TestAccRuleGraphqlDetection_MinimalCreatePreservesAPIDefaults guards the
+// v2.3.8 fix: with API-defaulted fields now Optional+Computed, Create with
+// only `mode` echoes back the API defaults into state and re-plan is clean.
+// API defaults (probed 2026-05-01): max_depth=10, max_value_size_kb=10,
+// max_doc_size_kb=100, max_doc_per_batch=10, max_alias_size_kb=5,
+// introspection=true, debug_enabled=true.
+func TestAccRuleGraphqlDetection_MinimalCreatePreservesAPIDefaults(t *testing.T) {
+	rnd := generateRandomResourceName(5)
+	name := "wallarm_rule_graphql_detection." + rnd
+	config := fmt.Sprintf(`
+resource "wallarm_rule_graphql_detection" %[1]q {
+  mode = "block"
+  action {
+    type  = "iequal"
+    value = "graphql-defaults.example.com"
+    point = { header = "HOST" }
+  }
+}
+`, rnd)
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV5ProviderFactories: testAccProtoV5ProviderFactories,
+		CheckDestroy:             testAccCheckWallarmRuleGraphqlDetectionDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: config,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(name, "max_depth", "10"),
+					resource.TestCheckResourceAttr(name, "max_value_size_kb", "10"),
+					resource.TestCheckResourceAttr(name, "max_doc_size_kb", "100"),
+					resource.TestCheckResourceAttr(name, "max_doc_per_batch", "10"),
+					resource.TestCheckResourceAttr(name, "introspection", "true"),
+					resource.TestCheckResourceAttr(name, "debug_enabled", "true"),
+				),
+			},
+			{
+				// Re-plan with the same minimal config — Computed must
+				// preserve state, no drift.
+				Config:             config,
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: false,
+			},
+		},
+	})
+}
+
+// TestAccRuleGraphqlDetection_UpdateAfterMinimalCreate is the regression
+// guard for the v2.3.8 silent-int-zeroing-on-update bug: previously, after
+// Create with only `mode`, adding `introspection = false` to HCL produced
+// a plan that wanted to send zero for max_depth/max_value_size_kb/etc. (the
+// SDK treated state-only values as drift), which the API rejected with
+// `should be in 1..N`. With Computed: true, the unchanged ints are
+// preserved by SDK plan logic.
+func TestAccRuleGraphqlDetection_UpdateAfterMinimalCreate(t *testing.T) {
+	rnd := generateRandomResourceName(5)
+	name := "wallarm_rule_graphql_detection." + rnd
+	configMinimal := fmt.Sprintf(`
+resource "wallarm_rule_graphql_detection" %[1]q {
+  mode = "block"
+  action {
+    type  = "iequal"
+    value = "graphql-update.example.com"
+    point = { header = "HOST" }
+  }
+}
+`, rnd)
+	configIntrospectionFalse := fmt.Sprintf(`
+resource "wallarm_rule_graphql_detection" %[1]q {
+  mode          = "block"
+  introspection = false
+  action {
+    type  = "iequal"
+    value = "graphql-update.example.com"
+    point = { header = "HOST" }
+  }
+}
+`, rnd)
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV5ProviderFactories: testAccProtoV5ProviderFactories,
+		CheckDestroy:             testAccCheckWallarmRuleGraphqlDetectionDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: configMinimal,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(name, "introspection", "true"),
+				),
+			},
+			{
+				// Update only introspection — the int fields stay unchanged
+				// in state and aren't sent (Computed preserves), so the API
+				// keeps its values; Update succeeds.
+				Config: configIntrospectionFalse,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(name, "introspection", "false"),
+					resource.TestCheckResourceAttr(name, "max_depth", "10"),
+					resource.TestCheckResourceAttr(name, "max_value_size_kb", "10"),
+				),
+			},
+		},
+	})
+}
