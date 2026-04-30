@@ -9,6 +9,7 @@
   * `rsp_status`: Optional → **Required**. The API rejects omission (`can't be blank, should be in 400..599`); previously this was an apply-time error. **Migration:** add `rsp_status = <400..599>` to existing configs that don't set it — typical value `429`.
   * `burst`: Required → **Optional+Computed**. The API doesn't require it on Create; configs may now omit `burst` and the API default fills state.
   * `time_unit`: Required → **Optional+Computed**. The API doesn't require it on Create; default is `rps`.
+* **schema(rule_overlimit_res_settings):** `mode` Required → **Optional+Computed**. API default is `monitoring`; configs may now omit `mode`.
 
 ### Bug Fixes
 

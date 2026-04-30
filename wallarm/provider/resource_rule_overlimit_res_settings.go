@@ -23,9 +23,13 @@ func resourceWallarmOverlimitResSettings() *schema.Resource {
 			ValidateFunc: validation.IntBetween(0, 2_147_483_647),
 		},
 
+		// `mode` actualised against API ground truth (probed 2026-05-01) —
+		// API treats it Optional with default `monitoring`. Optional+Computed
+		// preserves API-echoed state across plans when the user omits it.
 		"mode": {
 			Type:         schema.TypeString,
-			Required:     true,
+			Optional:     true,
+			Computed:     true,
 			ValidateFunc: validation.StringInSlice([]string{"off", "monitoring", "blocking"}, false),
 		},
 	}
