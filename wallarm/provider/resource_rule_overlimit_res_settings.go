@@ -60,9 +60,11 @@ func resourceWallarmOverlimitResSettingsCreate(ctx context.Context, d *schema.Re
 		return diag.FromErr(err)
 	}
 
-	overlimitTime := d.Get("overlimit_time").(int)
 	mode := d.Get("mode").(string)
 
+	// `overlimit_time` is Required (range 0..MaxInt). wallarm-go v0.12.1
+	// changed OverlimitTime to *int so callers can transmit a literal 0 that
+	// the API range allows; non-pointer int+omitempty silently dropped 0.
 	actionBody := &wallarm.ActionCreate{
 		Type:                "overlimit_res_settings",
 		Clientid:            clientID,
@@ -71,7 +73,7 @@ func resourceWallarmOverlimitResSettingsCreate(ctx context.Context, d *schema.Re
 		VariativityDisabled: true,
 		Comment:             fields.Comment,
 		Mode:                mode,
-		OverlimitTime:       overlimitTime,
+		OverlimitTime:       lo.ToPtr(d.Get("overlimit_time").(int)),
 		Set:                 fields.Set,
 		Active:              fields.Active,
 		Title:               fields.Title,

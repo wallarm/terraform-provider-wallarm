@@ -5,6 +5,7 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 
 	wallarm "github.com/wallarm/wallarm-go"
@@ -57,6 +58,51 @@ func TestUpdate_Success(t *testing.T) {
 	}
 	if mock.gotParams.VariativityDisabled == nil || !*mock.gotParams.VariativityDisabled {
 		t.Errorf("expected variativityDisabled=true, got %+v", mock.gotParams.VariativityDisabled)
+	}
+}
+
+func TestIsFieldSetInRawConfig(t *testing.T) {
+	t.Parallel()
+	cases := []struct {
+		name string
+		raw  cty.Value
+		key  string
+		want bool
+	}{
+		{name: "nil cty value", raw: cty.NilVal, key: "delay", want: false},
+		{name: "null object", raw: cty.NullVal(cty.Object(map[string]cty.Type{"delay": cty.Number})), key: "delay", want: false},
+		{
+			name: "key absent from object schema",
+			raw:  cty.ObjectVal(map[string]cty.Value{"other": cty.NumberIntVal(1)}),
+			key:  "delay",
+			want: false,
+		},
+		{
+			name: "key present, value null (user omitted)",
+			raw:  cty.ObjectVal(map[string]cty.Value{"delay": cty.NullVal(cty.Number)}),
+			key:  "delay",
+			want: false,
+		},
+		{
+			name: "key present, value 0 (user wrote zero)",
+			raw:  cty.ObjectVal(map[string]cty.Value{"delay": cty.NumberIntVal(0)}),
+			key:  "delay",
+			want: true,
+		},
+		{
+			name: "key present, value 100",
+			raw:  cty.ObjectVal(map[string]cty.Value{"delay": cty.NumberIntVal(100)}),
+			key:  "delay",
+			want: true,
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			got := isFieldSetInRawConfig(tc.raw, tc.key)
+			if got != tc.want {
+				t.Errorf("isFieldSetInRawConfig(%v, %q) = %v, want %v", tc.raw, tc.key, got, tc.want)
+			}
+		})
 	}
 }
 

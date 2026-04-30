@@ -10,9 +10,14 @@ require (
 	github.com/hashicorp/terraform-plugin-sdk/v2 v2.39.0
 	github.com/pkg/errors v0.9.1
 	github.com/samber/lo v1.51.0
-	github.com/wallarm/wallarm-go v0.12.0
+	github.com/wallarm/wallarm-go v0.12.1
 	github.com/zclconf/go-cty v1.17.0
 )
+
+// Local development against unreleased wallarm-go v0.12.1 (release/v0.12.1
+// branch). Re-enable after `go mod tidy` if it gets stripped — required
+// until v0.12.1 is tagged upstream.
+replace github.com/wallarm/wallarm-go => ../wallarm-go
 
 require (
 	github.com/ProtonMail/go-crypto v1.3.0 // indirect

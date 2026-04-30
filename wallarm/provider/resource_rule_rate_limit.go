@@ -81,12 +81,16 @@ func resourceWallarmRateLimitCreate(ctx context.Context, d *schema.ResourceData,
 	if err != nil {
 		return diag.FromErr(err)
 	}
-	delay := d.Get("delay").(int)
-	burst := d.Get("burst").(int)
-	rate := d.Get("rate").(int)
 	rspStatus := d.Get("rsp_status").(int)
 	timeUnit := d.Get("time_unit").(string)
 
+	// Required ints (rate, burst): always send a pointer. d.Get returns the
+	// user-supplied value (the schema's Required gate prevents omission).
+	// Optional ints (delay): use the GetRawConfig-aware helper so a literal
+	// 0 reaches the API but an omitted field doesn't override the API
+	// default. wallarm-go v0.12.1 changed these fields to *int specifically
+	// so callers can transmit 0 — non-pointer int+omitempty silently dropped
+	// it, and the API rejected with "can't be blank".
 	actionBody := &wallarm.ActionCreate{
 		Type:      "rate_limit",
 		Clientid:  clientID,
@@ -94,9 +98,9 @@ func resourceWallarmRateLimitCreate(ctx context.Context, d *schema.ResourceData,
 		Validated: false,
 		Comment:   fields.Comment,
 		Point:     point,
-		Delay:     delay,
-		Burst:     burst,
-		Rate:      rate,
+		Delay:     resourcerule.GetIntPointerIfConfigured(d, "delay"),
+		Burst:     lo.ToPtr(d.Get("burst").(int)),
+		Rate:      lo.ToPtr(d.Get("rate").(int)),
 		RspStatus: rspStatus,
 		TimeUnit:  timeUnit,
 		Set:       fields.Set,

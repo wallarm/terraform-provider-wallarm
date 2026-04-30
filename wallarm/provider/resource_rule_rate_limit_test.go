@@ -119,3 +119,51 @@ resource "wallarm_rule_rate_limit" %[1]q {
 func testAccRuleRateLimitDestroy(s *terraform.State) error {
 	return testAccCheckHintDestroyed(s, "wallarm_rule_rate_limit")
 }
+
+// TestAccRuleRateLimit_RateBurstZero is the regression guard for the v2.3.8
+// silent-zero-drop bug. wallarm-go v0.12.1 changed Rate/Burst/Delay to *int
+// because the previous int+omitempty shape silently dropped a literal 0
+// from the wire payload — the API then rejected with `can't be blank`.
+//
+// Step 1: Create with `rate = 0`, `burst = 0`, `delay = 0` — must succeed.
+// Step 2: re-plan, must show no drift.
+func TestAccRuleRateLimit_RateBurstZero(t *testing.T) {
+	rnd := generateRandomResourceName(5)
+	name := "wallarm_rule_rate_limit." + rnd
+	config := fmt.Sprintf(`
+resource "wallarm_rule_rate_limit" %[1]q {
+  action {
+    type  = "iequal"
+    value = "ratelimit-zero.example.com"
+    point = { header = "HOST" }
+  }
+  point      = [["get_all"]]
+  rate       = 0
+  burst      = 0
+  delay      = 0
+  rsp_status = 429
+  time_unit  = "rps"
+}
+`, rnd)
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV5ProviderFactories: testAccProtoV5ProviderFactories,
+		CheckDestroy:             testAccRuleRateLimitDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: config,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(name, "rate", "0"),
+					resource.TestCheckResourceAttr(name, "burst", "0"),
+					resource.TestCheckResourceAttr(name, "delay", "0"),
+				),
+			},
+			{
+				// Same config — second plan should be clean (no drift).
+				Config:             config,
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: false,
+			},
+		},
+	})
+}
