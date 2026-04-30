@@ -64,6 +64,17 @@ variable "sync_status" {
   description = "Must be true to activate rules sync status (API <-> TF state)."
 }
 
+variable "filter_rules_in_state" {
+  type        = bool
+  default     = true
+  description = <<-EOT
+    When true (default), import-block generation skips rules whose `rule_id`
+    already appears in Terraform state. Prevents creating a second state
+    entry for a rule that already lives at a different resource address.
+    Set to false to regenerate import blocks for ALL API rules.
+  EOT
+}
+
 variable "generate_configs" {
   type        = bool
   default     = false
@@ -78,12 +89,17 @@ data "wallarm_rules" "all" {
 }
 
 # ─── Generate import blocks ────────────────────────────────────────────────
+#
+# When `filter_rules_in_state` is true (default), skip rules whose `rule_id`
+# is already in state — prevents duplicate state entries when an existing
+# resource lives at a different address than the workflow's `rule_<id>`.
 
 locals {
   import_blocks = var.import_rules ? join("\n", [
     for rule in data.wallarm_rules.all[0].rules :
     "import {\n  to = ${rule.terraform_resource}.rule_${rule.rule_id}\n  id = \"${rule.import_id}\"\n}"
     if !contains(var.exclude_rule_types, rule.type)
+    && !(var.filter_rules_in_state && contains(local.state_rule_ids, tostring(rule.rule_id)))
   ]) : null
 }
 
@@ -99,11 +115,16 @@ output "import_blocks" {
   description = "Import blocks for existing rules"
 }
 
-# ─── Sync status: compare API rules vs Terraform state ────────────────────
-# Requires: jq (https://jqlang.github.io/jq/)
+# ─── State lookup: shared by sync status + import-block filtering ─────────
+# Requires: jq (https://jqlang.github.io/jq/). Fires whenever any feature
+# that needs the existing-state rule-id set is enabled.
+
+locals {
+  needs_state_lookup = var.sync_status || (var.import_rules && var.filter_rules_in_state)
+}
 
 data "external" "sync_check" {
-  count = var.sync_status ? 1 : 0
+  count = local.needs_state_lookup ? 1 : 0
   program = ["bash", "-c", <<-EOF
     ids=$(terraform show -json 2>/dev/null \
       | jq -r '.values.root_module.resources[]
@@ -117,7 +138,7 @@ data "external" "sync_check" {
 }
 
 locals {
-  state_rule_ids = var.sync_status ? toset(compact(split(",",
+  state_rule_ids = local.needs_state_lookup ? toset(compact(split(",",
     try(data.external.sync_check[0].result.ids, "")
   ))) : toset([])
 
@@ -188,7 +209,7 @@ sed -E \
 terraform apply
 ```
 
-Re-importing existing resources is safe — Terraform generates configs only for resources not already in state.
+Re-importing existing resources is safe by default. The `filter_rules_in_state` variable (default `true`) compares each API rule's `rule_id` against the current Terraform state and skips rules already managed there — preventing duplicate state entries when an existing resource lives at a different address than the workflow's canonical `rule_<id>` naming. Set `filter_rules_in_state = false` only when rebuilding state from scratch.
 
 ## Workflow: Import with Generator Fallback
 
@@ -268,4 +289,4 @@ terraform plan -refresh=false -var='sync_status=true' -var='exclude_rule_types=[
 - **Plan after import:** Always run `terraform plan` after importing to verify the configuration matches actual state. Adjust your HCL until the plan shows no changes.
 - **State stability:** Imported rules are automatically updated to prevent external modification by other rule types (middleware, variative_values, variative_by_regex). This preserves Terraform state consistency.
 - **Multi-tenant:** Specify `client_id` in the data source to discover rules for a specific tenant.
-- **Re-import is safe:** Terraform generates configs only for resources not already in state, so running the import workflow again won't duplicate resources.
+- **Re-import is safe by default:** `filter_rules_in_state` (default `true`) skips rules whose `rule_id` is already in state. Disable it (`filter_rules_in_state = false`) only when rebuilding state from scratch.

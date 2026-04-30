@@ -48,8 +48,10 @@
 # Check sync status (API vs state, read-only):
 #   terraform plan -refresh=false -var='sync_status=true'
 #
-# Re-importing existing resources is safe — Terraform generates configs
-# only for resources not already in state.
+# Re-importing existing resources is safe by default — `filter_rules_in_state`
+# (default true) skips rules whose rule_id is already in state. Disable
+# only when rebuilding state from scratch:
+#   terraform apply -var='import_rules=true' -var='filter_rules_in_state=false'
 #
 # See the Makefile for shorthand commands for all operations.
 
@@ -105,11 +107,32 @@ variable "sync_status" {
   description = "Must be true to activate rules sync status (API <-> TF state)"
 }
 
+variable "filter_rules_in_state" {
+  type        = bool
+  default     = true
+  description = <<-EOT
+    When true (default), import-block generation skips rules whose `rule_id`
+    already appears in Terraform state. Prevents the "two state entries with
+    the same physical ID" duplicate that occurs when an existing resource
+    lives at a different address (e.g. `wallarm_rule_mode.dvwa_block` instead
+    of the workflow's canonical `wallarm_rule_mode.rule_<id>`).
+
+    Set to false to regenerate import blocks for ALL API rules (e.g. when
+    rebuilding state from scratch).
+  EOT
+}
+
 
 # ─── Sync status: compare API rules vs Terraform state ──────────────────────
 
+# Fired whenever any feature that needs the existing-state rule-id set is
+# enabled: sync status reporting OR import-block filtering.
+locals {
+  needs_state_lookup = var.sync_status || (var.import_rules && var.filter_rules_in_state)
+}
+
 data "external" "sync_check" {
-  count = var.sync_status ? 1 : 0
+  count = local.needs_state_lookup ? 1 : 0
   program = ["bash", "-c", <<-EOF
     ids=$(terraform show -json 2>/dev/null \
       | jq -r '.values.root_module.resources[]
@@ -123,7 +146,7 @@ data "external" "sync_check" {
 }
 
 locals {
-  state_rule_ids = var.sync_status ? toset(compact(split(",",
+  state_rule_ids = local.needs_state_lookup ? toset(compact(split(",",
     try(data.external.sync_check[0].result.ids, "")
   ))) : toset([])
 
@@ -147,11 +170,15 @@ data "wallarm_rules" "all" {
 #
 # Method 1: via local_file
 #
+# When `filter_rules_in_state` is true (default), rules whose rule_id is
+# already in state are skipped — re-running the workflow won't generate
+# blocks for already-imported resources.
 locals {
   import_blocks = var.import_rules ? join("\n", [
     for rule in data.wallarm_rules.all[0].rules :
     "import {\n  to = ${rule.terraform_resource}.rule_${rule.rule_id}\n  id = \"${rule.import_id}\"\n}"
     if !contains(var.exclude_rule_types, rule.type)
+    && !(var.filter_rules_in_state && contains(local.state_rule_ids, tostring(rule.rule_id)))
   ]) : null
 }
 

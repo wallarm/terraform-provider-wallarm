@@ -35,6 +35,10 @@
 * **fix(rule_graphql_detection):** `max_depth`, `max_value_size_kb`, `max_doc_size_kb`, `max_doc_per_batch`, `introspection`, `debug_enabled` now declared `Optional+Computed`. The API has its own defaults (10/10/100/10, true, true respectively); previously, Create with only `mode` echoed those into state, and any subsequent Update wanted to zero out the ints (SDK treated state-only values as drift), which the API rejected with `should be in 1..N`. Now `Computed: true` lets the SDK preserve state values across plans when the user omits the field.
 * **fix(rule_rate_limit, rule_overlimit_res_settings):** user-typed `rate=0`, `burst=0`, `delay=0`, `overlimit_time=0` now reach the API. Previously these were silently dropped from the JSON request body — wallarm-go's `ActionCreate.Rate/Burst/Delay/OverlimitTime` were declared `int+omitempty`, and Go's `encoding/json` drops zero from non-pointer numeric types under `omitempty`. The API then rejected with `can't be blank`. Bumps `wallarm-go` to **v0.12.1** which switches these four fields to `*int+omitempty`. New helper `resourcerule.GetIntPointerIfConfigured` (uses `d.GetRawConfig()`) sends a pointer only when the user wrote the field in HCL — Optional `delay` left null otherwise so the API default wins. Required `rate`/`burst`/`overlimit_time` always send a pointer via `lo.ToPtr`.
 
+### Documentation
+
+* **rules_import workflow:** added `filter_rules_in_state` variable (default `true`) to the import-rules example and guide. Skips rules whose `rule_id` is already in Terraform state when generating import blocks — prevents duplicate state entries when the existing resource lives at a different address than the workflow's canonical `rule_<id>` naming. Disable (`-var='filter_rules_in_state=false'`) only when rebuilding state from scratch.
+
 ### Other Changes
 
 * **test(rule):** 26 rule test files migrated to v2.3.5 patterns (`ProtoV5ProviderFactories`, `testAccNewAPIClient`, `%[N]q`, unique scopes).
