@@ -2,6 +2,7 @@ package wallarm
 
 import (
 	"fmt"
+	"regexp"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
@@ -247,6 +248,134 @@ resource "wallarm_rule_vpatch" %[1]q {
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(name, "action.#", "2"),
 				),
+			},
+		},
+	})
+}
+
+// vpatchActionScopeErrorConfig produces an HCL with two action blocks. The
+// `extraBlock` is the full second `action {}` body — caller controls whether
+// it includes `value = ...` (required for header/query, must be empty for
+// action_name/action_ext, free for path) so the test exercises the intended
+// validator branch.
+func vpatchActionScopeErrorConfig(rnd, extraBlock string) string {
+	return fmt.Sprintf(`
+resource "wallarm_rule_vpatch" %[1]q {
+  attack_type = "xss"
+  action {
+    type  = "iequal"
+    point = { uri = "/api/error-test/%[1]s" }
+  }
+  action {
+    %[2]s
+  }
+  point = [["get_all"]]
+}
+`, rnd, extraBlock)
+}
+
+// validation error tests use PlanOnly + ExpectError so plan-time
+// CustomizeDiff failures are caught without an apply (no API contact).
+
+func TestAccRuleVpatchActionScope_UriPathConflict(t *testing.T) {
+	rnd := generateRandomResourceName(5)
+	// path is not a PointValuePoint — value field is unconstrained.
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV5ProviderFactories: testAccProtoV5ProviderFactories,
+		Steps: []resource.TestStep{
+			{
+				Config: vpatchActionScopeErrorConfig(rnd, `type = "equal"
+    value = "0"
+    point = { path = "0" }`),
+				PlanOnly:    true,
+				ExpectError: regexp.MustCompile(`action condition "uri" conflicts with`),
+			},
+		},
+	})
+}
+
+func TestAccRuleVpatchActionScope_UriActionNameConflict(t *testing.T) {
+	rnd := generateRandomResourceName(5)
+	// action_name is a PointValuePoint — value MUST be empty (or omitted).
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV5ProviderFactories: testAccProtoV5ProviderFactories,
+		Steps: []resource.TestStep{
+			{
+				Config: vpatchActionScopeErrorConfig(rnd, `type = "iequal"
+    point = { action_name = "users" }`),
+				PlanOnly:    true,
+				ExpectError: regexp.MustCompile(`action condition "uri" conflicts with`),
+			},
+		},
+	})
+}
+
+func TestAccRuleVpatchActionScope_UriActionExtConflict(t *testing.T) {
+	rnd := generateRandomResourceName(5)
+	// action_ext is a PointValuePoint — value MUST be empty (or omitted).
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV5ProviderFactories: testAccProtoV5ProviderFactories,
+		Steps: []resource.TestStep{
+			{
+				Config: vpatchActionScopeErrorConfig(rnd, `type = "iequal"
+    point = { action_ext = "json" }`),
+				PlanOnly:    true,
+				ExpectError: regexp.MustCompile(`action condition "uri" conflicts with`),
+			},
+		},
+	})
+}
+
+func TestAccRuleVpatchActionScope_UriQueryConflict(t *testing.T) {
+	rnd := generateRandomResourceName(5)
+	// query is required to have a non-empty value (it's the matched content).
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV5ProviderFactories: testAccProtoV5ProviderFactories,
+		Steps: []resource.TestStep{
+			{
+				Config: vpatchActionScopeErrorConfig(rnd, `type = "iequal"
+    value = "extra"
+    point = { query = "search" }`),
+				PlanOnly:    true,
+				ExpectError: regexp.MustCompile(`action condition "uri" conflicts with`),
+			},
+		},
+	})
+}
+
+func TestAccRuleVpatchActionScope_InvalidPointKey(t *testing.T) {
+	rnd := generateRandomResourceName(5)
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV5ProviderFactories: testAccProtoV5ProviderFactories,
+		Steps: []resource.TestStep{
+			{
+				Config: vpatchActionScopeErrorConfig(rnd, `type = "iequal"
+    value = "x"
+    point = { totally_made_up = "x" }`),
+				PlanOnly:    true,
+				ExpectError: regexp.MustCompile(`unknown action point key`),
+			},
+		},
+	})
+}
+
+func TestAccRuleVpatchActionScope_MultipleKeysInPoint(t *testing.T) {
+	rnd := generateRandomResourceName(5)
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV5ProviderFactories: testAccProtoV5ProviderFactories,
+		Steps: []resource.TestStep{
+			{
+				Config: vpatchActionScopeErrorConfig(rnd, `type = "iequal"
+    value = "HOST"
+    point = { header = "HOST", query = "q" }`),
+				PlanOnly:    true,
+				ExpectError: regexp.MustCompile(`action block "point" must contain exactly one key`),
 			},
 		},
 	})

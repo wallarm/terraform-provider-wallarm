@@ -196,26 +196,28 @@ func TestAccRuleAPIAbuseModeImport(t *testing.T) {
 	})
 }
 
-// Pinterest-style scope mixes four action condition types in one resource:
+// Heterogeneous-scope test mixes four action condition types in one resource:
 // regex on USER-AGENT, equal on path[0], regex on path[1], absent on action_ext.
 // Catches regressions in (a) multi-condition scope hashing, (b) point map
 // validation under heterogeneous types, (c) Read round-trip preserving all
-// four blocks.
-func TestAccRuleAPIAbuseMode_PinterestScope(t *testing.T) {
-	resourceName := "wallarm_rule_api_abuse_mode.pinterest"
+// four blocks. Distinct UA/path scope from `TestAccRuleAPIAbuseModeCreate_Disabled`
+// so the conditions_hash differs and existingHintForAction doesn't collide
+// under parallel execution.
+func TestAccRuleAPIAbuseMode_HeterogeneousScope(t *testing.T) {
+	resourceName := "wallarm_rule_api_abuse_mode.heterogeneous"
 	config := `
-resource "wallarm_rule_api_abuse_mode" "pinterest" {
+resource "wallarm_rule_api_abuse_mode" "heterogeneous" {
   mode    = "disabled"
-  comment = "Allow Pinterest through protections"
+  comment = "Allow Googlebot through protections"
 
   action {
     type  = "regex"
-    value = ".*(Pinterest|Pinterestbot)/(0.2|1.0);?\\s[(]?[+]https?://www[.]pinterest[.]com/bot[.]html[)].*"
+    value = ".*Googlebot/2[.]1;?\\s[(]?[+]https?://www[.]google[.]com/bot[.]html[)].*"
     point = { header = "USER-AGENT" }
   }
   action {
     type  = "equal"
-    value = "api"
+    value = "search"
     point = { path = "0" }
   }
   action {

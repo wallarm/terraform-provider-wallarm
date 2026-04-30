@@ -21,6 +21,7 @@
 * **test(action_helpers):** unit tests for `existingHintForAction` end-to-end (match, no-match, action-matches-but-no-hint) using `mockHintAPI`.
 * **refactor(test):** extracted shared `testAccCheckHintDestroyed(s, resourceType)` helper; 22 rule test files now use a one-line wrapper, eliminating ~700 LoC of duplicated CheckDestroy boilerplate.
 * **test(rule_bola, rule_brute):** acceptance tests for `enumerated_parameters.mode = "exact"` (closes pre-existing TODOs in both files; mirrors `TestAccRuleEnumExact`).
+* **test(action_scope):** acc tests for `ActionScopeCustomizeDiff` — valid scopes (uri-only, decomposed path) + URI/path conflict + invalid point key + multiple keys per point (`PlanOnly + ExpectError`, no API contact).
 
 ## [v2.3.7] - 2026-04-28
 
