@@ -3,41 +3,14 @@ package resourcerule
 import (
 	"strings"
 	"testing"
-
-	"github.com/hashicorp/go-cty/cty"
 )
-
-// buildEPRawCfg constructs a cty.Value of the same shape that
-// d.GetRawConfig() returns for a resource with an `enumerated_parameters`
-// list block: a top-level object with a list-of-objects attribute. Only the
-// attributes referenced by the validator (`additional_parameters`,
-// `plain_parameters`) are populated; pass cty.NullVal for "user did not set
-// this field in HCL".
-func buildEPRawCfg(addParam, plainParam cty.Value) cty.Value {
-	return cty.ObjectVal(map[string]cty.Value{
-		"enumerated_parameters": cty.ListVal([]cty.Value{
-			cty.ObjectVal(map[string]cty.Value{
-				"additional_parameters": addParam,
-				"plain_parameters":      plainParam,
-			}),
-		}),
-	})
-}
 
 func TestValidateEnumeratedParamsBlock(t *testing.T) {
 	t.Parallel()
 
-	// Convenience constructors for the rawCfg fixtures.
-	noBoolsSet := buildEPRawCfg(cty.NullVal(cty.Bool), cty.NullVal(cty.Bool))
-	additionalFalseSet := buildEPRawCfg(cty.False, cty.NullVal(cty.Bool))
-	additionalTrueSet := buildEPRawCfg(cty.True, cty.NullVal(cty.Bool))
-	plainFalseSet := buildEPRawCfg(cty.NullVal(cty.Bool), cty.False)
-	bothSet := buildEPRawCfg(cty.True, cty.False)
-
 	cases := []struct {
 		name        string
 		block       map[string]interface{}
-		rawCfg      cty.Value
 		wantErrSubs []string
 	}{
 		// --- exact mode happy paths ---
@@ -49,24 +22,20 @@ func TestValidateEnumeratedParamsBlock(t *testing.T) {
 					map[string]interface{}{"point": []interface{}{"header", "REFERER"}, "sensitive": true},
 				},
 			},
-			rawCfg: noBoolsSet,
 		},
 		{
 			name: "exact: empty everything",
 			block: map[string]interface{}{
 				"mode": "exact",
 			},
-			rawCfg: noBoolsSet,
 		},
 		{
-			name: "exact: bool default false applied (user did not write field) → no error",
+			name: "exact: bool fields false (post-import auto-config) → no error",
 			block: map[string]interface{}{
 				"mode":                  "exact",
 				"additional_parameters": false,
 				"plain_parameters":      false,
 			},
-			// Both cty.NullVal — user omitted from HCL; SDK Default filled the d.Get value.
-			rawCfg: noBoolsSet,
 		},
 		// --- exact mode list rejections ---
 		{
@@ -75,7 +44,6 @@ func TestValidateEnumeratedParamsBlock(t *testing.T) {
 				"mode":         "exact",
 				"name_regexps": []interface{}{"foo"},
 			},
-			rawCfg:      noBoolsSet,
 			wantErrSubs: []string{"name_regexps", "exact"},
 		},
 		{
@@ -84,46 +52,33 @@ func TestValidateEnumeratedParamsBlock(t *testing.T) {
 				"mode":          "exact",
 				"value_regexps": []interface{}{"bar"},
 			},
-			rawCfg:      noBoolsSet,
 			wantErrSubs: []string{"value_regexps", "exact"},
 		},
-		// --- exact mode strict bool denial (the v2.3.8 tightening) ---
+		// --- exact mode bool rejections (only when true) ---
 		{
-			name: "exact: additional_parameters=true in HCL → error",
+			name: "exact: additional_parameters=true → error",
 			block: map[string]interface{}{
 				"mode":                  "exact",
 				"additional_parameters": true,
 			},
-			rawCfg:      additionalTrueSet,
 			wantErrSubs: []string{"additional_parameters", "exact"},
 		},
 		{
-			name: "exact: additional_parameters=false in HCL → error (strict)",
-			block: map[string]interface{}{
-				"mode":                  "exact",
-				"additional_parameters": false,
-			},
-			rawCfg:      additionalFalseSet,
-			wantErrSubs: []string{"additional_parameters", "exact"},
-		},
-		{
-			name: "exact: plain_parameters=false in HCL → error (strict)",
+			name: "exact: plain_parameters=true → error",
 			block: map[string]interface{}{
 				"mode":             "exact",
-				"plain_parameters": false,
+				"plain_parameters": true,
 			},
-			rawCfg:      plainFalseSet,
 			wantErrSubs: []string{"plain_parameters", "exact"},
 		},
 		{
-			name: "exact: both bools written + name_regexps → all listed",
+			name: "exact: multiple violations listed",
 			block: map[string]interface{}{
 				"mode":                  "exact",
 				"name_regexps":          []interface{}{"foo"},
 				"additional_parameters": true,
-				"plain_parameters":      false,
+				"plain_parameters":      true,
 			},
-			rawCfg:      bothSet,
 			wantErrSubs: []string{"name_regexps", "additional_parameters", "plain_parameters"},
 		},
 		// --- regexp mode happy paths ---
@@ -134,7 +89,6 @@ func TestValidateEnumeratedParamsBlock(t *testing.T) {
 				"name_regexps":  []interface{}{"foo"},
 				"value_regexps": []interface{}{"bar"},
 			},
-			rawCfg: noBoolsSet,
 		},
 		{
 			name: "regexp: full payload (user opted out one filter with [\"\"])",
@@ -145,7 +99,6 @@ func TestValidateEnumeratedParamsBlock(t *testing.T) {
 				"additional_parameters": true,
 				"plain_parameters":      false,
 			},
-			rawCfg: bothSet,
 		},
 		// --- regexp mode rejections ---
 		{
@@ -158,7 +111,6 @@ func TestValidateEnumeratedParamsBlock(t *testing.T) {
 					map[string]interface{}{"point": []interface{}{"header", "REFERER"}, "sensitive": false},
 				},
 			},
-			rawCfg:      noBoolsSet,
 			wantErrSubs: []string{"points", "regexp"},
 		},
 		{
@@ -167,7 +119,6 @@ func TestValidateEnumeratedParamsBlock(t *testing.T) {
 				"mode":         "regexp",
 				"name_regexps": []interface{}{"foo"},
 			},
-			rawCfg:      noBoolsSet,
 			wantErrSubs: []string{"value_regexps", "regexp"},
 		},
 		{
@@ -176,7 +127,6 @@ func TestValidateEnumeratedParamsBlock(t *testing.T) {
 				"mode":          "regexp",
 				"value_regexps": []interface{}{"bar"},
 			},
-			rawCfg:      noBoolsSet,
 			wantErrSubs: []string{"name_regexps", "regexp"},
 		},
 		{
@@ -184,7 +134,6 @@ func TestValidateEnumeratedParamsBlock(t *testing.T) {
 			block: map[string]interface{}{
 				"mode": "regexp",
 			},
-			rawCfg:      noBoolsSet,
 			wantErrSubs: []string{"name_regexps", "value_regexps", "regexp"},
 		},
 		// --- unknown mode is no-op (validation handled by schema ValidateFunc) ---
@@ -194,13 +143,12 @@ func TestValidateEnumeratedParamsBlock(t *testing.T) {
 				"mode":         "weird",
 				"name_regexps": []interface{}{"x"},
 			},
-			rawCfg: noBoolsSet,
 		},
 	}
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			err := validateEnumeratedParamsBlock(tc.block, tc.rawCfg)
+			err := validateEnumeratedParamsBlock(tc.block)
 			if len(tc.wantErrSubs) == 0 {
 				if err != nil {
 					t.Fatalf("expected no error, got %v", err)

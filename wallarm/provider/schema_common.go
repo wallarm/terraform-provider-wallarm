@@ -178,15 +178,23 @@ var (
 					Optional: true,
 					Elem:     &schema.Schema{Type: schema.TypeString},
 				},
+				// API defaults both fields to true in regexp mode and omits
+				// them entirely in exact mode. Optional+Computed lets the
+				// SDK preserve API-echoed state across plans when the user
+				// omits the field. Default is intentionally absent — Default
+				// and Computed are mutually exclusive in SDKv2 anyway, and
+				// the previous Default:false caused exact-mode imports to
+				// surface explicit `false` in auto-generated configs which
+				// the strict validator then rejected.
 				"additional_parameters": {
 					Type:     schema.TypeBool,
 					Optional: true,
-					Default:  false,
+					Computed: true,
 				},
 				"plain_parameters": {
 					Type:     schema.TypeBool,
 					Optional: true,
-					Default:  false,
+					Computed: true,
 				},
 			},
 		},
