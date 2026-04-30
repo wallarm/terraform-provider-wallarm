@@ -2,6 +2,7 @@ package wallarm
 
 import (
 	"fmt"
+	"regexp"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
@@ -305,4 +306,44 @@ func TestAccRuleBruteUpdateInPlaceThresholdCount(t *testing.T) {
 
 func testAccCheckWallarmRuleBruteDestroy(s *terraform.State) error {
 	return testAccCheckHintDestroyed(s, "wallarm_rule_brute")
+}
+
+// TestAccRuleBrute_RegexpRejectsPoints verifies plan-time rejection of
+// `points` populated alongside `mode = "regexp"`. Mapper would silently
+// drop the field on PUT — perpetual diff. PlanOnly + ExpectError, no API contact.
+func TestAccRuleBrute_RegexpRejectsPoints(t *testing.T) {
+	rnd := generateRandomResourceName(5)
+	config := fmt.Sprintf(`
+resource "wallarm_rule_brute" %[1]q {
+  mode = "block"
+  action {
+    type  = "iequal"
+    value = "brute_regexp_reject.example.com"
+    point = { header = "HOST" }
+  }
+  reaction { block_by_ip = 600 }
+  threshold {
+    count  = 5
+    period = 30
+  }
+  enumerated_parameters {
+    mode         = "regexp"
+    name_regexps = ["foo"]
+    points {
+      point     = ["header", "REFERER"]
+      sensitive = true
+    }
+  }
+}`, rnd)
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV5ProviderFactories: testAccProtoV5ProviderFactories,
+		Steps: []resource.TestStep{
+			{
+				Config:      config,
+				PlanOnly:    true,
+				ExpectError: regexp.MustCompile("`points` not allowed when mode = \"regexp\""),
+			},
+		},
+	})
 }

@@ -2,6 +2,7 @@ package wallarm
 
 import (
 	"fmt"
+	"regexp"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
@@ -305,4 +306,44 @@ func TestAccRuleBolaUpdateInPlaceThresholdCount(t *testing.T) {
 
 func testAccCheckWallarmRuleBolaDestroy(s *terraform.State) error {
 	return testAccCheckHintDestroyed(s, "wallarm_rule_bola")
+}
+
+// TestAccRuleBola_ExactRejectsNameRegexps verifies plan-time rejection of
+// `name_regexps` populated alongside `mode = "exact"`. Mapper would silently
+// drop the field on PUT — perpetual diff. PlanOnly + ExpectError, no API contact.
+func TestAccRuleBola_ExactRejectsNameRegexps(t *testing.T) {
+	rnd := generateRandomResourceName(5)
+	config := fmt.Sprintf(`
+resource "wallarm_rule_bola" %[1]q {
+  mode = "block"
+  action {
+    type  = "iequal"
+    value = "bola_exact_reject.example.com"
+    point = { header = "HOST" }
+  }
+  reaction { block_by_ip = 600 }
+  threshold {
+    count  = 5
+    period = 30
+  }
+  enumerated_parameters {
+    mode         = "exact"
+    name_regexps = ["foo"]
+    points {
+      point     = ["header", "REFERER"]
+      sensitive = true
+    }
+  }
+}`, rnd)
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV5ProviderFactories: testAccProtoV5ProviderFactories,
+		Steps: []resource.TestStep{
+			{
+				Config:      config,
+				PlanOnly:    true,
+				ExpectError: regexp.MustCompile(`name_regexps.*not allowed when mode = "exact"`),
+			},
+		},
+	})
 }

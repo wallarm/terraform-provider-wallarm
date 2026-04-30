@@ -12,6 +12,7 @@
 * **fix(test/rule_bola_counter, _dirbust_counter):** removed broken `CheckDestroy` stubs (wrong `rs.Type` filter — counter deletes are silent server-side anyway).
 * **fix(test/rule_api_abuse_mode):** `TestAccRuleAPIAbuseModeExistsError` flake — 3s `PreConfig` wait for action-commit propagation.
 * **fix(action_helpers):** `existingHintForAction` now paginates `ActionList`; tenants with >500 actions of a given hint_type previously silently missed page-2+ collisions.
+* **fix(rule_brute, rule_bola, rule_enum):** plan-time validation rejects `enumerated_parameters` fields that don't apply to the chosen `mode` — `points` in `regexp` mode, or `name_regexps`/`value_regexps`/`additional_parameters`/`plain_parameters` in `exact` mode. Previously such fields were silently dropped on PUT, producing a perpetual plan diff (state read back without them, next plan re-emits same change, next apply drops them again).
 
 ### Other Changes
 

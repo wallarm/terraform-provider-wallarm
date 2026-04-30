@@ -2,6 +2,7 @@ package wallarm
 
 import (
 	"fmt"
+	"regexp"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
@@ -299,6 +300,48 @@ func TestAccRuleEnumUpdateInPlaceAdditionalParameters(t *testing.T) {
 
 func testAccCheckWallarmRuleEnumDestroy(s *terraform.State) error {
 	return testAccCheckHintDestroyed(s, "wallarm_rule_enum")
+}
+
+// TestAccRuleEnum_ExactRejectsAdditionalParameters verifies that
+// EnumeratedParamsCustomizeDiff fails plan when the user populates
+// `additional_parameters` while `mode = "exact"`. Without this validator the
+// mapper silently dropped the field on PUT, causing a perpetual diff loop.
+// PlanOnly + ExpectError so no API contact is required.
+func TestAccRuleEnum_ExactRejectsAdditionalParameters(t *testing.T) {
+	rnd := generateRandomResourceName(5)
+	config := fmt.Sprintf(`
+resource "wallarm_rule_enum" %[1]q {
+  mode = "block"
+  action {
+    type  = "iequal"
+    value = "enum_exact_reject.example.com"
+    point = { header = "HOST" }
+  }
+  reaction { block_by_ip = 600 }
+  threshold {
+    count  = 5
+    period = 30
+  }
+  enumerated_parameters {
+    mode                  = "exact"
+    additional_parameters = true
+    points {
+      point     = ["header", "REFERER"]
+      sensitive = true
+    }
+  }
+}`, rnd)
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV5ProviderFactories: testAccProtoV5ProviderFactories,
+		Steps: []resource.TestStep{
+			{
+				Config:      config,
+				PlanOnly:    true,
+				ExpectError: regexp.MustCompile(`additional_parameters.*not allowed when mode = "exact"`),
+			},
+		},
+	})
 }
 
 // TestAccRuleEnum_UpdateAdditionalParametersToFalse regression-tests the

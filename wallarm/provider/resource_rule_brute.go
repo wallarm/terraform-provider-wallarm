@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/customdiff"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 	"github.com/wallarm/terraform-provider-wallarm/wallarm/common/resourcerule"
 
@@ -37,7 +38,7 @@ func resourceWallarmBrute() *schema.Resource {
 		Importer: &schema.ResourceImporter{
 			StateContext: resourcerule.Import("brute"),
 		},
-		CustomizeDiff: resourcerule.ActionScopeCustomizeDiff,
+		CustomizeDiff: customdiff.All(resourcerule.ActionScopeCustomizeDiff, resourcerule.EnumeratedParamsCustomizeDiff),
 		Schema:        sh,
 	}
 }
