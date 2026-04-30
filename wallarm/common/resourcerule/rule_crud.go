@@ -192,7 +192,7 @@ func Create(
 		Comment:              GetValueWithTypeCastingOrDefault[string](d, "comment"),
 		VariativityDisabled:  true,
 		Set:                  GetValueWithTypeCastingOrDefault[string](d, "set"),
-		Active:               GetValueWithTypeCastingOrDefault[bool](d, "active"),
+		Active:               getActiveWithDefault(d),
 		Title:                GetValueWithTypeCastingOrDefault[string](d, "title"),
 		AttackType:           attackType,
 		Reaction:             reaction,
@@ -239,6 +239,22 @@ func GetValueWithTypeCastingOrDefault[T any](d *schema.ResourceData, name string
 		return defaultValue
 	}
 	return v
+}
+
+// getActiveWithDefault reads the `active` field, defaulting to true when the
+// user did not explicitly set it. SDKv2 cannot distinguish "user wrote false"
+// from "field omitted, schema returned bool zero" via d.Get for an
+// Optional+Computed bool — d.GetOkExists is the documented (deprecated) escape
+// hatch. Without this, every `resourcerule.Create` caller defaulted `active`
+// to false, contradicting the documented "rules ship active" API behavior and
+// causing user-supplied `active = false` to silently no-op against the
+// already-false state. Mirrors getCommonResourceRuleFieldsDTOFromResourceData
+// in the provider package.
+func getActiveWithDefault(d *schema.ResourceData) bool {
+	if v, ok := d.GetOkExists("active"); ok { //nolint:staticcheck
+		return v.(bool)
+	}
+	return true
 }
 
 func GetPointerWithTypeCastingOrDefault[T any](d *schema.ResourceData, name string) *T {

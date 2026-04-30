@@ -183,6 +183,51 @@ func testAccCheckWallarmRuleVpatchDestroy(s *terraform.State) error {
 	return testAccCheckHintDestroyed(s, "wallarm_rule_vpatch")
 }
 
+// TestAccRuleVpatch_DefaultsToActiveOnCreate is the regression guard for
+// plain rules (those whose Create path uses
+// getCommonResourceRuleFieldsDTOFromResourceData rather than
+// resourcerule.Create). The DTO helper has always defaulted active to true;
+// this test ensures both Create paths agree after the v2.3.8 fix to
+// resourcerule.Create. Pairs with TestAccRuleEnum_DefaultsToActiveOnCreate
+// which exercises the mitigation-control side.
+func TestAccRuleVpatch_DefaultsToActiveOnCreate(t *testing.T) {
+	rnd := generateRandomResourceName(5)
+	name := "wallarm_rule_vpatch." + rnd
+
+	withActive := func(activeLine string) string {
+		return fmt.Sprintf(`
+resource "wallarm_rule_vpatch" %[1]q {
+  attack_type = "xss"
+  %[2]s
+  action {
+    type  = "iequal"
+    value = "vpatch_active_default.example.com"
+    point = { header = "HOST" }
+  }
+  point = [["get_all"]]
+}`, rnd, activeLine)
+	}
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV5ProviderFactories: testAccProtoV5ProviderFactories,
+		CheckDestroy:             testAccCheckWallarmRuleVpatchDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: withActive(""),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(name, "active", "true"),
+				),
+			},
+			{
+				Config: withActive(`active = false`),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(name, "active", "false"),
+				),
+			},
+		},
+	})
+}
+
 // TestAccRuleVpatchActionScope_UriOnly exercises ActionScopeCustomizeDiff happy
 // path: a single `action {}` block with a `uri`-only point map. Verifies that
 // the customizer accepts uri as a standalone scope (PointValuePoint, value goes

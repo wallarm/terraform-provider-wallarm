@@ -302,6 +302,62 @@ func testAccCheckWallarmRuleEnumDestroy(s *terraform.State) error {
 	return testAccCheckHintDestroyed(s, "wallarm_rule_enum")
 }
 
+// TestAccRuleEnum_DefaultsToActiveOnCreate guards the v2.3.8 fix for
+// resourcerule.Create defaulting `active` to false instead of true. Without
+// the fix, mitigation controls (brute, bola, enum, forced_browsing,
+// graphql_detection, file_upload_size_limit, rate_limit_enum) shipped to the
+// API as inactive when the user omitted `active` from HCL — and a subsequent
+// `active = false` produced no plan diff because state already matched.
+//
+// Step 1: create without `active`, assert state has true.
+// Step 2: add `active = false`, assert plan applies and state flips.
+func TestAccRuleEnum_DefaultsToActiveOnCreate(t *testing.T) {
+	rnd := generateRandomResourceName(5)
+	name := "wallarm_rule_enum." + rnd
+
+	withActive := func(activeLine string) string {
+		return fmt.Sprintf(`
+resource "wallarm_rule_enum" %[1]q {
+  mode = "block"
+  %[2]s
+  action {
+    type  = "iequal"
+    value = "enum_active_default.example.com"
+    point = { header = "HOST" }
+  }
+  reaction { block_by_ip = 600 }
+  threshold {
+    count  = 5
+    period = 30
+  }
+  enumerated_parameters {
+    mode                  = "regexp"
+    name_regexps          = ["foo"]
+    value_regexps         = ["bar"]
+  }
+}`, rnd, activeLine)
+	}
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV5ProviderFactories: testAccProtoV5ProviderFactories,
+		CheckDestroy:             testAccCheckWallarmRuleEnumDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: withActive(""),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(name, "active", "true"),
+				),
+			},
+			{
+				Config: withActive(`active = false`),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(name, "active", "false"),
+				),
+			},
+		},
+	})
+}
+
 // TestAccRuleEnum_ExactRejectsAdditionalParameters verifies that
 // EnumeratedParamsCustomizeDiff fails plan when the user populates
 // `additional_parameters` while `mode = "exact"`. Without this validator the

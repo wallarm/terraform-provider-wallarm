@@ -13,6 +13,7 @@
 * **fix(test/rule_api_abuse_mode):** `TestAccRuleAPIAbuseModeExistsError` flake — 3s `PreConfig` wait for action-commit propagation.
 * **fix(action_helpers):** `existingHintForAction` now paginates `ActionList`; tenants with >500 actions of a given hint_type previously silently missed page-2+ collisions.
 * **fix(rule_brute, rule_bola, rule_enum):** plan-time validation rejects `enumerated_parameters` fields that don't apply to the chosen `mode` — `points` in `regexp` mode, or `name_regexps`/`value_regexps`/`additional_parameters`/`plain_parameters` in `exact` mode. Previously such fields were silently dropped on PUT, producing a perpetual plan diff (state read back without them, next plan re-emits same change, next apply drops them again).
+* **fix(resourcerule.Create):** `active` defaulted to `false` on Create for 7 mitigation-control rule types (`brute`, `bola`, `enum`, `forced_browsing`, `graphql_detection`, `file_upload_size_limit`, `rate_limit_enum`) when omitted from HCL, contradicting the documented "rules ship enabled" API behavior and causing a subsequent `active = false` in HCL to silently no-op. Now defaults to `true`, matching the Create paths of all other rule resources. Existing rules created against earlier provider versions may have `active = false` in API state — those configurations now produce a one-time `false → true` plan diff if HCL omits `active`.
 
 ### Other Changes
 
