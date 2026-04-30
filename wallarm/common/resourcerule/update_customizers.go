@@ -166,7 +166,9 @@ func WithReaction(d *schema.ResourceData, p *wallarm.HintUpdateV3Params) error {
 }
 
 func WithEnumeratedParameters(d *schema.ResourceData, p *wallarm.HintUpdateV3Params) error {
-	e, err := EnumeratedParametersToAPI(d.Get("enumerated_parameters").([]interface{}))
+	// Use the ResourceData-aware variant so unset bool fields stay nil on
+	// the wire and the API default wins (parallel to the Create-side fix).
+	e, err := EnumeratedParametersFromResourceData(d)
 	if err != nil {
 		return err
 	}
