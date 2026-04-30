@@ -2,6 +2,7 @@ package wallarm
 
 import (
 	"fmt"
+	"regexp"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
@@ -118,6 +119,38 @@ resource "wallarm_rule_rate_limit" %[1]q {
 
 func testAccRuleRateLimitDestroy(s *terraform.State) error {
 	return testAccCheckHintDestroyed(s, "wallarm_rule_rate_limit")
+}
+
+// TestAccRuleRateLimit_RspStatusRequired guards the v2.3.8 schema
+// actualisation: `rsp_status` was Optional in the schema but Required at the
+// API level (`should be in 400..599, can't be blank`). The schema is now
+// Required so plan-time validation catches the omission cleanly. PlanOnly +
+// ExpectError so no API contact is needed.
+func TestAccRuleRateLimit_RspStatusRequired(t *testing.T) {
+	rnd := generateRandomResourceName(5)
+	config := fmt.Sprintf(`
+resource "wallarm_rule_rate_limit" %[1]q {
+  action {
+    type  = "iequal"
+    value = "ratelimit-rsp-required.example.com"
+    point = { header = "HOST" }
+  }
+  point = [["get_all"]]
+  rate  = 100
+  # rsp_status omitted on purpose
+}
+`, rnd)
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV5ProviderFactories: testAccProtoV5ProviderFactories,
+		Steps: []resource.TestStep{
+			{
+				Config:      config,
+				PlanOnly:    true,
+				ExpectError: regexp.MustCompile(`(?i)"rsp_status".*required|argument "rsp_status" is required`),
+			},
+		},
+	})
 }
 
 // TestAccRuleRateLimit_RateBurstZero is the regression guard for the v2.3.8

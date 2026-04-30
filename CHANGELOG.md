@@ -5,6 +5,10 @@
 ### Breaking Changes
 
 * **schema(rule):** dropped `Computed: true` from user-controlled fields where it caused SDKv2 zero-value updates to be silently ignored: `set`, `title`, `enumerated_parameters.{name_regexps, value_regexps, additional_parameters, plain_parameters}`, `reaction.{block_by_session, block_by_ip, graylist_by_ip}`. `additional_parameters` and `plain_parameters` gain `Default: false`. **Effect:** existing imported state with these fields populated and HCL configs that don't include them will produce a one-time clearing diff on next plan. Add the fields to your HCL with desired values, or accept the clear. **Retained `Optional+Computed`:** `mitigation` (API-derived); `active` (migration risk for imports of disabled rules — tracked as follow-up); `max_alias_size_kb` (`ForceNew` + zero-value would force replace on existing tests; tracked as follow-up).
+* **schema(rule_rate_limit):** schema actualised against API ground truth (probed 2026-05-01).
+  * `rsp_status`: Optional → **Required**. The API rejects omission (`can't be blank, should be in 400..599`); previously this was an apply-time error. **Migration:** add `rsp_status = <400..599>` to existing configs that don't set it — typical value `429`.
+  * `burst`: Required → **Optional+Computed**. The API doesn't require it on Create; configs may now omit `burst` and the API default fills state.
+  * `time_unit`: Required → **Optional+Computed**. The API doesn't require it on Create; default is `rps`.
 
 ### Bug Fixes
 

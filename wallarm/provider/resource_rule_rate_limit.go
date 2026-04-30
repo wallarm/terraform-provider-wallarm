@@ -19,15 +19,22 @@ func resourceWallarmRateLimit() *schema.Resource {
 
 		"point": defaultPointSchema,
 
+		// Schema actualised against API ground truth (probed 2026-05-01).
+		// `delay`, `burst`, `time_unit` are Optional API-side; the API has
+		// its own defaults (`time_unit=rps`). `rate` and `rsp_status` are
+		// the only required-by-API fields. Computed lets state preserve
+		// API-echoed values when the user omits the field in HCL.
 		"delay": {
 			Type:         schema.TypeInt,
 			Optional:     true,
+			Computed:     true,
 			ValidateFunc: validation.IntBetween(0, 1000),
 		},
 
 		"burst": {
 			Type:         schema.TypeInt,
-			Required:     true,
+			Optional:     true,
+			Computed:     true,
 			ValidateFunc: validation.IntBetween(0, 1000),
 		},
 
@@ -39,13 +46,14 @@ func resourceWallarmRateLimit() *schema.Resource {
 
 		"rsp_status": {
 			Type:         schema.TypeInt,
-			Optional:     true,
+			Required:     true,
 			ValidateFunc: validation.IntBetween(400, 599),
 		},
 
 		"time_unit": {
 			Type:         schema.TypeString,
-			Required:     true,
+			Optional:     true,
+			Computed:     true,
 			ValidateFunc: validation.StringInSlice([]string{"rps", "rpm"}, false),
 		},
 	}
@@ -81,16 +89,13 @@ func resourceWallarmRateLimitCreate(ctx context.Context, d *schema.ResourceData,
 	if err != nil {
 		return diag.FromErr(err)
 	}
-	rspStatus := d.Get("rsp_status").(int)
-	timeUnit := d.Get("time_unit").(string)
-
-	// Required ints (rate, burst): always send a pointer. d.Get returns the
-	// user-supplied value (the schema's Required gate prevents omission).
-	// Optional ints (delay): use the GetRawConfig-aware helper so a literal
-	// 0 reaches the API but an omitted field doesn't override the API
-	// default. wallarm-go v0.12.1 changed these fields to *int specifically
-	// so callers can transmit 0 — non-pointer int+omitempty silently dropped
-	// it, and the API rejected with "can't be blank".
+	// Required ints (rate, rsp_status): always send. Optional ints (delay,
+	// burst): use the GetRawConfig-aware helper so a literal 0 reaches the
+	// API but an omitted field doesn't override the API default. Optional
+	// strings (time_unit): same — empty string is the SDK zero, but we
+	// only want to send when user configured it. wallarm-go v0.12.1's *int
+	// fields make the int side work; for strings, JSON omitempty already
+	// drops "" correctly, so a plain `d.Get` is sufficient there.
 	actionBody := &wallarm.ActionCreate{
 		Type:      "rate_limit",
 		Clientid:  clientID,
@@ -99,10 +104,10 @@ func resourceWallarmRateLimitCreate(ctx context.Context, d *schema.ResourceData,
 		Comment:   fields.Comment,
 		Point:     point,
 		Delay:     resourcerule.GetIntPointerIfConfigured(d, "delay"),
-		Burst:     lo.ToPtr(d.Get("burst").(int)),
+		Burst:     resourcerule.GetIntPointerIfConfigured(d, "burst"),
 		Rate:      lo.ToPtr(d.Get("rate").(int)),
-		RspStatus: rspStatus,
-		TimeUnit:  timeUnit,
+		RspStatus: d.Get("rsp_status").(int),
+		TimeUnit:  d.Get("time_unit").(string),
 		Set:       fields.Set,
 		Active:    fields.Active,
 		Title:     fields.Title,
