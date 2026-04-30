@@ -16,18 +16,23 @@ func resourceWallarmFileUploadSizeLimit() *schema.Resource {
 	fields := map[string]*schema.Schema{
 		"action": resourcerule.ScopeActionSchema(),
 		"point":  defaultPointSchema,
+		// Schema actualised against API ground truth (probed 2026-05-01).
+		// `mode` and `size_unit` are Optional API-side with defaults
+		// (`monitoring` and `b`); only `size` is required (range 1..2^64).
 		"mode": {
 			Type:         schema.TypeString,
-			Required:     true,
+			Optional:     true,
+			Computed:     true,
 			ValidateFunc: validation.StringInSlice([]string{"monitoring", "block", "off", "default"}, false),
 		},
 		"size": {
 			Type:     schema.TypeInt,
-			Optional: true,
+			Required: true,
 		},
 		"size_unit": {
 			Type:         schema.TypeString,
-			Required:     true,
+			Optional:     true,
+			Computed:     true,
 			ValidateFunc: validation.StringInSlice([]string{"b", "kb", "mb", "gb", "tb"}, false),
 			ForceNew:     true,
 		},

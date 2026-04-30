@@ -10,6 +10,10 @@
   * `burst`: Required → **Optional+Computed**. The API doesn't require it on Create; configs may now omit `burst` and the API default fills state.
   * `time_unit`: Required → **Optional+Computed**. The API doesn't require it on Create; default is `rps`.
 * **schema(rule_overlimit_res_settings):** `mode` Required → **Optional+Computed**. API default is `monitoring`; configs may now omit `mode`.
+* **schema(rule_file_upload_size_limit):** schema actualised against API ground truth.
+  * `size`: Optional → **Required** (range 1..2^64; 0 invalid). **Migration:** add `size = N` to existing configs that don't set it.
+  * `mode`: Required → **Optional+Computed** (API default `monitoring`).
+  * `size_unit`: Required → **Optional+Computed** (API default `b`). Stays `ForceNew`.
 
 ### Bug Fixes
 
