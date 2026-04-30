@@ -147,6 +147,29 @@ func TestEnumeratedParametersToAPI_RegexpModePassesThroughLists(t *testing.T) {
 	}
 }
 
+// TestEnumeratedParametersToAPI_RegexpListsPreserveNils reproduces the v2.3.8
+// production drift: SDKv2 normalizes the empty-string element in a TypeString
+// list to cty.NullVal, which arrives at d.Get as a `nil` entry. The shared
+// ConvertToStringSlice would skip the nil → empty slice → `omitempty` drops
+// the field from the JSON → API rejects regexp-mode payload. convertRegexpList
+// preserves nil → "" so the user's HCL `[""]` reaches the wire unchanged.
+func TestEnumeratedParametersToAPI_RegexpListsPreserveNils(t *testing.T) {
+	input := []interface{}{
+		map[string]interface{}{
+			"mode":          "regexp",
+			"name_regexps":  []interface{}{"foo", "bar"},
+			"value_regexps": []interface{}{nil}, // user wrote `[""]` in HCL
+		},
+	}
+	got, err := EnumeratedParametersToAPI(input)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(got.ValueRegexp) != 1 || got.ValueRegexp[0] != "" {
+		t.Errorf("expected ValueRegexp=[\"\"], got %v", got.ValueRegexp)
+	}
+}
+
 func TestEnumeratedParametersToAPI_ExactMode(t *testing.T) {
 	input := []interface{}{
 		map[string]interface{}{
