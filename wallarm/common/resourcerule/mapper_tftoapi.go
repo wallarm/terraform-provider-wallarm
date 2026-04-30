@@ -25,23 +25,23 @@ func EnumeratedParametersToAPI(enumeratedParameters []interface{}) (*wallarm.Enu
 }
 
 func mapEnumeratedParameterRegexpToAPI(enumeratedParameter map[string]interface{}) (*wallarm.EnumeratedParameters, error) {
+	// EnumeratedParamsCustomizeDiff guarantees both lists are non-empty in
+	// regexp mode at plan time, so the mapper does not substitute defaults.
+	// Earlier the substitution `[]string{""}` was applied here on empty input
+	// to satisfy the API constraint, but the API echoed `[""]` back as
+	// `[null]` in state — perpetual diff. Validator forces explicit `[""]`
+	// in HCL so HCL and state align.
 	nameRegexpsRaw, ok := enumeratedParameter["name_regexps"].([]interface{})
 	if !ok {
 		return nil, fmt.Errorf("enumerated_parameters.name_regexps: expected list, got %T", enumeratedParameter["name_regexps"])
 	}
 	nameRegexps := ConvertToStringSlice(nameRegexpsRaw)
-	if len(nameRegexps) == 0 {
-		nameRegexps = []string{""}
-	}
 
 	valueRegexpsRaw, ok := enumeratedParameter["value_regexps"].([]interface{})
 	if !ok {
 		return nil, fmt.Errorf("enumerated_parameters.value_regexps: expected list, got %T", enumeratedParameter["value_regexps"])
 	}
 	valueRegexps := ConvertToStringSlice(valueRegexpsRaw)
-	if len(valueRegexps) == 0 {
-		valueRegexps = []string{""}
-	}
 
 	plainParameters, _ := enumeratedParameter["plain_parameters"].(bool)
 	additionalParameters, _ := enumeratedParameter["additional_parameters"].(bool)

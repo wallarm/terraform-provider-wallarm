@@ -124,13 +124,15 @@ func TestEnumeratedParametersToAPI_RegexpMode(t *testing.T) {
 	}
 }
 
-func TestEnumeratedParametersToAPI_RegexpModeDefaultsEmpty(t *testing.T) {
-	// Empty name/value regexps lists → helper injects [""] so the API receives a list.
+func TestEnumeratedParametersToAPI_RegexpModePassesThroughLists(t *testing.T) {
+	// v2.3.8: the mapper no longer substitutes [""] for empty lists.
+	// EnumeratedParamsCustomizeDiff guarantees both lists are non-empty in
+	// regexp mode at plan time; the mapper just passes them through.
 	input := []interface{}{
 		map[string]interface{}{
 			"mode":          "regexp",
-			"name_regexps":  []interface{}{},
-			"value_regexps": []interface{}{},
+			"name_regexps":  []interface{}{""},
+			"value_regexps": []interface{}{"foo"},
 		},
 	}
 	got, err := EnumeratedParametersToAPI(input)
@@ -140,8 +142,8 @@ func TestEnumeratedParametersToAPI_RegexpModeDefaultsEmpty(t *testing.T) {
 	if len(got.NameRegexps) != 1 || got.NameRegexps[0] != "" {
 		t.Errorf("expected NameRegexps=[\"\"], got %v", got.NameRegexps)
 	}
-	if len(got.ValueRegexp) != 1 || got.ValueRegexp[0] != "" {
-		t.Errorf("expected ValueRegexp=[\"\"], got %v", got.ValueRegexp)
+	if len(got.ValueRegexp) != 1 || got.ValueRegexp[0] != "foo" {
+		t.Errorf("expected ValueRegexp=[\"foo\"], got %v", got.ValueRegexp)
 	}
 }
 

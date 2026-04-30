@@ -400,6 +400,89 @@ resource "wallarm_rule_enum" %[1]q {
 	})
 }
 
+// TestAccRuleEnum_ExactRejectsAdditionalParametersFalse verifies the strict
+// denial added in v2.3.8: writing `additional_parameters = false` (any value)
+// in `mode = "exact"` errors at plan, regardless of the literal value. The
+// SDK's `Default: false` makes `d.Get` return false even when the user
+// omitted the field, so the validator uses `d.GetRawConfig()` to detect
+// HCL presence and reject any explicit boolean.
+func TestAccRuleEnum_ExactRejectsAdditionalParametersFalse(t *testing.T) {
+	rnd := generateRandomResourceName(5)
+	config := fmt.Sprintf(`
+resource "wallarm_rule_enum" %[1]q {
+  mode = "block"
+  action {
+    type  = "iequal"
+    value = "enum_exact_reject_false.example.com"
+    point = { header = "HOST" }
+  }
+  reaction { block_by_ip = 600 }
+  threshold {
+    count  = 5
+    period = 30
+  }
+  enumerated_parameters {
+    mode                  = "exact"
+    additional_parameters = false
+    points {
+      point     = ["header", "REFERER"]
+      sensitive = true
+    }
+  }
+}`, rnd)
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV5ProviderFactories: testAccProtoV5ProviderFactories,
+		Steps: []resource.TestStep{
+			{
+				Config:      config,
+				PlanOnly:    true,
+				ExpectError: regexp.MustCompile(`additional_parameters.*not allowed when mode = "exact"`),
+			},
+		},
+	})
+}
+
+// TestAccRuleEnum_RegexpRequiresValueRegexps reproduces the v2.3.8 drift-loop
+// bug: in `mode = "regexp"`, omitting `value_regexps` previously caused the
+// mapper to substitute `[""]` (silently). The API echoed it back as `[null]`
+// in state, producing `~ value_regexps = [- null,]` on every subsequent
+// plan. The fix: drop the substitution and require both lists at plan time.
+// User must write `value_regexps = [""]` explicitly to opt out of value
+// matching.
+func TestAccRuleEnum_RegexpRequiresValueRegexps(t *testing.T) {
+	rnd := generateRandomResourceName(5)
+	config := fmt.Sprintf(`
+resource "wallarm_rule_enum" %[1]q {
+  mode = "block"
+  action {
+    type  = "iequal"
+    value = "enum_regexp_required.example.com"
+    point = { header = "HOST" }
+  }
+  reaction { block_by_ip = 600 }
+  threshold {
+    count  = 5
+    period = 30
+  }
+  enumerated_parameters {
+    mode         = "regexp"
+    name_regexps = ["foo", "bar"]
+  }
+}`, rnd)
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV5ProviderFactories: testAccProtoV5ProviderFactories,
+		Steps: []resource.TestStep{
+			{
+				Config:      config,
+				PlanOnly:    true,
+				ExpectError: regexp.MustCompile(`value_regexps.*required when mode = "regexp"`),
+			},
+		},
+	})
+}
+
 // TestAccRuleEnum_UpdateAdditionalParametersToFalse regression-tests the
 // Optional+Computed zero-value bug for booleans: flipping
 // `additional_parameters: true → false` previously silently preserved true.

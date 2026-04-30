@@ -327,8 +327,9 @@ resource "wallarm_rule_brute" %[1]q {
     period = 30
   }
   enumerated_parameters {
-    mode         = "regexp"
-    name_regexps = ["foo"]
+    mode          = "regexp"
+    name_regexps  = ["foo"]
+    value_regexps = ["bar"]
     points {
       point     = ["header", "REFERER"]
       sensitive = true
