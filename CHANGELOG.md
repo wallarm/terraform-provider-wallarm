@@ -18,6 +18,7 @@
   * `size`: Optional → **Required** (range 1..2^64; 0 invalid). **Migration:** add `size = N` to existing configs that don't set it.
   * `mode`: Required → **Optional+Computed** (API default `monitoring`).
   * `size_unit`: Required → **Optional+Computed** (API default `b`). Stays `ForceNew`.
+  * `point`: Required → **Optional+Computed** (API default scope applies when omitted). Stays `ForceNew`. Overrides the shared `defaultPointSchema` for this resource only.
 
 ### Bug Fixes
 

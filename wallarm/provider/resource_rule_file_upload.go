@@ -15,7 +15,20 @@ import (
 func resourceWallarmFileUploadSizeLimit() *schema.Resource {
 	fields := map[string]*schema.Schema{
 		"action": resourcerule.ScopeActionSchema(),
-		"point":  defaultPointSchema,
+		// Override of `defaultPointSchema` (which is Required) — the API
+		// treats `point` as Optional for this rule type. When omitted, the
+		// API's own default scope is applied. ForceNew preserved because
+		// changing the upload point still requires recreating the rule.
+		"point": {
+			Type:     schema.TypeList,
+			Optional: true,
+			Computed: true,
+			ForceNew: true,
+			Elem: &schema.Schema{
+				Type: schema.TypeList,
+				Elem: &schema.Schema{Type: schema.TypeString},
+			},
+		},
 		// Schema actualised against API ground truth (probed 2026-05-01).
 		// `mode` and `size_unit` are Optional API-side with defaults
 		// (`monitoring` and `b`); only `size` is required (range 1..2^64).
