@@ -199,6 +199,7 @@ sed -E \
   -e 's/(variativity_disabled[[:space:]]*)=[[:space:]]*false/\1= true/' \
   -e 's/(comment[[:space:]]*)=[[:space:]]*null/\1= "Managed by Terraform"/' \
   -e '/=[[:space:]]*null/d' \
+  -e '/=[[:space:]]*\[\]/d' \
   import_rule_configs.tf > import_rule_configs.tf.tmp && \
   mv import_rule_configs.tf.tmp import_rule_configs.tf
 ```
