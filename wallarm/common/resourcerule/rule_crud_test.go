@@ -106,24 +106,18 @@ func TestIsFieldSetInRawConfig(t *testing.T) {
 	}
 }
 
-// TestGetBoolPointerIfConfigured covers the unit-testable surface: a fresh
-// ResourceData has no RawConfig (cty.NilVal), so the helper must return nil
-// regardless of d.Set state. The "user wrote literal" branches are exercised
-// by the acc tests in resource_rule_graphql_detection_test.go (they go through
-// the SDK's plan/apply machinery which actually populates RawConfig). The
-// underlying isFieldSetInRawConfig is fully tested by TestIsFieldSetInRawConfig.
-func TestGetBoolPointerIfConfigured_NilRawConfig(t *testing.T) {
+// Guards against a regression where the helper falls back to d.Get when
+// RawConfig is nil. d.Set on a fresh ResourceData populates state but RawConfig
+// stays NilVal — the helper must still return nil.
+func TestGetPointerIfConfigured_NilRawConfigReturnsNil(t *testing.T) {
 	t.Parallel()
 	sch := &schema.Resource{Schema: map[string]*schema.Schema{
 		"introspection": {Type: schema.TypeBool, Optional: true},
 	}}
 	d := sch.Data(nil)
-	if got := GetBoolPointerIfConfigured(d, "introspection"); got != nil {
-		t.Errorf("nil RawConfig: got %v, want nil", got)
-	}
 	d.Set("introspection", true)
-	if got := GetBoolPointerIfConfigured(d, "introspection"); got != nil {
-		t.Errorf("nil RawConfig with d.Set(true): got %v, want nil (RawConfig still NilVal)", got)
+	if got := GetPointerIfConfigured[bool](d, "introspection"); got != nil {
+		t.Errorf("got %v, want nil (RawConfig is NilVal)", got)
 	}
 }
 

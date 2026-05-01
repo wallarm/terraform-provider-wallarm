@@ -114,12 +114,9 @@ func testAccCheckWallarmRuleGraphqlDetectionDestroy(s *terraform.State) error {
 	return testAccCheckHintDestroyed(s, "wallarm_rule_graphql_detection")
 }
 
-// TestAccRuleGraphqlDetection_MinimalCreatePreservesAPIDefaults guards the
-// v2.3.8 + v2.3.9 fix chain: Optional+Computed schema (v2.3.8) lets API
-// defaults populate state on Create with only `mode`, AND the v2.3.9
-// GetBoolPointerIfConfigured helper makes Create skip the bool fields on
-// the wire when the user omits them, so the API's `true` default for
-// introspection/debug_enabled wins instead of being overwritten with false.
+// Create with only `mode` should land all API defaults in state and re-plan
+// clean: Optional+Computed schema preserves echoed values; bool fields skip the
+// wire when omitted (GetPointerIfConfigured) so API defaults win.
 func TestAccRuleGraphqlDetection_MinimalCreatePreservesAPIDefaults(t *testing.T) {
 	rnd := generateRandomResourceName(5)
 	name := "wallarm_rule_graphql_detection." + rnd
@@ -146,8 +143,7 @@ resource "wallarm_rule_graphql_detection" %[1]q {
 					resource.TestCheckResourceAttr(name, "max_value_size_kb", "10"),
 					resource.TestCheckResourceAttr(name, "max_doc_size_kb", "100"),
 					resource.TestCheckResourceAttr(name, "max_doc_per_batch", "10"),
-					// Bools omitted from HCL → GetBoolPointerIfConfigured sends
-					// nil → API defaults (true) win and land in state.
+					// Bools omitted from HCL → wire skip → API defaults (true) win.
 					resource.TestCheckResourceAttr(name, "introspection", "true"),
 					resource.TestCheckResourceAttr(name, "debug_enabled", "true"),
 				),
@@ -201,10 +197,8 @@ resource "wallarm_rule_graphql_detection" %[1]q {
 		Steps: []resource.TestStep{
 			{
 				Config: configMinimal,
-				// `introspection` is omitted from HCL → API default (true)
-				// lands in state via GetBoolPointerIfConfigured (v2.3.9).
-				// The primary contract this test guards is int-zeroing on
-				// Update — the bool assertion is a sanity check.
+				// Primary contract: int-zeroing on Update (regression guard).
+				// Bool assertion is a sanity check that omitted-from-HCL preserves API default.
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(name, "max_depth", "10"),
 					resource.TestCheckResourceAttr(name, "introspection", "true"),

@@ -207,8 +207,8 @@ func Create(
 		MaxDocSizeKb:         GetValueWithTypeCastingOrDefault[int](d, "max_doc_size_kb"),
 		MaxAliases:           GetValueWithTypeCastingOrDefault[int](d, "max_aliases"),
 		MaxDocPerBatch:       GetValueWithTypeCastingOrDefault[int](d, "max_doc_per_batch"),
-		Introspection:        GetBoolPointerIfConfigured(d, "introspection"),
-		DebugEnabled:         GetBoolPointerIfConfigured(d, "debug_enabled"),
+		Introspection:        GetPointerIfConfigured[bool](d, "introspection"),
+		DebugEnabled:         GetPointerIfConfigured[bool](d, "debug_enabled"),
 		Size:                 GetValueWithTypeCastingOrDefault[int](d, "size"),
 		SizeUnit:             GetValueWithTypeCastingOrDefault[string](d, "size_unit"),
 	}
@@ -270,41 +270,21 @@ func GetPointerWithTypeCastingOrDefault[T any](d *schema.ResourceData, name stri
 	return &v
 }
 
-// GetIntPointerIfConfigured returns *int(value) when the user wrote the field
-// in HCL — including a literal zero — and nil when the user omitted it.
-// Uses d.GetRawConfig() (the SDKv2 replacement for the deprecated
-// GetOkExists) to inspect the user's literal config; d.Get cannot distinguish
-// "user wrote 0" from "field omitted, schema returned int zero".
+// GetPointerIfConfigured returns *T(value) when the user wrote the field in
+// HCL — including a literal zero/false — and nil when they omitted it. Uses
+// d.GetRawConfig() to inspect the literal config (d.Get cannot distinguish
+// "user wrote 0" from "field omitted, schema returned T zero value").
 //
-// Use this in Create/Update paths for Optional int fields whose target
-// wallarm-go struct field is `*int` and where 0 is a valid user value
-// (e.g. wallarm_rule_rate_limit.delay). For Required ints, d.Get is fine —
-// the user always supplies a value and lo.ToPtr(d.Get(...)) is sufficient.
-func GetIntPointerIfConfigured(d *schema.ResourceData, name string) *int {
+// Use in Create paths for Optional fields whose target wallarm-go struct
+// field is `*T` and the API has a non-zero default the provider must not
+// overwrite (e.g. wallarm_rule_rate_limit.delay = 0,
+// wallarm_rule_graphql_detection.introspection where the API default is true).
+// For Required fields, d.Get is sufficient.
+func GetPointerIfConfigured[T any](d *schema.ResourceData, name string) *T {
 	if !isFieldSetInRawConfig(d.GetRawConfig(), name) {
 		return nil
 	}
-	v, ok := d.Get(name).(int)
-	if !ok {
-		return nil
-	}
-	return &v
-}
-
-// GetBoolPointerIfConfigured is the bool counterpart of GetIntPointerIfConfigured.
-// Returns *bool(value) when the user wrote the field in HCL — including a literal
-// false — and nil when the user omitted it. Use in Create paths for Optional bool
-// fields whose target wallarm-go struct field is `*bool` and where the API has a
-// non-false default that the provider must not silently overwrite.
-//
-// Example: wallarm_rule_graphql_detection.introspection / .debug_enabled both
-// default to true server-side. Without this helper, GetPointerWithTypeCastingOrDefault
-// would send &false on Create-with-omitted-field and overwrite the API default.
-func GetBoolPointerIfConfigured(d *schema.ResourceData, name string) *bool {
-	if !isFieldSetInRawConfig(d.GetRawConfig(), name) {
-		return nil
-	}
-	v, ok := d.Get(name).(bool)
+	v, ok := d.Get(name).(T)
 	if !ok {
 		return nil
 	}
