@@ -1,7 +1,7 @@
 resource "wallarm_integration_data_dog" "data_dog_integration" {
-  name = "New Terraform DataDog Integration"
+  name   = "New Terraform DataDog Integration"
   region = "US5"
-  token = "eb7ddfc33acaaacaacaca55a39834dad"
+  token  = "eb7ddfc33acaaacaacaca55a39834dad"
   active = true
 
   event {
@@ -11,34 +11,34 @@ resource "wallarm_integration_data_dog" "data_dog_integration" {
   }
   event {
     event_type = "rules_and_triggers"
-    active = true
+    active     = true
   }
   event {
     event_type = "number_of_requests_per_hour"
-    active = true
+    active     = true
   }
   event {
     event_type = "security_issue_critical"
-    active = true
+    active     = true
   }
   event {
     event_type = "security_issue_high"
-    active = true
+    active     = true
   }
   event {
     event_type = "security_issue_medium"
-    active = true
+    active     = true
   }
   event {
     event_type = "security_issue_low"
-    active = true
+    active     = true
   }
   event {
     event_type = "security_issue_info"
-    active = true
+    active     = true
   }
   event {
     event_type = "system"
-    active = true
+    active     = true
   }
 }

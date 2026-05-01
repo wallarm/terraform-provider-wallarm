@@ -1,14 +1,14 @@
 resource "wallarm_integration_email" "email_integration" {
-  name = "New Terraform Integration"
+  name   = "New Terraform Integration"
   active = false
   emails = ["test@wallarm.com", "test2@wallarm.com"]
   event {
     event_type = "report_monthly"
-    active = true
+    active     = true
   }
-  
+
   event {
     event_type = "aasm_report"
-    active = true
+    active     = true
   }
 }

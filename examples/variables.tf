@@ -1,12 +1,12 @@
 variable "api_host" {
   description = "Wallarm API address"
-  type    = string
-  default = "https://api.wallarm.com"
+  type        = string
+  default     = "https://api.wallarm.com"
 }
 
 variable "api_token" {
   description = "Wallarm token to authorize in API"
-  type    = string
+  type        = string
 }
 
 variable "node_names" {

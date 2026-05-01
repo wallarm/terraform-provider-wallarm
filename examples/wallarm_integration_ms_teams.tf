@@ -1,34 +1,34 @@
 resource "wallarm_integration_teams" "teams_integration" {
-  name = "Terraform MS Teams Integration"
+  name        = "Terraform MS Teams Integration"
   webhook_url = "https://xxxxx.webhook.office.com/xxxxxxxxx"
-  active = true
+  active      = true
 
   event {
     event_type = "rules_and_triggers"
-    active = true
+    active     = true
   }
   event {
     event_type = "security_issue_critical"
-    active = true
+    active     = true
   }
   event {
     event_type = "security_issue_high"
-    active = true
+    active     = true
   }
   event {
     event_type = "security_issue_medium"
-    active = true
+    active     = true
   }
   event {
     event_type = "security_issue_low"
-    active = true
+    active     = true
   }
   event {
     event_type = "security_issue_info"
-    active = true
+    active     = true
   }
   event {
     event_type = "system"
-    active = true
+    active     = true
   }
 }

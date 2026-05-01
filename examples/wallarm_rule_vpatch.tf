@@ -1,26 +1,26 @@
 resource "wallarm_rule_vpatch" "default" {
   attack_type = "sqli"
-  point = [["get_all"]]
+  point       = [["get_all"]]
 }
 
 resource "wallarm_rule_vpatch" "vpatch" {
   attack_type = "redir"
   action {
-    type = "iequal"
+    type  = "iequal"
     value = "example.com"
     point = {
       header = "HOST"
     }
   }
   action {
-    type = "equal"
+    type  = "equal"
     value = "api"
     point = {
       path = 0
     }
   }
   action {
-    type = "regex"
+    type  = "regex"
     value = "logon"
     point = {
       path = 1
@@ -49,7 +49,7 @@ resource "wallarm_rule_vpatch" "vpatch" {
 resource "wallarm_rule_vpatch" "splunk" {
   attack_type = "sqli"
   action {
-    type = "iequal"
+    type  = "iequal"
     value = "splunk.wallarm-demo.com:88"
     point = {
       header = "HOST"
