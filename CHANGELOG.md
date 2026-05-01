@@ -31,6 +31,7 @@
 ### Documentation
 
 * **rules_import workflow:** new `filter_rules_in_state` variable (default `true`) skips rules whose `rule_id` is already in state during import-block generation. Prevents duplicate state entries when existing resources use different naming than the workflow's `rule_<id>` convention. Set `false` only when rebuilding state from scratch.
+* **examples:** added minimal HCL for `wallarm_rule_graphql_detection`, `_brute`, `_bola`, `_enum`, `_forced_browsing`, `_rate_limit_enum`, `_bola_counter` — six mitigation controls and one counter that previously had no example.
 
 ### Other Changes
 
