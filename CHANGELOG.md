@@ -1,44 +1,44 @@
 ## [v2.3.8] - 2026-05-01
 
-> Schema actualisation against API ground truth, zero-value pointer fixes, validator hardening for `enumerated_parameters`, full rule-test harness migration. Bumps `wallarm-go` to v0.12.1.
+> Schema actualisation against API ground truth, zero-value pointer fixes, plan-time validator for `enumerated_parameters`, full rule-test harness migration. Bumps `wallarm-go` to v0.12.1.
 
 ### Upgrade Steps
 
-* [ACTION REQUIRED] `wallarm_rule_rate_limit`: add `rsp_status = <400..599>` (typical `429`) to existing configs that omit it. Field is now Required at plan time.
-* [ACTION REQUIRED] `wallarm_rule_file_upload_size_limit`: add `size = N` to configs that omit it. Field is now Required at plan time.
-* [ACTION REQUIRED] `wallarm_rule_brute` / `_bola` / `_enum` in regexp mode: configs that omitted `name_regexps` or `value_regexps` must now set them explicitly. Use `[""]` to opt out of a filter while satisfying the API constraint.
-* Direct callers of `wallarm-go` `ActionCreate`: `Rate`, `Burst`, `Delay`, `OverlimitTime` are now `*int` — wrap zero values with `lo.ToPtr(0)`. Provider users unaffected.
+* [ACTION REQUIRED] `wallarm_rule_rate_limit`: add `rsp_status = <400..599>` (typical `429`) — now Required.
+* [ACTION REQUIRED] `wallarm_rule_file_upload_size_limit`: add `size = N` — now Required.
+* [ACTION REQUIRED] `wallarm_rule_brute` / `_bola` / `_enum` in regexp mode: set both `name_regexps` and `value_regexps` (use `[""]` to skip a filter).
+* Direct callers of `wallarm-go` `ActionCreate`: `Rate`/`Burst`/`Delay`/`OverlimitTime` are `*int` — wrap zero with `lo.ToPtr(0)`.
 
 ### Breaking Changes
 
-* **schema(rule):** dropped `Computed: true` from user-controlled fields where it masked SDKv2 zero-value updates: `set`, `title`, `enumerated_parameters.{name_regexps, value_regexps}`, `reaction.{block_by_session, block_by_ip, graylist_by_ip}`. Imports with these fields populated produce a one-time clearing diff if HCL omits them. Retained Optional+Computed: `mitigation`, `active`, `max_alias_size_kb`.
-* **schema(rule_rate_limit):** `rsp_status` Optional → **Required** (API requires `400..599`); `burst` Required → Optional+Computed; `time_unit` Required → Optional+Computed (API default `rps`). **Migration:** add `rsp_status = <400..599>` to existing configs that omit it.
-* **schema(rule_overlimit_res_settings):** `mode` Required → Optional+Computed (API default `monitoring`).
-* **schema(rule_file_upload_size_limit):** `size` Optional → **Required** (range `1..2^64`); `mode`, `size_unit`, `point` Required → Optional+Computed. `size_unit` and `point` stay `ForceNew`. **Migration:** add `size = N` to existing configs that omit it.
+* **schema(rule):** dropped `Computed: true` from `set`, `title`, `enumerated_parameters.{name_regexps,value_regexps}`, `reaction.{block_by_session,block_by_ip,graylist_by_ip}` — masked SDKv2 zero-value updates. Imports may produce a one-time clearing diff.
+* **schema(rule_rate_limit):** `rsp_status` Optional → **Required**; `burst`/`time_unit` Required → Optional+Computed.
+* **schema(rule_overlimit_res_settings):** `mode` Required → Optional+Computed.
+* **schema(rule_file_upload_size_limit):** `size` Optional → **Required**; `mode`/`size_unit`/`point` Required → Optional+Computed.
 
 ### Bug Fixes
 
-* **resourcerule.Create:** `active` defaulted to `false` on Create for 7 mitigation controls (`brute`, `bola`, `enum`, `forced_browsing`, `graphql_detection`, `file_upload_size_limit`, `rate_limit_enum`); now defaults to `true`. Configs that omit `active` may produce a one-time `false → true` plan diff for legacy rules.
-* **rule_rate_limit, rule_overlimit_res_settings:** user-typed `rate=0`/`burst=0`/`delay=0`/`overlimit_time=0` now reach the API. Bumps `wallarm-go` to **v0.12.1** (`*int+omitempty` for these fields; non-pointer `int+omitempty` was silently dropping zero). New helper `GetIntPointerIfConfigured` uses `d.GetRawConfig()` to skip Optional ints the user didn't write so API defaults win.
-* **rule_graphql_detection:** `max_depth`, `max_value_size_kb`, `max_doc_size_kb`, `max_doc_per_batch`, `introspection`, `debug_enabled` → Optional+Computed. Previously, Update zeroed API-defaulted ints, hitting `should be in 1..N`.
-* **rule_brute, rule_bola, rule_enum:** new plan-time validator (`EnumeratedParamsCustomizeDiff`) rejects `enumerated_parameters` fields that don't apply to the chosen mode (`points` in regexp; `name_regexps`/`value_regexps` populated or `additional_parameters=true`/`plain_parameters=true` in exact). Regexp mode also requires both `name_regexps` and `value_regexps` at plan time. **Migration:** configs that previously omitted one of the regexp lists must add `name_regexps = [""]` or `value_regexps = [""]` explicitly.
-* **enumerated_parameters bool fields:** `additional_parameters`/`plain_parameters` are Optional+Computed (no `Default`). Computed preserves API-echoed state across plans; previous `Default: false` corrupted regexp-mode imports and tripped the strict-denial validator on auto-generated post-import configs.
-* **mapper_tftoapi:** regexp-mode `name_regexps`/`value_regexps = [""]` now reaches the API. SDKv2 normalizes empty strings to `cty.NullVal`, and the shared `ConvertToStringSlice` was dropping nil entries — leaving the JSON field absent and the API rejecting. New `convertRegexpList` preserves `nil → ""`.
-* **arbitrary_conditions:** API stores `point` as a flat array; the mapper used to wrap it as a single sub-array, mismatching the user's 2D HCL representation and producing a force-replacement diff every plan. `ArbitraryConditionsToTF` now uses `WrapPointElements` to re-chunk the flat list per paired/simple element rules.
-* **action_helpers:** `existingHintForAction` paginates `ActionList`; tenants with >500 actions of a given hint type previously silently missed page-2+ collisions.
-* **test/rule_***: 12 `CheckDestroy` functions had inverted `if err != nil &&` conditions; replaced with shared `testAccCheckHintDestroyed` helper. Removed broken stubs on counter resources and added 3s `PreConfig` wait to `TestAccRuleAPIAbuseModeExistsError` (action-commit propagation flake).
+* **resourcerule.Create:** `active` defaulted to `false` for 7 mitigation controls; now `true`. May produce a one-time `false → true` plan diff for legacy rules.
+* **rule_rate_limit, rule_overlimit_res_settings:** user-typed `rate=0`/`burst=0`/`delay=0`/`overlimit_time=0` now reach the API (bumps `wallarm-go` to v0.12.1 for `*int+omitempty`).
+* **rule_graphql_detection:** `max_depth`, `max_value_size_kb`, `max_doc_size_kb`, `max_doc_per_batch`, `introspection`, `debug_enabled` → Optional+Computed; Update used to zero API-defaulted ints.
+* **rule_brute, rule_bola, rule_enum:** new plan-time validator rejects `enumerated_parameters` fields that don't apply to the chosen mode; regexp mode also requires both `name_regexps` and `value_regexps`.
+* **enumerated_parameters:** `additional_parameters`/`plain_parameters` are Optional+Computed; previous `Default: false` corrupted regexp-mode imports.
+* **mapper_tftoapi:** regexp-mode `name_regexps`/`value_regexps = [""]` now reaches the API (was dropped by `cty.NullVal` normalization).
+* **arbitrary_conditions:** mapper now re-chunks the flat-stored `point` per paired/simple element rules instead of wrapping it as a single sub-array — fixes a force-replacement diff every plan.
+* **action_helpers:** `existingHintForAction` paginates `ActionList` — previously missed page-2+ collisions on tenants with >500 actions of a given hint type.
+* **test/rule_*:** 12 `CheckDestroy` had inverted `if err != nil &&`; replaced with shared `testAccCheckHintDestroyed` helper.
 
 ### Documentation
 
-* **rules_import workflow:** new `filter_rules_in_state` variable (default `true`) skips rules whose `rule_id` is already in state during import-block generation. Prevents duplicate state entries when existing resources use different naming than the workflow's `rule_<id>` convention. Set `false` only when rebuilding state from scratch.
-* **examples:** added minimal HCL for `wallarm_rule_graphql_detection`, `_brute`, `_bola`, `_enum`, `_forced_browsing`, `_rate_limit_enum`, `_bola_counter` — six mitigation controls and one counter that previously had no example.
+* **rules_import:** new `filter_rules_in_state` variable (default `true`) skips rules whose `rule_id` is already in state, preventing duplicate state entries.
+* **examples:** added minimal HCL for `wallarm_rule_graphql_detection`, `_brute`, `_bola`, `_enum`, `_forced_browsing`, `_rate_limit_enum`, `_bola_counter`.
 
 ### Other Changes
 
-* 26 rule acceptance test files migrated to v2.3.5 patterns (`ProtoV5ProviderFactories`, `testAccNewAPIClient`, `%[N]q`, unique per-test scopes); `-race` re-enabled on `make testacc`.
-* New unit tests: `existingHintForAction` end-to-end, `CachedClient.HintCreate`/`HintDelete` cache cycles, `validateEnumeratedParamsBlock` table-driven, `ArbitraryConditionsToTF` multi-step round-trip, `isFieldSetInRawConfig`.
-* New acc tests: `enumerated_parameters.mode = "exact"` for bola/brute, `ActionScopeCustomizeDiff` valid+invalid scopes (`PlanOnly + ExpectError`, no API contact).
-* Shared `testAccCheckHintDestroyed(s, resourceType)` helper extracted; 22 rule test files now use a one-line wrapper (~700 LoC removed).
+* 26 rule acceptance test files migrated to v2.3.5 patterns (`ProtoV5ProviderFactories`, `testAccNewAPIClient`); `-race` re-enabled on `make testacc`.
+* New unit tests: `existingHintForAction`, `CachedClient.HintCreate`/`HintDelete` cache cycles, `validateEnumeratedParamsBlock`, `ArbitraryConditionsToTF`, `isFieldSetInRawConfig`.
+* New acc tests: `enumerated_parameters.mode = "exact"` for bola/brute, `ActionScopeCustomizeDiff` valid/invalid scopes.
+* Shared `testAccCheckHintDestroyed` extracted; ~700 LoC removed.
 
 ## [v2.3.7] - 2026-04-28
 
