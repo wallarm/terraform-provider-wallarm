@@ -2,12 +2,9 @@ package wallarm
 
 import (
 	"fmt"
-	"strconv"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
-	"github.com/wallarm/wallarm-go"
-
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
 
@@ -16,15 +13,15 @@ func TestAccRuleRateLimitEnumRegexp(t *testing.T) {
 	const config = `
 resource "wallarm_rule_rate_limit_enum" "wallarm_rule_rate_limit_enum_regexp" {
   mode = "block"
-  
+
   action {
     type = "iequal"
-    value = "wenum.wallarm.com"
+    value = "rate_limit_enum_regexp.example.com"
     point = {
       header = "HOST"
     }
   }
-  
+
   reaction {
     block_by_session = 3000
     block_by_ip = 4000
@@ -37,10 +34,10 @@ resource "wallarm_rule_rate_limit_enum" "wallarm_rule_rate_limit_enum_regexp" {
 
 }
 `
-	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckWallarmRuleRateLimitEnumDestroy,
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV5ProviderFactories: testAccProtoV5ProviderFactories,
+		CheckDestroy:             testAccCheckWallarmRuleRateLimitEnumDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: config,
@@ -63,15 +60,15 @@ func TestAccRuleRateLimitEnumWithAdvancedConditions(t *testing.T) {
 	const config = `
 resource "wallarm_rule_rate_limit_enum" "wallarm_rule_rate_limit_enum_advanced_conditions" {
   mode = "block"
-  
+
   action {
     type = "iequal"
-    value = "wenum.wallarm.com"
+    value = "rate_limit_enum_advanced.example.com"
     point = {
       header = "HOST"
     }
   }
-  
+
   reaction {
     block_by_session = 3000
     block_by_ip = 4000
@@ -90,10 +87,10 @@ resource "wallarm_rule_rate_limit_enum" "wallarm_rule_rate_limit_enum_advanced_c
 
 }
 `
-	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckWallarmRuleRateLimitEnumDestroy,
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV5ProviderFactories: testAccProtoV5ProviderFactories,
+		CheckDestroy:             testAccCheckWallarmRuleRateLimitEnumDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: config,
@@ -110,19 +107,19 @@ func TestAccRuleRateLimitEnumWithArbitraryConditions(t *testing.T) {
 	const config = `
 resource "wallarm_rule_rate_limit_enum" "wallarm_rule_rate_limit_enum_arbitrary_conditions" {
   mode = "block"
-  
+
   action {
     type = "iequal"
-    value = "wenum.wallarm.com"
+    value = "rate_limit_enum_arbitrary.example.com"
     point = {
       header = "HOST"
     }
   }
-  
+
   reaction {
     block_by_session = 3000
     block_by_ip = 4000
-	
+
   }
 
   threshold {
@@ -138,10 +135,10 @@ resource "wallarm_rule_rate_limit_enum" "wallarm_rule_rate_limit_enum_arbitrary_
 
 }
 `
-	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckWallarmRuleRateLimitEnumDestroy,
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV5ProviderFactories: testAccProtoV5ProviderFactories,
+		CheckDestroy:             testAccCheckWallarmRuleRateLimitEnumDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: config,
@@ -161,7 +158,7 @@ resource "wallarm_rule_rate_limit_enum" "update_count" {
 
   action {
     type = "iequal"
-    value = "wrlenum_update.example.com"
+    value = "rate_limit_enum_update.example.com"
     point = {
       header = "HOST"
     }
@@ -185,9 +182,9 @@ func TestAccRuleRateLimitEnumUpdateInPlaceThresholdCount(t *testing.T) {
 	var firstRuleID string
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckWallarmRuleRateLimitEnumDestroy,
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV5ProviderFactories: testAccProtoV5ProviderFactories,
+		CheckDestroy:             testAccCheckWallarmRuleRateLimitEnumDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccRuleRateLimitEnumUpdateConfig(5),
@@ -217,38 +214,5 @@ func TestAccRuleRateLimitEnumUpdateInPlaceThresholdCount(t *testing.T) {
 }
 
 func testAccCheckWallarmRuleRateLimitEnumDestroy(s *terraform.State) error {
-	client := testAccProvider.Meta().(*ProviderMeta).Client
-
-	for _, rs := range s.RootModule().Resources {
-		if rs.Type != "wallarm_rule_rate_limit_enum" {
-			continue
-		}
-
-		clientID, err := strconv.Atoi(rs.Primary.Attributes["client_id"])
-		if err != nil {
-			return err
-		}
-		actionID, err := strconv.Atoi(rs.Primary.Attributes["action_id"])
-		if err != nil {
-			return err
-		}
-
-		hint := &wallarm.HintRead{
-			Limit:     APIListLimit,
-			Offset:    0,
-			OrderBy:   "updated_at",
-			OrderDesc: true,
-			Filter: &wallarm.HintFilter{
-				Clientid: []int{clientID},
-				ActionID: []int{actionID},
-			},
-		}
-
-		rule, err := client.HintRead(hint)
-		if err != nil && rule != nil && len(*rule.Body) > 0 {
-			return fmt.Errorf("Wallarm Mode Rule still exists")
-		}
-	}
-
-	return nil
+	return testAccCheckHintDestroyed(s, "wallarm_rule_rate_limit_enum")
 }

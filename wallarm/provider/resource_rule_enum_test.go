@@ -2,12 +2,10 @@ package wallarm
 
 import (
 	"fmt"
-	"strconv"
+	"regexp"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
-	"github.com/wallarm/wallarm-go"
-
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
 
@@ -18,7 +16,7 @@ resource "wallarm_rule_enum" "wallarm_rule_enum_exact" {
 
   action {
     type = "iequal"
-    value = "wenum-exact.wallarm.com"
+    value = "enum_exact.example.com"
     point = {
       header = "HOST"
     }
@@ -47,10 +45,10 @@ resource "wallarm_rule_enum" "wallarm_rule_enum_exact" {
   }
 }
 `
-	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckWallarmRuleEnumDestroy,
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV5ProviderFactories: testAccProtoV5ProviderFactories,
+		CheckDestroy:             testAccCheckWallarmRuleEnumDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: config,
@@ -75,15 +73,15 @@ func TestAccRuleEnumRegexp(t *testing.T) {
 	const config = `
 resource "wallarm_rule_enum" "wallarm_rule_enum_regexp" {
   mode = "block"
-  
+
   action {
     type = "iequal"
-    value = "wenum.wallarm.com"
+    value = "enum_regexp.example.com"
     point = {
       header = "HOST"
     }
   }
-  
+
   reaction {
     block_by_session = 3000
     block_by_ip = 4000
@@ -103,10 +101,10 @@ resource "wallarm_rule_enum" "wallarm_rule_enum_regexp" {
   }
 }
 `
-	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckWallarmRuleEnumDestroy,
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV5ProviderFactories: testAccProtoV5ProviderFactories,
+		CheckDestroy:             testAccCheckWallarmRuleEnumDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: config,
@@ -123,15 +121,15 @@ func TestAccRuleEnumWithAdvancedConditions(t *testing.T) {
 	const config = `
 resource "wallarm_rule_enum" "wallarm_rule_enum_advanced_conditions" {
   mode = "block"
-  
+
   action {
     type = "iequal"
-    value = "wenum.wallarm.com"
+    value = "enum_advanced.example.com"
     point = {
       header = "HOST"
     }
   }
-  
+
   reaction {
     block_by_session = 3000
     block_by_ip = 4000
@@ -158,10 +156,10 @@ resource "wallarm_rule_enum" "wallarm_rule_enum_advanced_conditions" {
 
 }
 `
-	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckWallarmRuleEnumDestroy,
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV5ProviderFactories: testAccProtoV5ProviderFactories,
+		CheckDestroy:             testAccCheckWallarmRuleEnumDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: config,
@@ -178,19 +176,19 @@ func TestAccRuleEnumWithArbitraryConditions(t *testing.T) {
 	const config = `
 resource "wallarm_rule_enum" "wallarm_rule_enum_arbitrary_conditions" {
   mode = "block"
-  
+
   action {
     type = "iequal"
-    value = "wenum.wallarm.com"
+    value = "enum_arbitrary.example.com"
     point = {
       header = "HOST"
     }
   }
-  
+
   reaction {
     block_by_session = 3000
     block_by_ip = 4000
-	
+
   }
 
   threshold {
@@ -214,10 +212,10 @@ resource "wallarm_rule_enum" "wallarm_rule_enum_arbitrary_conditions" {
 
 }
 `
-	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckWallarmRuleEnumDestroy,
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV5ProviderFactories: testAccProtoV5ProviderFactories,
+		CheckDestroy:             testAccCheckWallarmRuleEnumDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: config,
@@ -237,7 +235,7 @@ resource "wallarm_rule_enum" "update_additional" {
 
   action {
     type = "iequal"
-    value = "wenum_update.example.com"
+    value = "enum_update.example.com"
     point = {
       header = "HOST"
     }
@@ -269,9 +267,9 @@ func TestAccRuleEnumUpdateInPlaceAdditionalParameters(t *testing.T) {
 	var firstRuleID string
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckWallarmRuleEnumDestroy,
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV5ProviderFactories: testAccProtoV5ProviderFactories,
+		CheckDestroy:             testAccCheckWallarmRuleEnumDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccRuleEnumUpdateConfig(false),
@@ -301,38 +299,196 @@ func TestAccRuleEnumUpdateInPlaceAdditionalParameters(t *testing.T) {
 }
 
 func testAccCheckWallarmRuleEnumDestroy(s *terraform.State) error {
-	client := testAccProvider.Meta().(*ProviderMeta).Client
+	return testAccCheckHintDestroyed(s, "wallarm_rule_enum")
+}
 
-	for _, rs := range s.RootModule().Resources {
-		if rs.Type != "wallarm_rule_enum" {
-			continue
-		}
+// TestAccRuleEnum_DefaultsToActiveOnCreate guards the v2.3.8 fix for
+// resourcerule.Create defaulting `active` to false instead of true. Without
+// the fix, mitigation controls (brute, bola, enum, forced_browsing,
+// graphql_detection, file_upload_size_limit, rate_limit_enum) shipped to the
+// API as inactive when the user omitted `active` from HCL — and a subsequent
+// `active = false` produced no plan diff because state already matched.
+//
+// Step 1: create without `active`, assert state has true.
+// Step 2: add `active = false`, assert plan applies and state flips.
+func TestAccRuleEnum_DefaultsToActiveOnCreate(t *testing.T) {
+	rnd := generateRandomResourceName(5)
+	name := "wallarm_rule_enum." + rnd
 
-		clientID, err := strconv.Atoi(rs.Primary.Attributes["client_id"])
-		if err != nil {
-			return err
-		}
-		actionID, err := strconv.Atoi(rs.Primary.Attributes["action_id"])
-		if err != nil {
-			return err
-		}
-
-		hint := &wallarm.HintRead{
-			Limit:     APIListLimit,
-			Offset:    0,
-			OrderBy:   "updated_at",
-			OrderDesc: true,
-			Filter: &wallarm.HintFilter{
-				Clientid: []int{clientID},
-				ActionID: []int{actionID},
-			},
-		}
-
-		rule, err := client.HintRead(hint)
-		if err != nil && rule != nil && len(*rule.Body) > 0 {
-			return fmt.Errorf("Wallarm Mode Rule still exists")
-		}
+	withActive := func(activeLine string) string {
+		return fmt.Sprintf(`
+resource "wallarm_rule_enum" %[1]q {
+  mode = "block"
+  %[2]s
+  action {
+    type  = "iequal"
+    value = "enum_active_default.example.com"
+    point = { header = "HOST" }
+  }
+  reaction { block_by_ip = 600 }
+  threshold {
+    count  = 5
+    period = 30
+  }
+  enumerated_parameters {
+    mode                  = "regexp"
+    name_regexps          = ["foo"]
+    value_regexps         = ["bar"]
+  }
+}`, rnd, activeLine)
 	}
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV5ProviderFactories: testAccProtoV5ProviderFactories,
+		CheckDestroy:             testAccCheckWallarmRuleEnumDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: withActive(""),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(name, "active", "true"),
+				),
+			},
+			{
+				Config: withActive(`active = false`),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(name, "active", "false"),
+				),
+			},
+		},
+	})
+}
 
-	return nil
+// TestAccRuleEnum_ExactRejectsAdditionalParameters verifies that
+// EnumeratedParamsCustomizeDiff fails plan when the user populates
+// `additional_parameters` while `mode = "exact"`. Without this validator the
+// mapper silently dropped the field on PUT, causing a perpetual diff loop.
+// PlanOnly + ExpectError so no API contact is required.
+func TestAccRuleEnum_ExactRejectsAdditionalParameters(t *testing.T) {
+	rnd := generateRandomResourceName(5)
+	config := fmt.Sprintf(`
+resource "wallarm_rule_enum" %[1]q {
+  mode = "block"
+  action {
+    type  = "iequal"
+    value = "enum_exact_reject.example.com"
+    point = { header = "HOST" }
+  }
+  reaction { block_by_ip = 600 }
+  threshold {
+    count  = 5
+    period = 30
+  }
+  enumerated_parameters {
+    mode                  = "exact"
+    additional_parameters = true
+    points {
+      point     = ["header", "REFERER"]
+      sensitive = true
+    }
+  }
+}`, rnd)
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV5ProviderFactories: testAccProtoV5ProviderFactories,
+		Steps: []resource.TestStep{
+			{
+				Config:      config,
+				PlanOnly:    true,
+				ExpectError: regexp.MustCompile(`additional_parameters.*not allowed when mode = "exact"`),
+			},
+		},
+	})
+}
+
+// TestAccRuleEnum_RegexpRequiresValueRegexps reproduces the v2.3.8 drift-loop
+// bug: in `mode = "regexp"`, omitting `value_regexps` previously caused the
+// mapper to substitute `[""]` (silently). The API echoed it back as `[null]`
+// in state, producing `~ value_regexps = [- null,]` on every subsequent
+// plan. The fix: drop the substitution and require both lists at plan time.
+// User must write `value_regexps = [""]` explicitly to opt out of value
+// matching.
+func TestAccRuleEnum_RegexpRequiresValueRegexps(t *testing.T) {
+	rnd := generateRandomResourceName(5)
+	config := fmt.Sprintf(`
+resource "wallarm_rule_enum" %[1]q {
+  mode = "block"
+  action {
+    type  = "iequal"
+    value = "enum_regexp_required.example.com"
+    point = { header = "HOST" }
+  }
+  reaction { block_by_ip = 600 }
+  threshold {
+    count  = 5
+    period = 30
+  }
+  enumerated_parameters {
+    mode         = "regexp"
+    name_regexps = ["foo", "bar"]
+  }
+}`, rnd)
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV5ProviderFactories: testAccProtoV5ProviderFactories,
+		Steps: []resource.TestStep{
+			{
+				Config:      config,
+				PlanOnly:    true,
+				ExpectError: regexp.MustCompile(`value_regexps.*required when mode = "regexp"`),
+			},
+		},
+	})
+}
+
+// TestAccRuleEnum_UpdateAdditionalParametersToFalse regression-tests the
+// Optional+Computed zero-value bug for booleans: flipping
+// `additional_parameters: true → false` previously silently preserved true.
+func TestAccRuleEnum_UpdateAdditionalParametersToFalse(t *testing.T) {
+	rnd := generateRandomResourceName(5)
+	name := "wallarm_rule_enum." + rnd
+	withParams := func(additional bool) string {
+		return fmt.Sprintf(`
+resource "wallarm_rule_enum" %[1]q {
+  mode = "block"
+  action {
+    type  = "iequal"
+    value = "enum_bool_update.example.com"
+    point = { header = "HOST" }
+  }
+  reaction {
+    block_by_session = 3000
+    block_by_ip      = 4000
+  }
+  threshold {
+    count  = 5
+    period = 30
+  }
+  enumerated_parameters {
+    mode                  = "regexp"
+    name_regexps          = ["foo"]
+    value_regexps         = ["bar"]
+    additional_parameters = %[2]t
+    plain_parameters      = false
+  }
+}`, rnd, additional)
+	}
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV5ProviderFactories: testAccProtoV5ProviderFactories,
+		CheckDestroy:             testAccCheckWallarmRuleEnumDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: withParams(true),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(name, "enumerated_parameters.0.additional_parameters", "true"),
+				),
+			},
+			{
+				Config: withParams(false),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(name, "enumerated_parameters.0.additional_parameters", "false"),
+				),
+			},
+		},
+	})
 }

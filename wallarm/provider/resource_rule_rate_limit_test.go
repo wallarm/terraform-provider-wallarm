@@ -2,21 +2,20 @@ package wallarm
 
 import (
 	"fmt"
-	"strconv"
+	"regexp"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
-	"github.com/wallarm/wallarm-go"
 )
 
 func TestAccRuleRateLimit(t *testing.T) {
 	resourceName := generateRandomResourceName(5)
 	resourceAddress := "wallarm_rule_rate_limit." + resourceName
-	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		CheckDestroy: testAccRuleRateLimitDestroy(),
-		Providers:    testAccProviders,
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV5ProviderFactories: testAccProtoV5ProviderFactories,
+		CheckDestroy:             testAccRuleRateLimitDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccRuleRateLimit(resourceName),
@@ -43,7 +42,7 @@ resource "wallarm_rule_rate_limit" %[1]q {
 
 	action {
 		type = "iequal"
-		value = "example.com"
+		value = "rate_limit_basic.example.com"
 		point = {
 			header = "HOST"
 		}
@@ -64,10 +63,10 @@ func TestAccRuleRateLimitUpdateInPlaceDelay(t *testing.T) {
 	resourceAddress := "wallarm_rule_rate_limit." + resourceName
 	var firstRuleID string
 
-	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		CheckDestroy: testAccRuleRateLimitDestroy(),
-		Providers:    testAccProviders,
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV5ProviderFactories: testAccProtoV5ProviderFactories,
+		CheckDestroy:             testAccRuleRateLimitDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccRuleRateLimitUpdateConfig(resourceName, "rate_limit_update.example.com", 100),
@@ -118,41 +117,86 @@ resource "wallarm_rule_rate_limit" %[1]q {
 `, resourceName, host, delay)
 }
 
-func testAccRuleRateLimitDestroy() resource.TestCheckFunc {
-	return func(s *terraform.State) error {
-		client := testAccProvider.Meta().(*ProviderMeta).Client
+func testAccRuleRateLimitDestroy(s *terraform.State) error {
+	return testAccCheckHintDestroyed(s, "wallarm_rule_rate_limit")
+}
 
-		for _, resource := range s.RootModule().Resources {
-			if resource.Type != "wallarm_rule_rate_limit" {
-				continue
-			}
+// TestAccRuleRateLimit_RspStatusRequired guards the v2.3.8 schema
+// actualisation: `rsp_status` was Optional in the schema but Required at the
+// API level (`should be in 400..599, can't be blank`). The schema is now
+// Required so plan-time validation catches the omission cleanly. PlanOnly +
+// ExpectError so no API contact is needed.
+func TestAccRuleRateLimit_RspStatusRequired(t *testing.T) {
+	rnd := generateRandomResourceName(5)
+	config := fmt.Sprintf(`
+resource "wallarm_rule_rate_limit" %[1]q {
+  action {
+    type  = "iequal"
+    value = "ratelimit-rsp-required.example.com"
+    point = { header = "HOST" }
+  }
+  point = [["get_all"]]
+  rate  = 100
+  # rsp_status omitted on purpose
+}
+`, rnd)
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV5ProviderFactories: testAccProtoV5ProviderFactories,
+		Steps: []resource.TestStep{
+			{
+				Config:      config,
+				PlanOnly:    true,
+				ExpectError: regexp.MustCompile(`(?i)"rsp_status".*required|argument "rsp_status" is required`),
+			},
+		},
+	})
+}
 
-			clientID, err := strconv.Atoi(resource.Primary.Attributes["client_id"])
-			if err != nil {
-				return err
-			}
-			ruleID, err := strconv.Atoi(resource.Primary.Attributes["rule_id"])
-			if err != nil {
-				return err
-			}
-
-			resp, err := client.HintRead(&wallarm.HintRead{
-				Limit:   1,
-				OrderBy: "updated_at",
-				Filter: &wallarm.HintFilter{
-					Clientid: []int{clientID},
-					ID:       []int{ruleID},
-				},
-			})
-			if err != nil {
-				return err
-			}
-
-			if resp != nil && resp.Body != nil && len(*resp.Body) != 0 {
-				return fmt.Errorf("Resource still exists: %s", resource.Primary.ID)
-			}
-		}
-
-		return nil
-	}
+// TestAccRuleRateLimit_RateBurstZero is the regression guard for the v2.3.8
+// silent-zero-drop bug. wallarm-go v0.12.1 changed Rate/Burst/Delay to *int
+// because the previous int+omitempty shape silently dropped a literal 0
+// from the wire payload — the API then rejected with `can't be blank`.
+//
+// Step 1: Create with `rate = 0`, `burst = 0`, `delay = 0` — must succeed.
+// Step 2: re-plan, must show no drift.
+func TestAccRuleRateLimit_RateBurstZero(t *testing.T) {
+	rnd := generateRandomResourceName(5)
+	name := "wallarm_rule_rate_limit." + rnd
+	config := fmt.Sprintf(`
+resource "wallarm_rule_rate_limit" %[1]q {
+  action {
+    type  = "iequal"
+    value = "ratelimit-zero.example.com"
+    point = { header = "HOST" }
+  }
+  point      = [["get_all"]]
+  rate       = 0
+  burst      = 0
+  delay      = 0
+  rsp_status = 429
+  time_unit  = "rps"
+}
+`, rnd)
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV5ProviderFactories: testAccProtoV5ProviderFactories,
+		CheckDestroy:             testAccRuleRateLimitDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: config,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(name, "rate", "0"),
+					resource.TestCheckResourceAttr(name, "burst", "0"),
+					resource.TestCheckResourceAttr(name, "delay", "0"),
+				),
+			},
+			{
+				// Same config — second plan should be clean (no drift).
+				Config:             config,
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: false,
+			},
+		},
+	})
 }

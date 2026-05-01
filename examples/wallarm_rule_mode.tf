@@ -8,7 +8,7 @@ resource "wallarm_rule_mode" "wp_mode" {
   }
 
   action {
-    type = "iequal"
+    type  = "iequal"
     value = "monitor"
     point = {
       path = 0
@@ -16,7 +16,7 @@ resource "wallarm_rule_mode" "wp_mode" {
   }
 
   action {
-    type = "equal"
+    type  = "equal"
     value = "admin"
     point = {
       query = "user"
@@ -46,7 +46,7 @@ resource "wallarm_rule_mode" "ad_mode" {
   mode = "default"
 
   action {
-    type = "equal"
+    type  = "equal"
     value = "api"
     point = {
       path = 0
@@ -54,7 +54,7 @@ resource "wallarm_rule_mode" "ad_mode" {
   }
 
   action {
-    type = "equal"
+    type  = "equal"
     value = "active-directory"
     point = {
       path = 1
@@ -66,7 +66,7 @@ resource "wallarm_rule_mode" "dvwa_mode" {
   mode = "block"
 
   action {
-    type = "iequal"
+    type  = "iequal"
     value = "dvwa.wallarm-demo.com"
     point = {
       header = "HOST"

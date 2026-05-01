@@ -3,10 +3,7 @@ package wallarm
 import (
 	"fmt"
 	"os"
-	"strconv"
 	"testing"
-
-	"github.com/wallarm/wallarm-go"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
@@ -18,10 +15,10 @@ func TestAccRuleDisableStampCreate_Basic(t *testing.T) {
 	}
 	rnd := generateRandomResourceName(5)
 	name := "wallarm_rule_disable_stamp." + rnd
-	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckWallarmRuleDisableStampDestroy,
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV5ProviderFactories: testAccProtoV5ProviderFactories,
+		CheckDestroy:             testAccCheckWallarmRuleDisableStampDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testWallarmRuleDisableStampBasicConfig(rnd, 1234, "iequal", "stamp.wallarm.com", "HOST", `["post"],["form_urlencoded","query"]`),
@@ -49,10 +46,10 @@ func TestAccRuleDisableStampCreateRecreate(t *testing.T) {
 	}
 	rnd := generateRandomResourceName(5)
 	name := "wallarm_rule_disable_stamp." + rnd
-	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckWallarmRuleDisableStampDestroy,
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV5ProviderFactories: testAccProtoV5ProviderFactories,
+		CheckDestroy:             testAccCheckWallarmRuleDisableStampDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccRuleDisableStampCreateRecreate(rnd, 5678),
@@ -82,10 +79,10 @@ func TestAccRuleDisableStampCreate_DefaultBranch(t *testing.T) {
 	name := "wallarm_rule_disable_stamp." + rnd
 	point := `["header","HOST"],["pollution"]`
 
-	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckWallarmRuleDisableStampDestroy,
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV5ProviderFactories: testAccProtoV5ProviderFactories,
+		CheckDestroy:             testAccCheckWallarmRuleDisableStampDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testWallarmRuleDisableStampDefaultBranchConfig(rnd, 9012, point),
@@ -103,12 +100,12 @@ func TestAccRuleDisableStampCreate_DefaultBranch(t *testing.T) {
 
 func testWallarmRuleDisableStampBasicConfig(resourceID string, stamp int, actionType, actionValue, actionPoint, point string) string {
 	return fmt.Sprintf(`
-resource "wallarm_rule_disable_stamp" "%[1]s" {
+resource "wallarm_rule_disable_stamp" %[1]q {
   action {
-    type = "%[2]s"
-    value = "%[3]s"
+    type = %[2]q
+    value = %[3]q
     point = {
-      header = "%[4]s"
+      header = %[4]q
     }
   }
   point = [%[5]s]
@@ -118,7 +115,7 @@ resource "wallarm_rule_disable_stamp" "%[1]s" {
 
 func testWallarmRuleDisableStampDefaultBranchConfig(resourceID string, stamp int, point string) string {
 	return fmt.Sprintf(`
-resource "wallarm_rule_disable_stamp" "%[1]s" {
+resource "wallarm_rule_disable_stamp" %[1]q {
   point = [%[2]s]
   stamp = %[3]d
 }`, resourceID, point, stamp)
@@ -126,7 +123,7 @@ resource "wallarm_rule_disable_stamp" "%[1]s" {
 
 func testAccRuleDisableStampCreateRecreate(resourceID string, stamp int) string {
 	return fmt.Sprintf(`
-resource "wallarm_rule_disable_stamp" "%[1]s" {
+resource "wallarm_rule_disable_stamp" %[1]q {
   point = [["header", "X-FOOBAR"]]
   stamp = %[2]d
 }`, resourceID, stamp)
@@ -140,10 +137,10 @@ func TestAccRuleDisableStampUpdateInPlaceComment(t *testing.T) {
 	name := "wallarm_rule_disable_stamp." + rnd
 	var firstRuleID string
 
-	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckWallarmRuleDisableStampDestroy,
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV5ProviderFactories: testAccProtoV5ProviderFactories,
+		CheckDestroy:             testAccCheckWallarmRuleDisableStampDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccRuleDisableStampUpdateCommentConfig(rnd, "first comment"),
@@ -189,39 +186,5 @@ resource "wallarm_rule_disable_stamp" %[1]q {
 }
 
 func testAccCheckWallarmRuleDisableStampDestroy(s *terraform.State) error {
-	client := testAccProvider.Meta().(*ProviderMeta).Client
-
-	for _, rs := range s.RootModule().Resources {
-		if rs.Type != "wallarm_rule_disable_stamp" {
-			continue
-		}
-
-		clientID, err := strconv.Atoi(rs.Primary.Attributes["client_id"])
-		if err != nil {
-			return err
-		}
-		actionID, err := strconv.Atoi(rs.Primary.Attributes["action_id"])
-		if err != nil {
-			return err
-		}
-
-		hint := &wallarm.HintRead{
-			Limit:     APIListLimit,
-			Offset:    0,
-			OrderBy:   "updated_at",
-			OrderDesc: true,
-			Filter: &wallarm.HintFilter{
-				Clientid: []int{clientID},
-				ActionID: []int{actionID},
-				Type:     []string{"disable_stamp"},
-			},
-		}
-
-		rule, err := client.HintRead(hint)
-		if err != nil && len(*rule.Body) != 0 {
-			return fmt.Errorf("Disable Stamp rule still exists")
-		}
-	}
-
-	return nil
+	return testAccCheckHintDestroyed(s, "wallarm_rule_disable_stamp")
 }

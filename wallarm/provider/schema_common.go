@@ -56,7 +56,6 @@ var (
 		},
 		"set": {
 			Type:        schema.TypeString,
-			Computed:    true,
 			Optional:    true,
 			Description: "The rule set name. Used to group related rules together.",
 		},
@@ -68,7 +67,6 @@ var (
 		},
 		"title": {
 			Type:        schema.TypeString,
-			Computed:    true,
 			Optional:    true,
 			Description: "A short title for the rule.",
 		},
@@ -128,17 +126,14 @@ var (
 				"block_by_session": {
 					Type:     schema.TypeInt,
 					Optional: true,
-					Computed: true,
 				},
 				"block_by_ip": {
 					Type:     schema.TypeInt,
 					Optional: true,
-					Computed: true,
 				},
 				"graylist_by_ip": {
 					Type:     schema.TypeInt,
 					Optional: true,
-					Computed: true,
 				},
 			},
 		},
@@ -176,15 +171,21 @@ var (
 				"name_regexps": {
 					Type:     schema.TypeList,
 					Optional: true,
-					Computed: true,
 					Elem:     &schema.Schema{Type: schema.TypeString},
 				},
 				"value_regexps": {
 					Type:     schema.TypeList,
 					Optional: true,
-					Computed: true,
 					Elem:     &schema.Schema{Type: schema.TypeString},
 				},
+				// API defaults both fields to true in regexp mode and omits
+				// them entirely in exact mode. Optional+Computed lets the
+				// SDK preserve API-echoed state across plans when the user
+				// omits the field. Default is intentionally absent — Default
+				// and Computed are mutually exclusive in SDKv2 anyway, and
+				// the previous Default:false caused exact-mode imports to
+				// surface explicit `false` in auto-generated configs which
+				// the strict validator then rejected.
 				"additional_parameters": {
 					Type:     schema.TypeBool,
 					Optional: true,

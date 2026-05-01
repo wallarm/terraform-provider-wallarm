@@ -103,14 +103,36 @@ func ArbitraryConditionsToTF(arbitraryConditions []wallarm.ArbitraryConditionRes
 
 	result := make([]interface{}, 0, len(arbitraryConditions))
 	for _, arbitraryCondition := range arbitraryConditions {
+		// API returns `point` as a flat array (e.g.
+		// ["post", "json_doc", "hash", "user_id"]). The Terraform schema
+		// expects a 2D representation grouping paired elements with their
+		// value (e.g. [["post"], ["json_doc"], ["hash", "user_id"]]).
+		// WrapPointElements consults the same paired/simple element table
+		// used by the rule-level `point` field so the round-trip matches
+		// what the user wrote in HCL.
 		result = append(result, map[string]interface{}{
-			"point":    []interface{}{arbitraryCondition.Point},
+			"point":    wrappedPointToInterface(WrapPointElements(arbitraryCondition.Point)),
 			"operator": arbitraryCondition.Operator,
 			"value":    arbitraryCondition.Value,
 		})
 	}
 
 	return result
+}
+
+// wrappedPointToInterface converts the [][]string output of WrapPointElements
+// to the []interface{} of []interface{} shape SDKv2 expects when setting a
+// nested `TypeList` of `TypeList` of `TypeString`.
+func wrappedPointToInterface(in [][]string) []interface{} {
+	out := make([]interface{}, 0, len(in))
+	for _, sub := range in {
+		inner := make([]interface{}, 0, len(sub))
+		for _, s := range sub {
+			inner = append(inner, s)
+		}
+		out = append(out, inner)
+	}
+	return out
 }
 
 func SliceAnyToSliceString(in []any) []string {

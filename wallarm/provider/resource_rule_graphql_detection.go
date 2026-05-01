@@ -20,17 +20,27 @@ func resourceWallarmGraphqlDetection() *schema.Resource {
 			Required:     true,
 			ValidateFunc: validation.StringInSlice([]string{"off", "default", "monitoring", "block"}, false),
 		},
+		// All API-defaulted fields below are Optional+Computed: the API has
+		// authoritative defaults (max_depth=10, max_value_size_kb=10,
+		// max_doc_size_kb=100, max_doc_per_batch=10, max_alias_size_kb=5,
+		// introspection=true, debug_enabled=true). Computed lets the SDK
+		// preserve API-echoed state values when the user omits the field in
+		// HCL, so subsequent plans don't claim drift and Update doesn't send
+		// zeros that the API would reject (1..N range constraints).
 		"max_depth": {
 			Type:     schema.TypeInt,
 			Optional: true,
+			Computed: true,
 		},
 		"max_value_size_kb": {
 			Type:     schema.TypeInt,
 			Optional: true,
+			Computed: true,
 		},
 		"max_doc_size_kb": {
 			Type:     schema.TypeInt,
 			Optional: true,
+			Computed: true,
 		},
 		"max_alias_size_kb": {
 			Type:     schema.TypeInt,
@@ -41,14 +51,17 @@ func resourceWallarmGraphqlDetection() *schema.Resource {
 		"max_doc_per_batch": {
 			Type:     schema.TypeInt,
 			Optional: true,
+			Computed: true,
 		},
 		"introspection": {
 			Type:     schema.TypeBool,
 			Optional: true,
+			Computed: true,
 		},
 		"debug_enabled": {
 			Type:     schema.TypeBool,
 			Optional: true,
+			Computed: true,
 		},
 	}
 	sh := lo.Assign(fields, commonResourceRuleFields, resourcerule.ActionScopeFields)

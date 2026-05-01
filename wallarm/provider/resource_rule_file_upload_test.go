@@ -2,38 +2,36 @@ package wallarm
 
 import (
 	"fmt"
-	"strconv"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
-	"github.com/wallarm/wallarm-go"
 )
 
 func TestAccRuleFileUploadSizeLimit(t *testing.T) {
 	const config = `
 resource "wallarm_rule_file_upload_size_limit" "wallarm_rule_file_upload_size_limit_1" {
   mode = "block"
-  
+
   action {
     type = "iequal"
-    value = "wenum.wallarm.com"
+    value = "file_upload_basic.example.com"
     point = {
       header = "HOST"
     }
   }
-  
+
   point = [["header_all"]]
-  
+
   size = 1
   size_unit = "mb"
 
 }
 `
-	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckWallarmRuleFileUploadSizeLimitDestroy,
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV5ProviderFactories: testAccProtoV5ProviderFactories,
+		CheckDestroy:             testAccCheckWallarmRuleFileUploadSizeLimitDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: config,
@@ -56,10 +54,10 @@ func TestAccRuleFileUploadSizeLimitUpdateInPlaceSize(t *testing.T) {
 	resourceAddress := "wallarm_rule_file_upload_size_limit.update_size"
 	var firstRuleID string
 
-	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckWallarmRuleFileUploadSizeLimitDestroy,
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV5ProviderFactories: testAccProtoV5ProviderFactories,
+		CheckDestroy:             testAccCheckWallarmRuleFileUploadSizeLimitDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccRuleFileUploadSizeLimitUpdateConfig("file_upload_update.example.com", 1),
@@ -107,38 +105,5 @@ resource "wallarm_rule_file_upload_size_limit" "update_size" {
 }
 
 func testAccCheckWallarmRuleFileUploadSizeLimitDestroy(s *terraform.State) error {
-	client := testAccProvider.Meta().(*ProviderMeta).Client
-
-	for _, rs := range s.RootModule().Resources {
-		if rs.Type != "wallarm_rule_file_upload_size_limit" {
-			continue
-		}
-
-		clientID, err := strconv.Atoi(rs.Primary.Attributes["client_id"])
-		if err != nil {
-			return err
-		}
-		actionID, err := strconv.Atoi(rs.Primary.Attributes["action_id"])
-		if err != nil {
-			return err
-		}
-
-		hint := &wallarm.HintRead{
-			Limit:     APIListLimit,
-			Offset:    0,
-			OrderBy:   "updated_at",
-			OrderDesc: true,
-			Filter: &wallarm.HintFilter{
-				Clientid: []int{clientID},
-				ActionID: []int{actionID},
-			},
-		}
-
-		rule, err := client.HintRead(hint)
-		if err != nil && rule != nil && len(*rule.Body) > 0 {
-			return fmt.Errorf("Wallarm Mode Rule still exists")
-		}
-	}
-
-	return nil
+	return testAccCheckHintDestroyed(s, "wallarm_rule_file_upload_size_limit")
 }

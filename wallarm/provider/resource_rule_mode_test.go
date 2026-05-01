@@ -2,10 +2,7 @@ package wallarm
 
 import (
 	"fmt"
-	"strconv"
 	"testing"
-
-	"github.com/wallarm/wallarm-go"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
@@ -20,13 +17,13 @@ type wmodeTestingRule struct {
 func TestAccRuleWmodeCreate_Basic(t *testing.T) {
 	rnd := generateRandomResourceName(5)
 	name := "wallarm_rule_mode." + rnd
-	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckWallarmRuleWmodeDestroy,
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV5ProviderFactories: testAccProtoV5ProviderFactories,
+		CheckDestroy:             testAccCheckWallarmRuleWmodeDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testWallarmRuleWmodeBasicConfig(rnd, "monitoring", "iequal", "wmode.wallarm.com", "HOST"),
+				Config: testWallarmRuleWmodeBasicConfig(rnd, "monitoring", "iequal", "wmode_basic.example.com", "HOST"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(name, "mode", "monitoring"),
 					resource.TestCheckResourceAttr(name, "action.#", "1"),
@@ -45,10 +42,10 @@ func TestAccRuleWmodeCreate_Basic(t *testing.T) {
 func TestAccRuleWmodeCreate_DefaultBranch(t *testing.T) {
 	rnd := generateRandomResourceName(5)
 	name := "wallarm_rule_mode." + rnd
-	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckWallarmRuleWmodeDestroy,
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV5ProviderFactories: testAccProtoV5ProviderFactories,
+		CheckDestroy:             testAccCheckWallarmRuleWmodeDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testWallarmRuleWmodeDefaultBranchConfig(rnd, "default"),
@@ -73,10 +70,10 @@ func TestAccRuleWmodeCreate_FullSettings(t *testing.T) {
 		value:     value,
 	}
 
-	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckWallarmRuleWmodeDestroy,
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV5ProviderFactories: testAccProtoV5ProviderFactories,
+		CheckDestroy:             testAccCheckWallarmRuleWmodeDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testWallarmRuleWmodeFullSettingsConfig(rnd, rule),
@@ -91,13 +88,13 @@ func TestAccRuleWmodeCreate_FullSettings(t *testing.T) {
 
 func testWallarmRuleWmodeBasicConfig(resourceID, mode, actionType, actionValue, actionPoint string) string {
 	return fmt.Sprintf(`
-resource "wallarm_rule_mode" "%[1]s" {
-  mode = "%[2]s"
+resource "wallarm_rule_mode" %[1]q {
+  mode = %[2]q
   action {
-    type = "%[3]s"
-    value = "%[4]s"
+    type = %[3]q
+    value = %[4]q
     point = {
-      header = "%[5]s"
+      header = %[5]q
     }
   }
 }`, resourceID, mode, actionType, actionValue, actionPoint)
@@ -105,8 +102,8 @@ resource "wallarm_rule_mode" "%[1]s" {
 
 func testWallarmRuleWmodeDefaultBranchConfig(resourceID, mode string) string {
 	return fmt.Sprintf(`
-resource "wallarm_rule_mode" "%[1]s" {
-	mode = "%[2]s"
+resource "wallarm_rule_mode" %[1]q {
+	mode = %[2]q
 }`, resourceID, mode)
 }
 
@@ -116,9 +113,9 @@ func testWallarmRuleWmodeFullSettingsConfig(resourceID string, rule wmodeTesting
 	regex := rule.matchType[2]
 	absent := rule.matchType[3]
 	return fmt.Sprintf(`
-resource "wallarm_rule_mode" "%[7]s" {
+resource "wallarm_rule_mode" %[7]q {
 
-	mode = "%[1]s"
+	mode = %[1]q
 
 	action {
 		point = {
@@ -134,14 +131,14 @@ resource "wallarm_rule_mode" "%[7]s" {
 	}
 
 	action {
-		type = "%[3]s"
+		type = %[3]q
 		point = {
 		  action_name = "wmode"
 		}
 	}
 
 	action {
-		type = "%[5]s"
+		type = %[5]q
 		point = {
 		  action_ext = ""
 		}
@@ -149,7 +146,7 @@ resource "wallarm_rule_mode" "%[7]s" {
 
 	action {
 		value = "api"
-		type = "%[2]s"
+		type = %[2]q
 		point = {
 		  path = 1
 		}
@@ -157,36 +154,36 @@ resource "wallarm_rule_mode" "%[7]s" {
 
 	action {
 		value = "login"
-		type = "%[3]s"
+		type = %[3]q
 		point = {
 		  path = 3
 		}
 	}
 
 	action {
-		type = "%[3]s"
+		type = %[3]q
 		point = {
 		  method = "PUT"
 		}
 	}
 
 	action {
-		type = "%[2]s"
+		type = %[2]q
 		point = {
 		  scheme = "http"
 		}
 	}
 
 	action {
-		type = "%[2]s"
+		type = %[2]q
 		point = {
 		  proto = "1.0"
 		}
 	}
 
 	action {
-		type = "%[3]s"
-		value = "%[6]s"
+		type = %[3]q
+		value = %[6]q
 		point = {
 		  header = "referer"
 		}
@@ -201,9 +198,9 @@ func TestAccRuleModeUpdateInPlaceMode(t *testing.T) {
 	var firstRuleID string
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckWallarmRuleWmodeDestroy,
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV5ProviderFactories: testAccProtoV5ProviderFactories,
+		CheckDestroy:             testAccCheckWallarmRuleWmodeDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testWallarmRuleWmodeBasicConfig(rnd, "monitoring", "iequal", "wmode_update.example.com", "HOST"),
@@ -233,39 +230,5 @@ func TestAccRuleModeUpdateInPlaceMode(t *testing.T) {
 }
 
 func testAccCheckWallarmRuleWmodeDestroy(s *terraform.State) error {
-	client := testAccProvider.Meta().(*ProviderMeta).Client
-
-	for _, rs := range s.RootModule().Resources {
-		if rs.Type != "wallarm_rule_mode" {
-			continue
-		}
-
-		clientID, err := strconv.Atoi(rs.Primary.Attributes["client_id"])
-		if err != nil {
-			return err
-		}
-		actionID, err := strconv.Atoi(rs.Primary.Attributes["action_id"])
-		if err != nil {
-			return err
-		}
-
-		hint := &wallarm.HintRead{
-			Limit:     APIListLimit,
-			Offset:    0,
-			OrderBy:   "updated_at",
-			OrderDesc: true,
-			Filter: &wallarm.HintFilter{
-				Clientid: []int{clientID},
-				ActionID: []int{actionID},
-				Type:     []string{"wallarm_mode"},
-			},
-		}
-
-		rule, err := client.HintRead(hint)
-		if err != nil && len(*rule.Body) != 0 {
-			return fmt.Errorf("Wallarm Mode Rule still exists")
-		}
-	}
-
-	return nil
+	return testAccCheckHintDestroyed(s, "wallarm_rule_mode")
 }

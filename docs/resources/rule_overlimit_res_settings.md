@@ -41,8 +41,8 @@ resource "wallarm_rule_overlimit_res_settings" "example_overlimit_res_settings" 
 ## Argument Reference
 
 * `client_id` - (optional) ID of the client to apply the rules to. The value is required for [multi-tenant scenarios][1].
-* `overlimit_time` - (required) Specifies the overlimit time limit in ms.
-* `mode` - (required) Specifies the overlimit res mode. Can be: `off`, `monitoring`, `blocking`.
+* `overlimit_time` - (**required**) Overlimit time limit in ms.
+* `mode` - (optional, computed) `off`, `monitoring`, or `blocking`. API default `monitoring` applies when omitted.
 * `action` - (optional) rule conditions. See the [Action Guide](../guides/action) for full documentation on action conditions, point types, and usage examples.
 
 ## Attributes Reference

@@ -9,13 +9,27 @@ import (
 	wallarm "github.com/wallarm/wallarm-go"
 )
 
-// mockAPI implements wallarm.API by embedding nil and only overriding HintRead.
-// We use a concrete mock that tracks call counts to verify caching behavior.
+// mockHintAPI implements wallarm.API by embedding nil and overriding the
+// methods exercised by the provider's helpers (HintRead, ActionList).
+// Concrete mock tracks call counts to verify caching/pagination behavior.
 type mockHintAPI struct {
-	wallarm.API // embed to satisfy interface; only HintRead is called
-	hints       []wallarm.ActionBody
-	callCount   atomic.Int32
-	failOnCall  int // if > 0, fail on the Nth call
+	wallarm.API     // embed to satisfy interface; only listed methods are called
+	hints           []wallarm.ActionBody
+	actions         []wallarm.ActionEntry // for ActionList pagination tests
+	callCount       atomic.Int32
+	actionCallCount atomic.Int32
+	failOnCall      int // if > 0, fail on the Nth HintRead call
+
+	// HintCreate hooks: when failOnCreate is set, return that error.
+	// createResp is the body the mock returns on success (caller controls Body to
+	// test nil-Body skip logic). createCallCount tracks invocations.
+	createResp      *wallarm.ActionCreateResp
+	failOnCreate    error
+	createCallCount atomic.Int32
+
+	// HintDelete hooks: failOnDelete returns that error. deleteCallCount tracks.
+	failOnDelete    error
+	deleteCallCount atomic.Int32
 }
 
 func (m *mockHintAPI) HintRead(body *wallarm.HintRead) (*wallarm.HintReadResp, error) {
@@ -24,18 +38,22 @@ func (m *mockHintAPI) HintRead(body *wallarm.HintRead) (*wallarm.HintReadResp, e
 		return nil, fmt.Errorf("simulated API error on call %d", n)
 	}
 
-	// Paginate based on offset/limit
-	offset := body.Offset
-	limit := body.Limit
-	if offset >= len(m.hints) {
-		return &wallarm.HintReadResp{Status: 200, Body: &[]wallarm.ActionBody{}}, nil
-	}
-	end := offset + limit
-	if end > len(m.hints) {
-		end = len(m.hints)
+	// Filter by ActionID — used by existingHintForAction's HintRead step
+	if body.Filter != nil && len(body.Filter.ActionID) > 0 {
+		actionIDSet := make(map[int]bool)
+		for _, aid := range body.Filter.ActionID {
+			actionIDSet[aid] = true
+		}
+		var filtered []wallarm.ActionBody
+		for _, h := range m.hints {
+			if actionIDSet[h.ActionID] {
+				filtered = append(filtered, h)
+			}
+		}
+		return &wallarm.HintReadResp{Status: 200, Body: &filtered}, nil
 	}
 
-	// If filtering by specific IDs, return only matching hints
+	// Filter by specific IDs
 	if body.Filter != nil && len(body.Filter.ID) > 0 {
 		idSet := make(map[int]bool)
 		for _, id := range body.Filter.ID {
@@ -50,8 +68,54 @@ func (m *mockHintAPI) HintRead(body *wallarm.HintRead) (*wallarm.HintReadResp, e
 		return &wallarm.HintReadResp{Status: 200, Body: &filtered}, nil
 	}
 
+	// Default: paginate all hints by offset/limit
+	offset := body.Offset
+	limit := body.Limit
+	if offset >= len(m.hints) {
+		return &wallarm.HintReadResp{Status: 200, Body: &[]wallarm.ActionBody{}}, nil
+	}
+	end := offset + limit
+	if end > len(m.hints) {
+		end = len(m.hints)
+	}
 	page := m.hints[offset:end]
 	return &wallarm.HintReadResp{Status: 200, Body: &page}, nil
+}
+
+// HintCreate returns m.createResp (or m.failOnCreate if set). The test sets
+// createResp.Body to control whether Insert sees a non-nil body.
+func (m *mockHintAPI) HintCreate(_ *wallarm.ActionCreate) (*wallarm.ActionCreateResp, error) {
+	m.createCallCount.Add(1)
+	if m.failOnCreate != nil {
+		return nil, m.failOnCreate
+	}
+	return m.createResp, nil
+}
+
+// HintDelete returns success unless m.failOnDelete is set.
+func (m *mockHintAPI) HintDelete(_ *wallarm.HintDelete) (*wallarm.HintDeleteResp, error) {
+	m.deleteCallCount.Add(1)
+	if m.failOnDelete != nil {
+		return nil, m.failOnDelete
+	}
+	return &wallarm.HintDeleteResp{Status: 200, Body: []wallarm.ActionBody{}}, nil
+}
+
+// ActionList paginates m.actions by Offset/Limit. Filter fields are not
+// honoured (tests load m.actions with the desired post-filter set).
+func (m *mockHintAPI) ActionList(params *wallarm.ActionListParams) (*wallarm.ActionListResponse, error) {
+	m.actionCallCount.Add(1)
+	offset := params.Offset
+	limit := params.Limit
+	if offset >= len(m.actions) {
+		return &wallarm.ActionListResponse{Status: 200, Body: []wallarm.ActionEntry{}}, nil
+	}
+	end := offset + limit
+	if end > len(m.actions) {
+		end = len(m.actions)
+	}
+	page := m.actions[offset:end]
+	return &wallarm.ActionListResponse{Status: 200, Body: page}, nil
 }
 
 func makeHints(n int) []wallarm.ActionBody {
@@ -437,5 +501,175 @@ func TestHintCache_All(t *testing.T) {
 		if got[i-1].ID <= got[i].ID {
 			t.Errorf("not sorted desc: got[%d].ID=%d <= got[%d].ID=%d", i-1, got[i-1].ID, i, got[i].ID)
 		}
+	}
+}
+
+// readByID is a test helper: HintRead by exact ID. Returns whether a single hint
+// was returned. Caller compares mock.callCount before/after to assert cache hit/miss.
+func readByID(t *testing.T, cached *CachedClient, clientID, hintID int) (found bool) {
+	t.Helper()
+	resp, err := cached.HintRead(&wallarm.HintRead{
+		Limit:     APIListLimit,
+		Offset:    0,
+		OrderBy:   "updated_at",
+		OrderDesc: true,
+		Filter:    &wallarm.HintFilter{Clientid: []int{clientID}, ID: []int{hintID}},
+	})
+	if err != nil {
+		t.Fatalf("HintRead(id=%d): %v", hintID, err)
+	}
+	return resp.Body != nil && len(*resp.Body) > 0
+}
+
+// TestCachedClient_HintCreate_Insert verifies that a successful HintCreate inserts
+// the returned ActionBody into the cache, so a subsequent HintRead by ID is a hit.
+func TestCachedClient_HintCreate_Insert(t *testing.T) {
+	created := &wallarm.ActionBody{ID: 7777, ActionID: 8888, Clientid: 1, Type: "wallarm_mode"}
+	mock := &mockHintAPI{
+		createResp: &wallarm.ActionCreateResp{Status: 200, Body: created},
+	}
+	cached := NewCachedClient(mock)
+
+	resp, err := cached.HintCreate(&wallarm.ActionCreate{Type: "wallarm_mode"})
+	if err != nil {
+		t.Fatalf("HintCreate: %v", err)
+	}
+	if resp == nil || resp.Body == nil || resp.Body.ID != 7777 {
+		t.Fatalf("expected created body with ID 7777, got %+v", resp)
+	}
+	if got := mock.createCallCount.Load(); got != 1 {
+		t.Errorf("expected exactly 1 HintCreate call, got %d", got)
+	}
+
+	// Subsequent HintRead by ID must be a cache hit (no new API call to fetch
+	// pages — Insert warmed the cache).
+	beforeReads := mock.callCount.Load()
+	if !readByID(t, cached, 1, 7777) {
+		t.Fatal("expected HintRead to find inserted hint")
+	}
+	if got := mock.callCount.Load(); got != beforeReads {
+		t.Errorf("expected zero new HintRead API calls (cache hit), got %d new", got-beforeReads)
+	}
+}
+
+// TestCachedClient_HintCreate_NilBody verifies that when the API returns a
+// success response with nil Body (e.g. malformed/empty payload), Insert is NOT
+// called — no spurious cache entry.
+func TestCachedClient_HintCreate_NilBody(t *testing.T) {
+	mock := &mockHintAPI{
+		createResp: &wallarm.ActionCreateResp{Status: 200, Body: nil},
+	}
+	cached := NewCachedClient(mock)
+
+	resp, err := cached.HintCreate(&wallarm.ActionCreate{Type: "wallarm_mode"})
+	if err != nil {
+		t.Fatalf("HintCreate: %v", err)
+	}
+	if resp == nil || resp.Body != nil {
+		t.Fatalf("expected nil Body, got %+v", resp)
+	}
+	stats := cached.HintCacheStats()
+	if stats.CacheHits != 0 {
+		t.Errorf("expected 0 cache entries after nil-body Create, hits=%d", stats.CacheHits)
+	}
+}
+
+// TestCachedClient_HintCreate_CredStuffingSkip verifies that creates of credential
+// stuffing types do NOT pollute the hint cache (they have their own cache via
+// CredentialStuffingCache, and the v2.3.2 dedup fix relies on this skip).
+// API-side type strings are `credentials_point` / `credentials_regex` —
+// note the absence of "_stuffing_" present in the Terraform resource name.
+func TestCachedClient_HintCreate_CredStuffingSkip(t *testing.T) {
+	created := &wallarm.ActionBody{ID: 9999, Clientid: 1, Type: "credentials_point"}
+	mock := &mockHintAPI{
+		createResp: &wallarm.ActionCreateResp{Status: 200, Body: created},
+	}
+	cached := NewCachedClient(mock)
+
+	if _, err := cached.HintCreate(&wallarm.ActionCreate{Type: "credentials_point"}); err != nil {
+		t.Fatalf("HintCreate: %v", err)
+	}
+	// HintRead by ID 9999 must MISS cache (Insert skipped) and trigger an API call.
+	beforeReads := mock.callCount.Load()
+	_ = readByID(t, cached, 1, 9999)
+	if mock.callCount.Load() == beforeReads {
+		t.Error("expected HintRead to trigger an API call (cache should not contain credential_stuffing entry)")
+	}
+}
+
+// TestCachedClient_HintCreate_APIError verifies that an API error from
+// HintCreate is propagated and no cache entry is created.
+func TestCachedClient_HintCreate_APIError(t *testing.T) {
+	mock := &mockHintAPI{failOnCreate: fmt.Errorf("simulated API error")}
+	cached := NewCachedClient(mock)
+
+	if _, err := cached.HintCreate(&wallarm.ActionCreate{Type: "wallarm_mode"}); err == nil {
+		t.Fatal("expected error from failing HintCreate, got nil")
+	}
+	if got := mock.createCallCount.Load(); got != 1 {
+		t.Errorf("expected exactly 1 HintCreate call, got %d", got)
+	}
+	stats := cached.HintCacheStats()
+	if stats.CacheHits != 0 {
+		t.Errorf("expected 0 cache entries after failed Create, hits=%d", stats.CacheHits)
+	}
+}
+
+// TestCachedClient_HintDelete_Invalidates verifies that a successful HintDelete
+// clears the cache — subsequent HintRead must trigger a fresh API fetch.
+// Regression guard: pre-v2.3.5 the cache was NOT invalidated, causing
+// CheckDestroy to see stale cached hints after a same-apply Create→Delete.
+func TestCachedClient_HintDelete_Invalidates(t *testing.T) {
+	mock := &mockHintAPI{hints: makeHints(3)}
+	cached := NewCachedClient(mock)
+
+	// Warm the cache via initial read.
+	if !readByID(t, cached, 1, 1000) {
+		t.Fatal("setup: expected first read to succeed")
+	}
+	beforeDelete := mock.callCount.Load()
+
+	if _, err := cached.HintDelete(&wallarm.HintDelete{}); err != nil {
+		t.Fatalf("HintDelete: %v", err)
+	}
+	if got := mock.deleteCallCount.Load(); got != 1 {
+		t.Errorf("expected exactly 1 HintDelete call, got %d", got)
+	}
+
+	// Next read must trigger a fresh API call (cache invalidated).
+	_ = readByID(t, cached, 1, 1001)
+	if mock.callCount.Load() <= beforeDelete {
+		t.Error("expected HintRead after Delete to trigger a fresh API call, none observed")
+	}
+}
+
+// TestCachedClient_HintDelete_APIError verifies that an API error from
+// HintDelete leaves the cache untouched (no spurious invalidation).
+func TestCachedClient_HintDelete_APIError(t *testing.T) {
+	mock := &mockHintAPI{
+		hints:        makeHints(3),
+		failOnDelete: fmt.Errorf("simulated delete error"),
+	}
+	cached := NewCachedClient(mock)
+
+	// Warm the cache.
+	if !readByID(t, cached, 1, 1000) {
+		t.Fatal("setup: expected first read to succeed")
+	}
+	cacheCallsBeforeDelete := mock.callCount.Load()
+
+	if _, err := cached.HintDelete(&wallarm.HintDelete{}); err == nil {
+		t.Fatal("expected error from failing HintDelete, got nil")
+	}
+	if got := mock.deleteCallCount.Load(); got != 1 {
+		t.Errorf("expected exactly 1 HintDelete call, got %d", got)
+	}
+
+	// Next read must STILL be a cache hit (Delete failed → cache preserved).
+	if !readByID(t, cached, 1, 1001) {
+		t.Fatal("expected HintRead to find cached hint after failed Delete")
+	}
+	if got := mock.callCount.Load(); got != cacheCallsBeforeDelete {
+		t.Errorf("expected zero new HintRead API calls (cache preserved), got %d new", got-cacheCallsBeforeDelete)
 	}
 }

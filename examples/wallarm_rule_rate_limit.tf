@@ -2,21 +2,21 @@ resource "wallarm_rule_rate_limit" "rate_limit" {
   comment = "Example rate limit rule"
 
   action {
-    type = "iequal"
+    type  = "iequal"
     value = "example.com"
     point = {
       header = "HOST"
     }
   }
   action {
-    type = "equal"
+    type  = "equal"
     value = "api"
     point = {
       path = 0
     }
   }
   action {
-    type = "equal"
+    type  = "equal"
     value = "logon"
     point = {
       path = 1

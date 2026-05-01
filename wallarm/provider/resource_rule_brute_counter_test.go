@@ -2,7 +2,6 @@ package wallarm
 
 import (
 	"fmt"
-	// "os"
 	"regexp"
 	"testing"
 
@@ -12,9 +11,9 @@ import (
 func TestAccRuleBruteForceCounterCreate(t *testing.T) {
 	rnd := generateRandomResourceName(5)
 	name := "wallarm_rule_bruteforce_counter." + rnd
-	resource.Test(t, resource.TestCase{
-		PreCheck:  func() { testAccPreCheck(t) },
-		Providers: testAccProviders,
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV5ProviderFactories: testAccProtoV5ProviderFactories,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccRuleBruteForceCounterCreate(rnd),
@@ -35,7 +34,7 @@ func TestAccRuleBruteForceCounterCreate(t *testing.T) {
 
 func testAccRuleBruteForceCounterCreate(resourceID string) string {
 	return fmt.Sprintf(`
-resource "wallarm_rule_bruteforce_counter" "%[1]s" {
+resource "wallarm_rule_bruteforce_counter" %[1]q {
 	action {
 		type = "iequal"
 		value = "/"

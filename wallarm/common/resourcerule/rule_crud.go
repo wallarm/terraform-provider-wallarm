@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 
+	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/pkg/errors"
@@ -192,7 +193,7 @@ func Create(
 		Comment:              GetValueWithTypeCastingOrDefault[string](d, "comment"),
 		VariativityDisabled:  true,
 		Set:                  GetValueWithTypeCastingOrDefault[string](d, "set"),
-		Active:               GetValueWithTypeCastingOrDefault[bool](d, "active"),
+		Active:               getActiveWithDefault(d),
 		Title:                GetValueWithTypeCastingOrDefault[string](d, "title"),
 		AttackType:           attackType,
 		Reaction:             reaction,
@@ -241,6 +242,22 @@ func GetValueWithTypeCastingOrDefault[T any](d *schema.ResourceData, name string
 	return v
 }
 
+// getActiveWithDefault reads the `active` field, defaulting to true when the
+// user did not explicitly set it. SDKv2 cannot distinguish "user wrote false"
+// from "field omitted, schema returned bool zero" via d.Get for an
+// Optional+Computed bool — d.GetOkExists is the documented (deprecated) escape
+// hatch. Without this, every `resourcerule.Create` caller defaulted `active`
+// to false, contradicting the documented "rules ship active" API behavior and
+// causing user-supplied `active = false` to silently no-op against the
+// already-false state. Mirrors getCommonResourceRuleFieldsDTOFromResourceData
+// in the provider package.
+func getActiveWithDefault(d *schema.ResourceData) bool {
+	if v, ok := d.GetOkExists("active"); ok { //nolint:staticcheck
+		return v.(bool)
+	}
+	return true
+}
+
 func GetPointerWithTypeCastingOrDefault[T any](d *schema.ResourceData, name string) *T {
 	resourceValue := d.Get(name)
 	if resourceValue == nil {
@@ -251,6 +268,42 @@ func GetPointerWithTypeCastingOrDefault[T any](d *schema.ResourceData, name stri
 		return nil
 	}
 	return &v
+}
+
+// GetIntPointerIfConfigured returns *int(value) when the user wrote the field
+// in HCL — including a literal zero — and nil when the user omitted it.
+// Uses d.GetRawConfig() (the SDKv2 replacement for the deprecated
+// GetOkExists) to inspect the user's literal config; d.Get cannot distinguish
+// "user wrote 0" from "field omitted, schema returned int zero".
+//
+// Use this in Create/Update paths for Optional int fields whose target
+// wallarm-go struct field is `*int` and where 0 is a valid user value
+// (e.g. wallarm_rule_rate_limit.delay). For Required ints, d.Get is fine —
+// the user always supplies a value and lo.ToPtr(d.Get(...)) is sufficient.
+func GetIntPointerIfConfigured(d *schema.ResourceData, name string) *int {
+	if !isFieldSetInRawConfig(d.GetRawConfig(), name) {
+		return nil
+	}
+	v, ok := d.Get(name).(int)
+	if !ok {
+		return nil
+	}
+	return &v
+}
+
+// isFieldSetInRawConfig returns true when the user's literal HCL contains a
+// non-null value for a top-level field. Mirrors the per-block helper used by
+// EnumeratedParamsCustomizeDiff.
+func isFieldSetInRawConfig(raw cty.Value, key string) bool {
+	if raw == cty.NilVal || raw.IsNull() || !raw.IsKnown() {
+		return false
+	}
+	ty := raw.Type()
+	if !ty.IsObjectType() || !ty.HasAttribute(key) {
+		return false
+	}
+	v := raw.GetAttr(key)
+	return !v.IsNull() && v.IsKnown()
 }
 
 // UpdateCustomizer mutates HintUpdateV3Params with per-resource fields

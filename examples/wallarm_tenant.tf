@@ -3,6 +3,6 @@ resource "wallarm_tenant" "tenant" {
 }
 
 resource "wallarm_tenant" "subtenant" {
-  name = "Sub Tenant"
+  name      = "Sub Tenant"
   client_id = 123
 }

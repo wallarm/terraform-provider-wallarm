@@ -23,9 +23,13 @@ func resourceWallarmOverlimitResSettings() *schema.Resource {
 			ValidateFunc: validation.IntBetween(0, 2_147_483_647),
 		},
 
+		// `mode` actualised against API ground truth (probed 2026-05-01) —
+		// API treats it Optional with default `monitoring`. Optional+Computed
+		// preserves API-echoed state across plans when the user omits it.
 		"mode": {
 			Type:         schema.TypeString,
-			Required:     true,
+			Optional:     true,
+			Computed:     true,
 			ValidateFunc: validation.StringInSlice([]string{"off", "monitoring", "blocking"}, false),
 		},
 	}
@@ -60,9 +64,11 @@ func resourceWallarmOverlimitResSettingsCreate(ctx context.Context, d *schema.Re
 		return diag.FromErr(err)
 	}
 
-	overlimitTime := d.Get("overlimit_time").(int)
 	mode := d.Get("mode").(string)
 
+	// `overlimit_time` is Required (range 0..MaxInt). wallarm-go v0.12.1
+	// changed OverlimitTime to *int so callers can transmit a literal 0 that
+	// the API range allows; non-pointer int+omitempty silently dropped 0.
 	actionBody := &wallarm.ActionCreate{
 		Type:                "overlimit_res_settings",
 		Clientid:            clientID,
@@ -71,7 +77,7 @@ func resourceWallarmOverlimitResSettingsCreate(ctx context.Context, d *schema.Re
 		VariativityDisabled: true,
 		Comment:             fields.Comment,
 		Mode:                mode,
-		OverlimitTime:       overlimitTime,
+		OverlimitTime:       lo.ToPtr(d.Get("overlimit_time").(int)),
 		Set:                 fields.Set,
 		Active:              fields.Active,
 		Title:               fields.Title,

@@ -2,27 +2,25 @@ package wallarm
 
 import (
 	"fmt"
-	"strconv"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
-	"github.com/wallarm/wallarm-go"
 )
 
 func TestAccRuleGraphqlDetection(t *testing.T) {
 	const config = `
 resource "wallarm_rule_graphql_detection" "wallarm_rule_graphql_detection_1" {
   mode = "block"
-  
+
   action {
     type = "iequal"
-    value = "wenum.wallarm.com"
+    value = "graphql_basic.example.com"
     point = {
       header = "HOST"
     }
   }
-  
+
   max_depth = 10
   max_value_size_kb = 10
   max_doc_size_kb = 100
@@ -33,10 +31,10 @@ resource "wallarm_rule_graphql_detection" "wallarm_rule_graphql_detection_1" {
 
 }
 `
-	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckWallarmRuleGraphqlDetectionDestroy,
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV5ProviderFactories: testAccProtoV5ProviderFactories,
+		CheckDestroy:             testAccCheckWallarmRuleGraphqlDetectionDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: config,
@@ -59,10 +57,10 @@ func TestAccRuleGraphqlDetectionUpdateInPlaceDebugEnabled(t *testing.T) {
 	resourceAddress := "wallarm_rule_graphql_detection.update_debug"
 	var firstRuleID string
 
-	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckWallarmRuleGraphqlDetectionDestroy,
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV5ProviderFactories: testAccProtoV5ProviderFactories,
+		CheckDestroy:             testAccCheckWallarmRuleGraphqlDetectionDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccRuleGraphqlDetectionUpdateConfig("graphql_update.example.com", false),
@@ -113,38 +111,121 @@ resource "wallarm_rule_graphql_detection" "update_debug" {
 }
 
 func testAccCheckWallarmRuleGraphqlDetectionDestroy(s *terraform.State) error {
-	client := testAccProvider.Meta().(*ProviderMeta).Client
+	return testAccCheckHintDestroyed(s, "wallarm_rule_graphql_detection")
+}
 
-	for _, rs := range s.RootModule().Resources {
-		if rs.Type != "wallarm_rule_graphql_detection" {
-			continue
-		}
-
-		clientID, err := strconv.Atoi(rs.Primary.Attributes["client_id"])
-		if err != nil {
-			return err
-		}
-		actionID, err := strconv.Atoi(rs.Primary.Attributes["action_id"])
-		if err != nil {
-			return err
-		}
-
-		hint := &wallarm.HintRead{
-			Limit:     APIListLimit,
-			Offset:    0,
-			OrderBy:   "updated_at",
-			OrderDesc: true,
-			Filter: &wallarm.HintFilter{
-				Clientid: []int{clientID},
-				ActionID: []int{actionID},
+// TestAccRuleGraphqlDetection_MinimalCreatePreservesAPIDefaults guards the
+// v2.3.8 fix: int fields with API defaults are now Optional+Computed, so
+// Create with only `mode` echoes back the API defaults into state and
+// re-plan is clean. The bool fields (`introspection`, `debug_enabled`) are
+// also Optional+Computed but the provider currently sends `false` on Create
+// when omitted (top-level bools use `GetPointerWithTypeCastingOrDefault`,
+// which produces `&false`); preserving the API's `true` default for those
+// requires the same `GetPointerIfConfigured` treatment as the int helper —
+// tracked as a v2.3.9 follow-up in `.claude/plans/test-gaps.md`. So this
+// test asserts the int-side contract (the regression we're guarding) and
+// pins the bool-side as `false` (current behaviour).
+func TestAccRuleGraphqlDetection_MinimalCreatePreservesAPIDefaults(t *testing.T) {
+	rnd := generateRandomResourceName(5)
+	name := "wallarm_rule_graphql_detection." + rnd
+	config := fmt.Sprintf(`
+resource "wallarm_rule_graphql_detection" %[1]q {
+  mode = "block"
+  action {
+    type  = "iequal"
+    value = "graphql-defaults.example.com"
+    point = { header = "HOST" }
+  }
+}
+`, rnd)
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV5ProviderFactories: testAccProtoV5ProviderFactories,
+		CheckDestroy:             testAccCheckWallarmRuleGraphqlDetectionDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: config,
+				Check: resource.ComposeTestCheckFunc(
+					// Int API defaults preserved via Optional+Computed.
+					resource.TestCheckResourceAttr(name, "max_depth", "10"),
+					resource.TestCheckResourceAttr(name, "max_value_size_kb", "10"),
+					resource.TestCheckResourceAttr(name, "max_doc_size_kb", "100"),
+					resource.TestCheckResourceAttr(name, "max_doc_per_batch", "10"),
+					// Bools currently sent as false on Create when omitted —
+					// see comment above for v2.3.9 follow-up.
+					resource.TestCheckResourceAttr(name, "introspection", "false"),
+					resource.TestCheckResourceAttr(name, "debug_enabled", "false"),
+				),
 			},
-		}
+			{
+				// Re-plan with the same minimal config — Computed must
+				// preserve state, no drift.
+				Config:             config,
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: false,
+			},
+		},
+	})
+}
 
-		rule, err := client.HintRead(hint)
-		if err != nil && rule != nil && len(*rule.Body) > 0 {
-			return fmt.Errorf("Wallarm Mode Rule still exists")
-		}
-	}
-
-	return nil
+// TestAccRuleGraphqlDetection_UpdateAfterMinimalCreate is the regression
+// guard for the v2.3.8 silent-int-zeroing-on-update bug: previously, after
+// Create with only `mode`, adding `introspection = false` to HCL produced
+// a plan that wanted to send zero for max_depth/max_value_size_kb/etc. (the
+// SDK treated state-only values as drift), which the API rejected with
+// `should be in 1..N`. With Computed: true, the unchanged ints are
+// preserved by SDK plan logic.
+func TestAccRuleGraphqlDetection_UpdateAfterMinimalCreate(t *testing.T) {
+	rnd := generateRandomResourceName(5)
+	name := "wallarm_rule_graphql_detection." + rnd
+	configMinimal := fmt.Sprintf(`
+resource "wallarm_rule_graphql_detection" %[1]q {
+  mode = "block"
+  action {
+    type  = "iequal"
+    value = "graphql-update.example.com"
+    point = { header = "HOST" }
+  }
+}
+`, rnd)
+	configIntrospectionFalse := fmt.Sprintf(`
+resource "wallarm_rule_graphql_detection" %[1]q {
+  mode          = "block"
+  introspection = false
+  action {
+    type  = "iequal"
+    value = "graphql-update.example.com"
+    point = { header = "HOST" }
+  }
+}
+`, rnd)
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV5ProviderFactories: testAccProtoV5ProviderFactories,
+		CheckDestroy:             testAccCheckWallarmRuleGraphqlDetectionDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: configMinimal,
+				// `introspection` lands as false on Create when omitted from
+				// HCL — see _MinimalCreatePreservesAPIDefaults for the v2.3.9
+				// note. The regression this test guards is the int-zeroing
+				// bug below, not the bool default.
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(name, "max_depth", "10"),
+				),
+			},
+			{
+				// Update with introspection explicitly set — the int fields
+				// stay unchanged in state and aren't zeroed (Computed
+				// preserves), so the API keeps its values; Update succeeds.
+				// Pre-fix this would have errored with "should be in 1..N".
+				Config: configIntrospectionFalse,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(name, "introspection", "false"),
+					resource.TestCheckResourceAttr(name, "max_depth", "10"),
+					resource.TestCheckResourceAttr(name, "max_value_size_kb", "10"),
+				),
+			},
+		},
+	})
 }

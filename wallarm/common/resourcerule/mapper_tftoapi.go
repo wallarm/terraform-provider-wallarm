@@ -25,34 +25,42 @@ func EnumeratedParametersToAPI(enumeratedParameters []interface{}) (*wallarm.Enu
 }
 
 func mapEnumeratedParameterRegexpToAPI(enumeratedParameter map[string]interface{}) (*wallarm.EnumeratedParameters, error) {
+	// EnumeratedParamsCustomizeDiff guarantees both lists are non-empty in
+	// regexp mode at plan time. We use convertRegexpList (not the shared
+	// ConvertToStringSlice, which skips nils) so an HCL `[""]` survives —
+	// SDKv2 normalizes empty strings in TypeString lists to cty.NullVal,
+	// which arrives at d.Get as a nil entry. Skipping the nil would produce
+	// an empty slice, which `omitempty` strips from JSON, and the API
+	// rejects regexp mode without name_regexps/value_regexps keys.
 	nameRegexpsRaw, ok := enumeratedParameter["name_regexps"].([]interface{})
 	if !ok {
 		return nil, fmt.Errorf("enumerated_parameters.name_regexps: expected list, got %T", enumeratedParameter["name_regexps"])
 	}
-	nameRegexps := ConvertToStringSlice(nameRegexpsRaw)
-	if len(nameRegexps) == 0 {
-		nameRegexps = []string{""}
-	}
+	nameRegexps := convertRegexpList(nameRegexpsRaw)
 
 	valueRegexpsRaw, ok := enumeratedParameter["value_regexps"].([]interface{})
 	if !ok {
 		return nil, fmt.Errorf("enumerated_parameters.value_regexps: expected list, got %T", enumeratedParameter["value_regexps"])
 	}
-	valueRegexps := ConvertToStringSlice(valueRegexpsRaw)
-	if len(valueRegexps) == 0 {
-		valueRegexps = []string{""}
+	valueRegexps := convertRegexpList(valueRegexpsRaw)
+
+	// Pointer fields are populated only when the key is present in the
+	// block map. Callers building this map from `*schema.ResourceData`
+	// should remove unset keys (via `EnumeratedParametersFromResourceData`)
+	// so the wire payload omits the field when the user didn't write it —
+	// letting the API default win (`true` for both fields in regexp mode).
+	result := &wallarm.EnumeratedParameters{
+		Mode:        modeRegexp,
+		NameRegexps: nameRegexps,
+		ValueRegexp: valueRegexps,
 	}
-
-	plainParameters, _ := enumeratedParameter["plain_parameters"].(bool)
-	additionalParameters, _ := enumeratedParameter["additional_parameters"].(bool)
-
-	return &wallarm.EnumeratedParameters{
-		Mode:                 modeRegexp,
-		NameRegexps:          nameRegexps,
-		ValueRegexp:          valueRegexps,
-		PlainParameters:      lo.ToPtr(plainParameters),
-		AdditionalParameters: lo.ToPtr(additionalParameters),
-	}, nil
+	if v, ok := enumeratedParameter["plain_parameters"].(bool); ok {
+		result.PlainParameters = lo.ToPtr(v)
+	}
+	if v, ok := enumeratedParameter["additional_parameters"].(bool); ok {
+		result.AdditionalParameters = lo.ToPtr(v)
+	}
+	return result, nil
 }
 
 func mapEnumeratedParameterExactToAPI(enumeratedParameter map[string]interface{}) (*wallarm.EnumeratedParameters, error) {
@@ -187,6 +195,26 @@ func ArbitraryConditionsToAPI(arbitraryConditions []interface{}) ([]wallarm.Arbi
 	}
 
 	return response, nil
+}
+
+// convertRegexpList converts a TF []interface{} regexp list into []string,
+// preserving nil entries as "". The shared ConvertToStringSlice skips nils;
+// here that would silently drop the user's `[""]` (which SDKv2 normalizes to
+// cty.NullVal at d.Get) and the API would reject the regexp-mode payload.
+func convertRegexpList(input []interface{}) []string {
+	out := make([]string, 0, len(input))
+	for _, v := range input {
+		if v == nil {
+			out = append(out, "")
+			continue
+		}
+		s, ok := v.(string)
+		if !ok {
+			s = fmt.Sprintf("%v", v)
+		}
+		out = append(out, s)
+	}
+	return out
 }
 
 func mapPointToAPI(point []interface{}) wallarm.TwoDimensionalSlice {

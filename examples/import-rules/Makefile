@@ -68,15 +68,17 @@ import-stamps-conf-gen:
 	@echo "Generating stamp import blocks + configs via rule_generator..."
 	@terraform apply -auto-approve -var='import_rules=true' -var='generate_configs=true' -var='rule_types=["disable_stamp"]'
 
-# Fix generated configs: set defaults, remove null fields
+# Fix generated configs: set defaults, remove null/empty-list fields
 # - variativity_disabled=false → true
 # - comment=null → "Managed by Terraform"
 # - remove all remaining =null lines
+# - remove all remaining =[] lines
 import-configs-fix:
 	-@sed -E \
 		-e 's/(variativity_disabled[[:space:]]*)=[[:space:]]*false/\1= true/' \
 		-e 's/(comment[[:space:]]*)=[[:space:]]*null/\1= "Managed by Terraform"/' \
 		-e '/=[[:space:]]*null/d' \
+		-e '/=[[:space:]]*\[\]/d' \
 		$(RULE_CONFIGS_FILE) > $(RULE_CONFIGS_FILE).tmp && mv $(RULE_CONFIGS_FILE).tmp $(RULE_CONFIGS_FILE)
 
 # ─── Case 1: Native import (all rules) ─────────────────────────────────────

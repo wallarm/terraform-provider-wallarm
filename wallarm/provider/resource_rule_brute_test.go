@@ -2,29 +2,86 @@ package wallarm
 
 import (
 	"fmt"
-	"strconv"
+	"regexp"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
-	"github.com/wallarm/wallarm-go"
-
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
 
-// TODO add brute exact too
-func TestAccRuleBruteRegexp(t *testing.T) {
+func TestAccRuleBruteExact(t *testing.T) {
 	const config = `
-resource "wallarm_rule_brute" "wallarm_rule_brute_regexp" {
+resource "wallarm_rule_brute" "wallarm_rule_brute_exact" {
   mode = "block"
-  
+
   action {
     type = "iequal"
-    value = "wbrute.wallarm.com"
+    value = "brute_exact.example.com"
     point = {
       header = "HOST"
     }
   }
-  
+
+  reaction {
+    block_by_session = 3000
+    block_by_ip = 4000
+  }
+
+  threshold {
+    count = 5
+    period = 30
+  }
+
+  enumerated_parameters {
+    mode = "exact"
+    points {
+      point     = ["header", "REFERER"]
+      sensitive = false
+    }
+    points {
+      point     = ["get", "id"]
+      sensitive = true
+    }
+  }
+}
+`
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV5ProviderFactories: testAccProtoV5ProviderFactories,
+		CheckDestroy:             testAccCheckWallarmRuleBruteDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: config,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("wallarm_rule_brute.wallarm_rule_brute_exact", "mode", "block"),
+					resource.TestCheckResourceAttr("wallarm_rule_brute.wallarm_rule_brute_exact", "action.#", "1"),
+					resource.TestCheckResourceAttr("wallarm_rule_brute.wallarm_rule_brute_exact", "enumerated_parameters.0.mode", "exact"),
+					resource.TestCheckResourceAttr("wallarm_rule_brute.wallarm_rule_brute_exact", "enumerated_parameters.0.points.0.sensitive", "false"),
+				),
+			},
+			{
+				ResourceName:            "wallarm_rule_brute.wallarm_rule_brute_exact",
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"rule_type"},
+			},
+		},
+	})
+}
+
+func TestAccRuleBruteRegexp(t *testing.T) {
+	const config = `
+resource "wallarm_rule_brute" "wallarm_rule_brute_regexp" {
+  mode = "block"
+
+  action {
+    type = "iequal"
+    value = "wbrute_regexp.example.com"
+    point = {
+      header = "HOST"
+    }
+  }
+
   reaction {
     block_by_session = 3000
     block_by_ip = 4000
@@ -44,10 +101,10 @@ resource "wallarm_rule_brute" "wallarm_rule_brute_regexp" {
   }
 }
 `
-	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckWallarmRuleBruteDestroy,
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV5ProviderFactories: testAccProtoV5ProviderFactories,
+		CheckDestroy:             testAccCheckWallarmRuleBruteDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: config,
@@ -70,15 +127,15 @@ func TestAccRuleBruteWithAdvancedConditions(t *testing.T) {
 	const config = `
 resource "wallarm_rule_brute" "wallarm_rule_brute_advanced_conditions" {
   mode = "block"
-  
+
   action {
     type = "iequal"
-    value = "wbrute.wallarm.com"
+    value = "wbrute_advanced.example.com"
     point = {
       header = "HOST"
     }
   }
-  
+
   reaction {
     block_by_session = 3000
     block_by_ip = 4000
@@ -105,10 +162,10 @@ resource "wallarm_rule_brute" "wallarm_rule_brute_advanced_conditions" {
 
 }
 `
-	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckWallarmRuleBruteDestroy,
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV5ProviderFactories: testAccProtoV5ProviderFactories,
+		CheckDestroy:             testAccCheckWallarmRuleBruteDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: config,
@@ -125,19 +182,19 @@ func TestAccRuleBruteWithArbitraryConditions(t *testing.T) {
 	const config = `
 resource "wallarm_rule_brute" "wallarm_rule_brute_arbitrary_conditions" {
   mode = "block"
-  
+
   action {
     type = "iequal"
-    value = "wbrute.wallarm.com"
+    value = "wbrute_arbitrary.example.com"
     point = {
       header = "HOST"
     }
   }
-  
+
   reaction {
     block_by_session = 3000
     block_by_ip = 4000
-	
+
   }
 
   threshold {
@@ -161,10 +218,10 @@ resource "wallarm_rule_brute" "wallarm_rule_brute_arbitrary_conditions" {
 
 }
 `
-	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckWallarmRuleBruteDestroy,
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV5ProviderFactories: testAccProtoV5ProviderFactories,
+		CheckDestroy:             testAccCheckWallarmRuleBruteDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: config,
@@ -216,9 +273,9 @@ func TestAccRuleBruteUpdateInPlaceThresholdCount(t *testing.T) {
 	var firstRuleID string
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckWallarmRuleBruteDestroy,
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV5ProviderFactories: testAccProtoV5ProviderFactories,
+		CheckDestroy:             testAccCheckWallarmRuleBruteDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccRuleBruteUpdateConfig(5),
@@ -248,38 +305,46 @@ func TestAccRuleBruteUpdateInPlaceThresholdCount(t *testing.T) {
 }
 
 func testAccCheckWallarmRuleBruteDestroy(s *terraform.State) error {
-	client := testAccProvider.Meta().(*ProviderMeta).Client
+	return testAccCheckHintDestroyed(s, "wallarm_rule_brute")
+}
 
-	for _, rs := range s.RootModule().Resources {
-		if rs.Type != "wallarm_rule_brute" {
-			continue
-		}
-
-		clientID, err := strconv.Atoi(rs.Primary.Attributes["client_id"])
-		if err != nil {
-			return err
-		}
-		actionID, err := strconv.Atoi(rs.Primary.Attributes["action_id"])
-		if err != nil {
-			return err
-		}
-
-		hint := &wallarm.HintRead{
-			Limit:     APIListLimit,
-			Offset:    0,
-			OrderBy:   "updated_at",
-			OrderDesc: true,
-			Filter: &wallarm.HintFilter{
-				Clientid: []int{clientID},
-				ActionID: []int{actionID},
+// TestAccRuleBrute_RegexpRejectsPoints verifies plan-time rejection of
+// `points` populated alongside `mode = "regexp"`. Mapper would silently
+// drop the field on PUT — perpetual diff. PlanOnly + ExpectError, no API contact.
+func TestAccRuleBrute_RegexpRejectsPoints(t *testing.T) {
+	rnd := generateRandomResourceName(5)
+	config := fmt.Sprintf(`
+resource "wallarm_rule_brute" %[1]q {
+  mode = "block"
+  action {
+    type  = "iequal"
+    value = "brute_regexp_reject.example.com"
+    point = { header = "HOST" }
+  }
+  reaction { block_by_ip = 600 }
+  threshold {
+    count  = 5
+    period = 30
+  }
+  enumerated_parameters {
+    mode          = "regexp"
+    name_regexps  = ["foo"]
+    value_regexps = ["bar"]
+    points {
+      point     = ["header", "REFERER"]
+      sensitive = true
+    }
+  }
+}`, rnd)
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV5ProviderFactories: testAccProtoV5ProviderFactories,
+		Steps: []resource.TestStep{
+			{
+				Config:      config,
+				PlanOnly:    true,
+				ExpectError: regexp.MustCompile("`points` not allowed when mode = \"regexp\""),
 			},
-		}
-
-		rule, err := client.HintRead(hint)
-		if err != nil && rule != nil && len(*rule.Body) > 0 {
-			return fmt.Errorf("Wallarm Mode Rule still exists")
-		}
-	}
-
-	return nil
+		},
+	})
 }

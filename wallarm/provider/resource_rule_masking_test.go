@@ -2,10 +2,7 @@ package wallarm
 
 import (
 	"fmt"
-	"strconv"
 	"testing"
-
-	"github.com/wallarm/wallarm-go"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
@@ -20,13 +17,13 @@ type maskingTestingRule struct {
 func TestAccRuleMaskingCreate_Basic(t *testing.T) {
 	rnd := generateRandomResourceName(5)
 	name := "wallarm_rule_masking." + rnd
-	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckWallarmRuleMaskingDestroy,
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV5ProviderFactories: testAccProtoV5ProviderFactories,
+		CheckDestroy:             testAccCheckWallarmRuleMaskingDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testWallarmRuleMaskingBasicConfig(rnd, "iequal", "masking.wallarm.com", "HOST", `["post"],["form_urlencoded","query"]`),
+				Config: testWallarmRuleMaskingBasicConfig(rnd, "iequal", "masking_basic.wallarm.com", "HOST", `["post"],["form_urlencoded","query"]`),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(name, "action.#", "1"),
 					resource.TestCheckResourceAttr(name, "point.0.0", "post"),
@@ -47,10 +44,10 @@ func TestAccRuleMaskingCreate_Basic(t *testing.T) {
 func TestAccRuleMaskingCreateRecreate(t *testing.T) {
 	rnd := generateRandomResourceName(5)
 	name := "wallarm_rule_masking." + rnd
-	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckWallarmRuleMaskingDestroy,
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV5ProviderFactories: testAccProtoV5ProviderFactories,
+		CheckDestroy:             testAccCheckWallarmRuleMaskingDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccRuleMaskingCreateRecreate(rnd),
@@ -77,10 +74,10 @@ func TestAccRuleMaskingCreate_DefaultBranch(t *testing.T) {
 	name := "wallarm_rule_masking." + rnd
 	point := `["header","HOST"],["pollution"]`
 
-	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckWallarmRuleMaskingDestroy,
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV5ProviderFactories: testAccProtoV5ProviderFactories,
+		CheckDestroy:             testAccCheckWallarmRuleMaskingDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testWallarmRuleMaskingDefaultBranchConfig(rnd, point),
@@ -108,10 +105,10 @@ func TestAccRuleMaskingCreate_FullSettings(t *testing.T) {
 		value:     value,
 	}
 
-	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckWallarmRuleMaskingDestroy,
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV5ProviderFactories: testAccProtoV5ProviderFactories,
+		CheckDestroy:             testAccCheckWallarmRuleMaskingDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testWallarmRuleMaskingFullSettingsConfig(rnd, rule),
@@ -135,12 +132,12 @@ func TestAccRuleMaskingCreate_FullSettings(t *testing.T) {
 
 func testWallarmRuleMaskingBasicConfig(resourceID, actionType, actionValue, actionPoint, point string) string {
 	return fmt.Sprintf(`
-resource "wallarm_rule_masking" "%[1]s" {
+resource "wallarm_rule_masking" %[1]q {
   action {
-    type = "%[2]s"
-    value = "%[3]s"
+    type = %[2]q
+    value = %[3]q
     point = {
-      header = "%[4]s"
+      header = %[4]q
     }
   }
   point = [%[5]s]
@@ -149,14 +146,14 @@ resource "wallarm_rule_masking" "%[1]s" {
 
 func testWallarmRuleMaskingDefaultBranchConfig(resourceID, point string) string {
 	return fmt.Sprintf(`
-resource "wallarm_rule_masking" "%[1]s" {
+resource "wallarm_rule_masking" %[1]q {
 	point = [%[2]s]
 }`, resourceID, point)
 }
 
 func testAccRuleMaskingCreateRecreate(resourceID string) string {
 	return fmt.Sprintf(`
-resource "wallarm_rule_masking" "%[1]s" {
+resource "wallarm_rule_masking" %[1]q {
 	action {
 		point = {
 		  method = "POST|GET|PATCH"
@@ -174,7 +171,7 @@ func testWallarmRuleMaskingFullSettingsConfig(resourceID string, rule maskingTes
 	regex := rule.matchType[2]
 	absent := rule.matchType[3]
 	return fmt.Sprintf(`
-resource "wallarm_rule_masking" "%[7]s" {
+resource "wallarm_rule_masking" %[7]q {
 
 	action {
 		point = {
@@ -189,57 +186,57 @@ resource "wallarm_rule_masking" "%[7]s" {
 	}
 
 	action {
-		type = "%[2]s"
+		type = %[2]q
 		point = {
 		  action_name = "masking"
 		}
 	}
 
 	action {
-		type = "%[2]s"
+		type = %[2]q
 		point = {
 		  action_name = "masking"
 		}
 	}
 
 	action {
-		type = "%[4]s"
+		type = %[4]q
 		point = {
 		  action_ext = ""
 		}
 	}
-	  
+
 	action {
-		type = "%[4]s"
+		type = %[4]q
 		point = {
 		  path = 0
 		}
 	}
 
 	action {
-		type = "%[2]s"
+		type = %[2]q
 		point = {
 		  method = "GET"
 		}
 	}
 
 	action {
-		type = "%[1]s"
+		type = %[1]q
 		point = {
 		  scheme = "https"
 		}
 	}
 
 	action {
-		type = "%[1]s"
+		type = %[1]q
 		point = {
 		  proto = "1.1"
 		}
 	}
 
 	action {
-		type = "%[3]s"
-		value = "%[5]s"
+		type = %[3]q
+		value = %[5]q
 		point = {
 		  header = "HOST"
 		}
@@ -254,10 +251,10 @@ func TestAccRuleMaskingUpdateInPlaceComment(t *testing.T) {
 	name := "wallarm_rule_masking." + rnd
 	var firstRuleID string
 
-	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckWallarmRuleMaskingDestroy,
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV5ProviderFactories: testAccProtoV5ProviderFactories,
+		CheckDestroy:             testAccCheckWallarmRuleMaskingDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccRuleMaskingUpdateCommentConfig(rnd, "first comment"),
@@ -302,39 +299,5 @@ resource "wallarm_rule_masking" %[1]q {
 }
 
 func testAccCheckWallarmRuleMaskingDestroy(s *terraform.State) error {
-	client := testAccProvider.Meta().(*ProviderMeta).Client
-
-	for _, rs := range s.RootModule().Resources {
-		if rs.Type != "wallarm_rule_masking" {
-			continue
-		}
-
-		clientID, err := strconv.Atoi(rs.Primary.Attributes["client_id"])
-		if err != nil {
-			return err
-		}
-		actionID, err := strconv.Atoi(rs.Primary.Attributes["action_id"])
-		if err != nil {
-			return err
-		}
-
-		hint := &wallarm.HintRead{
-			Limit:     APIListLimit,
-			Offset:    0,
-			OrderBy:   "updated_at",
-			OrderDesc: true,
-			Filter: &wallarm.HintFilter{
-				Clientid: []int{clientID},
-				ActionID: []int{actionID},
-				Type:     []string{"sensitive_data"},
-			},
-		}
-
-		rule, err := client.HintRead(hint)
-		if err != nil && len(*rule.Body) != 0 {
-			return fmt.Errorf("Sensitive Data Masking rule still exists")
-		}
-	}
-
-	return nil
+	return testAccCheckHintDestroyed(s, "wallarm_rule_masking")
 }

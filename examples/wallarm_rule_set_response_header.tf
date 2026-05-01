@@ -7,7 +7,7 @@ resource "wallarm_rule_set_response_header" "resp_headers" {
     }
   }
 
-  name = "Server"
+  name   = "Server"
   values = ["Wallarm", "Yes, you are blocked"]
 }
 
@@ -20,6 +20,6 @@ resource "wallarm_rule_set_response_header" "resp_headers_waf" {
     }
   }
 
-  name = "WAF"
+  name   = "WAF"
   values = ["Wallarm Blocked"]
 }

@@ -2,14 +2,12 @@ package wallarm
 
 import (
 	"fmt"
-	"strconv"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
-
-	wallarm "github.com/wallarm/wallarm-go"
 )
 
 // Shared HCL — minimal "enabled" rule with a single header match.
@@ -72,37 +70,7 @@ func testAccCheckWallarmRuleAPIAbuseModeExists(resourceName string) resource.Tes
 }
 
 func testAccCheckWallarmRuleAPIAbuseModeDestroy(s *terraform.State) error {
-	api, err := testAccNewAPIClient()
-	if err != nil {
-		return err
-	}
-	for _, rs := range s.RootModule().Resources {
-		if rs.Type != "wallarm_rule_api_abuse_mode" {
-			continue
-		}
-		ruleID, err := strconv.Atoi(rs.Primary.Attributes["rule_id"])
-		if err != nil {
-			return fmt.Errorf("invalid rule_id for %s: %w", rs.Primary.ID, err)
-		}
-		clientID, err := strconv.Atoi(rs.Primary.Attributes["client_id"])
-		if err != nil {
-			return fmt.Errorf("invalid client_id for %s: %w", rs.Primary.ID, err)
-		}
-
-		// OrderBy is required by the API — HintRead returns 400 without it.
-		resp, err := api.HintRead(&wallarm.HintRead{
-			Limit:   1,
-			OrderBy: "updated_at",
-			Filter:  &wallarm.HintFilter{Clientid: []int{clientID}, ID: []int{ruleID}},
-		})
-		if err != nil {
-			return fmt.Errorf("checking hint %d still exists: %w", ruleID, err)
-		}
-		if resp.Body != nil && len(*resp.Body) > 0 {
-			return fmt.Errorf("wallarm_rule_api_abuse_mode %s still exists", rs.Primary.ID)
-		}
-	}
-	return nil
+	return testAccCheckHintDestroyed(s, "wallarm_rule_api_abuse_mode")
 }
 
 func TestAccRuleAPIAbuseModeCreate_Basic(t *testing.T) {
@@ -228,26 +196,28 @@ func TestAccRuleAPIAbuseModeImport(t *testing.T) {
 	})
 }
 
-// Pinterest-style scope mixes four action condition types in one resource:
+// Heterogeneous-scope test mixes four action condition types in one resource:
 // regex on USER-AGENT, equal on path[0], regex on path[1], absent on action_ext.
 // Catches regressions in (a) multi-condition scope hashing, (b) point map
 // validation under heterogeneous types, (c) Read round-trip preserving all
-// four blocks.
-func TestAccRuleAPIAbuseMode_PinterestScope(t *testing.T) {
-	resourceName := "wallarm_rule_api_abuse_mode.pinterest"
+// four blocks. Distinct UA/path scope from `TestAccRuleAPIAbuseModeCreate_Disabled`
+// so the conditions_hash differs and existingHintForAction doesn't collide
+// under parallel execution.
+func TestAccRuleAPIAbuseMode_HeterogeneousScope(t *testing.T) {
+	resourceName := "wallarm_rule_api_abuse_mode.heterogeneous"
 	config := `
-resource "wallarm_rule_api_abuse_mode" "pinterest" {
+resource "wallarm_rule_api_abuse_mode" "heterogeneous" {
   mode    = "disabled"
-  comment = "Allow Pinterest through protections"
+  comment = "Allow Googlebot through protections"
 
   action {
     type  = "regex"
-    value = ".*(Pinterest|Pinterestbot)/(0.2|1.0);?\\s[(]?[+]https?://www[.]pinterest[.]com/bot[.]html[)].*"
+    value = ".*Googlebot/2[.]1;?\\s[(]?[+]https?://www[.]google[.]com/bot[.]html[)].*"
     point = { header = "USER-AGENT" }
   }
   action {
     type  = "equal"
-    value = "api"
+    value = "search"
     point = { path = "0" }
   }
   action {
@@ -298,6 +268,11 @@ func TestAccRuleAPIAbuseModeExistsError(t *testing.T) {
 				Check:  testAccCheckWallarmRuleAPIAbuseModeExists("wallarm_rule_api_abuse_mode.first"),
 			},
 			{
+				// Brief wait lets the action commit propagate to read replicas
+				// before the duplicate-create runs existingHintForAction. Without
+				// this, ActionList may not yet see the rule from step 1, the
+				// duplicate Create proceeds, and ExpectError doesn't fire.
+				PreConfig:   func() { time.Sleep(3 * time.Second) },
 				Config:      configDup,
 				ExpectError: ResourceExistsError(`[0-9]+/[0-9]+/[0-9]+`, "wallarm_rule_api_abuse_mode"),
 			},

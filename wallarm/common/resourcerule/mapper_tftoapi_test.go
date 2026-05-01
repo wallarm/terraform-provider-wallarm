@@ -4,6 +4,32 @@ import (
 	"testing"
 )
 
+func TestEnumeratedParametersToAPI_RegexpModeAbsentBoolsYieldNilPointer(t *testing.T) {
+	// Documents the mapper contract: keys absent from the block map produce
+	// nil pointers on the API struct (not &false). The SDK fills these
+	// keys with `false` from the type zero when the user omits them in
+	// HCL, so under normal Create/Update the keys ARE present and the
+	// mapper sends `&false`. This test asserts the contract for callers
+	// that build the map directly (unit tests, future helpers).
+	input := []interface{}{
+		map[string]interface{}{
+			"mode":          "regexp",
+			"name_regexps":  []interface{}{"foo"},
+			"value_regexps": []interface{}{"bar"},
+		},
+	}
+	got, err := EnumeratedParametersToAPI(input)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if got.PlainParameters != nil {
+		t.Errorf("expected nil PlainParameters, got %v", *got.PlainParameters)
+	}
+	if got.AdditionalParameters != nil {
+		t.Errorf("expected nil AdditionalParameters, got %v", *got.AdditionalParameters)
+	}
+}
+
 func TestThresholdToAPI_Empty(t *testing.T) {
 	got, err := ThresholdToAPI([]interface{}{})
 	if err != nil {
@@ -124,13 +150,15 @@ func TestEnumeratedParametersToAPI_RegexpMode(t *testing.T) {
 	}
 }
 
-func TestEnumeratedParametersToAPI_RegexpModeDefaultsEmpty(t *testing.T) {
-	// Empty name/value regexps lists → helper injects [""] so the API receives a list.
+func TestEnumeratedParametersToAPI_RegexpModePassesThroughLists(t *testing.T) {
+	// v2.3.8: the mapper no longer substitutes [""] for empty lists.
+	// EnumeratedParamsCustomizeDiff guarantees both lists are non-empty in
+	// regexp mode at plan time; the mapper just passes them through.
 	input := []interface{}{
 		map[string]interface{}{
 			"mode":          "regexp",
-			"name_regexps":  []interface{}{},
-			"value_regexps": []interface{}{},
+			"name_regexps":  []interface{}{""},
+			"value_regexps": []interface{}{"foo"},
 		},
 	}
 	got, err := EnumeratedParametersToAPI(input)
@@ -139,6 +167,29 @@ func TestEnumeratedParametersToAPI_RegexpModeDefaultsEmpty(t *testing.T) {
 	}
 	if len(got.NameRegexps) != 1 || got.NameRegexps[0] != "" {
 		t.Errorf("expected NameRegexps=[\"\"], got %v", got.NameRegexps)
+	}
+	if len(got.ValueRegexp) != 1 || got.ValueRegexp[0] != "foo" {
+		t.Errorf("expected ValueRegexp=[\"foo\"], got %v", got.ValueRegexp)
+	}
+}
+
+// TestEnumeratedParametersToAPI_RegexpListsPreserveNils reproduces the v2.3.8
+// production drift: SDKv2 normalizes the empty-string element in a TypeString
+// list to cty.NullVal, which arrives at d.Get as a `nil` entry. The shared
+// ConvertToStringSlice would skip the nil → empty slice → `omitempty` drops
+// the field from the JSON → API rejects regexp-mode payload. convertRegexpList
+// preserves nil → "" so the user's HCL `[""]` reaches the wire unchanged.
+func TestEnumeratedParametersToAPI_RegexpListsPreserveNils(t *testing.T) {
+	input := []interface{}{
+		map[string]interface{}{
+			"mode":          "regexp",
+			"name_regexps":  []interface{}{"foo", "bar"},
+			"value_regexps": []interface{}{nil}, // user wrote `[""]` in HCL
+		},
+	}
+	got, err := EnumeratedParametersToAPI(input)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
 	}
 	if len(got.ValueRegexp) != 1 || got.ValueRegexp[0] != "" {
 		t.Errorf("expected ValueRegexp=[\"\"], got %v", got.ValueRegexp)

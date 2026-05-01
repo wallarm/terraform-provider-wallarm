@@ -2,21 +2,19 @@ package wallarm
 
 import (
 	"fmt"
-	"strconv"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
-	"github.com/wallarm/wallarm-go"
 )
 
 func TestAccRuleCredentialStuffingRegex_basic(t *testing.T) {
 	resourceName := generateRandomResourceName(5)
 	resourceAddress := "wallarm_rule_credential_stuffing_regex." + resourceName
-	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		CheckDestroy: testAccRuleCredentialStuffingRegexDestroy(),
-		Providers:    testAccProviders,
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV5ProviderFactories: testAccProtoV5ProviderFactories,
+		CheckDestroy:             testAccRuleCredentialStuffingRegexDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccRuleCredentialStuffingRegexBasic(resourceName),
@@ -43,10 +41,10 @@ func TestAccRuleCredentialStuffingRegexUpdateInPlaceCaseSensitive(t *testing.T) 
 	resourceAddress := "wallarm_rule_credential_stuffing_regex." + resourceName
 	var firstRuleID string
 
-	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		CheckDestroy: testAccRuleCredentialStuffingRegexDestroy(),
-		Providers:    testAccProviders,
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV5ProviderFactories: testAccProtoV5ProviderFactories,
+		CheckDestroy:             testAccRuleCredentialStuffingRegexDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccRuleCredentialStuffingRegexUpdateConfig(resourceName, "credstuff_update.example.com", false),
@@ -104,7 +102,7 @@ resource "wallarm_rule_credential_stuffing_regex" %[1]q {
 
 	action {
 		type = "iequal"
-		value = "example.com"
+		value = "credstuff_regex_basic.example.com"
 		point = {
 			header = "HOST"
 		}
@@ -113,41 +111,6 @@ resource "wallarm_rule_credential_stuffing_regex" %[1]q {
 `, resourceName)
 }
 
-func testAccRuleCredentialStuffingRegexDestroy() resource.TestCheckFunc {
-	return func(s *terraform.State) error {
-		client := testAccProvider.Meta().(*ProviderMeta).Client
-
-		for _, resource := range s.RootModule().Resources {
-			if resource.Type != "wallarm_rule_credential_stuffing_regex" {
-				continue
-			}
-
-			clientID, err := strconv.Atoi(resource.Primary.Attributes["client_id"])
-			if err != nil {
-				return err
-			}
-			ruleID, err := strconv.Atoi(resource.Primary.Attributes["rule_id"])
-			if err != nil {
-				return err
-			}
-
-			resp, err := client.HintRead(&wallarm.HintRead{
-				Limit:   1,
-				OrderBy: "updated_at",
-				Filter: &wallarm.HintFilter{
-					Clientid: []int{clientID},
-					ID:       []int{ruleID},
-				},
-			})
-			if err != nil {
-				return err
-			}
-
-			if resp != nil && resp.Body != nil && len(*resp.Body) != 0 {
-				return fmt.Errorf("Resource still exists: %s", resource.Primary.ID)
-			}
-		}
-
-		return nil
-	}
+func testAccRuleCredentialStuffingRegexDestroy(s *terraform.State) error {
+	return testAccCheckHintDestroyed(s, "wallarm_rule_credential_stuffing_regex")
 }

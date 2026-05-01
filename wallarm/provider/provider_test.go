@@ -16,6 +16,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-go/tfprotov5"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 
 	wallarm "github.com/wallarm/wallarm-go"
 )
@@ -103,6 +104,51 @@ func testAccNewAPIClient() (wallarm.API, error) {
 		return nil, fmt.Errorf("creating Wallarm client: %w", err)
 	}
 	return api, nil
+}
+
+// testAccCheckHintDestroyed verifies that every Terraform resource of the given
+// type has been deleted server-side. Looks up each resource's hint by exact
+// rule_id; fails if any still exists. Use as the body of a per-resource
+// CheckDestroy:
+//
+//	func testAccCheckWallarmRuleXxxDestroy(s *terraform.State) error {
+//	    return testAccCheckHintDestroyed(s, "wallarm_rule_xxx")
+//	}
+//
+// Built independently of the provider under test (`testAccNewAPIClient`) so it
+// is race-safe under proto-v5 factories where each test gets a fresh provider
+// instance and `testAccProvider.Meta()` returns nil.
+func testAccCheckHintDestroyed(s *terraform.State, resourceType string) error {
+	api, err := testAccNewAPIClient()
+	if err != nil {
+		return err
+	}
+	for _, rs := range s.RootModule().Resources {
+		if rs.Type != resourceType {
+			continue
+		}
+		ruleID, err := strconv.Atoi(rs.Primary.Attributes["rule_id"])
+		if err != nil {
+			return fmt.Errorf("invalid rule_id for %s: %w", rs.Primary.ID, err)
+		}
+		clientID, err := strconv.Atoi(rs.Primary.Attributes["client_id"])
+		if err != nil {
+			return fmt.Errorf("invalid client_id for %s: %w", rs.Primary.ID, err)
+		}
+		// OrderBy is required by the API — HintRead returns 400 without it.
+		resp, err := api.HintRead(&wallarm.HintRead{
+			Limit:   1,
+			OrderBy: "updated_at",
+			Filter:  &wallarm.HintFilter{Clientid: []int{clientID}, ID: []int{ruleID}},
+		})
+		if err != nil {
+			return fmt.Errorf("checking hint %d still exists: %w", ruleID, err)
+		}
+		if resp.Body != nil && len(*resp.Body) > 0 {
+			return fmt.Errorf("%s %s still exists", resourceType, rs.Primary.ID)
+		}
+	}
+	return nil
 }
 
 // ResourceExistsError returns regexp to be used inside TestStep with ExpectError state.
