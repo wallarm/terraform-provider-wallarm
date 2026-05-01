@@ -1,6 +1,13 @@
-## [v2.3.8] - 2026-04-29
+## [v2.3.8] - 2026-05-01
 
 > Schema actualisation against API ground truth, zero-value pointer fixes, validator hardening for `enumerated_parameters`, full rule-test harness migration. Bumps `wallarm-go` to v0.12.1.
+
+### Upgrade Steps
+
+* [ACTION REQUIRED] `wallarm_rule_rate_limit`: add `rsp_status = <400..599>` (typical `429`) to existing configs that omit it. Field is now Required at plan time.
+* [ACTION REQUIRED] `wallarm_rule_file_upload_size_limit`: add `size = N` to configs that omit it. Field is now Required at plan time.
+* [ACTION REQUIRED] `wallarm_rule_brute` / `_bola` / `_enum` in regexp mode: configs that omitted `name_regexps` or `value_regexps` must now set them explicitly. Use `[""]` to opt out of a filter while satisfying the API constraint.
+* Direct callers of `wallarm-go` `ActionCreate`: `Rate`, `Burst`, `Delay`, `OverlimitTime` are now `*int` — wrap zero values with `lo.ToPtr(0)`. Provider users unaffected.
 
 ### Breaking Changes
 
