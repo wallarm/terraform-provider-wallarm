@@ -62,8 +62,8 @@ var (
 		"active": {
 			Type:        schema.TypeBool,
 			Optional:    true,
-			Computed:    true,
-			Description: "Whether the rule is active.",
+			Default:     true,
+			Description: "Whether the rule is active. Defaults to true.",
 		},
 		"title": {
 			Type:        schema.TypeString,
@@ -178,23 +178,23 @@ var (
 					Optional: true,
 					Elem:     &schema.Schema{Type: schema.TypeString},
 				},
-				// API defaults both fields to true in regexp mode and omits
-				// them entirely in exact mode. Optional+Computed lets the
-				// SDK preserve API-echoed state across plans when the user
-				// omits the field. Default is intentionally absent — Default
-				// and Computed are mutually exclusive in SDKv2 anyway, and
-				// the previous Default:false caused exact-mode imports to
-				// surface explicit `false` in auto-generated configs which
-				// the strict validator then rejected.
+				// Optional+Default:false. Removing either line from HCL plans
+				// `current → false` (symmetric: adding `= true` plans
+				// `false → true`). For legacy `terraform import` (CLI command
+				// without `-generate-config-out`), users must explicitly set
+				// the value in HCL to match the API-echoed value, otherwise
+				// applying without HCL would silently overwrite to false.
+				// The validator (EnumeratedParamsCustomizeDiff) rejects
+				// `=true` in exact mode regardless of source.
 				"additional_parameters": {
 					Type:     schema.TypeBool,
 					Optional: true,
-					Computed: true,
+					Default:  false,
 				},
 				"plain_parameters": {
 					Type:     schema.TypeBool,
 					Optional: true,
-					Computed: true,
+					Default:  false,
 				},
 			},
 		},
@@ -266,13 +266,7 @@ func getCommonResourceRuleFieldsDTOFromResourceData(d *schema.ResourceData) Comm
 	comment, _ := d.Get("comment").(string)
 	set, _ := d.Get("set").(string)
 	title, _ := d.Get("title").(string)
-
-	// Default to true when not explicitly set (replaced schema Default which can't coexist with Computed).
-	active := true
-	if v, ok := d.GetOkExists("active"); ok { //nolint:staticcheck
-		active = v.(bool)
-	}
-
+	active, _ := d.Get("active").(bool)
 	return CommonResourceRuleFieldsDTO{
 		Comment: comment,
 		Set:     set,

@@ -348,3 +348,54 @@ resource "wallarm_rule_brute" %[1]q {
 		},
 	})
 }
+
+// TestAccRuleBrute_RegexpRemovingBoolFromHCLRestoresDefault guards the v2.3.9
+// asymmetry fix on the shared enumerated_parameters bool fields: previously
+// Optional+Computed left state stuck at the user's last value when the line
+// was removed; now Optional+Default(false) plans `true → false` symmetrically.
+func TestAccRuleBrute_RegexpRemovingBoolFromHCLRestoresDefault(t *testing.T) {
+	rnd := generateRandomResourceName(5)
+	addr := "wallarm_rule_brute." + rnd
+	cfg := func(extra string) string {
+		return fmt.Sprintf(`
+resource "wallarm_rule_brute" %[1]q {
+  mode = "block"
+  action {
+    type  = "iequal"
+    value = "brute-regexp-default.example.com"
+    point = { header = "HOST" }
+  }
+  reaction { block_by_ip = 600 }
+  threshold { count = 5, period = 30 }
+  enumerated_parameters {
+    mode          = "regexp"
+    name_regexps  = ["foo"]
+    value_regexps = ["bar"]
+%[2]s
+  }
+}`, rnd, extra)
+	}
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV5ProviderFactories: testAccProtoV5ProviderFactories,
+		CheckDestroy:             testAccCheckWallarmRuleBruteDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: cfg("    additional_parameters = true\n    plain_parameters      = true"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(addr, "enumerated_parameters.0.additional_parameters", "true"),
+					resource.TestCheckResourceAttr(addr, "enumerated_parameters.0.plain_parameters", "true"),
+				),
+			},
+			{
+				// Remove both bool lines → schema default (false) wins,
+				// plan shows `true → false`, Update sends false.
+				Config: cfg(""),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(addr, "enumerated_parameters.0.additional_parameters", "false"),
+					resource.TestCheckResourceAttr(addr, "enumerated_parameters.0.plain_parameters", "false"),
+				),
+			},
+		},
+	})
+}
