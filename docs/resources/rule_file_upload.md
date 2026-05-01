@@ -37,10 +37,10 @@ resource "wallarm_rule_file_upload_size_limit" "file_upload_restriction" {
 
 * `client_id` - (optional) ID of the client to apply the rules to. The value is required for [multi-tenant scenarios][2].
 * `action` - (optional) rule conditions. See the [Action Guide](../guides/action) for full documentation on action conditions, point types, and usage examples.
-* `point` - (**required**) request parts to apply the rules to. See the [Point Guide](../guides/point) for the full list of possible values and examples.
-* `size` - (optional) maximum allowed size of uploading data.
-* `size_unit` - (**required**) dimension of uploading data. Possible values (`b`, `kb`, `mb`, `gb`, `tb`).
-* `mode` - (**required**) protection behaviour which will be applied to the detected attack. Possible values: `monitoring`, `block`, `off`, `default`.
+* `size` - (**required**) maximum allowed size of uploading data (range `1..2^64`; 0 invalid).
+* `point` - (optional, computed, force-new) request parts to apply the rules to. See the [Point Guide](../guides/point). API default scope applies when omitted.
+* `size_unit` - (optional, computed, force-new) `b`, `kb`, `mb`, `gb`, or `tb`. API default `b` applies when omitted.
+* `mode` - (optional, computed) `monitoring`, `block`, `off`, or `default`. API default `monitoring` applies when omitted.
 
 ## Attributes Reference
 

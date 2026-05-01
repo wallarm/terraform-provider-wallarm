@@ -40,11 +40,11 @@ resource "wallarm_rule_rate_limit" "rate_limit_api" {
 ## Argument Reference
 
 * `client_id` - (optional) ID of the client to apply the rules to. The value is required for [multi-tenant scenarios][1].
-* `delay` - (required) Specifies the delay.
-* `burst` - (required) Specifies the burst size.
-* `rate` - (required) Specifies the rate limit.
-* `rsp_status` - (optional) Specifies the response status code when the rate limit is exceeded.
-* `time_unit` - (required) Specifies the time unit for rate limiting. Can be rps (requests per second) or rpm (requests per minute).
+* `rate` - (**required**) Rate limit (range `0..1000`).
+* `rsp_status` - (**required**) Response status code when the rate limit is exceeded (range `400..599`).
+* `delay` - (optional) Delay (range `0..1000`).
+* `burst` - (optional, computed) Burst size (range `0..1000`). API default applies when omitted.
+* `time_unit` - (optional, computed) `rps` or `rpm`. API default `rps` applies when omitted.
 * `action` - (optional) rule conditions. See the [Action Guide](../guides/action) for full documentation on action conditions, point types, and usage examples.
 
 ## Attributes Reference
