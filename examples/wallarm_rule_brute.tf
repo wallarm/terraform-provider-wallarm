@@ -51,11 +51,11 @@ resource "wallarm_rule_brute" "login_brute_monitoring" {
   enumerated_parameters {
     mode = "exact"
     points {
-      point     = ["post", "form_urlencoded", "username"]
+      point     = ["header", "REFERER"]
       sensitive = false
     }
     points {
-      point     = ["post", "form_urlencoded", "password"]
+      point     = ["get", "id"]
       sensitive = true
     }
   }
