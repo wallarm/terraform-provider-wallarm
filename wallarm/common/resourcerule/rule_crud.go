@@ -207,8 +207,8 @@ func Create(
 		MaxDocSizeKb:         GetValueWithTypeCastingOrDefault[int](d, "max_doc_size_kb"),
 		MaxAliases:           GetValueWithTypeCastingOrDefault[int](d, "max_aliases"),
 		MaxDocPerBatch:       GetValueWithTypeCastingOrDefault[int](d, "max_doc_per_batch"),
-		Introspection:        GetPointerWithTypeCastingOrDefault[bool](d, "introspection"),
-		DebugEnabled:         GetPointerWithTypeCastingOrDefault[bool](d, "debug_enabled"),
+		Introspection:        GetBoolPointerIfConfigured(d, "introspection"),
+		DebugEnabled:         GetBoolPointerIfConfigured(d, "debug_enabled"),
 		Size:                 GetValueWithTypeCastingOrDefault[int](d, "size"),
 		SizeUnit:             GetValueWithTypeCastingOrDefault[string](d, "size_unit"),
 	}
@@ -285,6 +285,26 @@ func GetIntPointerIfConfigured(d *schema.ResourceData, name string) *int {
 		return nil
 	}
 	v, ok := d.Get(name).(int)
+	if !ok {
+		return nil
+	}
+	return &v
+}
+
+// GetBoolPointerIfConfigured is the bool counterpart of GetIntPointerIfConfigured.
+// Returns *bool(value) when the user wrote the field in HCL — including a literal
+// false — and nil when the user omitted it. Use in Create paths for Optional bool
+// fields whose target wallarm-go struct field is `*bool` and where the API has a
+// non-false default that the provider must not silently overwrite.
+//
+// Example: wallarm_rule_graphql_detection.introspection / .debug_enabled both
+// default to true server-side. Without this helper, GetPointerWithTypeCastingOrDefault
+// would send &false on Create-with-omitted-field and overwrite the API default.
+func GetBoolPointerIfConfigured(d *schema.ResourceData, name string) *bool {
+	if !isFieldSetInRawConfig(d.GetRawConfig(), name) {
+		return nil
+	}
+	v, ok := d.Get(name).(bool)
 	if !ok {
 		return nil
 	}

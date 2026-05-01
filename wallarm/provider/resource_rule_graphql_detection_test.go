@@ -115,16 +115,11 @@ func testAccCheckWallarmRuleGraphqlDetectionDestroy(s *terraform.State) error {
 }
 
 // TestAccRuleGraphqlDetection_MinimalCreatePreservesAPIDefaults guards the
-// v2.3.8 fix: int fields with API defaults are now Optional+Computed, so
-// Create with only `mode` echoes back the API defaults into state and
-// re-plan is clean. The bool fields (`introspection`, `debug_enabled`) are
-// also Optional+Computed but the provider currently sends `false` on Create
-// when omitted (top-level bools use `GetPointerWithTypeCastingOrDefault`,
-// which produces `&false`); preserving the API's `true` default for those
-// requires the same `GetPointerIfConfigured` treatment as the int helper —
-// tracked as a v2.3.9 follow-up in `.claude/plans/test-gaps.md`. So this
-// test asserts the int-side contract (the regression we're guarding) and
-// pins the bool-side as `false` (current behaviour).
+// v2.3.8 + v2.3.9 fix chain: Optional+Computed schema (v2.3.8) lets API
+// defaults populate state on Create with only `mode`, AND the v2.3.9
+// GetBoolPointerIfConfigured helper makes Create skip the bool fields on
+// the wire when the user omits them, so the API's `true` default for
+// introspection/debug_enabled wins instead of being overwritten with false.
 func TestAccRuleGraphqlDetection_MinimalCreatePreservesAPIDefaults(t *testing.T) {
 	rnd := generateRandomResourceName(5)
 	name := "wallarm_rule_graphql_detection." + rnd
@@ -151,10 +146,10 @@ resource "wallarm_rule_graphql_detection" %[1]q {
 					resource.TestCheckResourceAttr(name, "max_value_size_kb", "10"),
 					resource.TestCheckResourceAttr(name, "max_doc_size_kb", "100"),
 					resource.TestCheckResourceAttr(name, "max_doc_per_batch", "10"),
-					// Bools currently sent as false on Create when omitted —
-					// see comment above for v2.3.9 follow-up.
-					resource.TestCheckResourceAttr(name, "introspection", "false"),
-					resource.TestCheckResourceAttr(name, "debug_enabled", "false"),
+					// Bools omitted from HCL → GetBoolPointerIfConfigured sends
+					// nil → API defaults (true) win and land in state.
+					resource.TestCheckResourceAttr(name, "introspection", "true"),
+					resource.TestCheckResourceAttr(name, "debug_enabled", "true"),
 				),
 			},
 			{
@@ -206,12 +201,13 @@ resource "wallarm_rule_graphql_detection" %[1]q {
 		Steps: []resource.TestStep{
 			{
 				Config: configMinimal,
-				// `introspection` lands as false on Create when omitted from
-				// HCL — see _MinimalCreatePreservesAPIDefaults for the v2.3.9
-				// note. The regression this test guards is the int-zeroing
-				// bug below, not the bool default.
+				// `introspection` is omitted from HCL → API default (true)
+				// lands in state via GetBoolPointerIfConfigured (v2.3.9).
+				// The primary contract this test guards is int-zeroing on
+				// Update — the bool assertion is a sanity check.
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(name, "max_depth", "10"),
+					resource.TestCheckResourceAttr(name, "introspection", "true"),
 				),
 			},
 			{

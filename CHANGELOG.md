@@ -10,6 +10,10 @@
 
 * **`wallarm_rule_graphql_detection.max_alias_size_kb` renamed to `max_aliases`.** Field is a count of GraphQL aliases (API range, default 5), not bytes. Wire payload (`max_aliases`) unchanged. Bumps `wallarm-go` to v0.12.2.
 
+### Bug Fixes
+
+* **`wallarm_rule_graphql_detection.introspection` / `.debug_enabled`:** Create-with-omitted-field now preserves the API's `true` default in state instead of silently overwriting with `false`. New helper `GetBoolPointerIfConfigured` in `wallarm/common/resourcerule/rule_crud.go` mirrors the `GetIntPointerIfConfigured` pattern: uses `d.GetRawConfig()` to detect whether the user wrote the field; sends `nil` on the wire when omitted so `*bool+omitempty` drops it. Existing rules created with v2.3.8- keep their persisted value (`false` if Create silently set it); to restore the API default, set explicitly or destroy/recreate.
+
 ## [v2.3.8] - 2026-05-01
 
 > Schema actualisation against API ground truth, zero-value pointer fixes, plan-time validator for `enumerated_parameters`, full rule-test harness migration. Bumps `wallarm-go` to v0.12.1.
