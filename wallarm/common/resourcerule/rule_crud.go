@@ -14,21 +14,28 @@ import (
 	"github.com/wallarm/wallarm-go"
 )
 
-// schemaHasKey checks whether the resource schema includes the given attribute
-// by examining the cty type of the raw state. Returns true if undetermined.
-func schemaHasKey(d *schema.ResourceData, key string) (exists bool) {
-	exists = true // default to true if we can't determine
-	defer func() { recover() }()
-	return d.GetRawState().Type().HasAttribute(key)
+// rawStateHasKey reports whether the cty.Value (typically d.GetRawState()) is
+// an object whose type declares the given attribute. Defaults to true for
+// undetermined cases (no state yet on Create, non-object type) — callers want
+// "skip d.Set" only when the schema definitely lacks the attribute.
+func rawStateHasKey(raw cty.Value, key string) bool {
+	if raw == cty.NilVal || raw.IsNull() {
+		return true
+	}
+	ty := raw.Type()
+	if !ty.IsObjectType() {
+		return true
+	}
+	return ty.HasAttribute(key)
 }
 
 // setIfExists calls d.Set for the given key only if the key is present in the
-// resource schema. This is needed because Read is shared
-// across many resources, each of which defines only a subset of the fields.
-// In SDK v2 d.Set() logs an [ERROR] and panics (in test mode) for keys not in
-// the schema; checking beforehand avoids both.
+// resource schema. This is needed because Read is shared across many resources,
+// each of which defines only a subset of the fields. In SDK v2 d.Set() logs an
+// [ERROR] and panics (in test mode) for keys not in the schema; checking
+// beforehand avoids both.
 func setIfExists(d *schema.ResourceData, key string, value interface{}) {
-	if !schemaHasKey(d, key) {
+	if !rawStateHasKey(d.GetRawState(), key) {
 		return
 	}
 	if err := d.Set(key, value); err != nil {

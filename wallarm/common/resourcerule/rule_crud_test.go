@@ -106,6 +106,33 @@ func TestIsFieldSetInRawConfig(t *testing.T) {
 	}
 }
 
+func TestRawStateHasKey(t *testing.T) {
+	t.Parallel()
+	objType := cty.Object(map[string]cty.Type{
+		"mode":  cty.String,
+		"depth": cty.Number,
+	})
+	cases := []struct {
+		name string
+		raw  cty.Value
+		key  string
+		want bool
+	}{
+		{name: "nil cty value -> true (no state, Create path)", raw: cty.NilVal, key: "mode", want: true},
+		{name: "null object -> true (no state)", raw: cty.NullVal(objType), key: "mode", want: true},
+		{name: "non-object type -> true (defensive)", raw: cty.StringVal("not-object"), key: "mode", want: true},
+		{name: "object with key -> true", raw: cty.ObjectVal(map[string]cty.Value{"mode": cty.StringVal("block"), "depth": cty.NumberIntVal(5)}), key: "mode", want: true},
+		{name: "object missing key -> false (skip d.Set)", raw: cty.ObjectVal(map[string]cty.Value{"mode": cty.StringVal("block"), "depth": cty.NumberIntVal(5)}), key: "max_aliases", want: false},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := rawStateHasKey(tc.raw, tc.key); got != tc.want {
+				t.Errorf("rawStateHasKey(_, %q) = %v, want %v", tc.key, got, tc.want)
+			}
+		})
+	}
+}
+
 // Guards against a regression where the helper falls back to d.Get when
 // RawConfig is nil. d.Set on a fresh ResourceData populates state but RawConfig
 // stays NilVal — the helper must still return nil.
