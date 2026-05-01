@@ -214,8 +214,8 @@ func Create(
 		MaxDocSizeKb:         GetValueWithTypeCastingOrDefault[int](d, "max_doc_size_kb"),
 		MaxAliases:           GetValueWithTypeCastingOrDefault[int](d, "max_aliases"),
 		MaxDocPerBatch:       GetValueWithTypeCastingOrDefault[int](d, "max_doc_per_batch"),
-		Introspection:        GetPointerIfConfigured[bool](d, "introspection"),
-		DebugEnabled:         GetPointerIfConfigured[bool](d, "debug_enabled"),
+		Introspection:        GetPointerWithTypeCastingOrDefault[bool](d, "introspection"),
+		DebugEnabled:         GetPointerWithTypeCastingOrDefault[bool](d, "debug_enabled"),
 		Size:                 GetValueWithTypeCastingOrDefault[int](d, "size"),
 		SizeUnit:             GetValueWithTypeCastingOrDefault[string](d, "size_unit"),
 	}
@@ -278,15 +278,15 @@ func GetPointerWithTypeCastingOrDefault[T any](d *schema.ResourceData, name stri
 }
 
 // GetPointerIfConfigured returns *T(value) when the user wrote the field in
-// HCL — including a literal zero/false — and nil when they omitted it. Uses
+// HCL — including a literal zero — and nil when they omitted it. Uses
 // d.GetRawConfig() to inspect the literal config (d.Get cannot distinguish
 // "user wrote 0" from "field omitted, schema returned T zero value").
 //
-// Use in Create paths for Optional fields whose target wallarm-go struct
-// field is `*T` and the API has a non-zero default the provider must not
-// overwrite (e.g. wallarm_rule_rate_limit.delay = 0,
-// wallarm_rule_graphql_detection.introspection where the API default is true).
-// For Required fields, d.Get is sufficient.
+// Use in Create paths for Optional fields where 0 (or the type's zero value)
+// is a valid user value AND the schema cannot use Default+Optional (e.g.
+// `wallarm_rule_rate_limit.delay`, where the API range includes 0). For
+// fields where Optional+Default works, prefer that — it gives symmetric
+// "remove from HCL → restore default" semantics that Optional+Computed lacks.
 func GetPointerIfConfigured[T any](d *schema.ResourceData, name string) *T {
 	if !isFieldSetInRawConfig(d.GetRawConfig(), name) {
 		return nil

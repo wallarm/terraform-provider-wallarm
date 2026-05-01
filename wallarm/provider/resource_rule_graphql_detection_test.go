@@ -219,3 +219,49 @@ resource "wallarm_rule_graphql_detection" %[1]q {
 		},
 	})
 }
+
+// TestAccRuleGraphqlDetection_RemovingBoolFromHCLRestoresDefault guards the
+// v2.3.9 manual-test finding: with Optional+Computed, setting `introspection
+// = false` then removing the line left state stuck at false. With
+// Optional+Default(true), removing the line plans `false → true` and Update
+// restores the default — symmetric with adding `= false` planning `true → false`.
+func TestAccRuleGraphqlDetection_RemovingBoolFromHCLRestoresDefault(t *testing.T) {
+	rnd := generateRandomResourceName(5)
+	name := "wallarm_rule_graphql_detection." + rnd
+	cfg := func(extra string) string {
+		return fmt.Sprintf(`
+resource "wallarm_rule_graphql_detection" %[1]q {
+  mode = "block"
+  action {
+    type  = "iequal"
+    value = "graphql-restore-default.example.com"
+    point = { header = "HOST" }
+  }
+%[2]s
+}
+`, rnd, extra)
+	}
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV5ProviderFactories: testAccProtoV5ProviderFactories,
+		CheckDestroy:             testAccCheckWallarmRuleGraphqlDetectionDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: cfg("  introspection = false\n  debug_enabled = false"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(name, "introspection", "false"),
+					resource.TestCheckResourceAttr(name, "debug_enabled", "false"),
+				),
+			},
+			{
+				// Remove both lines from HCL → schema default (true) wins,
+				// plan shows diff, Update restores the API default.
+				Config: cfg(""),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(name, "introspection", "true"),
+					resource.TestCheckResourceAttr(name, "debug_enabled", "true"),
+				),
+			},
+		},
+	})
+}

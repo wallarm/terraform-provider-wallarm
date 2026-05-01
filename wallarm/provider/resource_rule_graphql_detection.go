@@ -53,15 +53,19 @@ func resourceWallarmGraphqlDetection() *schema.Resource {
 			Optional: true,
 			Computed: true,
 		},
+		// API default is true. Optional+Default (NOT Computed) so removing the
+		// field from HCL plans as "back to default" — symmetric with adding
+		// `= false` planning as "true → false". Optional+Computed would leave
+		// state stuck at the last user value when the HCL line is removed.
 		"introspection": {
 			Type:     schema.TypeBool,
 			Optional: true,
-			Computed: true,
+			Default:  true,
 		},
 		"debug_enabled": {
 			Type:     schema.TypeBool,
 			Optional: true,
-			Computed: true,
+			Default:  true,
 		},
 	}
 	sh := lo.Assign(fields, commonResourceRuleFields, resourcerule.ActionScopeFields)
