@@ -349,7 +349,6 @@ func (c *CachedClient) HintRead(body *wallarm.HintRead) (*wallarm.HintReadResp, 
 	return c.API.HintRead(body)
 }
 
-// TODO: add test — mock API, verify response cached via Insert
 // HintCreate delegates to the underlying API and inserts the new hint into cache.
 func (c *CachedClient) HintCreate(body *wallarm.ActionCreate) (*wallarm.ActionCreateResp, error) {
 	resp, err := c.API.HintCreate(body)

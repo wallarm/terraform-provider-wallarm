@@ -109,6 +109,8 @@ func WithRate(d *schema.ResourceData, p *wallarm.HintUpdateV3Params) error {
 	return nil
 }
 
+// rsp_status is Required in the wallarm_rule_rate_limit schema, so d.Get
+// always returns a user-supplied int — no need for GetPointerIfConfigured.
 func WithRspStatus(d *schema.ResourceData, p *wallarm.HintUpdateV3Params) error {
 	p.RspStatus = GetPointerWithTypeCastingOrDefault[int](d, "rsp_status")
 	return nil

@@ -116,7 +116,8 @@ func WrapPointElements(input []interface{}) [][]string {
 	for i < len(input) {
 		switch input[i] {
 		// Paired point types — consume the next element as key/index.
-		// Keep in sync with TYPES_INFO in proton/types.rb (all except simple:true).
+		// Keep in sync with .claude/point_reference.md (refreshed every 30 days
+		// from .claude/point_map_exact.json via .claude/fetch_point_refs.py).
 		case
 			// Core
 			"hash", "array", "json", "json_obj", "json_array",
