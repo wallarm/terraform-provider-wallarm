@@ -366,7 +366,10 @@ resource "wallarm_rule_brute" %[1]q {
     point = { header = "HOST" }
   }
   reaction { block_by_ip = 600 }
-  threshold { count = 5, period = 30 }
+  threshold {
+    count  = 5
+    period = 30
+  }
   enumerated_parameters {
     mode          = "regexp"
     name_regexps  = ["foo"]
