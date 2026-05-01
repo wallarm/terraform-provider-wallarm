@@ -124,13 +124,13 @@ func dataSourceWallarmRules() *schema.Resource {
 						"size_unit":      {Type: schema.TypeString, Computed: true},
 
 						// GraphQL
-						"max_depth":           {Type: schema.TypeInt, Computed: true},
-						"max_value_size_kb":   {Type: schema.TypeInt, Computed: true},
-						"max_doc_size_kb":     {Type: schema.TypeInt, Computed: true},
-						"max_aliases_size_kb": {Type: schema.TypeInt, Computed: true},
-						"max_doc_per_batch":   {Type: schema.TypeInt, Computed: true},
-						"introspection":       {Type: schema.TypeBool, Computed: true},
-						"debug_enabled":       {Type: schema.TypeBool, Computed: true},
+						"max_depth":         {Type: schema.TypeInt, Computed: true},
+						"max_value_size_kb": {Type: schema.TypeInt, Computed: true},
+						"max_doc_size_kb":   {Type: schema.TypeInt, Computed: true},
+						"max_aliases":       {Type: schema.TypeInt, Computed: true},
+						"max_doc_per_batch": {Type: schema.TypeInt, Computed: true},
+						"introspection":     {Type: schema.TypeBool, Computed: true},
+						"debug_enabled":     {Type: schema.TypeBool, Computed: true},
 
 						// Response header
 						"header_name":        {Type: schema.TypeString, Computed: true},
@@ -306,13 +306,13 @@ func dataSourceWallarmRulesRead(_ context.Context, d *schema.ResourceData, m int
 			"size":           e.Size,
 			"size_unit":      e.SizeUnit,
 
-			"max_depth":           e.MaxDepth,
-			"max_value_size_kb":   e.MaxValueSizeKb,
-			"max_doc_size_kb":     e.MaxDocSizeKb,
-			"max_aliases_size_kb": e.MaxAliasesSizeKb,
-			"max_doc_per_batch":   e.MaxDocPerBatch,
-			"introspection":       e.Introspection,
-			"debug_enabled":       e.DebugEnabled,
+			"max_depth":         e.MaxDepth,
+			"max_value_size_kb": e.MaxValueSizeKb,
+			"max_doc_size_kb":   e.MaxDocSizeKb,
+			"max_aliases":       e.MaxAliases,
+			"max_doc_per_batch": e.MaxDocPerBatch,
+			"introspection":     e.Introspection,
+			"debug_enabled":     e.DebugEnabled,
 
 			"header_name":     e.HeaderName,
 			"login_regex":     e.LoginRegex,

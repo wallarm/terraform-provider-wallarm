@@ -100,7 +100,7 @@ func Read(d *schema.ResourceData, clientID int, cli wallarm.API, opts ...ReadOpt
 	setIfExists(d, "max_depth", updatedRule.MaxDepth)
 	setIfExists(d, "max_value_size_kb", updatedRule.MaxValueSizeKb)
 	setIfExists(d, "max_doc_size_kb", updatedRule.MaxDocSizeKb)
-	setIfExists(d, "max_alias_size_kb", updatedRule.MaxAliasesSizeKb)
+	setIfExists(d, "max_aliases", updatedRule.MaxAliases)
 	setIfExists(d, "max_doc_per_batch", updatedRule.MaxDocPerBatch)
 	setIfExists(d, "attack_type", updatedRule.AttackType)
 	setIfExists(d, "stamp", updatedRule.Stamp)
@@ -205,7 +205,7 @@ func Create(
 		MaxDepth:             GetValueWithTypeCastingOrDefault[int](d, "max_depth"),
 		MaxValueSizeKb:       GetValueWithTypeCastingOrDefault[int](d, "max_value_size_kb"),
 		MaxDocSizeKb:         GetValueWithTypeCastingOrDefault[int](d, "max_doc_size_kb"),
-		MaxAliasesSizeKb:     GetValueWithTypeCastingOrDefault[int](d, "max_alias_size_kb"),
+		MaxAliases:           GetValueWithTypeCastingOrDefault[int](d, "max_aliases"),
 		MaxDocPerBatch:       GetValueWithTypeCastingOrDefault[int](d, "max_doc_per_batch"),
 		Introspection:        GetPointerWithTypeCastingOrDefault[bool](d, "introspection"),
 		DebugEnabled:         GetPointerWithTypeCastingOrDefault[bool](d, "debug_enabled"),

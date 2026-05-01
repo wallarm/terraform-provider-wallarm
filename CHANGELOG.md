@@ -1,3 +1,15 @@
+## [v2.3.9] - 2026-05-01
+
+> Rules polish batch — naming cleanup, safety hardening, test gap fills.
+
+### Upgrade Steps
+
+* [ACTION REQUIRED] `wallarm_rule_graphql_detection`: rename `max_alias_size_kb` → `max_aliases` in HCL. The old name was misleading — the field is a count, not a size in kilobytes — and the JSON tag has always been `max_aliases` on the wire.
+
+### Breaking Changes
+
+* **`wallarm_rule_graphql_detection.max_alias_size_kb` renamed to `max_aliases`.** Field is a count of GraphQL aliases (API range, default 5), not bytes. Wire payload (`max_aliases`) unchanged. Bumps `wallarm-go` to v0.12.2.
+
 ## [v2.3.8] - 2026-05-01
 
 > Schema actualisation against API ground truth, zero-value pointer fixes, plan-time validator for `enumerated_parameters`, full rule-test harness migration. Bumps `wallarm-go` to v0.12.1.

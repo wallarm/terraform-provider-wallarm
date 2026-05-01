@@ -22,7 +22,7 @@ func resourceWallarmGraphqlDetection() *schema.Resource {
 		},
 		// All API-defaulted fields below are Optional+Computed: the API has
 		// authoritative defaults (max_depth=10, max_value_size_kb=10,
-		// max_doc_size_kb=100, max_doc_per_batch=10, max_alias_size_kb=5,
+		// max_doc_size_kb=100, max_doc_per_batch=10, max_aliases=5,
 		// introspection=true, debug_enabled=true). Computed lets the SDK
 		// preserve API-echoed state values when the user omits the field in
 		// HCL, so subsequent plans don't claim drift and Update doesn't send
@@ -42,7 +42,7 @@ func resourceWallarmGraphqlDetection() *schema.Resource {
 			Optional: true,
 			Computed: true,
 		},
-		"max_alias_size_kb": {
+		"max_aliases": {
 			Type:     schema.TypeInt,
 			Optional: true,
 			Computed: true,

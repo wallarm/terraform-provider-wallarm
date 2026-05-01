@@ -27,7 +27,7 @@ resource "wallarm_rule_graphql_detection" "graphql_detection" {
   max_doc_size_kb = 100
   max_value_size_kb = 10
   max_depth = 10
-  max_alias_size_kb = 5
+  max_aliases = 5
   max_doc_per_batch = 10
   introspection = true
   debug_enabled = true
@@ -43,7 +43,7 @@ resource "wallarm_rule_graphql_detection" "graphql_detection" {
 * `max_doc_size_kb` - (optional) the limit for the size in kilobytes of an entire GraphQL query.
 * `max_value_size_kb` - (optional) the limit for the size in kilobytes of an entire GraphQL query
 * `max_depth` - (optional) the maximum allowed depth for a GraphQL query. By limiting query depth.
-* `max_alias_size_kb` - (optional) the limit on the number of aliases that can be used in a single GraphQL query.
+* `max_aliases` - (optional) the limit on the number of aliases that can be used in a single GraphQL query.
 * `max_doc_per_batch` - (optional) the number of batched queries that can be sent in a single request.
 * `introspection` - (optional) when enabled, the server will treat introspection requests—which can reveal the structure of your GraphQL schema—as potential attacks. Can be: `true`, `false`.
 * `debug_enabled` - (optional) enabling this option means that requests containing the debug mode parameter will be considered potential attacks. Can be: `true`, `false`.

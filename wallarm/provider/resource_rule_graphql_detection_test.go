@@ -24,7 +24,7 @@ resource "wallarm_rule_graphql_detection" "wallarm_rule_graphql_detection_1" {
   max_depth = 10
   max_value_size_kb = 10
   max_doc_size_kb = 100
-  max_alias_size_kb = 5
+  max_aliases = 5
   max_doc_per_batch = 10
   introspection = true
   debug_enabled = true

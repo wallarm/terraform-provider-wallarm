@@ -16,7 +16,7 @@ For detailed documentation, see [Mitigation Controls Overview](https://docs.wall
 | Wallarm UI name | Terraform resource | Key parameters |
 |-----------------|-------------------|----------------|
 | Real-time blocking mode | [`wallarm_rule_mode`](../resources/rule_mode) | `mode` |
-| GraphQL API protection | [`wallarm_rule_graphql_detection`](../resources/rule_graphql_detection) | `mode`, `max_depth`, `max_value_size_kb`, `max_doc_size_kb`, `max_alias_size_kb`, `max_doc_per_batch` |
+| GraphQL API protection | [`wallarm_rule_graphql_detection`](../resources/rule_graphql_detection) | `mode`, `max_depth`, `max_value_size_kb`, `max_doc_size_kb`, `max_aliases`, `max_doc_per_batch` |
 | Enumeration attack protection | [`wallarm_rule_enum`](../resources/rule_enum) | `mode`, `threshold`, `reaction`, `advanced_conditions`, `arbitrary_conditions` |
 | BOLA protection | [`wallarm_rule_bola`](../resources/rule_bola) | `mode`, `threshold`, `reaction`, `advanced_conditions`, `arbitrary_conditions` |
 | Forced browsing protection | [`wallarm_rule_forced_browsing`](../resources/rule_forced_browsing) | `mode`, `threshold`, `reaction`, `advanced_conditions`, `arbitrary_conditions` |
