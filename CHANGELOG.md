@@ -12,7 +12,8 @@
 
 ### Bug Fixes
 
-* **`wallarm_rule_graphql_detection.introspection` / `.debug_enabled`:** Create-with-omitted-field now preserves the API's `true` default in state instead of silently overwriting with `false`. New helper `GetBoolPointerIfConfigured` in `wallarm/common/resourcerule/rule_crud.go` mirrors the `GetIntPointerIfConfigured` pattern: uses `d.GetRawConfig()` to detect whether the user wrote the field; sends `nil` on the wire when omitted so `*bool+omitempty` drops it. Existing rules created with v2.3.8- keep their persisted value (`false` if Create silently set it); to restore the API default, set explicitly or destroy/recreate.
+* **`wallarm_rule_graphql_detection.introspection` / `.debug_enabled`:** Create-with-omitted-field now preserves the API's `true` default in state instead of silently overwriting with `false`. New helper `GetPointerIfConfigured[T any]` in `wallarm/common/resourcerule/rule_crud.go` (replaces former type-specific `GetIntPointerIfConfigured`): uses `d.GetRawConfig()` to detect whether the user wrote the field; sends `nil` on the wire when omitted so `*T+omitempty` drops it. Existing rules created with v2.3.8- keep their persisted value (`false` if Create silently set it); to restore the API default, set explicitly or destroy/recreate.
+* **`findActionByConditionsHash` pagination cap.** A 200-page cap (100k actions per hint type) now bounds the previously unbounded loop. Guards against a misbehaving API that keeps returning full pages without progress; surfaces an error instead of hanging the apply.
 
 ## [v2.3.8] - 2026-05-01
 
