@@ -14,12 +14,16 @@ import (
 	"github.com/wallarm/wallarm-go"
 )
 
-// rawStateHasKey reports whether the cty.Value (typically d.GetRawState()) is
-// an object whose type declares the given attribute. Defaults to true for
-// undetermined cases (no state yet on Create, non-object type) — callers want
-// "skip d.Set" only when the schema definitely lacks the attribute.
+// rawStateHasKey reports whether the cty.Value (typically d.GetRawState())
+// belongs to an object type that declares the given attribute. Returns true
+// only when the schema cannot be determined (untyped nil, non-object type) —
+// in those cases the caller proceeds with d.Set and the SDK rejects unknown
+// keys with its own error. A typed null (e.g. cty.NullVal(resourceObject) on
+// Create when prior state is empty) still carries the schema's Type, so we
+// honour the attribute check normally — that's the path that prevents
+// d.Set("point", ...) from panicking on resources whose schema lacks `point`.
 func rawStateHasKey(raw cty.Value, key string) bool {
-	if raw == cty.NilVal || raw.IsNull() {
+	if raw == cty.NilVal {
 		return true
 	}
 	ty := raw.Type()

@@ -118,11 +118,14 @@ func TestRawStateHasKey(t *testing.T) {
 		key  string
 		want bool
 	}{
-		{name: "nil cty value -> true (no state, Create path)", raw: cty.NilVal, key: "mode", want: true},
-		{name: "null object -> true (no state)", raw: cty.NullVal(objType), key: "mode", want: true},
+		{name: "untyped nil -> true (defensive)", raw: cty.NilVal, key: "mode", want: true},
 		{name: "non-object type -> true (defensive)", raw: cty.StringVal("not-object"), key: "mode", want: true},
-		{name: "object with key -> true", raw: cty.ObjectVal(map[string]cty.Value{"mode": cty.StringVal("block"), "depth": cty.NumberIntVal(5)}), key: "mode", want: true},
-		{name: "object missing key -> false (skip d.Set)", raw: cty.ObjectVal(map[string]cty.Value{"mode": cty.StringVal("block"), "depth": cty.NumberIntVal(5)}), key: "max_aliases", want: false},
+		// Typed nulls carry the schema's Type — honour HasAttribute on it.
+		// On Create, d.GetRawState returns this shape (resource schema, no values yet).
+		{name: "typed null, key in type -> true", raw: cty.NullVal(objType), key: "mode", want: true},
+		{name: "typed null, key NOT in type -> false (Create-path skip d.Set for foreign keys)", raw: cty.NullVal(objType), key: "max_aliases", want: false},
+		{name: "object value with key -> true", raw: cty.ObjectVal(map[string]cty.Value{"mode": cty.StringVal("block"), "depth": cty.NumberIntVal(5)}), key: "mode", want: true},
+		{name: "object value missing key -> false", raw: cty.ObjectVal(map[string]cty.Value{"mode": cty.StringVal("block"), "depth": cty.NumberIntVal(5)}), key: "max_aliases", want: false},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
