@@ -124,7 +124,14 @@ func resourceWallarmRegexRead(_ context.Context, d *schema.ResourceData, m inter
 	if err != nil {
 		return diag.FromErr(err)
 	}
-	return diag.FromErr(resourcerule.Read(d, clientID, apiClient(m)))
+	if err := resourcerule.Read(d, clientID, apiClient(m)); err != nil {
+		return diag.FromErr(err)
+	}
+	// Derive `experimental` from rule_type so ImportStateVerify and post-import
+	// drift checks see the correct value. The hint payload doesn't carry an
+	// `experimental` flag — it's encoded in the rule_type string the API echoes.
+	d.Set("experimental", d.Get("rule_type").(string) == experimentalRegex)
+	return nil
 }
 
 func resourceWallarmRegexImport(_ context.Context, d *schema.ResourceData, _ interface{}) ([]*schema.ResourceData, error) {
