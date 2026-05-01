@@ -12,6 +12,13 @@ import (
 // round-trip for every simple With* helper. Nested-block customizers
 // (WithThreshold/Reaction/EnumeratedParameters) and WithValues have their
 // own dedicated tests below.
+//
+// This test also covers the Optional+Computed contract by proxy: when SDK
+// plan-time Computed semantics fill `d` with the state-preserved value (HCL
+// omitted, state had a Computed value from the prior Read), the customizer
+// sees it via `d.Get(name)` exactly as it sees a user-written value here.
+// `schema.TestResourceDataRaw` cannot synthesize that distinction directly
+// — but the customizer reads only `d.Get`, so the code path is identical.
 
 func TestUpdateCustomizers_Simple(t *testing.T) {
 	type stringCase struct {
