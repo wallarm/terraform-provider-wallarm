@@ -35,10 +35,16 @@ func resourceWallarmRegex() *schema.Resource {
 
 		"point": defaultPointSchema,
 
+		// Optional+Computed (NOT Optional+Default) because flipping experimental
+		// is ForceNew → destroy+recreate. With Default:true, importing a regular
+		// `regex` rule with HCL omitting `experimental` would plan
+		// `false → true` and silently destroy the rule. Computed lets the
+		// state value (Read-derived from rule_type, see resourceWallarmRegexRead)
+		// win when HCL omits.
 		"experimental": {
 			Type:     schema.TypeBool,
 			Optional: true,
-			Default:  true,
+			Computed: true,
 			ForceNew: true,
 		},
 	}
