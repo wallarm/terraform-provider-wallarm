@@ -50,10 +50,13 @@ func resourceWallarmRateLimit() *schema.Resource {
 			ValidateFunc: validation.IntBetween(400, 599),
 		},
 
+		// Optional+Default("rps") — stable API default, mutable via WithTimeUnit;
+		// removing the line plans `current → "rps"` symmetrically (per
+		// .claude/schema_decision_rules.md §A row 2).
 		"time_unit": {
 			Type:         schema.TypeString,
 			Optional:     true,
-			Computed:     true,
+			Default:      "rps",
 			ValidateFunc: validation.StringInSlice([]string{"rps", "rpm"}, false),
 		},
 	}
