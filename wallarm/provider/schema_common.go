@@ -54,10 +54,18 @@ var (
 			Default:     "Managed by Terraform",
 			Description: "A human-readable comment for the rule.",
 		},
+		// Optional only (NOT Computed). Optional+Computed on a TypeString
+		// has a real bug: SDKv2 normalises an explicit empty string in HCL
+		// to cty.NullVal, after which Computed semantics preserve state and
+		// `set = ""` silently fails to clear the value. The cost of dropping
+		// Computed: post-import-CLI workflows without -generate-config-out
+		// see HCL-omitted as "" rather than the API-echoed value — but the
+		// modern import{}+generate-config-out flow generates HCL with the
+		// value populated, so there's no real-world hit. (Test:
+		// TestAccRuleParserState_UpdateSetToEmpty.)
 		"set": {
 			Type:        schema.TypeString,
 			Optional:    true,
-			Computed:    true,
 			Description: "The rule set name. Used to group related rules together.",
 		},
 		"active": {
@@ -66,10 +74,11 @@ var (
 			Default:     true,
 			Description: "Whether the rule is active. Defaults to true.",
 		},
+		// See `set` above for why this is Optional only (not Optional+Computed):
+		// SDKv2 string-normalisation breaks `title = ""` clears with Computed.
 		"title": {
 			Type:        schema.TypeString,
 			Optional:    true,
-			Computed:    true,
 			Description: "A short title for the rule.",
 		},
 		"mitigation": {
