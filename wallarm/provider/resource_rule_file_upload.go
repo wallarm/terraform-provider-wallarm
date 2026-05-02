@@ -30,17 +30,21 @@ func resourceWallarmFileUploadSizeLimit() *schema.Resource {
 			},
 		},
 		// Schema actualised against API ground truth (probed 2026-05-01).
-		// `mode` and `size_unit` are Optional API-side with defaults
-		// (`monitoring` and `b`); only `size` is required (range 1..2^64).
+		// `mode` is Optional+Default("monitoring") — stable API default,
+		// mutable via WithMode; symmetric remove-restores-default per
+		// .claude/schema_decision_rules.md §A row 2.
+		// `size_unit` stays Optional+Computed+ForceNew: API default "b" but
+		// ForceNew + Default would be the import trap (anti-pattern 3).
 		"mode": {
 			Type:         schema.TypeString,
 			Optional:     true,
-			Computed:     true,
+			Default:      "monitoring",
 			ValidateFunc: validation.StringInSlice([]string{"monitoring", "block", "off", "default"}, false),
 		},
 		"size": {
-			Type:     schema.TypeInt,
-			Required: true,
+			Type:         schema.TypeInt,
+			Required:     true,
+			ValidateFunc: validation.IntAtLeast(1),
 		},
 		"size_unit": {
 			Type:         schema.TypeString,
