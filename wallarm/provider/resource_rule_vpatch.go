@@ -10,13 +10,15 @@ import (
 	"github.com/wallarm/wallarm-go"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
 func resourceWallarmVpatch() *schema.Resource {
 	fields := map[string]*schema.Schema{
 		"attack_type": {
-			Type:     schema.TypeString,
-			Required: true,
+			Type:         schema.TypeString,
+			Required:     true,
+			ValidateFunc: validation.StringInSlice([]string{"any", "sqli", "rce", "crlf", "nosqli", "ptrav", "xxe", "xss", "scanner", "redir", "ldapi"}, false),
 			Description: `Possible values: "any", "sqli", "rce", "crlf", "nosqli", "ptrav",
 				"xxe", "xss", "scanner", "redir", "ldapi"`,
 		},
