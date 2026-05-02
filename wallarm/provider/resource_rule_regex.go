@@ -12,6 +12,7 @@ import (
 	"github.com/wallarm/wallarm-go"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
 func resourceWallarmRegex() *schema.Resource {
@@ -21,9 +22,10 @@ func resourceWallarmRegex() *schema.Resource {
 			Computed: true,
 		},
 		"attack_type": {
-			Type:     schema.TypeString,
-			Required: true,
-			ForceNew: true,
+			Type:         schema.TypeString,
+			Required:     true,
+			ForceNew:     true,
+			ValidateFunc: validation.StringInSlice([]string{"any", "sqli", "rce", "crlf", "nosqli", "ptrav", "xxe", "xss", "scanner", "redir", "ldapi"}, false),
 		},
 
 		"action": resourcerule.ScopeActionSchema(),
