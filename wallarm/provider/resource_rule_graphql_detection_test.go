@@ -268,3 +268,57 @@ resource "wallarm_rule_graphql_detection" %[1]q {
 		},
 	})
 }
+
+// TestAccRuleGraphqlDetection_MaxAliasesMutableInPlace guards the v2.3.9 schema
+// flip on `max_aliases` (Optional+Computed+ForceNew → Optional+Default(5)).
+// Probe-confirmed mutable on PUT; wallarm-go v0.12.3 added the field to
+// HintUpdateV3Params and resourcerule.WithMaxAliases wires it. The test
+// flips the value and asserts rule_id stays stable across the Update.
+func TestAccRuleGraphqlDetection_MaxAliasesMutableInPlace(t *testing.T) {
+	rnd := generateRandomResourceName(5)
+	addr := "wallarm_rule_graphql_detection." + rnd
+	var firstRuleID string
+	cfg := func(maxAliases int) string {
+		return fmt.Sprintf(`
+resource "wallarm_rule_graphql_detection" %[1]q {
+  mode = "block"
+  action {
+    type  = "iequal"
+    value = "graphql-max-aliases.example.com"
+    point = { header = "HOST" }
+  }
+  max_aliases = %[2]d
+}
+`, rnd, maxAliases)
+	}
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV5ProviderFactories: testAccProtoV5ProviderFactories,
+		CheckDestroy:             testAccCheckWallarmRuleGraphqlDetectionDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: cfg(3),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(addr, "max_aliases", "3"),
+					func(s *terraform.State) error {
+						firstRuleID = s.RootModule().Resources[addr].Primary.Attributes["rule_id"]
+						return nil
+					},
+				),
+			},
+			{
+				Config: cfg(7),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(addr, "max_aliases", "7"),
+					func(s *terraform.State) error {
+						newID := s.RootModule().Resources[addr].Primary.Attributes["rule_id"]
+						if newID != firstRuleID {
+							return fmt.Errorf("expected rule_id to stay stable on in-place update, was %s now %s", firstRuleID, newID)
+						}
+						return nil
+					},
+				),
+			},
+		},
+	})
+}

@@ -70,6 +70,7 @@ func TestUpdateCustomizers_Simple(t *testing.T) {
 		{"WithMaxValueSizeKb", "max_value_size_kb", 99, WithMaxValueSizeKb, func(p *wallarm.HintUpdateV3Params) *int { return p.MaxValueSizeKb }},
 		{"WithMaxDocSizeKb", "max_doc_size_kb", 200, WithMaxDocSizeKb, func(p *wallarm.HintUpdateV3Params) *int { return p.MaxDocSizeKb }},
 		{"WithMaxDocPerBatch", "max_doc_per_batch", 25, WithMaxDocPerBatch, func(p *wallarm.HintUpdateV3Params) *int { return p.MaxDocPerBatch }},
+		{"WithMaxAliases", "max_aliases", 7, WithMaxAliases, func(p *wallarm.HintUpdateV3Params) *int { return p.MaxAliases }},
 		{"WithOverlimitTime", "overlimit_time", 5000, WithOverlimitTime, func(p *wallarm.HintUpdateV3Params) *int { return p.OverlimitTime }},
 		{"WithDelay", "delay", 250, WithDelay, func(p *wallarm.HintUpdateV3Params) *int { return p.Delay }},
 		{"WithBurst", "burst", 99, WithBurst, func(p *wallarm.HintUpdateV3Params) *int { return p.Burst }},

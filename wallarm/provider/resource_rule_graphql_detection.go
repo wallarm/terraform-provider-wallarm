@@ -20,38 +20,38 @@ func resourceWallarmGraphqlDetection() *schema.Resource {
 			Required:     true,
 			ValidateFunc: validation.StringInSlice([]string{"off", "default", "monitoring", "block"}, false),
 		},
-		// All API-defaulted fields below are Optional+Computed: the API has
-		// authoritative defaults (max_depth=10, max_value_size_kb=10,
-		// max_doc_size_kb=100, max_doc_per_batch=10, max_aliases=5,
-		// introspection=true, debug_enabled=true). Computed lets the SDK
-		// preserve API-echoed state values when the user omits the field in
-		// HCL, so subsequent plans don't claim drift and Update doesn't send
-		// zeros that the API would reject (1..N range constraints).
+		// All API-defaulted int fields below use Optional+Default(<API default>).
+		// Schema default matches the API default so re-plan is clean, AND
+		// removing the line from HCL plans `current → default` symmetrically
+		// (per the v2.3.9 audit; see .claude/schema_decision_rules.md §A row 2).
+		// All four are mutable in-place via Update — confirmed by per-field
+		// PUT mutability probe. max_value_size_kb has documented range 1..100;
+		// other fields API-enforced.
 		"max_depth": {
 			Type:     schema.TypeInt,
 			Optional: true,
-			Computed: true,
+			Default:  10,
 		},
 		"max_value_size_kb": {
-			Type:     schema.TypeInt,
-			Optional: true,
-			Computed: true,
+			Type:         schema.TypeInt,
+			Optional:     true,
+			Default:      10,
+			ValidateFunc: validation.IntBetween(1, 100),
 		},
 		"max_doc_size_kb": {
 			Type:     schema.TypeInt,
 			Optional: true,
-			Computed: true,
+			Default:  100,
 		},
 		"max_aliases": {
 			Type:     schema.TypeInt,
 			Optional: true,
-			Computed: true,
-			ForceNew: true,
+			Default:  5,
 		},
 		"max_doc_per_batch": {
 			Type:     schema.TypeInt,
 			Optional: true,
-			Computed: true,
+			Default:  10,
 		},
 		// API default is true. Optional+Default (NOT Computed) so removing the
 		// field from HCL plans as "back to default" — symmetric with adding
@@ -73,7 +73,7 @@ func resourceWallarmGraphqlDetection() *schema.Resource {
 	return &schema.Resource{
 		CreateContext: resourceWallarmGraphqlDetectionCreate,
 		ReadContext:   resourceWallarmGraphqlDetectionRead,
-		UpdateContext: resourcerule.Update(apiClient, resourcerule.WithMode, resourcerule.WithMaxDepth, resourcerule.WithMaxValueSizeKb, resourcerule.WithMaxDocSizeKb, resourcerule.WithMaxDocPerBatch, resourcerule.WithIntrospection, resourcerule.WithDebugEnabled),
+		UpdateContext: resourcerule.Update(apiClient, resourcerule.WithMode, resourcerule.WithMaxDepth, resourcerule.WithMaxValueSizeKb, resourcerule.WithMaxDocSizeKb, resourcerule.WithMaxAliases, resourcerule.WithMaxDocPerBatch, resourcerule.WithIntrospection, resourcerule.WithDebugEnabled),
 		DeleteContext: resourcerule.Delete(apiClient),
 		Importer: &schema.ResourceImporter{
 			StateContext: resourcerule.Import("graphql_detection"),

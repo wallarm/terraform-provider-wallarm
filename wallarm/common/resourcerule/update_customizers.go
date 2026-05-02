@@ -69,6 +69,11 @@ func WithMaxDocPerBatch(d *schema.ResourceData, p *wallarm.HintUpdateV3Params) e
 	return nil
 }
 
+func WithMaxAliases(d *schema.ResourceData, p *wallarm.HintUpdateV3Params) error {
+	p.MaxAliases = GetPointerWithTypeCastingOrDefault[int](d, "max_aliases")
+	return nil
+}
+
 func WithIntrospection(d *schema.ResourceData, p *wallarm.HintUpdateV3Params) error {
 	p.Introspection = GetPointerWithTypeCastingOrDefault[bool](d, "introspection")
 	return nil

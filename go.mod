@@ -14,8 +14,9 @@ require (
 	github.com/zclconf/go-cty v1.17.0
 )
 
-// Local development against unreleased wallarm-go v0.12.2 (release/v0.12.2 branch).
-// Re-enable after `go mod tidy` if it gets stripped — required until v0.12.2 is tagged upstream.
+// Local development against unreleased wallarm-go v0.12.3 (release/v0.12.3 branch —
+// adds HintUpdateV3Params.MaxAliases). Re-enable after `go mod tidy` if it gets
+// stripped; drop entirely once v0.12.3 is tagged upstream and the require version is bumped.
 replace github.com/wallarm/wallarm-go => ../wallarm-go
 
 require (
