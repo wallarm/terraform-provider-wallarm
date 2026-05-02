@@ -57,6 +57,7 @@ var (
 		"set": {
 			Type:        schema.TypeString,
 			Optional:    true,
+			Computed:    true,
 			Description: "The rule set name. Used to group related rules together.",
 		},
 		"active": {
@@ -68,19 +69,23 @@ var (
 		"title": {
 			Type:        schema.TypeString,
 			Optional:    true,
+			Computed:    true,
 			Description: "A short title for the rule.",
 		},
 		"mitigation": {
 			Type:        schema.TypeString,
-			Optional:    true,
 			Computed:    true,
-			Description: "Read-only mitigation type assigned by the API. Accepted in config but not sent to the API.",
+			Description: "Read-only mitigation type assigned by the API.",
 		},
 		"variativity_disabled": {
-			Type:        schema.TypeBool,
-			Optional:    true,
-			Default:     true,
-			Description: "Whether variativity is disabled for this rule. Defaults to true.",
+			Type:     schema.TypeBool,
+			Optional: true,
+			Default:  true,
+			Description: "Whether variativity is disabled for this rule. Defaults to true. " +
+				"Provider locks this to true on Create regardless of user input — " +
+				"keeps Terraform state synchronized with the API by preventing " +
+				"server-side variative-rule mutations from drifting state. " +
+				"The API default varies by rule type, but the provider always sends true.",
 		},
 	}
 
