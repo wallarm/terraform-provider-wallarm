@@ -131,6 +131,10 @@ var (
 		},
 	}
 
+	// Reaction values are session-/IP-block durations in seconds. API range is
+	// 600..315569520 (10 minutes to 10 years). The mode↔reaction whitelist
+	// (block_by_session/block_by_ip for mode=block, graylist_by_ip for
+	// mode=monitoring) is API-enforced — keep that distinction at runtime.
 	reactionSchema = &schema.Schema{
 		Type:     schema.TypeList,
 		MaxItems: 1,
@@ -138,16 +142,19 @@ var (
 		Elem: &schema.Resource{
 			Schema: map[string]*schema.Schema{
 				"block_by_session": {
-					Type:     schema.TypeInt,
-					Optional: true,
+					Type:         schema.TypeInt,
+					Optional:     true,
+					ValidateFunc: validation.IntBetween(600, 315569520),
 				},
 				"block_by_ip": {
-					Type:     schema.TypeInt,
-					Optional: true,
+					Type:         schema.TypeInt,
+					Optional:     true,
+					ValidateFunc: validation.IntBetween(600, 315569520),
 				},
 				"graylist_by_ip": {
-					Type:     schema.TypeInt,
-					Optional: true,
+					Type:         schema.TypeInt,
+					Optional:     true,
+					ValidateFunc: validation.IntBetween(600, 315569520),
 				},
 			},
 		},
