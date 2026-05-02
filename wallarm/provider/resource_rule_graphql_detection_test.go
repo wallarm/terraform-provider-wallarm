@@ -115,8 +115,11 @@ func testAccCheckWallarmRuleGraphqlDetectionDestroy(s *terraform.State) error {
 }
 
 // Create with only `mode` should land all API defaults in state and re-plan
-// clean: Optional+Computed schema preserves echoed values; bool fields skip the
-// wire when omitted (GetPointerIfConfigured) so API defaults win.
+// clean. Int fields use Optional+Computed so the API echoes back into state.
+// Bool fields use Optional+Default(true) so the SDK fills d.Get("introspection")
+// with the schema default; the wire payload sends true and the API echoes true
+// back. Schema default and API default match by design — keeps removal
+// symmetric (see TestAccRuleGraphqlDetection_RemovingBoolFromHCLRestoresDefault).
 func TestAccRuleGraphqlDetection_MinimalCreatePreservesAPIDefaults(t *testing.T) {
 	rnd := generateRandomResourceName(5)
 	name := "wallarm_rule_graphql_detection." + rnd

@@ -81,9 +81,9 @@ func existingHintForAction(d *schema.ResourceData, m interface{}, hintType strin
 
 // findActionByConditionsHashPageCap caps pagination at 200 pages × APIListLimit
 // (100k actions per hint type) — guards against a misbehaving API that keeps
-// returning full pages without progress. Same shape as the IPListCache retry
-// loop. The cap is far above the largest tenant we expect; hitting it indicates
-// an API bug, so we surface an error instead of hanging the apply.
+// returning full pages without progress. Cap is far above the largest tenant
+// we expect; hitting it indicates an API bug, so we surface an error instead
+// of hanging the apply.
 const findActionByConditionsHashPageCap = 200
 
 // findActionByConditionsHash paginates ActionList for (clientID, hintType) and

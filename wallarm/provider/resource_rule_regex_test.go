@@ -140,3 +140,39 @@ resource "wallarm_rule_regex" %[1]q {
 func testAccCheckWallarmRuleRegexDestroy(s *terraform.State) error {
 	return testAccCheckHintDestroyed(s, "wallarm_rule_regex")
 }
+
+// TestAccRuleRegex_OmittedExperimentalCreatesRegularRegex pins the v2.3.9
+// schema flip on `experimental` (Optional+Default(true) → Optional+Computed):
+// fresh Create with HCL omitting `experimental` must produce a regular
+// `regex` rule, not `experimental_regex`. Guards against silent regression
+// to the old Default(true) behaviour.
+func TestAccRuleRegex_OmittedExperimentalCreatesRegularRegex(t *testing.T) {
+	rnd := generateRandomResourceName(5)
+	name := "wallarm_rule_regex." + rnd
+	config := fmt.Sprintf(`
+resource "wallarm_rule_regex" %[1]q {
+  attack_type = "sqli"
+  regex       = ".*"
+  action {
+    type  = "iequal"
+    value = "regex-default.example.com"
+    point = { header = "HOST" }
+  }
+  point = [["get", "search"]]
+}
+`, rnd)
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV5ProviderFactories: testAccProtoV5ProviderFactories,
+		CheckDestroy:             testAccCheckWallarmRuleRegexDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: config,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(name, "experimental", "false"),
+					resource.TestCheckResourceAttr(name, "rule_type", "regex"),
+				),
+			},
+		},
+	})
+}
