@@ -301,7 +301,7 @@ func discover(host, token string, clientID int, p Probe, verbose bool) Result {
 				ruleID := int(id)
 				probeUpdate(host, token, ruleID, body, &r, verbose)
 				if os.Getenv("API_PROBE_MUTABILITY") == "1" {
-					probePerFieldMutability(host, token, ruleID, &r, verbose)
+					probePerFieldMutability(host, token, ruleID, body, &r, verbose)
 				}
 				_ = deleteHint(host, token, clientID, ruleID, verbose)
 			}
@@ -439,16 +439,49 @@ func probeUpdate(host, token string, ruleID int, createBody map[string]any, r *R
 // via PUT /v3/hint/{id}, then reads the rule back via GET /v3/hint/{id} (when
 // available) and compares. Records "mutable" / "immutable_silent" / "rejected"
 // / "untested" per field. Best-effort; never fails the parent probe.
-func probePerFieldMutability(host, token string, ruleID int, r *Result, verbose bool) {
+//
+// The PUT body is the full createBody with just the target field flipped to
+// `alt`. Sending a partial body (target field alone) caused the API to silently
+// drop most fields — this matters because the Wallarm Update endpoint treats
+// missing fields differently from explicit ones in some cases. Provider Update
+// always sends a full body via resourcerule.Update; mirror that here.
+func probePerFieldMutability(host, token string, ruleID int, createBody map[string]any, r *Result, verbose bool) {
 	r.FieldMutability = map[string]string{}
+	// Strip Create-only fields the PUT endpoint doesn't accept — same as
+	// probeUpdate above.
+	baseBody := cloneMap(createBody)
+	delete(baseBody, "type")
+	delete(baseBody, "clientid")
+	delete(baseBody, "action")
+	delete(baseBody, "validated")
+	// Augment with non-nil API-echoed defaults — gives the PUT body more
+	// context than the bare Create body. Note: this still doesn't fully
+	// reproduce what the provider's resourcerule.Update sends (which
+	// includes empty-string-as-pointer for unset commonResourceRuleFields).
+	// Adding empty-string echoes for nil fields turned out to make the
+	// Update endpoint reject bodies — the API is sensitive to extra-keys
+	// shape in ways that aren't fully understood from outside. As a result,
+	// "immutable_silent" / "rejected" results for common fields like `set`
+	// or `attack_type` are likely probe-noise from this body-shape mismatch,
+	// NOT a real claim that the field is server-immutable.
+	for k, v := range r.APIDefaults {
+		if v == nil {
+			continue
+		}
+		if _, exists := baseBody[k]; !exists {
+			baseBody[k] = v
+		}
+	}
+
 	for field, current := range r.APIDefaults {
 		alt, ok := alternateValue(field, current)
 		if !ok {
 			r.FieldMutability[field] = "untested"
 			continue
 		}
-		// PUT with a single-field flip body.
-		body := map[string]any{field: alt}
+		// PUT the full body with just this one field overridden to `alt`.
+		body := cloneMap(baseBody)
+		body[field] = alt
 		bb, _ := json.Marshal(body)
 		url := fmt.Sprintf("%s/v3/hint/%d", host, ruleID)
 		if verbose {
@@ -482,16 +515,42 @@ func probePerFieldMutability(host, token string, ruleID int, r *Result, verbose 
 	}
 }
 
+// enumAlternates lists known-good alternates for enum fields, used by
+// alternateValue when the current value is in the list (pick a different one)
+// or when the current value is nil/empty (use the first). Keeps mutability
+// probes from sending invalid values to enum-validated fields.
+var enumAlternates = map[string][]string{
+	"mode":            {"block", "monitoring", "off", "default", "enabled", "disabled"},
+	"attack_type":     {"sqli", "xss", "rce", "any", "ldapi", "redir"},
+	"parser":          {"json_doc", "xml", "jwt", "gql"},
+	"state":           {"enabled", "disabled"},
+	"size_unit":       {"b", "kb", "mb", "gb"},
+	"time_unit":       {"rps", "rpm"},
+	"cred_stuff_type": {"custom", "default"},
+	"file_type":       {"docs", "html", "images", "music", "video"},
+}
+
 // alternateValue picks a "different" value of the same kind for a per-field
-// mutability test. Returns ok=false when no safe alternative is known.
+// mutability test. When the current value is nil (API echoed `<nil>`), falls
+// back to enumAlternates for known enums and to candidateValues for everything
+// else — that way fields with no API default still get probed for mutability
+// instead of returning "untested". Returns ok=false only when no safe
+// alternative is known.
 func alternateValue(field string, current any) (any, bool) {
+	if current == nil {
+		// Fallback for nil API echoes — try enum first, then candidateValues.
+		if alts, ok := enumAlternates[field]; ok && len(alts) > 0 {
+			return alts[0], true
+		}
+		if v, ok := candidateValues[field]; ok && v != nil {
+			return v, true
+		}
+		return nil, false
+	}
 	switch v := current.(type) {
 	case bool:
 		return !v, true
 	case float64: // JSON numbers
-		// Pick something within typical valid ranges. For most graphql fields
-		// the API range starts at 1; for rate-limit fields 0 is also valid.
-		// Bumping by 1 is the safest universal nudge.
 		alt := v + 1
 		if alt == v {
 			return nil, false
@@ -501,10 +560,22 @@ func alternateValue(field string, current any) (any, bool) {
 		return v + 1, true
 	case string:
 		if v == "" {
+			// Same fallback path as nil — empty string is not informative.
+			if alts, ok := enumAlternates[field]; ok && len(alts) > 0 {
+				return alts[0], true
+			}
+			if cv, ok := candidateValues[field].(string); ok && cv != "" {
+				return cv, true
+			}
 			return "probe-mutated", true
 		}
-		// Avoid mutating enums to invalid values; skip.
-		if field == "mode" || field == "attack_type" || field == "parser" || field == "state" || field == "size_unit" || field == "time_unit" || field == "cred_stuff_type" || field == "file_type" {
+		// Enums: pick a different value from the known set.
+		if alts, ok := enumAlternates[field]; ok {
+			for _, a := range alts {
+				if a != v {
+					return a, true
+				}
+			}
 			return nil, false
 		}
 		return v + "-x", true

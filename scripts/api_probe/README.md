@@ -84,3 +84,13 @@ The script writes a markdown report with two sections:
 2. **Per-rule-type detail** — full Create/Update outcomes, the wire payload that succeeded, and (when `API_PROBE_MUTABILITY=1`) the per-field mutability classifications.
 
 Probe results are checked into `.claude/api_probe_results.md` (gitignored) as a working snapshot of API ground truth — refresh by re-running the probe after any API update.
+
+## Known limitations of the per-field mutability probe
+
+`API_PROBE_MUTABILITY=1` sends per-field PUTs and compares the response. It's informative for fields where the server treats single-field flips the same as full-body updates, but the Wallarm API is sensitive to body shape in ways that produce noise:
+
+- **`immutable_silent` on common fields** (`set`, `attack_type`, etc.) often means "the API silently drops this field when sent in a partial body" — NOT that the field is server-immutable. Real provider Updates send a fuller body via `wallarm.HintUpdateV3Params` (always including `comment`, `title`, `active`, `set`, `variativity_disabled` plus per-resource customizers); those updates DO mutate the field. Treat probe `immutable_silent` for common fields as likely noise; verify via an acceptance test before acting on it.
+- **`rejected` on a field that has no API default** (showed as `<nil>` in the API echo) is generally trustworthy — the field-flip target is rejected outright, distinct from silent-drop.
+- **`untested`** — the probe couldn't pick a safe alternate (the field's current value is `nil` and the field name isn't in `enumAlternates` or `candidateValues`). To improve coverage for a specific field, add it to one of those maps with a known-good probe value.
+
+Trust the probe most for resource-specific int/bool/enum fields with concrete API defaults (e.g. `graphql_detection.max_*`, `rate_limit.delay/burst/time_unit`); be skeptical when it claims `immutable_silent` for the shared common-field surface.
