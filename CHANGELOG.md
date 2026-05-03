@@ -1,6 +1,8 @@
 ## [v2.3.9] - 2026-05-04
 
 > Rules polish batch — naming cleanup, schema-shape audit (symmetric remove-restores-default), safety hardening, test gap fills. Bumps `wallarm-go` to v0.12.2.
+>
+> **Migration note:** the `Optional+Computed` → `Optional+Default(<value>)` flips below cover ~13 fields. Resources whose API value differs from the new schema default will produce a one-time plan diff after upgrade — review `terraform plan` output before applying. Affects `active` (all resources), `additional_parameters`/`plain_parameters` (brute/bola/enum), `introspection`/`debug_enabled`/`max_depth`/`max_value_size_kb`/`max_doc_size_kb`/`max_doc_per_batch`/`max_aliases` (graphql_detection), `mode` (overlimit_res_settings, file_upload_size_limit), `time_unit` (rate_limit).
 
 ### Upgrade Steps
 
@@ -22,7 +24,7 @@
 * **`wallarm_rule_overlimit_res_settings.mode` now `Optional+Default("monitoring")`.**
 * **`wallarm_rule_rate_limit.time_unit` now `Optional+Default("rps")`.**
 * **`wallarm_rule_file_upload_size_limit.mode` now `Optional+Default("monitoring")`**; `size` gains `IntAtLeast(1)` validator.
-* **`wallarm_rule_regex.experimental` now `Optional+Computed`** (was `Optional+Default+ForceNew`); Read derives from `rule_type`. Prevents destroy-on-import for regular `regex` rules.
+* **`wallarm_rule_regex.experimental` now `Optional+Computed+ForceNew`** (was `Optional+Default(true)+ForceNew`; ForceNew retained); Read derives from `rule_type`. Prevents destroy-on-import for regular `regex` rules.
 * **`findActionByConditionsHash` 200-page pagination cap** — bounds previously unbounded loop.
 * **`setIfExists` panic-swallow removed** — replaced with explicit cty guards in `rawStateHasKey`.
 * **Plan-time enum validators added**: `attack_type` on rule_disable_attack_type/vpatch (17 values each), rule_regex (16); `block_by_session/ip+graylist_by_ip` `IntBetween(600, 315569520)`.

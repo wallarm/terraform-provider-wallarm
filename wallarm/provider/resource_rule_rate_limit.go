@@ -94,11 +94,10 @@ func resourceWallarmRateLimitCreate(ctx context.Context, d *schema.ResourceData,
 	}
 	// Required ints (rate, rsp_status): always send. Optional ints (delay,
 	// burst): use the GetRawConfig-aware helper so a literal 0 reaches the
-	// API but an omitted field doesn't override the API default. Optional
-	// strings (time_unit): same — empty string is the SDK zero, but we
-	// only want to send when user configured it. wallarm-go v0.12.1's *int
-	// fields make the int side work; for strings, JSON omitempty already
-	// drops "" correctly, so a plain `d.Get` is sufficient there.
+	// API but an omitted field doesn't override the API default — relies on
+	// wallarm-go v0.12.1's `*int+omitempty` for these fields. `time_unit` is
+	// `Optional+Default("rps")`, so `d.Get` always returns a non-empty value
+	// (user's, or the schema default) — a plain `d.Get(...).(string)` here.
 	actionBody := &wallarm.ActionCreate{
 		Type:      "rate_limit",
 		Clientid:  clientID,

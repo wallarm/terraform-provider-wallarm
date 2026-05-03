@@ -47,7 +47,9 @@ func setIfExists(d *schema.ResourceData, key string, value interface{}) {
 	}
 }
 
-// TODO: add test — needs mock wallarm.API, verify field population, action set transform, not-found removes from state
+// Unit-test gap (mock wallarm.API needed) tracked in
+// .claude/plans/test-gaps.md §"provider/ — needs mock API (deferred)".
+//
 // TODO: consume opts inside the function body — currently accepted for API
 // compatibility but ignored; callers pass ReadOptionWith* and expect them to
 // gate optional field population.
@@ -143,7 +145,8 @@ func Read(d *schema.ResourceData, clientID int, cli wallarm.API, opts ...ReadOpt
 	return nil
 }
 
-// TODO: add test — needs mock wallarm.API, verify HintCreate call, ID format, error handling
+// Unit-test gap (mock wallarm.API needed) tracked in
+// .claude/plans/test-gaps.md §"provider/ — needs mock API (deferred)".
 func Create(
 	ctx context.Context,
 	d *schema.ResourceData,
