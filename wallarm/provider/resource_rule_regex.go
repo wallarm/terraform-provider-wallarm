@@ -12,6 +12,7 @@ import (
 	"github.com/wallarm/wallarm-go"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
 func resourceWallarmRegex() *schema.Resource {
@@ -20,14 +21,16 @@ func resourceWallarmRegex() *schema.Resource {
 			Type:     schema.TypeFloat,
 			Computed: true,
 		},
-		// No StringInSlice validator — the API-accepted set is broader than
-		// the Description below (e.g. `vpatch` is also accepted for
-		// virtual-patch-style regex rules). Maintaining a complete allowlist
-		// here is fragile; defer to the API's plan-apply error.
+		// Allowlist: 11 values from docs/resources/rule_regex.md plus `vpatch`
+		// (used by acc tests + accepted by the API for virtual-patch regex tags).
 		"attack_type": {
 			Type:     schema.TypeString,
 			Required: true,
 			ForceNew: true,
+			ValidateFunc: validation.StringInSlice([]string{
+				"any", "sqli", "rce", "crlf", "nosqli", "ptrav", "xxe", "xss",
+				"scanner", "redir", "ldapi", "vpatch",
+			}, false),
 		},
 
 		"action": resourcerule.ScopeActionSchema(),
