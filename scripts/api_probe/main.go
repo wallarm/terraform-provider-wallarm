@@ -260,9 +260,9 @@ func discover(host, token string, clientID int, p Probe, verbose bool) Result {
 	r := Result{RuleType: p.RuleType, RangeErrors: map[string]string{}, APIDefaults: map[string]any{}}
 
 	// Unique action scope so we don't collide with anything else.
-	host_header := fmt.Sprintf("api-probe-%s-%d.example.com", p.RuleType, time.Now().UnixNano())
+	hostHeader := fmt.Sprintf("api-probe-%s-%d.example.com", p.RuleType, time.Now().UnixNano())
 	action := []map[string]any{
-		{"type": "iequal", "point": []string{"header", "HOST"}, "value": strings.ToLower(host_header)},
+		{"type": "iequal", "point": []string{"header", "HOST"}, "value": strings.ToLower(hostHeader)},
 	}
 
 	body := cloneMap(p.Base)
@@ -659,6 +659,9 @@ func pickInRange(lo, hi int) int {
 	return (lo + hi) / 2
 }
 
+// emptyMark is the placeholder shown in the report for fields without a value.
+const emptyMark = "—"
+
 func writeReport(results []Result, outPath string) error {
 	var sb strings.Builder
 	sb.WriteString("# Wallarm API Rule-Type Probe Results\n\n")
@@ -670,7 +673,7 @@ func writeReport(results []Result, outPath string) error {
 		if r.Success {
 			status = "✅ ok"
 		}
-		updateStatus := "—"
+		updateStatus := emptyMark
 		if r.UpdateAttempted {
 			switch {
 			case r.UpdateOK:
@@ -757,7 +760,7 @@ func writeReport(results []Result, outPath string) error {
 			}
 		}
 	}
-	return os.WriteFile(outPath, []byte(sb.String()), 0o644)
+	return os.WriteFile(outPath, []byte(sb.String()), 0o600)
 }
 
 // helpers
@@ -820,7 +823,7 @@ func mapKeys[V any](m map[string]V) []string {
 
 func joinBackticked(xs []string) string {
 	if len(xs) == 0 {
-		return "—"
+		return emptyMark
 	}
 	out := make([]string, len(xs))
 	for i, x := range xs {
@@ -831,7 +834,7 @@ func joinBackticked(xs []string) string {
 
 func joinKVDefaults(m map[string]any) string {
 	if len(m) == 0 {
-		return "—"
+		return emptyMark
 	}
 	keys := mapKeys(m)
 	sort.Strings(keys)

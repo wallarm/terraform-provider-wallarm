@@ -10,17 +10,20 @@ import (
 	"github.com/wallarm/wallarm-go"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
 func resourceWallarmDisableAttackType() *schema.Resource {
 	fields := map[string]*schema.Schema{
+		// No StringInSlice validator — the API-accepted set is broader than
+		// what the Description lists (e.g. `ssi`, `mail_injection`, `ssti`,
+		// `invalid_xml` per CLAUDE.md hits-attack-types). Maintaining a
+		// complete allowlist here is fragile; defer to the API.
 		"attack_type": {
-			Type:         schema.TypeString,
-			Required:     true,
-			ValidateFunc: validation.StringInSlice([]string{"any", "sqli", "rce", "crlf", "nosqli", "ptrav", "xxe", "xss", "scanner", "redir", "ldapi", "mass_assignment", "ssrf"}, false),
-			Description: `Possible values: "any", "sqli", "rce", "crlf", "nosqli", "ptrav",
-				"xxe", "xss", "scanner", "redir", "ldapi", "mass_assignment", "ssrf"`,
+			Type:     schema.TypeString,
+			Required: true,
+			Description: `Common values: "any", "sqli", "rce", "crlf", "nosqli", "ptrav",
+				"xxe", "xss", "scanner", "redir", "ldapi", "mass_assignment", "ssrf",
+				"ssi", "ssti", "mail_injection", "invalid_xml"`,
 		},
 
 		"action": resourcerule.ScopeActionSchema(),
