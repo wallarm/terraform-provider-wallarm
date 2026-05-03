@@ -66,7 +66,7 @@ resource "wallarm_rule_regex" "scanner_rule" {
 ## Argument Reference
 
 * `client_id` - (optional) ID of the client to apply the rules to. The value is required for [multi-tenant scenarios][2].
-* `attack_type` - (**required**) attack type that will be detected when the parameter value in the request matches the regular expression. Can be: `any`, `sqli`, `rce`, `crlf`, `nosqli`, `ptrav`, `xxe`, `xss`, `scanner`, `redir`, `ldapi`, `vpatch`.
+* `attack_type` - (**required**) attack type that will be detected when the parameter value in the request matches the regular expression. Possible values for custom attack-detector rules: `xss`, `sqli`, `rce`, `xxe`, `ptrav`, `crlf`, `redir`, `nosqli`, `ldapi`, `scanner`, `mass_assignment`, `ssrf`, `ssi`, `mail_injection`, `ssti`, `vpatch`. Note: `any` and `invalid_xml` are not valid here (a regex rule must detect a specific attack class). The canonical attack-types list is served by `GET /v2/attack_types` on the Wallarm API.
 * `action` - (optional) rule conditions. See the [Action Guide](../guides/action) for full documentation on action conditions, point types, and usage examples.
 * `point` - (**required**) request parts to apply the rules to. See the [Point Guide](../guides/point) for the full list of possible values and examples.
 * `experimental` - (optional) when `true`, the rule is created with `rule_type = "experimental_regex"` (matches surface as attacks but are never blocked, even in block mode). When `false` or omitted, a regular `regex` rule is created. ForceNew — flipping this destroys and recreates the rule. Default behaviour when omitted: regular `regex`. _v2.3.9 behaviour change: previously omitting this field defaulted to `experimental_regex`._

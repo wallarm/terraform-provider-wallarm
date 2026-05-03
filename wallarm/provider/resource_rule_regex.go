@@ -21,15 +21,21 @@ func resourceWallarmRegex() *schema.Resource {
 			Type:     schema.TypeFloat,
 			Computed: true,
 		},
-		// Allowlist: 11 values from docs/resources/rule_regex.md plus `vpatch`
-		// (used by acc tests + accepted by the API for virtual-patch regex tags).
+		// Authoritative attack_type set for Custom Attack Detector rules
+		// (regex). Differs from wallarm_rule_disable_attack_type and
+		// wallarm_rule_vpatch: includes `vpatch` (regex rules can be tagged
+		// as virtual-patch detectors); excludes `any` (a regex rule must
+		// detect a specific attack class) and `invalid_xml`. Refresh source:
+		// GET /v2/attack_types — and check whether the value is supported
+		// for custom-detector rules specifically.
 		"attack_type": {
 			Type:     schema.TypeString,
 			Required: true,
 			ForceNew: true,
 			ValidateFunc: validation.StringInSlice([]string{
-				"any", "sqli", "rce", "crlf", "nosqli", "ptrav", "xxe", "xss",
-				"scanner", "redir", "ldapi", "vpatch",
+				"xss", "sqli", "rce", "xxe", "ptrav", "crlf", "redir", "nosqli",
+				"ldapi", "scanner", "mass_assignment", "ssrf", "ssi",
+				"mail_injection", "ssti", "vpatch",
 			}, false),
 		},
 

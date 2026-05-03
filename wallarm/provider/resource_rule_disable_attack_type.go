@@ -15,21 +15,20 @@ import (
 
 func resourceWallarmDisableAttackType() *schema.Resource {
 	fields := map[string]*schema.Schema{
-		// Allowlist sourced from docs/resources/rule_disable_attack_type.md,
-		// the schema's pre-v2.3.9 Description (covers mass_assignment / ssrf /
-		// redir / any), and CLAUDE.md hits-attack-types (covers invalid_xml).
-		// Union ensures any user value the API accepts also passes plan.
+		// Authoritative attack_type set per Wallarm product. Refresh source:
+		// GET /v2/attack_types from the Wallarm API. NOT for custom regex rules
+		// (they use a different list — see resource_rule_regex.go).
 		"attack_type": {
 			Type:     schema.TypeString,
 			Required: true,
 			ValidateFunc: validation.StringInSlice([]string{
-				"any", "sqli", "xss", "rce", "ptrav", "crlf", "nosqli", "xxe",
-				"ldapi", "scanner", "redir", "ssti", "ssi", "mail_injection",
-				"mass_assignment", "ssrf", "invalid_xml", "vpatch",
+				"xss", "sqli", "rce", "xxe", "ptrav", "crlf", "redir", "nosqli",
+				"ldapi", "scanner", "mass_assignment", "ssrf", "ssi",
+				"mail_injection", "ssti", "any", "invalid_xml",
 			}, false),
-			Description: `Possible values: "any", "sqli", "xss", "rce", "ptrav", "crlf",
-				"nosqli", "xxe", "ldapi", "scanner", "redir", "ssti", "ssi",
-				"mail_injection", "mass_assignment", "ssrf", "invalid_xml", "vpatch"`,
+			Description: `Possible values: "xss", "sqli", "rce", "xxe", "ptrav", "crlf",
+				"redir", "nosqli", "ldapi", "scanner", "mass_assignment", "ssrf",
+				"ssi", "mail_injection", "ssti", "any", "invalid_xml"`,
 		},
 
 		"action": resourcerule.ScopeActionSchema(),

@@ -15,16 +15,19 @@ import (
 
 func resourceWallarmVpatch() *schema.Resource {
 	fields := map[string]*schema.Schema{
-		// Allowlist sourced from docs/resources/rule_vpatch.md.
+		// Authoritative attack_type set per Wallarm product — same list as
+		// wallarm_rule_disable_attack_type. Refresh source: GET /v2/attack_types.
 		"attack_type": {
 			Type:     schema.TypeString,
 			Required: true,
 			ValidateFunc: validation.StringInSlice([]string{
-				"any", "sqli", "rce", "crlf", "nosqli", "ptrav", "xxe", "xss",
-				"scanner", "redir", "ldapi",
+				"xss", "sqli", "rce", "xxe", "ptrav", "crlf", "redir", "nosqli",
+				"ldapi", "scanner", "mass_assignment", "ssrf", "ssi",
+				"mail_injection", "ssti", "any", "invalid_xml",
 			}, false),
-			Description: `Possible values: "any", "sqli", "rce", "crlf", "nosqli", "ptrav",
-				"xxe", "xss", "scanner", "redir", "ldapi"`,
+			Description: `Possible values: "xss", "sqli", "rce", "xxe", "ptrav", "crlf",
+				"redir", "nosqli", "ldapi", "scanner", "mass_assignment", "ssrf",
+				"ssi", "mail_injection", "ssti", "any", "invalid_xml"`,
 		},
 		"action": resourcerule.ScopeActionSchema(),
 		"point":  defaultPointSchema,
