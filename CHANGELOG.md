@@ -1,30 +1,32 @@
-## [v2.3.9] - 2026-05-01
+## [v2.3.9] - 2026-05-04
 
-> Rules polish batch — naming cleanup, safety hardening, test gap fills.
+> Rules polish batch — naming cleanup, schema-shape audit (symmetric remove-restores-default), safety hardening, test gap fills. Bumps `wallarm-go` to v0.12.3.
 
 ### Upgrade Steps
 
-* [ACTION REQUIRED] `wallarm_rule_graphql_detection`: rename `max_alias_size_kb` → `max_aliases` in HCL. The old name was misleading — the field is a count, not a size in kilobytes — and the JSON tag has always been `max_aliases` on the wire.
+* [ACTION REQUIRED] `wallarm_rule_graphql_detection`: rename `max_alias_size_kb` → `max_aliases` in HCL.
 
 ### Breaking Changes
 
-* **`wallarm_rule_graphql_detection.max_alias_size_kb` renamed to `max_aliases`.** Field is a count of GraphQL aliases (API range, default 5), not bytes. Wire payload (`max_aliases`) unchanged. Bumps `wallarm-go` to v0.12.2.
+* **`wallarm_rule_graphql_detection.max_alias_size_kb` renamed to `max_aliases`** (count, not size; wire JSON tag unchanged).
+* **`mitigation` (all rule resources) now `Computed` only** (was `Optional+Computed`); HCL setting it now fails validation.
+* **`wallarm_rule_regex.experimental` default behaviour**: HCL omitting the field now creates a regular `regex` rule (was `experimental_regex`).
 
 ### Bug Fixes
 
-* **`wallarm_rule_graphql_detection.introspection` / `.debug_enabled`:** schema is now `Optional+Default: true` (was `Optional+Computed`). Removing one of these lines from HCL now plans `current → true` and Update restores the API default — previously the value was sticky at whatever the user last wrote. Symmetric with adding `= false`, which plans `true → false`. Generic helper `GetPointerIfConfigured[T any]` (introduced earlier in this batch) is retained for `wallarm_rule_rate_limit.delay/burst` where the int range includes 0 and Optional+Default cannot express it.
-* **`active` (all rule resources):** schema is now `Optional+Default: true` (was `Optional+Computed`). Removing `active = false` from HCL now plans `false → true` symmetrically. Internal helper `getActiveWithDefault` and the inline `GetOkExists` block in `getCommonResourceRuleFieldsDTOFromResourceData` are gone — the SDK's Default fills `active=true` directly. **Migration:** rules with `active=false` server-side from v2.3.8- will plan `false → true` on next apply unless HCL explicitly retains `active = false`.
-* **`enumerated_parameters.additional_parameters` / `.plain_parameters` (rule_brute / _bola / _enum):** schema is now `Optional+Default: false` (was `Optional+Computed`). Removing either line from HCL plans `current → false` symmetrically. **Migration:** rules with these set to `true` server-side from v2.3.8- will plan `true → false` unless HCL explicitly retains them. Legacy `terraform import` (CLI command without `-generate-config-out`) users must explicitly set the bool fields in their manual HCL to match the API-echoed value, otherwise applying without HCL would silently overwrite to false. The modern import flow (`import {}` blocks + `-generate-config-out`, see `docs/guides/rules_import.md`) generates HCL with the fields populated from state — no migration needed.
-* **`findActionByConditionsHash` pagination cap.** A 200-page cap (100k actions per hint type) now bounds the previously unbounded loop. Guards against a misbehaving API that keeps returning full pages without progress; surfaces an error instead of hanging the apply.
-* **`setIfExists` panic-swallow removed.** The internal helper `schemaHasKey` previously used `defer recover()` to absorb the panic that `cty.NilType.HasAttribute()` raises on Create (no state yet). Replaced with explicit nil/object guards in a pure-function `rawStateHasKey(cty.Value, key)` — same behaviour, but unit-testable and no longer hides unrelated panics. No user-visible change.
-* **`wallarm_rule_graphql_detection` int fields now `Optional+Default(<API default>)` (were `Optional+Computed`).** Affects `max_depth` (default 10), `max_value_size_kb` (default 10, range 1..100 — `IntBetween(1,100)` validator added), `max_doc_size_kb` (default 100), `max_doc_per_batch` (default 10). Removing one of these lines from HCL now plans `current → default` symmetrically (parallel to the v2.3.9 `introspection`/`debug_enabled` fix). **Migration:** rules with explicit non-default values from v2.3.8 will plan `current → default` on next apply unless HCL retains the explicit setting.
-* **`wallarm_rule_overlimit_res_settings.mode` schema is now `Optional+Default("monitoring")` (was `Optional+Computed`).** Same asymmetry pattern; symmetric remove-restores-default semantics.
-* **`wallarm_rule_rate_limit.time_unit` schema is now `Optional+Default("rps")` (was `Optional+Computed`).** Same.
-* **Plan-time enum validators added** to `wallarm_rule_disable_attack_type.attack_type` (17 values), `wallarm_rule_vpatch.attack_type` (same 17), `wallarm_rule_regex.attack_type` (16 — `any` and `invalid_xml` excluded because a regex rule must detect a specific attack class; `vpatch` included), and `wallarm_rule_file_upload_size_limit.size` (`IntAtLeast(1)`). Lists sourced from the canonical `GET /v2/attack_types` endpoint per Wallarm product. Plan-time fail with the supported enum lists instead of waiting for the API to reject. Provider docs (`docs/resources/rule_disable_attack_type.md`, `_vpatch.md`, `_regex.md`) updated to match.
-* **`wallarm_rule_file_upload_size_limit.mode` schema is now `Optional+Default("monitoring")` (was `Optional+Computed`).** Same asymmetry pattern as the v2.3.9 graphql_detection int fixes — removing `mode` from HCL now plans `current → "monitoring"` symmetrically. Plus `size` gained `ValidateFunc(IntAtLeast(1))` for plan-time validation of the API's `1..2^64` range.
-* **`wallarm_rule_graphql_detection.max_aliases` schema is now `Optional+Default(5)` (was `Optional+Computed+ForceNew`).** Per-field PUT mutability probe confirmed the API accepts in-place mutation; `ForceNew` was an over-conservative inference from the missing wallarm-go Update field. Bumps `wallarm-go` to v0.12.3 (adds `HintUpdateV3Params.MaxAliases`); new `resourcerule.WithMaxAliases` Update customizer wires it. Mutating `max_aliases` no longer destroys+recreates the rule.
-* **`wallarm_rule_regex.experimental` schema is now `Optional+Computed` (was `Optional+Default: true`).** Combined with the v2.3.9 Read-side derivation (`experimental` is now set from `rule_type` so import populates state correctly), this prevents an `Optional+Default+ForceNew` import trap where omitting `experimental` from HCL after importing a regular `regex` rule would have planned `false → true` and destroyed+recreated it as `experimental_regex`. **Behavior change for fresh resources:** HCL that omits `experimental` now creates a regular `regex` rule (the bool zero value), where it previously defaulted to `experimental_regex`. Existing rules unaffected — Read derives the correct value from the API's rule_type and Computed preserves it across plans.
-* **`commonResourceRuleFields` schema tightenings (all rule resources):** `mitigation` is now `Computed` only (was `Optional+Computed`) — the schema previously accepted user input that the provider silently ignored; tightening makes the read-only contract explicit. **Breaking-the-broken:** any HCL that previously set `mitigation = "..."` will now fail validation with "argument is read-only", but the value never affected behavior. `variativity_disabled` description updated to flag the provider-side lock-in (the schema's Default:true matches what the provider always sends; per-rule-type API defaults vary but are invisible at the TF level). `set` and `title` stay `Optional` only — adding `Computed` would break `field = ""` clears via SDKv2's empty-string normalisation; see the new anti-pattern 7 in `.claude/schema_decision_rules.md`.
+* **`wallarm_rule_graphql_detection.introspection` / `.debug_enabled` now `Optional+Default(true)`** — symmetric remove-restores-default.
+* **`active` (all rule resources) now `Optional+Default(true)`** — same.
+* **`enumerated_parameters.additional_parameters` / `.plain_parameters` now `Optional+Default(false)`** (rule_brute/_bola/_enum) — same.
+* **`wallarm_rule_graphql_detection` int fields now `Optional+Default(<API default>)`** — `max_depth`, `max_value_size_kb` (range `1..100` validator added), `max_doc_size_kb`, `max_doc_per_batch`.
+* **`wallarm_rule_graphql_detection.max_aliases` now `Optional+Default(5)`** (was `Optional+Computed+ForceNew`); mutates in place. Adds `wallarm-go.HintUpdateV3Params.MaxAliases` + `resourcerule.WithMaxAliases`.
+* **`wallarm_rule_overlimit_res_settings.mode` now `Optional+Default("monitoring")`.**
+* **`wallarm_rule_rate_limit.time_unit` now `Optional+Default("rps")`.**
+* **`wallarm_rule_file_upload_size_limit.mode` now `Optional+Default("monitoring")`**; `size` gains `IntAtLeast(1)` validator.
+* **`wallarm_rule_regex.experimental` now `Optional+Computed`** (was `Optional+Default+ForceNew`); Read derives from `rule_type`. Prevents destroy-on-import for regular `regex` rules.
+* **`findActionByConditionsHash` 200-page pagination cap** — bounds previously unbounded loop.
+* **`setIfExists` panic-swallow removed** — replaced with explicit cty guards in `rawStateHasKey`.
+* **Plan-time enum validators added**: `attack_type` on rule_disable_attack_type/vpatch (17 values each), rule_regex (16); `block_by_session/ip+graylist_by_ip` `IntBetween(600, 315569520)`.
+* **Generic helper `resourcerule.GetPointerIfConfigured[T any]`** replaces type-specific variants — used by rate_limit `delay`/`burst` where 0 is meaningful.
 
 ## [v2.3.8] - 2026-05-01
 
