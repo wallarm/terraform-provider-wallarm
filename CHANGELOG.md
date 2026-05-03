@@ -1,6 +1,6 @@
 ## [v2.3.9] - 2026-05-04
 
-> Rules polish batch — naming cleanup, schema-shape audit (symmetric remove-restores-default), safety hardening, test gap fills. Bumps `wallarm-go` to v0.12.3.
+> Rules polish batch — naming cleanup, schema-shape audit (symmetric remove-restores-default), safety hardening, test gap fills. Bumps `wallarm-go` to v0.12.2.
 
 ### Upgrade Steps
 
