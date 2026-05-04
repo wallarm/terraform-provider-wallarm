@@ -200,3 +200,47 @@ resource "wallarm_rule_rate_limit" %[1]q {
 		},
 	})
 }
+
+// TestAccRuleRateLimit_DelayOnlyOmitsBurstAndTimeUnit guards the v2.3.8
+// schema flip on `burst` / `time_unit` from Required → Optional+Computed:
+// a config that omits these two (while supplying the still-Required `rate`,
+// `rsp_status`, and `point`) must Create successfully, and re-plan must be
+// clean — Computed should preserve the API-echoed values for burst/time_unit.
+func TestAccRuleRateLimit_DelayOnlyOmitsBurstAndTimeUnit(t *testing.T) {
+	rnd := generateRandomResourceName(5)
+	name := "wallarm_rule_rate_limit." + rnd
+	config := fmt.Sprintf(`
+resource "wallarm_rule_rate_limit" %[1]q {
+  action {
+    type  = "iequal"
+    value = "ratelimit-delay-only.example.com"
+    point = { header = "HOST" }
+  }
+  point      = [["get_all"]]
+  rate       = 100
+  delay      = 50
+  rsp_status = 429
+}
+`, rnd)
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV5ProviderFactories: testAccProtoV5ProviderFactories,
+		CheckDestroy:             testAccRuleRateLimitDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: config,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(name, "rate", "100"),
+					resource.TestCheckResourceAttr(name, "delay", "50"),
+					resource.TestCheckResourceAttrSet(name, "burst"),
+					resource.TestCheckResourceAttrSet(name, "time_unit"),
+				),
+			},
+			{
+				Config:             config,
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: false,
+			},
+		},
+	})
+}

@@ -14,21 +14,32 @@ import (
 	"github.com/wallarm/wallarm-go"
 )
 
-// schemaHasKey checks whether the resource schema includes the given attribute
-// by examining the cty type of the raw state. Returns true if undetermined.
-func schemaHasKey(d *schema.ResourceData, key string) (exists bool) {
-	exists = true // default to true if we can't determine
-	defer func() { recover() }()
-	return d.GetRawState().Type().HasAttribute(key)
+// rawStateHasKey reports whether the cty.Value (typically d.GetRawState())
+// belongs to an object type that declares the given attribute. Returns true
+// only when the schema cannot be determined (untyped nil, non-object type) —
+// in those cases the caller proceeds with d.Set and the SDK rejects unknown
+// keys with its own error. A typed null (e.g. cty.NullVal(resourceObject) on
+// Create when prior state is empty) still carries the schema's Type, so we
+// honour the attribute check normally — that's the path that prevents
+// d.Set("point", ...) from panicking on resources whose schema lacks `point`.
+func rawStateHasKey(raw cty.Value, key string) bool {
+	if raw == cty.NilVal {
+		return true
+	}
+	ty := raw.Type()
+	if !ty.IsObjectType() {
+		return true
+	}
+	return ty.HasAttribute(key)
 }
 
 // setIfExists calls d.Set for the given key only if the key is present in the
-// resource schema. This is needed because Read is shared
-// across many resources, each of which defines only a subset of the fields.
-// In SDK v2 d.Set() logs an [ERROR] and panics (in test mode) for keys not in
-// the schema; checking beforehand avoids both.
+// resource schema. This is needed because Read is shared across many resources,
+// each of which defines only a subset of the fields. In SDK v2 d.Set() logs an
+// [ERROR] and panics (in test mode) for keys not in the schema; checking
+// beforehand avoids both.
 func setIfExists(d *schema.ResourceData, key string, value interface{}) {
-	if !schemaHasKey(d, key) {
+	if !rawStateHasKey(d.GetRawState(), key) {
 		return
 	}
 	if err := d.Set(key, value); err != nil {
@@ -36,7 +47,9 @@ func setIfExists(d *schema.ResourceData, key string, value interface{}) {
 	}
 }
 
-// TODO: add test — needs mock wallarm.API, verify field population, action set transform, not-found removes from state
+// Unit-test gap (mock wallarm.API needed) tracked in
+// .claude/plans/test-gaps.md §"provider/ — needs mock API (deferred)".
+//
 // TODO: consume opts inside the function body — currently accepted for API
 // compatibility but ignored; callers pass ReadOptionWith* and expect them to
 // gate optional field population.
@@ -100,7 +113,7 @@ func Read(d *schema.ResourceData, clientID int, cli wallarm.API, opts ...ReadOpt
 	setIfExists(d, "max_depth", updatedRule.MaxDepth)
 	setIfExists(d, "max_value_size_kb", updatedRule.MaxValueSizeKb)
 	setIfExists(d, "max_doc_size_kb", updatedRule.MaxDocSizeKb)
-	setIfExists(d, "max_alias_size_kb", updatedRule.MaxAliasesSizeKb)
+	setIfExists(d, "max_aliases", updatedRule.MaxAliases)
 	setIfExists(d, "max_doc_per_batch", updatedRule.MaxDocPerBatch)
 	setIfExists(d, "attack_type", updatedRule.AttackType)
 	setIfExists(d, "stamp", updatedRule.Stamp)
@@ -132,7 +145,8 @@ func Read(d *schema.ResourceData, clientID int, cli wallarm.API, opts ...ReadOpt
 	return nil
 }
 
-// TODO: add test — needs mock wallarm.API, verify HintCreate call, ID format, error handling
+// Unit-test gap (mock wallarm.API needed) tracked in
+// .claude/plans/test-gaps.md §"provider/ — needs mock API (deferred)".
 func Create(
 	ctx context.Context,
 	d *schema.ResourceData,
@@ -193,7 +207,7 @@ func Create(
 		Comment:              GetValueWithTypeCastingOrDefault[string](d, "comment"),
 		VariativityDisabled:  true,
 		Set:                  GetValueWithTypeCastingOrDefault[string](d, "set"),
-		Active:               getActiveWithDefault(d),
+		Active:               d.Get("active").(bool),
 		Title:                GetValueWithTypeCastingOrDefault[string](d, "title"),
 		AttackType:           attackType,
 		Reaction:             reaction,
@@ -205,7 +219,7 @@ func Create(
 		MaxDepth:             GetValueWithTypeCastingOrDefault[int](d, "max_depth"),
 		MaxValueSizeKb:       GetValueWithTypeCastingOrDefault[int](d, "max_value_size_kb"),
 		MaxDocSizeKb:         GetValueWithTypeCastingOrDefault[int](d, "max_doc_size_kb"),
-		MaxAliasesSizeKb:     GetValueWithTypeCastingOrDefault[int](d, "max_alias_size_kb"),
+		MaxAliases:           GetValueWithTypeCastingOrDefault[int](d, "max_aliases"),
 		MaxDocPerBatch:       GetValueWithTypeCastingOrDefault[int](d, "max_doc_per_batch"),
 		Introspection:        GetPointerWithTypeCastingOrDefault[bool](d, "introspection"),
 		DebugEnabled:         GetPointerWithTypeCastingOrDefault[bool](d, "debug_enabled"),
@@ -242,22 +256,6 @@ func GetValueWithTypeCastingOrDefault[T any](d *schema.ResourceData, name string
 	return v
 }
 
-// getActiveWithDefault reads the `active` field, defaulting to true when the
-// user did not explicitly set it. SDKv2 cannot distinguish "user wrote false"
-// from "field omitted, schema returned bool zero" via d.Get for an
-// Optional+Computed bool — d.GetOkExists is the documented (deprecated) escape
-// hatch. Without this, every `resourcerule.Create` caller defaulted `active`
-// to false, contradicting the documented "rules ship active" API behavior and
-// causing user-supplied `active = false` to silently no-op against the
-// already-false state. Mirrors getCommonResourceRuleFieldsDTOFromResourceData
-// in the provider package.
-func getActiveWithDefault(d *schema.ResourceData) bool {
-	if v, ok := d.GetOkExists("active"); ok { //nolint:staticcheck
-		return v.(bool)
-	}
-	return true
-}
-
 func GetPointerWithTypeCastingOrDefault[T any](d *schema.ResourceData, name string) *T {
 	resourceValue := d.Get(name)
 	if resourceValue == nil {
@@ -270,21 +268,21 @@ func GetPointerWithTypeCastingOrDefault[T any](d *schema.ResourceData, name stri
 	return &v
 }
 
-// GetIntPointerIfConfigured returns *int(value) when the user wrote the field
-// in HCL — including a literal zero — and nil when the user omitted it.
-// Uses d.GetRawConfig() (the SDKv2 replacement for the deprecated
-// GetOkExists) to inspect the user's literal config; d.Get cannot distinguish
-// "user wrote 0" from "field omitted, schema returned int zero".
+// GetPointerIfConfigured returns *T(value) when the user wrote the field in
+// HCL — including a literal zero — and nil when they omitted it. Uses
+// d.GetRawConfig() to inspect the literal config (d.Get cannot distinguish
+// "user wrote 0" from "field omitted, schema returned T zero value").
 //
-// Use this in Create/Update paths for Optional int fields whose target
-// wallarm-go struct field is `*int` and where 0 is a valid user value
-// (e.g. wallarm_rule_rate_limit.delay). For Required ints, d.Get is fine —
-// the user always supplies a value and lo.ToPtr(d.Get(...)) is sufficient.
-func GetIntPointerIfConfigured(d *schema.ResourceData, name string) *int {
+// Use in Create paths for Optional fields where 0 (or the type's zero value)
+// is a valid user value AND the schema cannot use Default+Optional (e.g.
+// `wallarm_rule_rate_limit.delay`, where the API range includes 0). For
+// fields where Optional+Default works, prefer that — it gives symmetric
+// "remove from HCL → restore default" semantics that Optional+Computed lacks.
+func GetPointerIfConfigured[T any](d *schema.ResourceData, name string) *T {
 	if !isFieldSetInRawConfig(d.GetRawConfig(), name) {
 		return nil
 	}
-	v, ok := d.Get(name).(int)
+	v, ok := d.Get(name).(T)
 	if !ok {
 		return nil
 	}

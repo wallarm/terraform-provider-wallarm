@@ -42,9 +42,7 @@ resource "wallarm_rule_vpatch" "splunk" {
 ## Argument Reference
 
 * `client_id` - (optional) ID of the client to apply the rules to. The value is required for [multi-tenant scenarios][2].
-* `attack_type` - (**required**) attack type. The request with this attack will be blocked. Can be:
-  * `any` to block the request with the specified `point` even if the attack is not detected.
-  * One of the names of attack types to block the requests with the specified `point` if these malicious payloads are detected. Possible attack types: `sqli`, `rce`, `crlf`, `nosqli`, `ptrav`, `xxe`, `ptrav`, `xss`, `scanner`, `redir`, `ldapi`.
+* `attack_type` - (**required**) attack type. The request with this attack will be blocked. Possible values: `xss`, `sqli`, `rce`, `xxe`, `ptrav`, `crlf`, `redir`, `nosqli`, `ldapi`, `scanner`, `mass_assignment`, `ssrf`, `ssi`, `mail_injection`, `ssti`, `any`, `invalid_xml`. Use `any` to block the request with the specified `point` even if the attack is not detected. The canonical list is served by `GET /v2/attack_types` on the Wallarm API.
 * `point` - (**required**) request parts to apply the rules to. See the [Point Guide](../guides/point) for the full list of possible values and examples.
 * `action` - (optional) rule conditions. See the [Action Guide](../guides/action) for full documentation on action conditions, point types, and usage examples.
 

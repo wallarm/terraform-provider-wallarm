@@ -30,7 +30,7 @@ resource "wallarm_rule_disable_attack_type" "disable_sqli" {
 
 * `client_id` - (optional) ID of the client to apply the rules to. The value is required for [multi-tenant scenarios][2].
 * `action` - (optional) rule conditions. See the [Action Guide](../guides/action) for full documentation on action conditions, point types, and usage examples.
-* `attack_type` - (**required**) attack type to ignore. Possible values: `sqli`, `xss`, `rce`, `ptrav`, `crlf`, `nosqli`, `xxe`, `ldapi`, `scanner`, `ssti`, `ssi`, `mail_injection`, `vpatch`.
+* `attack_type` - (**required**) attack type to ignore. Possible values: `xss`, `sqli`, `rce`, `xxe`, `ptrav`, `crlf`, `redir`, `nosqli`, `ldapi`, `scanner`, `mass_assignment`, `ssrf`, `ssi`, `mail_injection`, `ssti`, `any`, `invalid_xml`. The canonical list is served by `GET /v2/attack_types` on the Wallarm API.
 * `point` - (**required**) request parts to apply the rules to. See the [Point Guide](../guides/point) for the full list of possible values and examples.
 
 ## Attributes Reference

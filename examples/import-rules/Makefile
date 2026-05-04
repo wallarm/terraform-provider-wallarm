@@ -6,7 +6,7 @@ IMPORT_BLOCKS_FILE = ./import_rule_blocks.tf
 RULE_CONFIGS_FILE = ./import_rule_configs.tf
 RULE_STAMP_CONFIGS_FILE = ./import_rule_stamp_configs.tf
 
-FILES_DIRS_TO_CLEAN = ${LOG_FILES} ${TMP_FILES} ${TF_DIR} ${TF_STATE_FILE} ${IMPORT_BLOCKS_FILE} ${RULE_CONFIGS_FILE}
+FILES_DIRS_TO_CLEAN = ${LOG_FILES} ${TMP_FILES} ${TF_DIR} ${TF_STATE_FILE} ${IMPORT_BLOCKS_FILE} ${RULE_CONFIGS_FILE} ${RULE_STAMP_CONFIGS_FILE}
 
 
 default: list
@@ -73,12 +73,19 @@ import-stamps-conf-gen:
 # - comment=null → "Managed by Terraform"
 # - remove all remaining =null lines
 # - remove all remaining =[] lines
+# - drop reaction.{block_by_session,block_by_ip,graylist_by_ip} = 0 lines:
+#   SDKv2's flat state model has no NullVal slot for TypeInt inside a nested
+#   block, so partially-set reactions ({block_by_ip = 3600}, others absent)
+#   round-trip through state as 0 and emit literal `= 0` lines that the
+#   schema validator rejects. The mapper drops 0 on the wire, so removing
+#   these lines is round-trip safe.
 import-configs-fix:
 	-@sed -E \
 		-e 's/(variativity_disabled[[:space:]]*)=[[:space:]]*false/\1= true/' \
 		-e 's/(comment[[:space:]]*)=[[:space:]]*null/\1= "Managed by Terraform"/' \
 		-e '/=[[:space:]]*null/d' \
 		-e '/=[[:space:]]*\[\]/d' \
+		-e '/(block_by_session|block_by_ip|graylist_by_ip)[[:space:]]*=[[:space:]]*0/d' \
 		$(RULE_CONFIGS_FILE) > $(RULE_CONFIGS_FILE).tmp && mv $(RULE_CONFIGS_FILE).tmp $(RULE_CONFIGS_FILE)
 
 # ─── Case 1: Native import (all rules) ─────────────────────────────────────

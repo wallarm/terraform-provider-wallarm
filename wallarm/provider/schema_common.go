@@ -54,6 +54,15 @@ var (
 			Default:     "Managed by Terraform",
 			Description: "A human-readable comment for the rule.",
 		},
+		// Optional only (NOT Computed). Optional+Computed on a TypeString
+		// has a real bug: SDKv2 normalises an explicit empty string in HCL
+		// to cty.NullVal, after which Computed semantics preserve state and
+		// `set = ""` silently fails to clear the value. The cost of dropping
+		// Computed: post-import-CLI workflows without -generate-config-out
+		// see HCL-omitted as "" rather than the API-echoed value — but the
+		// modern import{}+generate-config-out flow generates HCL with the
+		// value populated, so there's no real-world hit. (Test:
+		// TestAccRuleParserState_UpdateSetToEmpty.)
 		"set": {
 			Type:        schema.TypeString,
 			Optional:    true,
@@ -62,9 +71,11 @@ var (
 		"active": {
 			Type:        schema.TypeBool,
 			Optional:    true,
-			Computed:    true,
-			Description: "Whether the rule is active.",
+			Default:     true,
+			Description: "Whether the rule is active. Defaults to true.",
 		},
+		// See `set` above for why this is Optional only (not Optional+Computed):
+		// SDKv2 string-normalisation breaks `title = ""` clears with Computed.
 		"title": {
 			Type:        schema.TypeString,
 			Optional:    true,
@@ -72,15 +83,18 @@ var (
 		},
 		"mitigation": {
 			Type:        schema.TypeString,
-			Optional:    true,
 			Computed:    true,
-			Description: "Read-only mitigation type assigned by the API. Accepted in config but not sent to the API.",
+			Description: "Read-only mitigation type assigned by the API.",
 		},
 		"variativity_disabled": {
-			Type:        schema.TypeBool,
-			Optional:    true,
-			Default:     true,
-			Description: "Whether variativity is disabled for this rule. Defaults to true.",
+			Type:     schema.TypeBool,
+			Optional: true,
+			Default:  true,
+			Description: "Whether variativity is disabled for this rule. Defaults to true. " +
+				"Provider locks this to true on Create regardless of user input — " +
+				"keeps Terraform state synchronized with the API by preventing " +
+				"server-side variative-rule mutations from drifting state. " +
+				"The API default varies by rule type, but the provider always sends true.",
 		},
 	}
 
@@ -99,6 +113,10 @@ var (
 		"set":                  {Type: schema.TypeString, Computed: true},
 	}
 
+	// Both fields Required; API enforces count >= 1 (HTTP 400
+	// "must be greater than or equal to 1") and a 0-second period is
+	// nonsensical. IntAtLeast(1) on each surfaces the constraint at plan time
+	// instead of as an HTTP 400 on apply.
 	thresholdSchema = &schema.Schema{
 		Type:     schema.TypeList,
 		MaxItems: 1,
@@ -106,17 +124,35 @@ var (
 		Elem: &schema.Resource{
 			Schema: map[string]*schema.Schema{
 				"period": {
-					Type:     schema.TypeInt,
-					Required: true,
+					Type:         schema.TypeInt,
+					Required:     true,
+					ValidateFunc: validation.IntAtLeast(1),
 				},
 				"count": {
-					Type:     schema.TypeInt,
-					Required: true,
+					Type:         schema.TypeInt,
+					Required:     true,
+					ValidateFunc: validation.IntAtLeast(1),
 				},
 			},
 		},
 	}
 
+	// Reaction values are session-/IP-block durations in seconds. API range is
+	// 600..315569520 (10 minutes to 10 years). The mode↔reaction whitelist
+	// (block_by_session/block_by_ip for mode=block, graylist_by_ip for
+	// mode=monitoring) is API-enforced — keep that distinction at runtime.
+	//
+	// Validator allows 0 alongside the valid range because SDKv2's legacy
+	// flat state model has no NullVal slot for TypeInt inside a nested Resource
+	// block: when the API omits a reaction key, state still materialises it as
+	// 0, and `terraform import` + -generate-config-out then emits literal `= 0`
+	// lines that a strict IntBetween validator would reject at plan time. The
+	// mapper drops 0 on the wire (mapper_tftoapi.go), so 0-in-HCL means "unset"
+	// — round-trip safe.
+	reactionRangeOrZero = validation.Any(
+		validation.IntInSlice([]int{0}),
+		validation.IntBetween(600, 315569520),
+	)
 	reactionSchema = &schema.Schema{
 		Type:     schema.TypeList,
 		MaxItems: 1,
@@ -124,16 +160,19 @@ var (
 		Elem: &schema.Resource{
 			Schema: map[string]*schema.Schema{
 				"block_by_session": {
-					Type:     schema.TypeInt,
-					Optional: true,
+					Type:         schema.TypeInt,
+					Optional:     true,
+					ValidateFunc: reactionRangeOrZero,
 				},
 				"block_by_ip": {
-					Type:     schema.TypeInt,
-					Optional: true,
+					Type:         schema.TypeInt,
+					Optional:     true,
+					ValidateFunc: reactionRangeOrZero,
 				},
 				"graylist_by_ip": {
-					Type:     schema.TypeInt,
-					Optional: true,
+					Type:         schema.TypeInt,
+					Optional:     true,
+					ValidateFunc: reactionRangeOrZero,
 				},
 			},
 		},
@@ -178,23 +217,23 @@ var (
 					Optional: true,
 					Elem:     &schema.Schema{Type: schema.TypeString},
 				},
-				// API defaults both fields to true in regexp mode and omits
-				// them entirely in exact mode. Optional+Computed lets the
-				// SDK preserve API-echoed state across plans when the user
-				// omits the field. Default is intentionally absent — Default
-				// and Computed are mutually exclusive in SDKv2 anyway, and
-				// the previous Default:false caused exact-mode imports to
-				// surface explicit `false` in auto-generated configs which
-				// the strict validator then rejected.
+				// Optional+Default:false. Removing either line from HCL plans
+				// `current → false` (symmetric: adding `= true` plans
+				// `false → true`). For legacy `terraform import` (CLI command
+				// without `-generate-config-out`), users must explicitly set
+				// the value in HCL to match the API-echoed value, otherwise
+				// applying without HCL would silently overwrite to false.
+				// The validator (EnumeratedParamsCustomizeDiff) rejects
+				// `=true` in exact mode regardless of source.
 				"additional_parameters": {
 					Type:     schema.TypeBool,
 					Optional: true,
-					Computed: true,
+					Default:  false,
 				},
 				"plain_parameters": {
 					Type:     schema.TypeBool,
 					Optional: true,
-					Computed: true,
+					Default:  false,
 				},
 			},
 		},
@@ -266,13 +305,7 @@ func getCommonResourceRuleFieldsDTOFromResourceData(d *schema.ResourceData) Comm
 	comment, _ := d.Get("comment").(string)
 	set, _ := d.Get("set").(string)
 	title, _ := d.Get("title").(string)
-
-	// Default to true when not explicitly set (replaced schema Default which can't coexist with Computed).
-	active := true
-	if v, ok := d.GetOkExists("active"); ok { //nolint:staticcheck
-		active = v.(bool)
-	}
-
+	active, _ := d.Get("active").(bool)
 	return CommonResourceRuleFieldsDTO{
 		Comment: comment,
 		Set:     set,

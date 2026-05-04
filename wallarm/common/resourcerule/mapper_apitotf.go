@@ -24,13 +24,24 @@ func ReactionToTF(reaction *wallarm.Reaction) []interface{} {
 		return nil
 	}
 
-	return []interface{}{
-		map[string]interface{}{
-			"block_by_session": reaction.BlockBySession,
-			"block_by_ip":      reaction.BlockByIP,
-			"graylist_by_ip":   reaction.GraylistByIP,
-		},
+	// Only emit keys the API actually returned. The wallarm-go Reaction fields
+	// are *int + omitempty, so absent keys arrive as nil. Writing nil into the
+	// state map keeps the slot at its type-zero default in SDKv2's flat-state
+	// model — so a partially-set reaction (e.g. only block_by_ip) doesn't pull
+	// stray block_by_session=0 / graylist_by_ip=0 values into terraform import
+	// + -generate-config-out output, which the IntBetween(600, 315569520)
+	// validator would then reject at plan time.
+	m := map[string]interface{}{}
+	if reaction.BlockBySession != nil {
+		m["block_by_session"] = *reaction.BlockBySession
 	}
+	if reaction.BlockByIP != nil {
+		m["block_by_ip"] = *reaction.BlockByIP
+	}
+	if reaction.GraylistByIP != nil {
+		m["graylist_by_ip"] = *reaction.GraylistByIP
+	}
+	return []interface{}{m}
 }
 
 func EnumeratedParametersToTF(enumeratedParameters *wallarm.EnumeratedParameters) []interface{} {

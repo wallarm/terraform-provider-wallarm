@@ -10,15 +10,23 @@ import (
 	"github.com/wallarm/wallarm-go"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
 func resourceWallarmVpatch() *schema.Resource {
 	fields := map[string]*schema.Schema{
+		// Same list as wallarm_rule_disable_attack_type.
 		"attack_type": {
 			Type:     schema.TypeString,
 			Required: true,
-			Description: `Possible values: "any", "sqli", "rce", "crlf", "nosqli", "ptrav",
-				"xxe", "xss", "scanner", "redir", "ldapi"`,
+			ValidateFunc: validation.StringInSlice([]string{
+				"xss", "sqli", "rce", "xxe", "ptrav", "crlf", "redir", "nosqli",
+				"ldapi", "scanner", "mass_assignment", "ssrf", "ssi",
+				"mail_injection", "ssti", "any", "invalid_xml",
+			}, false),
+			Description: `Possible values: "xss", "sqli", "rce", "xxe", "ptrav", "crlf",
+				"redir", "nosqli", "ldapi", "scanner", "mass_assignment", "ssrf",
+				"ssi", "mail_injection", "ssti", "any", "invalid_xml"`,
 		},
 		"action": resourcerule.ScopeActionSchema(),
 		"point":  defaultPointSchema,

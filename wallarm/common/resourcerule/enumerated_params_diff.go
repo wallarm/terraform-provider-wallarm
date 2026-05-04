@@ -15,11 +15,11 @@ import (
 // plan re-emits the same change, the next apply drops them again.
 //
 // `mode = "exact"`  → only `points` applies. `additional_parameters` and
-// `plain_parameters` are denied even when set to false: with `Default: false`
-// the SDK fills the schema, so checking `d.Get` cannot distinguish "user
-// wrote false" from "user omitted, default applied". `d.GetRawConfig()` is
-// the authoritative view of the user's HCL — null at a path means the user
-// did not write it. We deny on presence, regardless of value.
+// `plain_parameters` are rejected only when explicitly set to true. The
+// schema defaults are false, so HCL omission and an explicit `= false` both
+// land on the API as "no enumerated-bool effect" — the mapper drops these
+// fields from the wire body in exact mode regardless. Erroring on `= false`
+// would block `-generate-config-out`-generated configs from valid imports.
 //
 // `mode = "regexp"` → `name_regexps` and `value_regexps` are required (each
 // at least one element, may be `[""]`). The Wallarm API rejects regexp-mode
@@ -54,12 +54,10 @@ func validateEnumeratedParamsBlock(block map[string]interface{}) error {
 		if v, _ := block["value_regexps"].([]interface{}); len(v) > 0 {
 			bad = append(bad, "value_regexps")
 		}
-		// Bool fields: error only when true. The schema is Optional+Computed
-		// (no Default), so omitted values stay at the SDK's bool zero
-		// (`false`); auto-generated configs after import may surface explicit
-		// `false`, and erroring on those would block valid round-trips. The
-		// mapper drops these fields from the wire body in exact mode
-		// regardless of value, so a literal `false` in HCL is harmless.
+		// Bool fields: error only when true. Schema is Optional+Default:false,
+		// so omitted values land as false. The mapper drops these fields from
+		// the wire body in exact mode regardless of value, so a literal
+		// `false` in HCL is harmless.
 		if v, _ := block["additional_parameters"].(bool); v {
 			bad = append(bad, "additional_parameters")
 		}

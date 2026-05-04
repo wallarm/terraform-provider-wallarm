@@ -69,6 +69,11 @@ func WithMaxDocPerBatch(d *schema.ResourceData, p *wallarm.HintUpdateV3Params) e
 	return nil
 }
 
+func WithMaxAliases(d *schema.ResourceData, p *wallarm.HintUpdateV3Params) error {
+	p.MaxAliases = GetPointerWithTypeCastingOrDefault[int](d, "max_aliases")
+	return nil
+}
+
 func WithIntrospection(d *schema.ResourceData, p *wallarm.HintUpdateV3Params) error {
 	p.Introspection = GetPointerWithTypeCastingOrDefault[bool](d, "introspection")
 	return nil
@@ -109,6 +114,8 @@ func WithRate(d *schema.ResourceData, p *wallarm.HintUpdateV3Params) error {
 	return nil
 }
 
+// rsp_status is Required in the wallarm_rule_rate_limit schema, so d.Get
+// always returns a user-supplied int — no need for GetPointerIfConfigured.
 func WithRspStatus(d *schema.ResourceData, p *wallarm.HintUpdateV3Params) error {
 	p.RspStatus = GetPointerWithTypeCastingOrDefault[int](d, "rsp_status")
 	return nil

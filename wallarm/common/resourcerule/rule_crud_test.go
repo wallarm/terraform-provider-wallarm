@@ -106,6 +106,51 @@ func TestIsFieldSetInRawConfig(t *testing.T) {
 	}
 }
 
+func TestRawStateHasKey(t *testing.T) {
+	t.Parallel()
+	objType := cty.Object(map[string]cty.Type{
+		"mode":  cty.String,
+		"depth": cty.Number,
+	})
+	cases := []struct {
+		name string
+		raw  cty.Value
+		key  string
+		want bool
+	}{
+		{name: "untyped nil -> true (defensive)", raw: cty.NilVal, key: "mode", want: true},
+		{name: "non-object type -> true (defensive)", raw: cty.StringVal("not-object"), key: "mode", want: true},
+		// Typed nulls carry the schema's Type — honour HasAttribute on it.
+		// On Create, d.GetRawState returns this shape (resource schema, no values yet).
+		{name: "typed null, key in type -> true", raw: cty.NullVal(objType), key: "mode", want: true},
+		{name: "typed null, key NOT in type -> false (Create-path skip d.Set for foreign keys)", raw: cty.NullVal(objType), key: "max_aliases", want: false},
+		{name: "object value with key -> true", raw: cty.ObjectVal(map[string]cty.Value{"mode": cty.StringVal("block"), "depth": cty.NumberIntVal(5)}), key: "mode", want: true},
+		{name: "object value missing key -> false", raw: cty.ObjectVal(map[string]cty.Value{"mode": cty.StringVal("block"), "depth": cty.NumberIntVal(5)}), key: "max_aliases", want: false},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := rawStateHasKey(tc.raw, tc.key); got != tc.want {
+				t.Errorf("rawStateHasKey(_, %q) = %v, want %v", tc.key, got, tc.want)
+			}
+		})
+	}
+}
+
+// Guards against a regression where the helper falls back to d.Get when
+// RawConfig is nil. d.Set on a fresh ResourceData populates state but RawConfig
+// stays NilVal — the helper must still return nil.
+func TestGetPointerIfConfigured_NilRawConfigReturnsNil(t *testing.T) {
+	t.Parallel()
+	sch := &schema.Resource{Schema: map[string]*schema.Schema{
+		"introspection": {Type: schema.TypeBool, Optional: true},
+	}}
+	d := sch.Data(nil)
+	d.Set("introspection", true)
+	if got := GetPointerIfConfigured[bool](d, "introspection"); got != nil {
+		t.Errorf("got %v, want nil (RawConfig is NilVal)", got)
+	}
+}
+
 func TestUpdate_APIError(t *testing.T) {
 	mock := &mockUpdateAPI{err: errors.New("boom")}
 	cp := func(_ interface{}) wallarm.API { return mock }

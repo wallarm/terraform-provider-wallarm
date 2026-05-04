@@ -584,7 +584,7 @@ type RuleExportEntry struct {
 	MaxDepth             int                           `json:"max_depth,omitempty"`
 	MaxValueSizeKb       int                           `json:"max_value_size_kb,omitempty"`
 	MaxDocSizeKb         int                           `json:"max_doc_size_kb,omitempty"`
-	MaxAliasesSizeKb     int                           `json:"max_aliases_size_kb,omitempty"`
+	MaxAliases           int                           `json:"max_aliases,omitempty"`
 	MaxDocPerBatch       int                           `json:"max_doc_per_batch,omitempty"`
 	Introspection        bool                          `json:"introspection,omitempty"`
 	DebugEnabled         bool                          `json:"debug_enabled,omitempty"`
@@ -651,7 +651,7 @@ func ExportRules(rules []wallarm.ActionBody, clientID int) []RuleExportEntry {
 			RspStatus: rule.RspStatus, TimeUnit: rule.TimeUnit,
 			OverlimitTime: rule.OverlimitTime, Size: rule.Size, SizeUnit: rule.SizeUnit,
 			MaxDepth: rule.MaxDepth, MaxValueSizeKb: rule.MaxValueSizeKb,
-			MaxDocSizeKb: rule.MaxDocSizeKb, MaxAliasesSizeKb: rule.MaxAliasesSizeKb,
+			MaxDocSizeKb: rule.MaxDocSizeKb, MaxAliases: rule.MaxAliases,
 			MaxDocPerBatch: rule.MaxDocPerBatch,
 			HeaderName:     rule.Name, HeaderValues: headerValues,
 			LoginPoint: rule.LoginPoint, LoginRegex: rule.LoginRegex,

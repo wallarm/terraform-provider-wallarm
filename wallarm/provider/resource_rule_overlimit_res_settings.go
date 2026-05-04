@@ -24,12 +24,13 @@ func resourceWallarmOverlimitResSettings() *schema.Resource {
 		},
 
 		// `mode` actualised against API ground truth (probed 2026-05-01) —
-		// API treats it Optional with default `monitoring`. Optional+Computed
-		// preserves API-echoed state across plans when the user omits it.
+		// API default `monitoring`. Optional+Default("monitoring") for
+		// symmetric remove-restores-default semantics; mutable via WithMode
+		// (per .claude/schema_decision_rules.md §A row 2).
 		"mode": {
 			Type:         schema.TypeString,
 			Optional:     true,
-			Computed:     true,
+			Default:      "monitoring",
 			ValidateFunc: validation.StringInSlice([]string{"off", "monitoring", "blocking"}, false),
 		},
 	}

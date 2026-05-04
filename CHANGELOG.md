@@ -1,3 +1,35 @@
+## [v2.3.9] - 2026-05-04
+
+> Rules polish batch — naming cleanup, schema-shape audit (symmetric remove-restores-default), safety hardening, test gap fills. Bumps `wallarm-go` to v0.12.2.
+>
+> **Migration note:** the `Optional+Computed` → `Optional+Default(<value>)` flips below cover ~13 fields. Resources whose API value differs from the new schema default will produce a one-time plan diff after upgrade — review `terraform plan` output before applying. Affects `active` (all resources), `additional_parameters`/`plain_parameters` (brute/bola/enum), `introspection`/`debug_enabled`/`max_depth`/`max_value_size_kb`/`max_doc_size_kb`/`max_doc_per_batch`/`max_aliases` (graphql_detection), `mode` (overlimit_res_settings, file_upload_size_limit), `time_unit` (rate_limit).
+
+### Upgrade Steps
+
+* [ACTION REQUIRED] `wallarm_rule_graphql_detection`: rename `max_alias_size_kb` → `max_aliases` in HCL.
+
+### Breaking Changes
+
+* **`wallarm_rule_graphql_detection.max_alias_size_kb` renamed to `max_aliases`** (count, not size; wire JSON tag unchanged).
+* **`mitigation` (all rule resources) now `Computed` only** (was `Optional+Computed`); HCL setting it now fails validation.
+* **`wallarm_rule_regex.experimental` default behaviour**: HCL omitting the field now creates a regular `regex` rule (was `experimental_regex`).
+
+### Bug Fixes
+
+* **`wallarm_rule_graphql_detection.introspection` / `.debug_enabled` now `Optional+Default(true)`** — symmetric remove-restores-default.
+* **`active` (all rule resources) now `Optional+Default(true)`** — same.
+* **`enumerated_parameters.additional_parameters` / `.plain_parameters` now `Optional+Default(false)`** (rule_brute/_bola/_enum) — same.
+* **`wallarm_rule_graphql_detection` int fields now `Optional+Default(<API default>)`** — `max_depth`, `max_value_size_kb` (range `1..100` validator added), `max_doc_size_kb`, `max_doc_per_batch`.
+* **`wallarm_rule_graphql_detection.max_aliases` now `Optional+Default(5)`** (was `Optional+Computed+ForceNew`); mutates in place. Adds `wallarm-go.HintUpdateV3Params.MaxAliases` + `resourcerule.WithMaxAliases`.
+* **`wallarm_rule_overlimit_res_settings.mode` now `Optional+Default("monitoring")`.**
+* **`wallarm_rule_rate_limit.time_unit` now `Optional+Default("rps")`.**
+* **`wallarm_rule_file_upload_size_limit.mode` now `Optional+Default("monitoring")`**; `size` gains `IntAtLeast(1)` validator.
+* **`wallarm_rule_regex.experimental` now `Optional+Computed+ForceNew`** (was `Optional+Default(true)+ForceNew`; ForceNew retained); Read derives from `rule_type`. Prevents destroy-on-import for regular `regex` rules.
+* **`findActionByConditionsHash` 200-page pagination cap** — bounds previously unbounded loop.
+* **`setIfExists` panic-swallow removed** — replaced with explicit cty guards in `rawStateHasKey`.
+* **Plan-time enum validators added**: `attack_type` on rule_disable_attack_type/vpatch (17 values each), rule_regex (16); `block_by_session/ip+graylist_by_ip` accept `0` (unset, dropped on wire) OR `600..315569520` — preserves `terraform import` + `-generate-config-out` round-trip on partially-set reactions; `threshold.count`/`.period` `IntAtLeast(1)` — surfaces API constraint at plan time.
+* **Generic helper `resourcerule.GetPointerIfConfigured[T any]`** replaces type-specific variants — used by rate_limit `delay`/`burst` where 0 is meaningful.
+
 ## [v2.3.8] - 2026-05-01
 
 > Schema actualisation against API ground truth, zero-value pointer fixes, plan-time validator for `enumerated_parameters`, full rule-test harness migration. Bumps `wallarm-go` to v0.12.1.

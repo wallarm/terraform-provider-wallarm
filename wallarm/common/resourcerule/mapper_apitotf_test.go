@@ -1,6 +1,7 @@
 package resourcerule
 
 import (
+	"fmt"
 	"testing"
 
 	wallarm "github.com/wallarm/wallarm-go"
@@ -38,8 +39,31 @@ func TestReactionToTF_Values(t *testing.T) {
 		t.Fatalf("expected 1 element, got %d", len(got))
 	}
 	m := got[0].(map[string]interface{})
-	if m["block_by_session"] != &bbs {
-		t.Errorf("expected block_by_session=&600, got %v", m["block_by_session"])
+	if m["block_by_session"] != 600 {
+		t.Errorf("expected block_by_session=600, got %v", m["block_by_session"])
+	}
+}
+
+// TestReactionToTF_OmitsAbsentKeys: when the API returns only some reaction
+// keys (e.g. block_by_ip set, others absent), ReactionToTF must not seed the
+// missing keys into the state map. Otherwise terraform import + -generate-
+// config-out emits stray block_by_session=0 / graylist_by_ip=0 lines that the
+// IntBetween(600, 315569520) validator rejects at plan time.
+func TestReactionToTF_OmitsAbsentKeys(t *testing.T) {
+	bbip := 3600
+	got := ReactionToTF(&wallarm.Reaction{BlockByIP: &bbip})
+	if len(got) != 1 {
+		t.Fatalf("expected 1 element, got %d", len(got))
+	}
+	m := got[0].(map[string]interface{})
+	if m["block_by_ip"] != 3600 {
+		t.Errorf("expected block_by_ip=3600, got %v", m["block_by_ip"])
+	}
+	if _, ok := m["block_by_session"]; ok {
+		t.Errorf("expected block_by_session absent, got %v", m["block_by_session"])
+	}
+	if _, ok := m["graylist_by_ip"]; ok {
+		t.Errorf("expected graylist_by_ip absent, got %v", m["graylist_by_ip"])
 	}
 }
 
@@ -171,32 +195,51 @@ func TestArbitraryConditionsToTF_SingleCondition(t *testing.T) {
 // WrapPointElements to chunk the flat list per the paired/simple element
 // rules, matching what HCL writes.
 func TestArbitraryConditionsToTF_MultiStepPointChain(t *testing.T) {
-	got := ArbitraryConditionsToTF([]wallarm.ArbitraryConditionResp{
+	cases := []struct {
+		name string
+		flat []interface{}
+		want [][]string
+	}{
 		{
-			Point:    []interface{}{"post", "json_doc", "hash", "user_id"},
-			Operator: "imatch",
-			Value:    []string{"[0-9]+"},
+			name: "post -> json_doc -> hash:user_id",
+			flat: []interface{}{"post", "json_doc", "hash", "user_id"},
+			want: [][]string{{"post"}, {"json_doc"}, {"hash", "user_id"}},
 		},
-	})
-	point := got[0].(map[string]interface{})["point"].([]interface{})
-	want := [][]string{
-		{"post"},
-		{"json_doc"},
-		{"hash", "user_id"},
+		{
+			// XML chain: post (simple) -> xml (simple) -> xml_tag:foo (paired) -> xml_attr:bar (paired)
+			// Guards the v2.3.9 follow-up: v2.3.8 only had post/json/hash coverage.
+			name: "post -> xml -> xml_tag:foo -> xml_attr:bar",
+			flat: []interface{}{"post", "xml", "xml_tag", "foo", "xml_attr", "bar"},
+			want: [][]string{{"post"}, {"xml"}, {"xml_tag", "foo"}, {"xml_attr", "bar"}},
+		},
+		{
+			// Protobuf chain: post -> grpc:1 (paired w/ index) -> protobuf:field (paired)
+			name: "post -> grpc:1 -> protobuf:field",
+			flat: []interface{}{"post", "grpc", float64(1), "protobuf", "field"},
+			want: [][]string{{"post"}, {"grpc", "1"}, {"protobuf", "field"}},
+		},
 	}
-	if len(point) != len(want) {
-		t.Fatalf("expected %d sub-arrays, got %d: %v", len(want), len(point), point)
-	}
-	for i, sub := range want {
-		inner := point[i].([]interface{})
-		if len(inner) != len(sub) {
-			t.Errorf("sub-array %d: expected %d elements, got %d", i, len(sub), len(inner))
-			continue
-		}
-		for j, s := range sub {
-			if inner[j] != s {
-				t.Errorf("sub-array %d[%d]: got %v, want %s", i, j, inner[j], s)
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			got := ArbitraryConditionsToTF([]wallarm.ArbitraryConditionResp{
+				{Point: tc.flat, Operator: "imatch", Value: []string{"[0-9]+"}},
+			})
+			point := got[0].(map[string]interface{})["point"].([]interface{})
+			if len(point) != len(tc.want) {
+				t.Fatalf("expected %d sub-arrays, got %d: %v", len(tc.want), len(point), point)
 			}
-		}
+			for i, sub := range tc.want {
+				inner := point[i].([]interface{})
+				if len(inner) != len(sub) {
+					t.Errorf("sub-array %d: expected %d elements, got %d (%v)", i, len(sub), len(inner), inner)
+					continue
+				}
+				for j, s := range sub {
+					if fmt.Sprint(inner[j]) != s {
+						t.Errorf("sub-array %d[%d]: got %v (%T), want %s", i, j, inner[j], inner[j], s)
+					}
+				}
+			}
+		})
 	}
 }

@@ -232,3 +232,44 @@ func TestAccRuleModeUpdateInPlaceMode(t *testing.T) {
 func testAccCheckWallarmRuleWmodeDestroy(s *terraform.State) error {
 	return testAccCheckHintDestroyed(s, "wallarm_rule_mode")
 }
+
+// TestAccRuleMode_RemovingActiveFromHCLRestoresDefault guards the v2.3.9
+// active-asymmetry fix on the shared commonResourceRuleFields.active schema:
+// previously Optional+Computed left state stuck at the user's last value when
+// the line was removed; now Optional+Default(true) plans
+// `false → true` symmetrically. Uses wallarm_rule_mode as a representative
+// rule but the schema is shared, so this guards every rule resource.
+func TestAccRuleMode_RemovingActiveFromHCLRestoresDefault(t *testing.T) {
+	rnd := generateRandomResourceName(5)
+	name := "wallarm_rule_mode." + rnd
+	cfg := func(extra string) string {
+		return fmt.Sprintf(`
+resource "wallarm_rule_mode" %[1]q {
+  mode = "block"
+  action {
+    type  = "iequal"
+    value = "active-restore.example.com"
+    point = { header = "HOST" }
+  }
+%[2]s
+}
+`, rnd, extra)
+	}
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV5ProviderFactories: testAccProtoV5ProviderFactories,
+		CheckDestroy:             testAccCheckWallarmRuleWmodeDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: cfg("  active = false"),
+				Check:  resource.TestCheckResourceAttr(name, "active", "false"),
+			},
+			{
+				// Remove the line → schema default (true) wins, plan shows
+				// diff `false → true`, Update restores the API default.
+				Config: cfg(""),
+				Check:  resource.TestCheckResourceAttr(name, "active", "true"),
+			},
+		},
+	})
+}

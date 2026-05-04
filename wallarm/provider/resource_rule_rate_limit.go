@@ -50,10 +50,13 @@ func resourceWallarmRateLimit() *schema.Resource {
 			ValidateFunc: validation.IntBetween(400, 599),
 		},
 
+		// Optional+Default("rps") — stable API default, mutable via WithTimeUnit;
+		// removing the line plans `current → "rps"` symmetrically (per
+		// .claude/schema_decision_rules.md §A row 2).
 		"time_unit": {
 			Type:         schema.TypeString,
 			Optional:     true,
-			Computed:     true,
+			Default:      "rps",
 			ValidateFunc: validation.StringInSlice([]string{"rps", "rpm"}, false),
 		},
 	}
@@ -91,11 +94,10 @@ func resourceWallarmRateLimitCreate(ctx context.Context, d *schema.ResourceData,
 	}
 	// Required ints (rate, rsp_status): always send. Optional ints (delay,
 	// burst): use the GetRawConfig-aware helper so a literal 0 reaches the
-	// API but an omitted field doesn't override the API default. Optional
-	// strings (time_unit): same — empty string is the SDK zero, but we
-	// only want to send when user configured it. wallarm-go v0.12.1's *int
-	// fields make the int side work; for strings, JSON omitempty already
-	// drops "" correctly, so a plain `d.Get` is sufficient there.
+	// API but an omitted field doesn't override the API default — relies on
+	// wallarm-go v0.12.1's `*int+omitempty` for these fields. `time_unit` is
+	// `Optional+Default("rps")`, so `d.Get` always returns a non-empty value
+	// (user's, or the schema default) — a plain `d.Get(...).(string)` here.
 	actionBody := &wallarm.ActionCreate{
 		Type:      "rate_limit",
 		Clientid:  clientID,
@@ -103,8 +105,8 @@ func resourceWallarmRateLimitCreate(ctx context.Context, d *schema.ResourceData,
 		Validated: false,
 		Comment:   fields.Comment,
 		Point:     point,
-		Delay:     resourcerule.GetIntPointerIfConfigured(d, "delay"),
-		Burst:     resourcerule.GetIntPointerIfConfigured(d, "burst"),
+		Delay:     resourcerule.GetPointerIfConfigured[int](d, "delay"),
+		Burst:     resourcerule.GetPointerIfConfigured[int](d, "burst"),
 		Rate:      lo.ToPtr(d.Get("rate").(int)),
 		RspStatus: d.Get("rsp_status").(int),
 		TimeUnit:  d.Get("time_unit").(string),

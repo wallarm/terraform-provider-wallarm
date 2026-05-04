@@ -1,6 +1,7 @@
 package wallarm
 
 import (
+	"sync/atomic"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -137,6 +138,36 @@ func TestFindActionByConditionsHash_Page1Match(t *testing.T) {
 	}
 	if mock.actionCallCount.Load() != 1 {
 		t.Fatalf("expected exactly 1 ActionList call (matched on page 1), got %d", mock.actionCallCount.Load())
+	}
+}
+
+// degenerateActionListAPI always returns Limit-sized pages regardless of
+// Offset, simulating a misbehaving API that would cause the unbounded
+// pagination loop in findActionByConditionsHash to spin forever.
+type degenerateActionListAPI struct {
+	wallarm.API
+	actionCallCount atomic.Int32
+}
+
+func (m *degenerateActionListAPI) ActionList(params *wallarm.ActionListParams) (*wallarm.ActionListResponse, error) {
+	m.actionCallCount.Add(1)
+	return &wallarm.ActionListResponse{Status: 200, Body: fillerActions(params.Limit, 100)}, nil
+}
+
+// TestFindActionByConditionsHash_PageCap guards against the unbounded loop
+// where a degenerate API serves always-full pages without progress. The page
+// cap must trip with an error instead of hanging the apply.
+func TestFindActionByConditionsHash_PageCap(t *testing.T) {
+	mock := &degenerateActionListAPI{}
+	got, err := findActionByConditionsHash(mock, 1, "wallarm_mode", "no-match-possible", 1)
+	if err == nil {
+		t.Fatalf("expected error from page cap, got nil (got=%v)", got)
+	}
+	if got != nil {
+		t.Fatalf("expected nil match on cap-exceeded, got ID=%d", got.ID)
+	}
+	if c := int(mock.actionCallCount.Load()); c != findActionByConditionsHashPageCap {
+		t.Fatalf("expected exactly %d ActionList calls (page cap), got %d", findActionByConditionsHashPageCap, c)
 	}
 }
 

@@ -79,16 +79,24 @@ func existingHintForAction(d *schema.ResourceData, m interface{}, hintType strin
 	return 0, nil, false, nil
 }
 
+// findActionByConditionsHashPageCap caps pagination at 200 pages × APIListLimit
+// (100k actions per hint type) — guards against a misbehaving API that keeps
+// returning full pages without progress. Cap is far above the largest tenant
+// we expect; hitting it indicates an API bug, so we surface an error instead
+// of hanging the apply.
+const findActionByConditionsHashPageCap = 200
+
 // findActionByConditionsHash paginates ActionList for (clientID, hintType) and
 // returns the first ActionEntry whose conditions hash matches wantHash, or nil
-// if no match. Pagination terminates on a short page or as soon as a match is
-// found — common case (match on page 1) makes a single API call.
+// if no match. Pagination terminates on a short page, on match, or on the
+// page cap (with error). Common case (match on page 1) makes a single API call.
 //
 // expectConditionCount is a cheap length pre-filter to skip the hash compute
 // for actions that can't possibly match. Pass len(action).
 func findActionByConditionsHash(client wallarm.API, clientID int, hintType, wantHash string, expectConditionCount int) (*wallarm.ActionEntry, error) {
 	const pageSize = APIListLimit
-	for offset := 0; ; offset += pageSize {
+	for page := 0; page < findActionByConditionsHashPageCap; page++ {
+		offset := page * pageSize
 		listResp, err := client.ActionList(&wallarm.ActionListParams{
 			Filter: &wallarm.ActionListFilter{
 				HintType: []string{hintType},
@@ -113,6 +121,7 @@ func findActionByConditionsHash(client wallarm.API, clientID int, hintType, want
 			return nil, nil
 		}
 	}
+	return nil, fmt.Errorf("findActionByConditionsHash: pagination cap (%d pages × %d) exceeded for hint type %q without short page — possible API bug", findActionByConditionsHashPageCap, APIListLimit, hintType)
 }
 
 // ImportAsExistsError returns an error when a resource already exists in the API

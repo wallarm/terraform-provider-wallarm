@@ -22,7 +22,7 @@ func resourceWallarmAPIAbuseMode() *schema.Resource {
 			Optional:     true,
 			Default:      "enabled",
 			ValidateFunc: validation.StringInSlice([]string{"enabled", "disabled"}, false),
-			Description:  "API abuse mode. One of: enabled, disabled. Default: enabled. Changing this destroys and recreates the rule.",
+			Description:  "API abuse mode. One of: enabled, disabled. Default: enabled. Mutable in-place via Update; removing the line from HCL restores the default.",
 		},
 		"action": resourcerule.ScopeActionSchema(),
 	}
