@@ -113,6 +113,10 @@ var (
 		"set":                  {Type: schema.TypeString, Computed: true},
 	}
 
+	// Both fields Required; API enforces count >= 1 (HTTP 400
+	// "must be greater than or equal to 1") and a 0-second period is
+	// nonsensical. IntAtLeast(1) on each surfaces the constraint at plan time
+	// instead of as an HTTP 400 on apply.
 	thresholdSchema = &schema.Schema{
 		Type:     schema.TypeList,
 		MaxItems: 1,
@@ -120,12 +124,14 @@ var (
 		Elem: &schema.Resource{
 			Schema: map[string]*schema.Schema{
 				"period": {
-					Type:     schema.TypeInt,
-					Required: true,
+					Type:         schema.TypeInt,
+					Required:     true,
+					ValidateFunc: validation.IntAtLeast(1),
 				},
 				"count": {
-					Type:     schema.TypeInt,
-					Required: true,
+					Type:         schema.TypeInt,
+					Required:     true,
+					ValidateFunc: validation.IntAtLeast(1),
 				},
 			},
 		},
