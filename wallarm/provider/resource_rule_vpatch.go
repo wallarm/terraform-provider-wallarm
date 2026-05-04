@@ -15,8 +15,7 @@ import (
 
 func resourceWallarmVpatch() *schema.Resource {
 	fields := map[string]*schema.Schema{
-		// Authoritative attack_type set per Wallarm product — same list as
-		// wallarm_rule_disable_attack_type. Refresh source: GET /v2/attack_types.
+		// Same list as wallarm_rule_disable_attack_type.
 		"attack_type": {
 			Type:     schema.TypeString,
 			Required: true,

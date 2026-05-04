@@ -15,9 +15,7 @@ import (
 
 func resourceWallarmDisableAttackType() *schema.Resource {
 	fields := map[string]*schema.Schema{
-		// Authoritative attack_type set per Wallarm product. Refresh source:
-		// GET /v2/attack_types from the Wallarm API. NOT for custom regex rules
-		// (they use a different list — see resource_rule_regex.go).
+		// NOT for custom regex rules — see resource_rule_regex.go for that list.
 		"attack_type": {
 			Type:     schema.TypeString,
 			Required: true,

@@ -21,13 +21,10 @@ func resourceWallarmRegex() *schema.Resource {
 			Type:     schema.TypeFloat,
 			Computed: true,
 		},
-		// Authoritative attack_type set for Custom Attack Detector rules
-		// (regex). Differs from wallarm_rule_disable_attack_type and
-		// wallarm_rule_vpatch: includes `vpatch` (regex rules can be tagged
-		// as virtual-patch detectors); excludes `any` (a regex rule must
-		// detect a specific attack class) and `invalid_xml`. Refresh source:
-		// GET /v2/attack_types — and check whether the value is supported
-		// for custom-detector rules specifically.
+		// Custom Attack Detector list — differs from disable_attack_type/vpatch:
+		// includes `vpatch` (regex rules can be tagged as virtual-patch
+		// detectors); excludes `any` (regex must detect a specific attack
+		// class) and `invalid_xml`.
 		"attack_type": {
 			Type:     schema.TypeString,
 			Required: true,
