@@ -39,8 +39,31 @@ func TestReactionToTF_Values(t *testing.T) {
 		t.Fatalf("expected 1 element, got %d", len(got))
 	}
 	m := got[0].(map[string]interface{})
-	if m["block_by_session"] != &bbs {
-		t.Errorf("expected block_by_session=&600, got %v", m["block_by_session"])
+	if m["block_by_session"] != 600 {
+		t.Errorf("expected block_by_session=600, got %v", m["block_by_session"])
+	}
+}
+
+// TestReactionToTF_OmitsAbsentKeys: when the API returns only some reaction
+// keys (e.g. block_by_ip set, others absent), ReactionToTF must not seed the
+// missing keys into the state map. Otherwise terraform import + -generate-
+// config-out emits stray block_by_session=0 / graylist_by_ip=0 lines that the
+// IntBetween(600, 315569520) validator rejects at plan time.
+func TestReactionToTF_OmitsAbsentKeys(t *testing.T) {
+	bbip := 3600
+	got := ReactionToTF(&wallarm.Reaction{BlockByIP: &bbip})
+	if len(got) != 1 {
+		t.Fatalf("expected 1 element, got %d", len(got))
+	}
+	m := got[0].(map[string]interface{})
+	if m["block_by_ip"] != 3600 {
+		t.Errorf("expected block_by_ip=3600, got %v", m["block_by_ip"])
+	}
+	if _, ok := m["block_by_session"]; ok {
+		t.Errorf("expected block_by_session absent, got %v", m["block_by_session"])
+	}
+	if _, ok := m["graylist_by_ip"]; ok {
+		t.Errorf("expected graylist_by_ip absent, got %v", m["graylist_by_ip"])
 	}
 }
 

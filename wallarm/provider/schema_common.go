@@ -135,6 +135,18 @@ var (
 	// 600..315569520 (10 minutes to 10 years). The mode↔reaction whitelist
 	// (block_by_session/block_by_ip for mode=block, graylist_by_ip for
 	// mode=monitoring) is API-enforced — keep that distinction at runtime.
+	//
+	// Validator allows 0 alongside the valid range because SDKv2's legacy
+	// flat state model has no NullVal slot for TypeInt inside a nested Resource
+	// block: when the API omits a reaction key, state still materialises it as
+	// 0, and `terraform import` + -generate-config-out then emits literal `= 0`
+	// lines that a strict IntBetween validator would reject at plan time. The
+	// mapper drops 0 on the wire (mapper_tftoapi.go), so 0-in-HCL means "unset"
+	// — round-trip safe.
+	reactionRangeOrZero = validation.Any(
+		validation.IntInSlice([]int{0}),
+		validation.IntBetween(600, 315569520),
+	)
 	reactionSchema = &schema.Schema{
 		Type:     schema.TypeList,
 		MaxItems: 1,
@@ -144,17 +156,17 @@ var (
 				"block_by_session": {
 					Type:         schema.TypeInt,
 					Optional:     true,
-					ValidateFunc: validation.IntBetween(600, 315569520),
+					ValidateFunc: reactionRangeOrZero,
 				},
 				"block_by_ip": {
 					Type:         schema.TypeInt,
 					Optional:     true,
-					ValidateFunc: validation.IntBetween(600, 315569520),
+					ValidateFunc: reactionRangeOrZero,
 				},
 				"graylist_by_ip": {
 					Type:         schema.TypeInt,
 					Optional:     true,
-					ValidateFunc: validation.IntBetween(600, 315569520),
+					ValidateFunc: reactionRangeOrZero,
 				},
 			},
 		},
