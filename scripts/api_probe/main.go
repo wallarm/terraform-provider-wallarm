@@ -78,6 +78,10 @@ var probes = []Probe{
 	{RuleType: "parser_state", Base: map[string]any{"parser": "json_doc", "state": "enabled", "point": [][]string{{"post"}}}},
 	{RuleType: "overlimit_res_settings", Base: map[string]any{"overlimit_time": 1000}},
 
+	// Planned rule types (not yet exposed by the provider — probing API ground truth).
+	{RuleType: "detailed_export", Base: map[string]any{"mode": "keep_headers"}},
+	{RuleType: "response_conds", Base: map[string]any{"enable_parsers": false}},
+
 	// Rate limiting (plain — non-mitigation)
 	{RuleType: "rate_limit", Base: map[string]any{"point": [][]string{{"get_all"}}}},
 
@@ -165,6 +169,11 @@ var candidateValues = map[string]any{
 	"action":                nil, // handled specially
 	"comment":               "api-probe",
 	"title":                 "api-probe",
+	"enable_parsers":        false,
+	"limit_parsers":         []string{},
+	"limit_size":            0,
+	"limit_deep":            0,
+	"limit_chance":          0.0,
 	"validated":             false,
 	"variativity_disabled":  true,
 	"active":                true,
