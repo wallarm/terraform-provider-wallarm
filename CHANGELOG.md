@@ -27,7 +27,7 @@
 * **`wallarm_rule_regex.experimental` now `Optional+Computed+ForceNew`** (was `Optional+Default(true)+ForceNew`; ForceNew retained); Read derives from `rule_type`. Prevents destroy-on-import for regular `regex` rules.
 * **`findActionByConditionsHash` 200-page pagination cap** — bounds previously unbounded loop.
 * **`setIfExists` panic-swallow removed** — replaced with explicit cty guards in `rawStateHasKey`.
-* **Plan-time enum validators added**: `attack_type` on rule_disable_attack_type/vpatch (17 values each), rule_regex (16); `block_by_session/ip+graylist_by_ip` `IntBetween(600, 315569520)`.
+* **Plan-time enum validators added**: `attack_type` on rule_disable_attack_type/vpatch (17 values each), rule_regex (16); `block_by_session/ip+graylist_by_ip` accept `0` (unset, dropped on wire) OR `600..315569520` — preserves `terraform import` + `-generate-config-out` round-trip on partially-set reactions; `threshold.count`/`.period` `IntAtLeast(1)` — surfaces API constraint at plan time.
 * **Generic helper `resourcerule.GetPointerIfConfigured[T any]`** replaces type-specific variants — used by rate_limit `delay`/`burst` where 0 is meaningful.
 
 ## [v2.3.8] - 2026-05-01
