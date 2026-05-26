@@ -32,7 +32,7 @@ func resourceWallarmFileUploadSizeLimit() *schema.Resource {
 		// Schema actualised against API ground truth (probed 2026-05-01).
 		// `mode` is Optional+Default("monitoring") — stable API default,
 		// mutable via WithMode; symmetric remove-restores-default per
-		// .claude/schema_decision_rules.md §A row 2.
+		// references/schema-decisions.md §A row 2.
 		// `size_unit` stays Optional+Computed+ForceNew: API default "b" but
 		// ForceNew + Default would be the import trap (anti-pattern 3).
 		"mode": {

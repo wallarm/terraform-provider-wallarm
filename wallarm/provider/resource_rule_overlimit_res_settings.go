@@ -26,7 +26,7 @@ func resourceWallarmOverlimitResSettings() *schema.Resource {
 		// `mode` actualised against API ground truth (probed 2026-05-01) —
 		// API default `monitoring`. Optional+Default("monitoring") for
 		// symmetric remove-restores-default semantics; mutable via WithMode
-		// (per .claude/schema_decision_rules.md §A row 2).
+		// (per references/schema-decisions.md §A row 2).
 		"mode": {
 			Type:         schema.TypeString,
 			Optional:     true,

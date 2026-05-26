@@ -7,7 +7,7 @@ Discovery tool for Wallarm rule-creation API constraints. For every rule type li
 3. *(Optional)* If `API_PROBE_MUTABILITY=1`, sends per-field PUTs with each API-defaulted field flipped to a different value, then compares the response body to confirm whether the field is mutable, immutable-but-silently-dropped, or rejected.
 4. **DELETEs** the rule it just created via `/v1/objects/hint/delete` so probing leaves no state behind.
 
-Output: a markdown report listing per-rule-type results — handy ground truth for schema decisions (see `.claude/schema_decision_rules.md`).
+Output: a markdown report listing per-rule-type results — handy ground truth for schema decisions (see `references/schema-decisions.md`).
 
 ## Required env vars
 
