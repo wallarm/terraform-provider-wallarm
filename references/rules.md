@@ -90,7 +90,7 @@ Probe-derived API ground truth lives in `references/rules_api_fields.md`. The su
 
 References:
 - `references/action.md` — full path-expansion algorithm, wildcards, headers, query params, special cases, and the **server-side Action/Condition/Hint table model** (§14).
-- `spec/actions_examples.json` — 343 real action condition examples from the API for validation.
+- `spec/actions_examples.json` — 82 representative action condition examples (one per distinct shape; deduped from a larger 343-sample probe).
 
 Rules are stored as **Action + Hint** pairs. An **Action** is a scope (an ordered list of Conditions, max 60); multiple Hints can share the same Action. An **Endpoint** is just an Action with `endpoint: true`. Identical conditions reuse an existing Action via `find_or_create` (deterministic SHA256 `conditions_hash`); auto-cleanup removes Actions whose last Hint is deleted. The provider never calls `ActionDelete` — only `HintCreate`/`HintDelete`, both of which trigger server-side LOM recompilation.
 
