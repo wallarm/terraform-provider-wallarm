@@ -1,0 +1,4776 @@
+[
+  {
+    "conditions": [],
+    "path": "/**/*.*"
+  },
+  {
+    "conditions": [
+      {
+        "point": [
+          "instance"
+        ],
+        "type": "equal",
+        "value": "20"
+      }
+    ],
+    "instance": "20",
+    "path": "/**/*.*"
+  },
+  {
+    "conditions": [
+      {
+        "point": [
+          "header",
+          "USER-AGENT"
+        ],
+        "type": "regex",
+        "value": "^(.*(UnityPlayer).*(UnityWebRequest).*)$"
+      },
+      {
+        "point": [
+          "instance"
+        ],
+        "type": "equal",
+        "value": "212"
+      }
+    ],
+    "instance": "212",
+    "path": "/**/*.*"
+  },
+  {
+    "conditions": [
+      {
+        "point": [
+          "path",
+          0
+        ],
+        "type": "absent",
+        "value": null
+      },
+      {
+        "point": [
+          "action_name"
+        ],
+        "type": "equal",
+        "value": ""
+      },
+      {
+        "point": [
+          "action_ext"
+        ],
+        "type": "absent",
+        "value": null
+      }
+    ],
+    "path": "/"
+  },
+  {
+    "conditions": [
+      {
+        "point": [
+          "path",
+          0
+        ],
+        "type": "equal",
+        "value": "orders"
+      },
+      {
+        "point": [
+          "action_ext"
+        ],
+        "type": "absent",
+        "value": null
+      },
+      {
+        "point": [
+          "instance"
+        ],
+        "type": "equal",
+        "value": "26"
+      }
+    ],
+    "instance": "26",
+    "path": "/orders/**/*"
+  },
+  {
+    "conditions": [
+      {
+        "point": [
+          "path",
+          0
+        ],
+        "type": "equal",
+        "value": "api"
+      },
+      {
+        "point": [
+          "instance"
+        ],
+        "type": "equal",
+        "value": "193"
+      },
+      {
+        "point": [
+          "header",
+          "USER-AGENT"
+        ],
+        "type": "regex",
+        "value": ".*([Rr][Oo][Bb][Ll][Oo][Xx][Nn][Ee][Ww][Bb][Rr][Oo][Ww][Ss][Ee][Rr])|([Gg][Aa][Mm][Ee][Pp][Aa][Dd][Nn][Aa][Vv][Ii][Gg][Aa][Tt][Ii][Oo][Nn]).*"
+      }
+    ],
+    "instance": "193",
+    "path": "/api/**/*.*"
+  },
+  {
+    "conditions": [
+      {
+        "point": [
+          "path",
+          0
+        ],
+        "type": "equal",
+        "value": "api"
+      },
+      {
+        "point": [
+          "path",
+          1
+        ],
+        "type": "equal",
+        "value": "v1"
+      },
+      {
+        "point": [
+          "instance"
+        ],
+        "type": "equal",
+        "value": "86"
+      }
+    ],
+    "instance": "86",
+    "path": "/api/v1/**/*.*"
+  },
+  {
+    "conditions": [
+      {
+        "point": [
+          "action_ext"
+        ],
+        "type": "absent",
+        "value": null
+      },
+      {
+        "point": [
+          "action_name"
+        ],
+        "type": "equal",
+        "value": "contact-sales"
+      },
+      {
+        "point": [
+          "path",
+          0
+        ],
+        "type": "absent",
+        "value": null
+      },
+      {
+        "point": [
+          "instance"
+        ],
+        "type": "equal",
+        "value": "17"
+      }
+    ],
+    "instance": "17",
+    "path": "/contact-sales"
+  },
+  {
+    "conditions": [
+      {
+        "point": [
+          "path",
+          0
+        ],
+        "type": "absent",
+        "value": null
+      },
+      {
+        "point": [
+          "action_name"
+        ],
+        "type": "equal",
+        "value": ""
+      },
+      {
+        "point": [
+          "action_ext"
+        ],
+        "type": "absent",
+        "value": null
+      },
+      {
+        "point": [
+          "instance"
+        ],
+        "type": "equal",
+        "value": "17"
+      }
+    ],
+    "instance": "17",
+    "path": "/"
+  },
+  {
+    "conditions": [
+      {
+        "point": [
+          "path",
+          0
+        ],
+        "type": "absent",
+        "value": null
+      },
+      {
+        "point": [
+          "action_name"
+        ],
+        "type": "equal",
+        "value": "404"
+      },
+      {
+        "point": [
+          "action_ext"
+        ],
+        "type": "equal",
+        "value": "html"
+      },
+      {
+        "point": [
+          "instance"
+        ],
+        "type": "equal",
+        "value": "1"
+      }
+    ],
+    "instance": "1",
+    "path": "/404.html"
+  },
+  {
+    "conditions": [
+      {
+        "point": [
+          "action_ext"
+        ],
+        "type": "equal",
+        "value": "php"
+      },
+      {
+        "point": [
+          "action_name"
+        ],
+        "type": "equal",
+        "value": "trackingEP"
+      },
+      {
+        "point": [
+          "path",
+          0
+        ],
+        "type": "absent",
+        "value": null
+      },
+      {
+        "point": [
+          "instance"
+        ],
+        "type": "equal",
+        "value": "57"
+      }
+    ],
+    "instance": "57",
+    "path": "/trackingEP.php"
+  },
+  {
+    "conditions": [
+      {
+        "point": [
+          "instance"
+        ],
+        "type": "equal",
+        "value": "9"
+      },
+      {
+        "point": [
+          "path",
+          0
+        ],
+        "type": "absent",
+        "value": null
+      },
+      {
+        "point": [
+          "action_name"
+        ],
+        "type": "equal",
+        "value": "hit"
+      },
+      {
+        "point": [
+          "action_ext"
+        ],
+        "type": "absent",
+        "value": null
+      }
+    ],
+    "instance": "9",
+    "path": "/hit"
+  },
+  {
+    "conditions": [
+      {
+        "point": [
+          "path",
+          0
+        ],
+        "type": "equal",
+        "value": "articles"
+      },
+      {
+        "point": [
+          "path",
+          1
+        ],
+        "type": "absent",
+        "value": null
+      },
+      {
+        "point": [
+          "action_ext"
+        ],
+        "type": "absent",
+        "value": null
+      },
+      {
+        "point": [
+          "instance"
+        ],
+        "type": "equal",
+        "value": "90"
+      }
+    ],
+    "instance": "90",
+    "path": "/articles/*"
+  },
+  {
+    "conditions": [
+      {
+        "point": [
+          "path",
+          0
+        ],
+        "type": "equal",
+        "value": "api"
+      },
+      {
+        "point": [
+          "path",
+          2
+        ],
+        "type": "equal",
+        "value": "unreal"
+      },
+      {
+        "point": [
+          "action_ext"
+        ],
+        "type": "absent",
+        "value": null
+      },
+      {
+        "point": [
+          "instance"
+        ],
+        "type": "equal",
+        "value": "26"
+      }
+    ],
+    "instance": "26",
+    "path": "/api/*/unreal/**/*"
+  },
+  {
+    "conditions": [
+      {
+        "point": [
+          "header",
+          "HOST"
+        ],
+        "type": "iequal",
+        "value": "example.com"
+      },
+      {
+        "point": [
+          "path",
+          0
+        ],
+        "type": "absent",
+        "value": null
+      },
+      {
+        "point": [
+          "action_name"
+        ],
+        "type": "equal",
+        "value": "en"
+      },
+      {
+        "point": [
+          "action_ext"
+        ],
+        "type": "absent",
+        "value": null
+      }
+    ],
+    "domain": "example.com",
+    "path": "/en"
+  },
+  {
+    "conditions": [
+      {
+        "point": [
+          "action_ext"
+        ],
+        "type": "absent",
+        "value": null
+      },
+      {
+        "point": [
+          "path",
+          2
+        ],
+        "type": "absent",
+        "value": null
+      },
+      {
+        "point": [
+          "path",
+          1
+        ],
+        "type": "equal",
+        "value": "companies"
+      },
+      {
+        "point": [
+          "path",
+          0
+        ],
+        "type": "equal",
+        "value": "api"
+      },
+      {
+        "point": [
+          "instance"
+        ],
+        "type": "equal",
+        "value": "11"
+      }
+    ],
+    "instance": "11",
+    "path": "/api/companies/*"
+  },
+  {
+    "conditions": [
+      {
+        "point": [
+          "action_ext"
+        ],
+        "type": "absent",
+        "value": null
+      },
+      {
+        "point": [
+          "action_name"
+        ],
+        "type": "equal",
+        "value": "sql"
+      },
+      {
+        "point": [
+          "path",
+          1
+        ],
+        "type": "absent",
+        "value": null
+      },
+      {
+        "point": [
+          "path",
+          0
+        ],
+        "type": "equal",
+        "value": "api"
+      },
+      {
+        "point": [
+          "instance"
+        ],
+        "type": "equal",
+        "value": "11"
+      }
+    ],
+    "instance": "11",
+    "path": "/api/sql"
+  },
+  {
+    "conditions": [
+      {
+        "point": [
+          "instance"
+        ],
+        "type": "equal",
+        "value": "173"
+      },
+      {
+        "point": [
+          "path",
+          0
+        ],
+        "type": "equal",
+        "value": "webhook"
+      },
+      {
+        "point": [
+          "path",
+          1
+        ],
+        "type": "absent",
+        "value": null
+      },
+      {
+        "point": [
+          "action_name"
+        ],
+        "type": "equal",
+        "value": "jira"
+      },
+      {
+        "point": [
+          "action_ext"
+        ],
+        "type": "absent",
+        "value": null
+      }
+    ],
+    "instance": "173",
+    "path": "/webhook/jira"
+  },
+  {
+    "conditions": [
+      {
+        "point": [
+          "instance"
+        ],
+        "type": "equal",
+        "value": "166"
+      },
+      {
+        "point": [
+          "path",
+          0
+        ],
+        "type": "equal",
+        "value": "admin"
+      },
+      {
+        "point": [
+          "path",
+          1
+        ],
+        "type": "equal",
+        "value": "articles"
+      },
+      {
+        "point": [
+          "path",
+          2
+        ],
+        "type": "absent",
+        "value": null
+      },
+      {
+        "point": [
+          "action_ext"
+        ],
+        "type": "absent",
+        "value": null
+      }
+    ],
+    "instance": "166",
+    "path": "/admin/articles/*"
+  },
+  {
+    "conditions": [
+      {
+        "point": [
+          "path",
+          0
+        ],
+        "type": "equal",
+        "value": "products"
+      },
+      {
+        "point": [
+          "path",
+          1
+        ],
+        "type": "absent",
+        "value": null
+      },
+      {
+        "point": [
+          "action_name"
+        ],
+        "type": "equal",
+        "value": "site-builder"
+      },
+      {
+        "point": [
+          "action_ext"
+        ],
+        "type": "absent",
+        "value": null
+      },
+      {
+        "point": [
+          "instance"
+        ],
+        "type": "equal",
+        "value": "17"
+      }
+    ],
+    "instance": "17",
+    "path": "/products/site-builder"
+  },
+  {
+    "conditions": [
+      {
+        "point": [
+          "path",
+          0
+        ],
+        "type": "equal",
+        "value": "OA_HTML"
+      },
+      {
+        "point": [
+          "path",
+          1
+        ],
+        "type": "absent",
+        "value": null
+      },
+      {
+        "point": [
+          "action_name"
+        ],
+        "type": "equal",
+        "value": "jtfwcpnt"
+      },
+      {
+        "point": [
+          "action_ext"
+        ],
+        "type": "equal",
+        "value": "jsp"
+      },
+      {
+        "point": [
+          "instance"
+        ],
+        "type": "equal",
+        "value": "2"
+      }
+    ],
+    "instance": "2",
+    "path": "/OA_HTML/jtfwcpnt.jsp"
+  },
+  {
+    "conditions": [
+      {
+        "point": [
+          "path",
+          0
+        ],
+        "type": "equal",
+        "value": "api"
+      },
+      {
+        "point": [
+          "path",
+          1
+        ],
+        "type": "equal",
+        "value": "contacts"
+      },
+      {
+        "point": [
+          "path",
+          2
+        ],
+        "type": "absent",
+        "value": null
+      },
+      {
+        "point": [
+          "action_ext"
+        ],
+        "type": "absent",
+        "value": null
+      },
+      {
+        "point": [
+          "instance"
+        ],
+        "type": "equal",
+        "value": "11"
+      }
+    ],
+    "instance": "11",
+    "path": "/api/contacts/*"
+  },
+  {
+    "conditions": [
+      {
+        "point": [
+          "header",
+          "HOST"
+        ],
+        "type": "iequal",
+        "value": "80.lv"
+      },
+      {
+        "point": [
+          "path",
+          0
+        ],
+        "type": "absent",
+        "value": null
+      },
+      {
+        "point": [
+          "action_name"
+        ],
+        "type": "equal",
+        "value": ""
+      },
+      {
+        "point": [
+          "action_ext"
+        ],
+        "type": "absent",
+        "value": null
+      },
+      {
+        "point": [
+          "instance"
+        ],
+        "type": "equal",
+        "value": "90"
+      }
+    ],
+    "domain": "80.lv",
+    "instance": "90",
+    "path": "/"
+  },
+  {
+    "conditions": [
+      {
+        "point": [
+          "action_ext"
+        ],
+        "type": "absent",
+        "value": null
+      },
+      {
+        "point": [
+          "path",
+          2
+        ],
+        "type": "absent",
+        "value": null
+      },
+      {
+        "point": [
+          "path",
+          1
+        ],
+        "type": "equal",
+        "value": "profile"
+      },
+      {
+        "point": [
+          "action_name"
+        ],
+        "type": "equal",
+        "value": "post"
+      },
+      {
+        "point": [
+          "path",
+          0
+        ],
+        "type": "equal",
+        "value": "api"
+      },
+      {
+        "point": [
+          "instance"
+        ],
+        "type": "equal",
+        "value": "90"
+      }
+    ],
+    "instance": "90",
+    "path": "/api/profile/post"
+  },
+  {
+    "conditions": [
+      {
+        "point": [
+          "action_ext"
+        ],
+        "type": "absent",
+        "value": null
+      },
+      {
+        "point": [
+          "path",
+          3
+        ],
+        "type": "absent",
+        "value": null
+      },
+      {
+        "point": [
+          "path",
+          2
+        ],
+        "type": "equal",
+        "value": "jobs"
+      },
+      {
+        "point": [
+          "path",
+          1
+        ],
+        "type": "equal",
+        "value": "rfp"
+      },
+      {
+        "point": [
+          "path",
+          0
+        ],
+        "type": "equal",
+        "value": "api"
+      },
+      {
+        "point": [
+          "instance"
+        ],
+        "type": "equal",
+        "value": "90"
+      }
+    ],
+    "instance": "90",
+    "path": "/api/rfp/jobs/*"
+  },
+  {
+    "conditions": [
+      {
+        "point": [
+          "action_ext"
+        ],
+        "type": "absent",
+        "value": null
+      },
+      {
+        "point": [
+          "action_name"
+        ],
+        "type": "equal",
+        "value": "ticket"
+      },
+      {
+        "point": [
+          "path",
+          2
+        ],
+        "type": "absent",
+        "value": null
+      },
+      {
+        "point": [
+          "path",
+          1
+        ],
+        "type": "equal",
+        "value": "zendesk"
+      },
+      {
+        "point": [
+          "path",
+          0
+        ],
+        "type": "equal",
+        "value": "api"
+      },
+      {
+        "point": [
+          "instance"
+        ],
+        "type": "equal",
+        "value": "17"
+      }
+    ],
+    "instance": "17",
+    "path": "/api/zendesk/ticket"
+  },
+  {
+    "conditions": [
+      {
+        "point": [
+          "action_ext"
+        ],
+        "type": "absent",
+        "value": null
+      },
+      {
+        "point": [
+          "action_name"
+        ],
+        "type": "equal",
+        "value": "errorshub"
+      },
+      {
+        "point": [
+          "path",
+          1
+        ],
+        "type": "equal",
+        "value": "api"
+      },
+      {
+        "point": [
+          "path",
+          2
+        ],
+        "type": "absent",
+        "value": null
+      },
+      {
+        "point": [
+          "path",
+          0
+        ],
+        "type": "equal",
+        "value": "paystation2"
+      },
+      {
+        "point": [
+          "instance"
+        ],
+        "type": "equal",
+        "value": "1"
+      }
+    ],
+    "instance": "1",
+    "path": "/paystation2/api/errorshub"
+  },
+  {
+    "conditions": [
+      {
+        "point": [
+          "action_ext"
+        ],
+        "type": "absent",
+        "value": null
+      },
+      {
+        "point": [
+          "path",
+          2
+        ],
+        "type": "equal",
+        "value": "merchants"
+      },
+      {
+        "point": [
+          "path",
+          1
+        ],
+        "type": "equal",
+        "value": "current"
+      },
+      {
+        "point": [
+          "path",
+          4
+        ],
+        "type": "absent",
+        "value": null
+      },
+      {
+        "point": [
+          "path",
+          0
+        ],
+        "type": "equal",
+        "value": "merchant"
+      },
+      {
+        "point": [
+          "instance"
+        ],
+        "type": "equal",
+        "value": "84"
+      }
+    ],
+    "instance": "84",
+    "path": "/merchant/current/merchants/*/*"
+  },
+  {
+    "conditions": [
+      {
+        "point": [
+          "instance"
+        ],
+        "type": "equal",
+        "value": "14"
+      },
+      {
+        "point": [
+          "action_name"
+        ],
+        "type": "equal",
+        "value": "exportToFile"
+      },
+      {
+        "point": [
+          "path",
+          1
+        ],
+        "type": "equal",
+        "value": "WebService"
+      },
+      {
+        "point": [
+          "path",
+          2
+        ],
+        "type": "equal",
+        "value": "ExportService"
+      },
+      {
+        "point": [
+          "path",
+          3
+        ],
+        "type": "absent",
+        "value": null
+      },
+      {
+        "point": [
+          "action_ext"
+        ],
+        "type": "absent",
+        "value": null
+      }
+    ],
+    "instance": "14",
+    "path": "/*/WebService/ExportService/exportToFile"
+  },
+  {
+    "conditions": [
+      {
+        "point": [
+          "instance"
+        ],
+        "type": "equal",
+        "value": "84"
+      },
+      {
+        "point": [
+          "path",
+          0
+        ],
+        "type": "equal",
+        "value": "merchant"
+      },
+      {
+        "point": [
+          "action_ext"
+        ],
+        "type": "absent",
+        "value": null
+      },
+      {
+        "point": [
+          "path",
+          1
+        ],
+        "type": "equal",
+        "value": "projects"
+      },
+      {
+        "point": [
+          "path",
+          3
+        ],
+        "type": "absent",
+        "value": null
+      },
+      {
+        "point": [
+          "action_name"
+        ],
+        "type": "equal",
+        "value": "onboarding_type"
+      }
+    ],
+    "instance": "84",
+    "path": "/merchant/projects/*/onboarding_type"
+  },
+  {
+    "conditions": [
+      {
+        "point": [
+          "instance"
+        ],
+        "type": "equal",
+        "value": "84"
+      },
+      {
+        "point": [
+          "path",
+          0
+        ],
+        "type": "equal",
+        "value": "merchant"
+      },
+      {
+        "point": [
+          "path",
+          2
+        ],
+        "type": "equal",
+        "value": "merchants"
+      },
+      {
+        "point": [
+          "path",
+          4
+        ],
+        "type": "absent",
+        "value": null
+      },
+      {
+        "point": [
+          "action_name"
+        ],
+        "type": "equal",
+        "value": "images"
+      },
+      {
+        "point": [
+          "action_ext"
+        ],
+        "type": "absent",
+        "value": null
+      }
+    ],
+    "instance": "84",
+    "path": "/merchant/*/merchants/*/images"
+  },
+  {
+    "conditions": [
+      {
+        "point": [
+          "instance"
+        ],
+        "type": "equal",
+        "value": "2"
+      },
+      {
+        "point": [
+          "path",
+          0
+        ],
+        "type": "equal",
+        "value": "tplus"
+      },
+      {
+        "point": [
+          "path",
+          1
+        ],
+        "type": "equal",
+        "value": "ajaxpro"
+      },
+      {
+        "point": [
+          "path",
+          2
+        ],
+        "type": "absent",
+        "value": null
+      },
+      {
+        "point": [
+          "action_name"
+        ],
+        "type": "equal",
+        "value": "Ufida"
+      },
+      {
+        "point": [
+          "action_ext"
+        ],
+        "type": "equal",
+        "value": "T.CodeBehind._PriorityLevel,App_Code.ashx"
+      }
+    ],
+    "instance": "2",
+    "path": "/tplus/ajaxpro/Ufida.T.CodeBehind._PriorityLevel,App_Code.ashx"
+  },
+  {
+    "conditions": [
+      {
+        "point": [
+          "instance"
+        ],
+        "type": "equal",
+        "value": "193"
+      },
+      {
+        "point": [
+          "path",
+          0
+        ],
+        "type": "equal",
+        "value": "api"
+      },
+      {
+        "point": [
+          "path",
+          1
+        ],
+        "type": "equal",
+        "value": "v1"
+      },
+      {
+        "point": [
+          "path",
+          2
+        ],
+        "type": "equal",
+        "value": "rooms.upload"
+      },
+      {
+        "point": [
+          "path",
+          3
+        ],
+        "type": "absent",
+        "value": null
+      },
+      {
+        "point": [
+          "action_ext"
+        ],
+        "type": "absent",
+        "value": null
+      }
+    ],
+    "instance": "193",
+    "path": "/api/v1/rooms.upload/*"
+  },
+  {
+    "conditions": [
+      {
+        "point": [
+          "method"
+        ],
+        "type": "equal",
+        "value": "POST"
+      },
+      {
+        "point": [
+          "path",
+          0
+        ],
+        "type": "equal",
+        "value": "api"
+      },
+      {
+        "point": [
+          "path",
+          1
+        ],
+        "type": "absent",
+        "value": null
+      },
+      {
+        "point": [
+          "action_name"
+        ],
+        "type": "equal",
+        "value": "login"
+      },
+      {
+        "point": [
+          "action_ext"
+        ],
+        "type": "absent",
+        "value": null
+      },
+      {
+        "point": [
+          "instance"
+        ],
+        "type": "equal",
+        "value": "9"
+      }
+    ],
+    "instance": "9",
+    "path": "/api/login"
+  },
+  {
+    "conditions": [
+      {
+        "point": [
+          "method"
+        ],
+        "type": "equal",
+        "value": "POST"
+      },
+      {
+        "point": [
+          "path",
+          0
+        ],
+        "type": "equal",
+        "value": "api"
+      },
+      {
+        "point": [
+          "path",
+          1
+        ],
+        "type": "equal",
+        "value": "rfp"
+      },
+      {
+        "point": [
+          "path",
+          2
+        ],
+        "type": "absent",
+        "value": null
+      },
+      {
+        "point": [
+          "action_name"
+        ],
+        "type": "equal",
+        "value": "jobs"
+      },
+      {
+        "point": [
+          "instance"
+        ],
+        "type": "equal",
+        "value": "90"
+      }
+    ],
+    "instance": "90",
+    "path": "/api/rfp/jobs.*"
+  },
+  {
+    "conditions": [
+      {
+        "point": [
+          "path",
+          0
+        ],
+        "type": "equal",
+        "value": "WebService"
+      },
+      {
+        "point": [
+          "path",
+          1
+        ],
+        "type": "equal",
+        "value": "Admin"
+      },
+      {
+        "point": [
+          "path",
+          2
+        ],
+        "type": "absent",
+        "value": null
+      },
+      {
+        "point": [
+          "action_name"
+        ],
+        "type": "equal",
+        "value": "getDBLogBySQL"
+      },
+      {
+        "point": [
+          "action_ext"
+        ],
+        "type": "absent",
+        "value": null
+      },
+      {
+        "point": [
+          "instance"
+        ],
+        "type": "equal",
+        "value": "14"
+      }
+    ],
+    "instance": "14",
+    "path": "/WebService/Admin/getDBLogBySQL"
+  },
+  {
+    "conditions": [
+      {
+        "point": [
+          "path",
+          0
+        ],
+        "type": "equal",
+        "value": "offers"
+      },
+      {
+        "point": [
+          "path",
+          1
+        ],
+        "type": "equal",
+        "value": "mainFunctions"
+      },
+      {
+        "point": [
+          "path",
+          2
+        ],
+        "type": "absent",
+        "value": null
+      },
+      {
+        "point": [
+          "action_name"
+        ],
+        "type": "equal",
+        "value": "comboxstore"
+      },
+      {
+        "point": [
+          "action_ext"
+        ],
+        "type": "equal",
+        "value": "action"
+      },
+      {
+        "point": [
+          "instance"
+        ],
+        "type": "equal",
+        "value": "2"
+      }
+    ],
+    "instance": "2",
+    "path": "/offers/mainFunctions/comboxstore.action"
+  },
+  {
+    "conditions": [
+      {
+        "point": [
+          "path",
+          0
+        ],
+        "type": "equal",
+        "value": "accesslogs"
+      },
+      {
+        "point": [
+          "path",
+          1
+        ],
+        "type": "equal",
+        "value": "merchants"
+      },
+      {
+        "point": [
+          "path",
+          2
+        ],
+        "type": "equal",
+        "value": "report"
+      },
+      {
+        "point": [
+          "path",
+          3
+        ],
+        "type": "absent",
+        "value": null
+      },
+      {
+        "point": [
+          "action_ext"
+        ],
+        "type": "absent",
+        "value": null
+      },
+      {
+        "point": [
+          "instance"
+        ],
+        "type": "equal",
+        "value": "12"
+      }
+    ],
+    "instance": "12",
+    "path": "/accesslogs/merchants/report/*"
+  },
+  {
+    "conditions": [
+      {
+        "point": [
+          "action_ext"
+        ],
+        "type": "absent",
+        "value": null
+      },
+      {
+        "point": [
+          "path",
+          5
+        ],
+        "type": "absent",
+        "value": null
+      },
+      {
+        "point": [
+          "path",
+          4
+        ],
+        "type": "equal",
+        "value": "application"
+      },
+      {
+        "point": [
+          "path",
+          2
+        ],
+        "type": "equal",
+        "value": "merchant"
+      },
+      {
+        "point": [
+          "path",
+          1
+        ],
+        "type": "equal",
+        "value": "v2"
+      },
+      {
+        "point": [
+          "path",
+          0
+        ],
+        "type": "equal",
+        "value": "api"
+      },
+      {
+        "point": [
+          "instance"
+        ],
+        "type": "equal",
+        "value": "32"
+      }
+    ],
+    "instance": "32",
+    "path": "/api/v2/merchant/*/application/*"
+  },
+  {
+    "conditions": [
+      {
+        "point": [
+          "action_ext"
+        ],
+        "type": "absent",
+        "value": null
+      },
+      {
+        "point": [
+          "action_name"
+        ],
+        "type": "equal",
+        "value": "user"
+      },
+      {
+        "point": [
+          "path",
+          3
+        ],
+        "type": "absent",
+        "value": null
+      },
+      {
+        "point": [
+          "path",
+          1
+        ],
+        "type": "equal",
+        "value": "api"
+      },
+      {
+        "point": [
+          "path",
+          2
+        ],
+        "type": "equal",
+        "value": "balance"
+      },
+      {
+        "point": [
+          "path",
+          0
+        ],
+        "type": "equal",
+        "value": "paystation2"
+      },
+      {
+        "point": [
+          "instance"
+        ],
+        "type": "equal",
+        "value": "1"
+      }
+    ],
+    "instance": "1",
+    "path": "/paystation2/api/balance/user"
+  },
+  {
+    "conditions": [
+      {
+        "point": [
+          "action_ext"
+        ],
+        "type": "absent",
+        "value": null
+      },
+      {
+        "point": [
+          "action_name"
+        ],
+        "type": "equal",
+        "value": "upload"
+      },
+      {
+        "point": [
+          "path",
+          3
+        ],
+        "type": "equal",
+        "value": "images"
+      },
+      {
+        "point": [
+          "path",
+          1
+        ],
+        "type": "equal",
+        "value": "projects"
+      },
+      {
+        "point": [
+          "path",
+          4
+        ],
+        "type": "absent",
+        "value": null
+      },
+      {
+        "point": [
+          "path",
+          0
+        ],
+        "type": "equal",
+        "value": "merchant"
+      },
+      {
+        "point": [
+          "instance"
+        ],
+        "type": "equal",
+        "value": "84"
+      }
+    ],
+    "instance": "84",
+    "path": "/merchant/projects/*/images/upload"
+  },
+  {
+    "conditions": [
+      {
+        "point": [
+          "instance"
+        ],
+        "type": "equal",
+        "value": "84"
+      },
+      {
+        "point": [
+          "path",
+          0
+        ],
+        "type": "equal",
+        "value": "merchant"
+      },
+      {
+        "point": [
+          "action_ext"
+        ],
+        "type": "absent",
+        "value": null
+      },
+      {
+        "point": [
+          "path",
+          1
+        ],
+        "type": "equal",
+        "value": "current"
+      },
+      {
+        "point": [
+          "path",
+          2
+        ],
+        "type": "equal",
+        "value": "projects"
+      },
+      {
+        "point": [
+          "path",
+          4
+        ],
+        "type": "absent",
+        "value": null
+      },
+      {
+        "point": [
+          "action_name"
+        ],
+        "type": "equal",
+        "value": "internal"
+      }
+    ],
+    "instance": "84",
+    "path": "/merchant/current/projects/*/internal"
+  },
+  {
+    "conditions": [
+      {
+        "point": [
+          "instance"
+        ],
+        "type": "equal",
+        "value": "86"
+      },
+      {
+        "point": [
+          "path",
+          0
+        ],
+        "type": "equal",
+        "value": "api"
+      },
+      {
+        "point": [
+          "path",
+          1
+        ],
+        "type": "equal",
+        "value": "v1"
+      },
+      {
+        "point": [
+          "path",
+          2
+        ],
+        "type": "equal",
+        "value": "scan"
+      },
+      {
+        "point": [
+          "path",
+          3
+        ],
+        "type": "absent",
+        "value": null
+      },
+      {
+        "point": [
+          "action_name"
+        ],
+        "type": "equal",
+        "value": "import"
+      },
+      {
+        "point": [
+          "action_ext"
+        ],
+        "type": "absent",
+        "value": null
+      }
+    ],
+    "instance": "86",
+    "path": "/api/v1/scan/import"
+  },
+  {
+    "conditions": [
+      {
+        "point": [
+          "instance"
+        ],
+        "type": "equal",
+        "value": "1"
+      },
+      {
+        "point": [
+          "path",
+          0
+        ],
+        "type": "equal",
+        "value": "api"
+      },
+      {
+        "point": [
+          "path",
+          1
+        ],
+        "type": "equal",
+        "value": "mobile"
+      },
+      {
+        "point": [
+          "path",
+          2
+        ],
+        "type": "equal",
+        "value": "payment"
+      },
+      {
+        "point": [
+          "path",
+          3
+        ],
+        "type": "absent",
+        "value": null
+      },
+      {
+        "point": [
+          "action_name"
+        ],
+        "type": "equal",
+        "value": "index"
+      },
+      {
+        "point": [
+          "action_ext"
+        ],
+        "type": "equal",
+        "value": "php"
+      }
+    ],
+    "instance": "1",
+    "path": "/api/mobile/payment/index.php"
+  },
+  {
+    "conditions": [
+      {
+        "point": [
+          "instance"
+        ],
+        "type": "equal",
+        "value": "235"
+      },
+      {
+        "point": [
+          "path",
+          0
+        ],
+        "type": "equal",
+        "value": "api"
+      },
+      {
+        "point": [
+          "path",
+          1
+        ],
+        "type": "equal",
+        "value": "launcher-api"
+      },
+      {
+        "point": [
+          "path",
+          2
+        ],
+        "type": "equal",
+        "value": "projects"
+      },
+      {
+        "point": [
+          "path",
+          4
+        ],
+        "type": "equal",
+        "value": "news"
+      },
+      {
+        "point": [
+          "path",
+          5
+        ],
+        "type": "absent",
+        "value": null
+      },
+      {
+        "point": [
+          "action_ext"
+        ],
+        "type": "absent",
+        "value": null
+      }
+    ],
+    "instance": "235",
+    "path": "/api/launcher-api/projects/*/news/*"
+  },
+  {
+    "conditions": [
+      {
+        "point": [
+          "method"
+        ],
+        "type": "equal",
+        "value": "GET"
+      },
+      {
+        "point": [
+          "path",
+          0
+        ],
+        "type": "equal",
+        "value": "api"
+      },
+      {
+        "point": [
+          "path",
+          1
+        ],
+        "type": "equal",
+        "value": "zendesk"
+      },
+      {
+        "point": [
+          "path",
+          2
+        ],
+        "type": "absent",
+        "value": null
+      },
+      {
+        "point": [
+          "action_name"
+        ],
+        "type": "equal",
+        "value": "ticket"
+      },
+      {
+        "point": [
+          "action_ext"
+        ],
+        "type": "absent",
+        "value": null
+      },
+      {
+        "point": [
+          "instance"
+        ],
+        "type": "equal",
+        "value": "17"
+      }
+    ],
+    "instance": "17",
+    "path": "/api/zendesk/ticket"
+  },
+  {
+    "conditions": [
+      {
+        "point": [
+          "method"
+        ],
+        "type": "equal",
+        "value": "POST"
+      },
+      {
+        "point": [
+          "path",
+          0
+        ],
+        "type": "equal",
+        "value": "api"
+      },
+      {
+        "point": [
+          "path",
+          1
+        ],
+        "type": "equal",
+        "value": "rfp"
+      },
+      {
+        "point": [
+          "path",
+          2
+        ],
+        "type": "equal",
+        "value": "jobs"
+      },
+      {
+        "point": [
+          "path",
+          3
+        ],
+        "type": "absent",
+        "value": null
+      },
+      {
+        "point": [
+          "action_ext"
+        ],
+        "type": "absent",
+        "value": null
+      },
+      {
+        "point": [
+          "instance"
+        ],
+        "type": "equal",
+        "value": "90"
+      }
+    ],
+    "instance": "90",
+    "path": "/api/rfp/jobs/*"
+  },
+  {
+    "conditions": [
+      {
+        "point": [
+          "path",
+          0
+        ],
+        "type": "equal",
+        "value": "w1"
+      },
+      {
+        "point": [
+          "path",
+          1
+        ],
+        "type": "equal",
+        "value": "WebService"
+      },
+      {
+        "point": [
+          "path",
+          2
+        ],
+        "type": "equal",
+        "value": "Admin"
+      },
+      {
+        "point": [
+          "path",
+          3
+        ],
+        "type": "absent",
+        "value": null
+      },
+      {
+        "point": [
+          "action_name"
+        ],
+        "type": "equal",
+        "value": "getDBLogBySQL"
+      },
+      {
+        "point": [
+          "action_ext"
+        ],
+        "type": "absent",
+        "value": null
+      },
+      {
+        "point": [
+          "instance"
+        ],
+        "type": "equal",
+        "value": "14"
+      }
+    ],
+    "instance": "14",
+    "path": "/w1/WebService/Admin/getDBLogBySQL"
+  },
+  {
+    "conditions": [
+      {
+        "point": [
+          "path",
+          0
+        ],
+        "type": "equal",
+        "value": "api"
+      },
+      {
+        "point": [
+          "path",
+          1
+        ],
+        "type": "equal",
+        "value": "v1"
+      },
+      {
+        "point": [
+          "path",
+          2
+        ],
+        "type": "equal",
+        "value": "jira-helper"
+      },
+      {
+        "point": [
+          "path",
+          3
+        ],
+        "type": "equal",
+        "value": "jira-event"
+      },
+      {
+        "point": [
+          "path",
+          4
+        ],
+        "type": "absent",
+        "value": null
+      },
+      {
+        "point": [
+          "action_ext"
+        ],
+        "type": "absent",
+        "value": null
+      },
+      {
+        "point": [
+          "instance"
+        ],
+        "type": "equal",
+        "value": "86"
+      }
+    ],
+    "instance": "86",
+    "path": "/api/v1/jira-helper/jira-event/*"
+  },
+  {
+    "conditions": [
+      {
+        "point": [
+          "action_ext"
+        ],
+        "type": "absent",
+        "value": null
+      },
+      {
+        "point": [
+          "path",
+          2
+        ],
+        "type": "absent",
+        "value": null
+      },
+      {
+        "point": [
+          "action_name"
+        ],
+        "type": "equal",
+        "value": "login"
+      },
+      {
+        "point": [
+          "instance"
+        ],
+        "type": "equal",
+        "value": "185"
+      },
+      {
+        "point": [
+          "method"
+        ],
+        "type": "equal",
+        "value": "POST"
+      },
+      {
+        "point": [
+          "path",
+          0
+        ],
+        "type": "equal",
+        "value": "api"
+      },
+      {
+        "point": [
+          "path",
+          1
+        ],
+        "type": "equal",
+        "value": "users"
+      },
+      {
+        "point": [
+          "header",
+          "HOST"
+        ],
+        "type": "iequal",
+        "value": "mall-cms.x.la"
+      }
+    ],
+    "domain": "mall-cms.x.la",
+    "instance": "185",
+    "path": "/api/users/login"
+  },
+  {
+    "conditions": [
+      {
+        "point": [
+          "action_ext"
+        ],
+        "type": "absent",
+        "value": null
+      },
+      {
+        "point": [
+          "path",
+          6
+        ],
+        "type": "absent",
+        "value": null
+      },
+      {
+        "point": [
+          "path",
+          5
+        ],
+        "type": "equal",
+        "value": "items"
+      },
+      {
+        "point": [
+          "path",
+          2
+        ],
+        "type": "equal",
+        "value": "projects"
+      },
+      {
+        "point": [
+          "path",
+          1
+        ],
+        "type": "equal",
+        "value": "current"
+      },
+      {
+        "point": [
+          "path",
+          4
+        ],
+        "type": "equal",
+        "value": "virtual_items"
+      },
+      {
+        "point": [
+          "path",
+          0
+        ],
+        "type": "equal",
+        "value": "merchant"
+      },
+      {
+        "point": [
+          "instance"
+        ],
+        "type": "equal",
+        "value": "84"
+      }
+    ],
+    "instance": "84",
+    "path": "/merchant/current/projects/*/virtual_items/items/*"
+  },
+  {
+    "conditions": [
+      {
+        "point": [
+          "action_ext"
+        ],
+        "type": "absent",
+        "value": null
+      },
+      {
+        "point": [
+          "action_name"
+        ],
+        "type": "equal",
+        "value": "upload"
+      },
+      {
+        "point": [
+          "path",
+          5
+        ],
+        "type": "absent",
+        "value": null
+      },
+      {
+        "point": [
+          "path",
+          3
+        ],
+        "type": "equal",
+        "value": "virtual_items"
+      },
+      {
+        "point": [
+          "path",
+          1
+        ],
+        "type": "equal",
+        "value": "projects"
+      },
+      {
+        "point": [
+          "path",
+          4
+        ],
+        "type": "equal",
+        "value": "user_attributes_conditions"
+      },
+      {
+        "point": [
+          "path",
+          0
+        ],
+        "type": "equal",
+        "value": "merchant"
+      },
+      {
+        "point": [
+          "instance"
+        ],
+        "type": "equal",
+        "value": "84"
+      }
+    ],
+    "instance": "84",
+    "path": "/merchant/projects/*/virtual_items/user_attributes_conditions/upload"
+  },
+  {
+    "conditions": [
+      {
+        "point": [
+          "instance"
+        ],
+        "type": "equal",
+        "value": "179"
+      },
+      {
+        "point": [
+          "path",
+          0
+        ],
+        "type": "equal",
+        "value": "api"
+      },
+      {
+        "point": [
+          "path",
+          1
+        ],
+        "type": "equal",
+        "value": "v1"
+      },
+      {
+        "point": [
+          "path",
+          2
+        ],
+        "type": "equal",
+        "value": "twilio"
+      },
+      {
+        "point": [
+          "path",
+          3
+        ],
+        "type": "equal",
+        "value": "analytics"
+      },
+      {
+        "point": [
+          "path",
+          4
+        ],
+        "type": "absent",
+        "value": null
+      },
+      {
+        "point": [
+          "action_name"
+        ],
+        "type": "equal",
+        "value": "event"
+      },
+      {
+        "point": [
+          "action_ext"
+        ],
+        "type": "absent",
+        "value": null
+      }
+    ],
+    "instance": "179",
+    "path": "/api/v1/twilio/analytics/event"
+  },
+  {
+    "conditions": [
+      {
+        "point": [
+          "instance"
+        ],
+        "type": "equal",
+        "value": "90"
+      },
+      {
+        "point": [
+          "path",
+          0
+        ],
+        "type": "equal",
+        "value": "api"
+      },
+      {
+        "point": [
+          "path",
+          1
+        ],
+        "type": "equal",
+        "value": "upload"
+      },
+      {
+        "point": [
+          "path",
+          2
+        ],
+        "type": "equal",
+        "value": "content"
+      },
+      {
+        "point": [
+          "path",
+          3
+        ],
+        "type": "equal",
+        "value": "fa"
+      },
+      {
+        "point": [
+          "path",
+          4
+        ],
+        "type": "equal",
+        "value": "images"
+      },
+      {
+        "point": [
+          "path",
+          6
+        ],
+        "type": "absent",
+        "value": null
+      },
+      {
+        "point": [
+          "action_ext"
+        ],
+        "type": "equal",
+        "value": "jpg"
+      }
+    ],
+    "instance": "90",
+    "path": "/api/upload/content/fa/images/*/*.jpg"
+  },
+  {
+    "conditions": [
+      {
+        "point": [
+          "method"
+        ],
+        "type": "equal",
+        "value": "POST"
+      },
+      {
+        "point": [
+          "header",
+          "USER-AGENT"
+        ],
+        "type": "equal",
+        "value": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36"
+      },
+      {
+        "point": [
+          "path",
+          0
+        ],
+        "type": "equal",
+        "value": "api"
+      },
+      {
+        "point": [
+          "path",
+          1
+        ],
+        "type": "absent",
+        "value": null
+      },
+      {
+        "point": [
+          "action_name"
+        ],
+        "type": "equal",
+        "value": "login"
+      },
+      {
+        "point": [
+          "action_ext"
+        ],
+        "type": "absent",
+        "value": null
+      },
+      {
+        "point": [
+          "get",
+          "projectId"
+        ],
+        "type": "equal",
+        "value": "6eee819f-fc06-11eb-bc85-42010aa80004"
+      },
+      {
+        "point": [
+          "instance"
+        ],
+        "type": "equal",
+        "value": "212"
+      }
+    ],
+    "instance": "212",
+    "path": "/api/login"
+  },
+  {
+    "conditions": [
+      {
+        "point": [
+          "method"
+        ],
+        "type": "equal",
+        "value": "POST"
+      },
+      {
+        "point": [
+          "path",
+          0
+        ],
+        "type": "equal",
+        "value": "api"
+      },
+      {
+        "point": [
+          "path",
+          1
+        ],
+        "type": "equal",
+        "value": "oauth2"
+      },
+      {
+        "point": [
+          "path",
+          2
+        ],
+        "type": "equal",
+        "value": "login"
+      },
+      {
+        "point": [
+          "path",
+          3
+        ],
+        "type": "absent",
+        "value": null
+      },
+      {
+        "point": [
+          "action_name"
+        ],
+        "type": "equal",
+        "value": "token"
+      },
+      {
+        "point": [
+          "action_ext"
+        ],
+        "type": "absent",
+        "value": null
+      },
+      {
+        "point": [
+          "instance"
+        ],
+        "type": "equal",
+        "value": "212"
+      }
+    ],
+    "instance": "212",
+    "path": "/api/oauth2/login/token"
+  },
+  {
+    "conditions": [
+      {
+        "point": [
+          "method"
+        ],
+        "type": "equal",
+        "value": "POST"
+      },
+      {
+        "point": [
+          "path",
+          0
+        ],
+        "type": "equal",
+        "value": "api"
+      },
+      {
+        "point": [
+          "path",
+          1
+        ],
+        "type": "equal",
+        "value": "v1"
+      },
+      {
+        "point": [
+          "path",
+          2
+        ],
+        "type": "equal",
+        "value": "livechat"
+      },
+      {
+        "point": [
+          "path",
+          3
+        ],
+        "type": "equal",
+        "value": "upload"
+      },
+      {
+        "point": [
+          "path",
+          4
+        ],
+        "type": "absent",
+        "value": null
+      },
+      {
+        "point": [
+          "action_ext"
+        ],
+        "type": "absent",
+        "value": null
+      },
+      {
+        "point": [
+          "instance"
+        ],
+        "type": "equal",
+        "value": "193"
+      }
+    ],
+    "instance": "193",
+    "path": "/api/v1/livechat/upload/*"
+  },
+  {
+    "conditions": [
+      {
+        "point": [
+          "path",
+          0
+        ],
+        "type": "equal",
+        "value": "api"
+      },
+      {
+        "point": [
+          "path",
+          1
+        ],
+        "type": "equal",
+        "value": "v2"
+      },
+      {
+        "point": [
+          "path",
+          2
+        ],
+        "type": "equal",
+        "value": "admin"
+      },
+      {
+        "point": [
+          "path",
+          3
+        ],
+        "type": "equal",
+        "value": "project"
+      },
+      {
+        "point": [
+          "path",
+          4
+        ],
+        "type": "absent",
+        "value": null
+      },
+      {
+        "point": [
+          "action_name"
+        ],
+        "type": "equal",
+        "value": "api_keys"
+      },
+      {
+        "point": [
+          "action_ext"
+        ],
+        "type": "absent",
+        "value": null
+      },
+      {
+        "point": [
+          "instance"
+        ],
+        "type": "equal",
+        "value": "5"
+      }
+    ],
+    "instance": "5",
+    "path": "/api/v2/admin/project/api_keys"
+  },
+  {
+    "conditions": [
+      {
+        "point": [
+          "path",
+          0
+        ],
+        "type": "equal",
+        "value": "api"
+      },
+      {
+        "point": [
+          "path",
+          1
+        ],
+        "type": "equal",
+        "value": "v2"
+      },
+      {
+        "point": [
+          "path",
+          2
+        ],
+        "type": "equal",
+        "value": "wh"
+      },
+      {
+        "point": [
+          "path",
+          3
+        ],
+        "type": "equal",
+        "value": "jira"
+      },
+      {
+        "point": [
+          "path",
+          4
+        ],
+        "type": "equal",
+        "value": "application_status_updated"
+      },
+      {
+        "point": [
+          "path",
+          5
+        ],
+        "type": "absent",
+        "value": null
+      },
+      {
+        "point": [
+          "action_ext"
+        ],
+        "type": "absent",
+        "value": null
+      },
+      {
+        "point": [
+          "instance"
+        ],
+        "type": "equal",
+        "value": "32"
+      }
+    ],
+    "instance": "32",
+    "path": "/api/v2/wh/jira/application_status_updated/*"
+  },
+  {
+    "conditions": [
+      {
+        "point": [
+          "path",
+          0
+        ],
+        "type": "equal",
+        "value": "merchant"
+      },
+      {
+        "point": [
+          "path",
+          1
+        ],
+        "type": "equal",
+        "value": "current"
+      },
+      {
+        "point": [
+          "path",
+          2
+        ],
+        "type": "equal",
+        "value": "projects"
+      },
+      {
+        "point": [
+          "path",
+          4
+        ],
+        "type": "equal",
+        "value": "store"
+      },
+      {
+        "point": [
+          "path",
+          5
+        ],
+        "type": "equal",
+        "value": "webhook"
+      },
+      {
+        "point": [
+          "path",
+          6
+        ],
+        "type": "absent",
+        "value": null
+      },
+      {
+        "point": [
+          "action_name"
+        ],
+        "type": "equal",
+        "value": "test"
+      },
+      {
+        "point": [
+          "action_ext"
+        ],
+        "type": "absent",
+        "value": null
+      }
+    ],
+    "path": "/merchant/current/projects/*/store/webhook/test"
+  },
+  {
+    "conditions": [
+      {
+        "point": [
+          "instance"
+        ],
+        "type": "equal",
+        "value": "84"
+      },
+      {
+        "point": [
+          "path",
+          0
+        ],
+        "type": "equal",
+        "value": "merchant"
+      },
+      {
+        "point": [
+          "action_ext"
+        ],
+        "type": "absent",
+        "value": null
+      },
+      {
+        "point": [
+          "path",
+          1
+        ],
+        "type": "equal",
+        "value": "current"
+      },
+      {
+        "point": [
+          "path",
+          2
+        ],
+        "type": "equal",
+        "value": "projects"
+      },
+      {
+        "point": [
+          "path",
+          4
+        ],
+        "type": "equal",
+        "value": "game_delivery"
+      },
+      {
+        "point": [
+          "path",
+          6
+        ],
+        "type": "equal",
+        "value": "drm"
+      },
+      {
+        "point": [
+          "path",
+          8
+        ],
+        "type": "absent",
+        "value": null
+      },
+      {
+        "point": [
+          "action_name"
+        ],
+        "type": "equal",
+        "value": "codes_upload"
+      }
+    ],
+    "instance": "84",
+    "path": "/merchant/current/projects/*/game_delivery/*/drm/*/codes_upload"
+  },
+  {
+    "conditions": [
+      {
+        "point": [
+          "instance"
+        ],
+        "type": "equal",
+        "value": "9"
+      },
+      {
+        "point": [
+          "path",
+          0
+        ],
+        "type": "equal",
+        "value": "api"
+      },
+      {
+        "point": [
+          "path",
+          1
+        ],
+        "type": "equal",
+        "value": "projects"
+      },
+      {
+        "point": [
+          "path",
+          3
+        ],
+        "type": "equal",
+        "value": "templates"
+      },
+      {
+        "point": [
+          "path",
+          4
+        ],
+        "type": "equal",
+        "value": "email"
+      },
+      {
+        "point": [
+          "path",
+          5
+        ],
+        "type": "equal",
+        "value": "test"
+      },
+      {
+        "point": [
+          "path",
+          7
+        ],
+        "type": "absent",
+        "value": null
+      },
+      {
+        "point": [
+          "action_name"
+        ],
+        "type": "equal",
+        "value": "passwordless_auth_by_code_link"
+      },
+      {
+        "point": [
+          "action_ext"
+        ],
+        "type": "absent",
+        "value": null
+      }
+    ],
+    "instance": "9",
+    "path": "/api/projects/*/templates/email/test/*/passwordless_auth_by_code_link"
+  },
+  {
+    "conditions": [
+      {
+        "point": [
+          "method"
+        ],
+        "type": "equal",
+        "value": "POST"
+      },
+      {
+        "point": [
+          "path",
+          0
+        ],
+        "type": "equal",
+        "value": "api"
+      },
+      {
+        "point": [
+          "path",
+          1
+        ],
+        "type": "equal",
+        "value": "v2"
+      },
+      {
+        "point": [
+          "path",
+          2
+        ],
+        "type": "equal",
+        "value": "wh"
+      },
+      {
+        "point": [
+          "path",
+          3
+        ],
+        "type": "equal",
+        "value": "jira"
+      },
+      {
+        "point": [
+          "path",
+          4
+        ],
+        "type": "absent",
+        "value": null
+      },
+      {
+        "point": [
+          "action_name"
+        ],
+        "type": "equal",
+        "value": "publishing_agreement_signed"
+      },
+      {
+        "point": [
+          "action_ext"
+        ],
+        "type": "absent",
+        "value": null
+      },
+      {
+        "point": [
+          "instance"
+        ],
+        "type": "equal",
+        "value": "32"
+      }
+    ],
+    "instance": "32",
+    "path": "/api/v2/wh/jira/publishing_agreement_signed"
+  },
+  {
+    "conditions": [
+      {
+        "point": [
+          "method"
+        ],
+        "type": "equal",
+        "value": "POST"
+      },
+      {
+        "point": [
+          "path",
+          0
+        ],
+        "type": "equal",
+        "value": "api"
+      },
+      {
+        "point": [
+          "path",
+          1
+        ],
+        "type": "equal",
+        "value": "v2"
+      },
+      {
+        "point": [
+          "path",
+          2
+        ],
+        "type": "equal",
+        "value": "wh"
+      },
+      {
+        "point": [
+          "path",
+          3
+        ],
+        "type": "equal",
+        "value": "jira"
+      },
+      {
+        "point": [
+          "path",
+          4
+        ],
+        "type": "equal",
+        "value": "application_status_updated"
+      },
+      {
+        "point": [
+          "path",
+          5
+        ],
+        "type": "absent",
+        "value": null
+      },
+      {
+        "point": [
+          "action_ext"
+        ],
+        "type": "absent",
+        "value": null
+      },
+      {
+        "point": [
+          "instance"
+        ],
+        "type": "equal",
+        "value": "32"
+      }
+    ],
+    "instance": "32",
+    "path": "/api/v2/wh/jira/application_status_updated/*"
+  },
+  {
+    "conditions": [
+      {
+        "point": [
+          "method"
+        ],
+        "type": "equal",
+        "value": "POST"
+      },
+      {
+        "point": [
+          "header",
+          "HOST"
+        ],
+        "type": "iequal",
+        "value": "example.com"
+      },
+      {
+        "point": [
+          "path",
+          0
+        ],
+        "type": "equal",
+        "value": "test"
+      },
+      {
+        "point": [
+          "path",
+          1
+        ],
+        "type": "equal",
+        "value": "path"
+      },
+      {
+        "point": [
+          "get",
+          "key"
+        ],
+        "type": "equal",
+        "value": "value"
+      },
+      {
+        "point": [
+          "header",
+          "CONTENT-TYPE"
+        ],
+        "type": "equal",
+        "value": "application/json"
+      },
+      {
+        "point": [
+          "proto"
+        ],
+        "type": "equal",
+        "value": "1.1"
+      },
+      {
+        "point": [
+          "scheme"
+        ],
+        "type": "equal",
+        "value": "https"
+      },
+      {
+        "point": [
+          "header",
+          "USER-AGENT"
+        ],
+        "type": "regex",
+        "value": ".*test.*"
+      }
+    ],
+    "proto": "1.1",
+    "scheme": "https",
+    "query": [
+      {
+        "name": "key",
+        "value": "value",
+        "type": "equal"
+      }
+    ],
+    "headers": [
+      {
+        "name": "USER-AGENT",
+        "value": ".*test.*",
+        "type": "regex"
+      },
+      {
+        "name": "CONTENT-TYPE",
+        "value": "application/json",
+        "type": "equal"
+      }
+    ],
+    "method": "POST",
+    "domain": "example.com",
+    "path": "/test/path/**/*.*"
+  },
+  {
+    "conditions": [
+      {
+        "point": [
+          "path",
+          0
+        ],
+        "type": "equal",
+        "value": "api"
+      },
+      {
+        "point": [
+          "path",
+          1
+        ],
+        "type": "equal",
+        "value": "oauth2"
+      },
+      {
+        "point": [
+          "path",
+          2
+        ],
+        "type": "equal",
+        "value": "login"
+      },
+      {
+        "point": [
+          "path",
+          3
+        ],
+        "type": "equal",
+        "value": "phone"
+      },
+      {
+        "point": [
+          "path",
+          4
+        ],
+        "type": "absent",
+        "value": null
+      },
+      {
+        "point": [
+          "action_name"
+        ],
+        "type": "equal",
+        "value": "request"
+      },
+      {
+        "point": [
+          "action_ext"
+        ],
+        "type": "absent",
+        "value": null
+      },
+      {
+        "point": [
+          "instance"
+        ],
+        "type": "equal",
+        "value": "212"
+      },
+      {
+        "point": [
+          "header",
+          "HOST"
+        ],
+        "type": "iequal",
+        "value": "login.example.com"
+      }
+    ],
+    "domain": "login.example.com",
+    "instance": "212",
+    "path": "/api/oauth2/login/phone/request"
+  },
+  {
+    "conditions": [
+      {
+        "point": [
+          "path",
+          0
+        ],
+        "type": "equal",
+        "value": "api"
+      },
+      {
+        "point": [
+          "path",
+          1
+        ],
+        "type": "equal",
+        "value": "v2"
+      },
+      {
+        "point": [
+          "path",
+          2
+        ],
+        "type": "equal",
+        "value": "project"
+      },
+      {
+        "point": [
+          "path",
+          4
+        ],
+        "type": "equal",
+        "value": "postponed_payment"
+      },
+      {
+        "point": [
+          "path",
+          5
+        ],
+        "type": "equal",
+        "value": "account"
+      },
+      {
+        "point": [
+          "path",
+          6
+        ],
+        "type": "absent",
+        "value": null
+      },
+      {
+        "point": [
+          "action_name"
+        ],
+        "type": "equal",
+        "value": "current"
+      },
+      {
+        "point": [
+          "action_ext"
+        ],
+        "type": "absent",
+        "value": null
+      },
+      {
+        "point": [
+          "instance"
+        ],
+        "type": "equal",
+        "value": "5"
+      }
+    ],
+    "instance": "5",
+    "path": "/api/v2/project/*/postponed_payment/account/current"
+  },
+  {
+    "conditions": [
+      {
+        "point": [
+          "path",
+          0
+        ],
+        "type": "equal",
+        "value": "api"
+      },
+      {
+        "point": [
+          "path",
+          1
+        ],
+        "type": "equal",
+        "value": "ioffice"
+      },
+      {
+        "point": [
+          "path",
+          2
+        ],
+        "type": "equal",
+        "value": "prg"
+      },
+      {
+        "point": [
+          "path",
+          3
+        ],
+        "type": "equal",
+        "value": "set"
+      },
+      {
+        "point": [
+          "path",
+          4
+        ],
+        "type": "equal",
+        "value": "wss"
+      },
+      {
+        "point": [
+          "path",
+          5
+        ],
+        "type": "absent",
+        "value": null
+      },
+      {
+        "point": [
+          "action_name"
+        ],
+        "type": "equal",
+        "value": "ioAssistance"
+      },
+      {
+        "point": [
+          "action_ext"
+        ],
+        "type": "equal",
+        "value": "asmx"
+      },
+      {
+        "point": [
+          "instance"
+        ],
+        "type": "equal",
+        "value": "9"
+      }
+    ],
+    "instance": "9",
+    "path": "/api/ioffice/prg/set/wss/ioAssistance.asmx"
+  },
+  {
+    "conditions": [
+      {
+        "point": [
+          "path",
+          0
+        ],
+        "type": "equal",
+        "value": "merchant"
+      },
+      {
+        "point": [
+          "path",
+          1
+        ],
+        "type": "equal",
+        "value": "v2"
+      },
+      {
+        "point": [
+          "path",
+          2
+        ],
+        "type": "equal",
+        "value": "projects"
+      },
+      {
+        "point": [
+          "path",
+          4
+        ],
+        "type": "equal",
+        "value": "users"
+      },
+      {
+        "point": [
+          "path",
+          6
+        ],
+        "type": "equal",
+        "value": "payments"
+      },
+      {
+        "point": [
+          "path",
+          7
+        ],
+        "type": "equal",
+        "value": "card"
+      },
+      {
+        "point": [
+          "path",
+          8
+        ],
+        "type": "absent",
+        "value": null
+      },
+      {
+        "point": [
+          "action_ext"
+        ],
+        "type": "absent",
+        "value": null
+      },
+      {
+        "point": [
+          "instance"
+        ],
+        "type": "equal",
+        "value": "84"
+      }
+    ],
+    "instance": "84",
+    "path": "/merchant/v2/projects/*/users/*/payments/card/*"
+  },
+  {
+    "conditions": [
+      {
+        "point": [
+          "action_ext"
+        ],
+        "type": "absent",
+        "value": null
+      },
+      {
+        "point": [
+          "path",
+          8
+        ],
+        "type": "absent",
+        "value": null
+      },
+      {
+        "point": [
+          "path",
+          7
+        ],
+        "type": "equal",
+        "value": "campaigns"
+      },
+      {
+        "point": [
+          "path",
+          6
+        ],
+        "type": "equal",
+        "value": "game"
+      },
+      {
+        "point": [
+          "path",
+          5
+        ],
+        "type": "equal",
+        "value": "onboarding"
+      },
+      {
+        "point": [
+          "path",
+          4
+        ],
+        "type": "equal",
+        "value": "network"
+      },
+      {
+        "point": [
+          "path",
+          1
+        ],
+        "type": "equal",
+        "value": "merchant"
+      },
+      {
+        "point": [
+          "path",
+          2
+        ],
+        "type": "equal",
+        "value": "merchants"
+      },
+      {
+        "point": [
+          "path",
+          0
+        ],
+        "type": "equal",
+        "value": "api"
+      },
+      {
+        "point": [
+          "instance"
+        ],
+        "type": "equal",
+        "value": "2"
+      }
+    ],
+    "instance": "2",
+    "path": "/api/merchant/merchants/*/network/onboarding/game/campaigns/*"
+  },
+  {
+    "conditions": [
+      {
+        "point": [
+          "instance"
+        ],
+        "type": "equal",
+        "value": "84"
+      },
+      {
+        "point": [
+          "path",
+          0
+        ],
+        "type": "equal",
+        "value": "merchant"
+      },
+      {
+        "point": [
+          "action_ext"
+        ],
+        "type": "absent",
+        "value": null
+      },
+      {
+        "point": [
+          "path",
+          1
+        ],
+        "type": "equal",
+        "value": "current"
+      },
+      {
+        "point": [
+          "path",
+          2
+        ],
+        "type": "equal",
+        "value": "projects"
+      },
+      {
+        "point": [
+          "path",
+          4
+        ],
+        "type": "equal",
+        "value": "store"
+      },
+      {
+        "point": [
+          "path",
+          5
+        ],
+        "type": "equal",
+        "value": "items"
+      },
+      {
+        "point": [
+          "path",
+          6
+        ],
+        "type": "equal",
+        "value": "virtual_currency"
+      },
+      {
+        "point": [
+          "path",
+          7
+        ],
+        "type": "absent",
+        "value": null
+      },
+      {
+        "point": [
+          "action_name"
+        ],
+        "type": "equal",
+        "value": "package"
+      }
+    ],
+    "instance": "84",
+    "path": "/merchant/current/projects/*/store/items/virtual_currency/package"
+  },
+  {
+    "conditions": [
+      {
+        "point": [
+          "instance"
+        ],
+        "type": "equal",
+        "value": "5"
+      },
+      {
+        "point": [
+          "path",
+          0
+        ],
+        "type": "equal",
+        "value": "api"
+      },
+      {
+        "point": [
+          "path",
+          1
+        ],
+        "type": "equal",
+        "value": "v2"
+      },
+      {
+        "point": [
+          "path",
+          2
+        ],
+        "type": "equal",
+        "value": "project"
+      },
+      {
+        "point": [
+          "path",
+          4
+        ],
+        "type": "equal",
+        "value": "admin"
+      },
+      {
+        "point": [
+          "path",
+          5
+        ],
+        "type": "equal",
+        "value": "items"
+      },
+      {
+        "point": [
+          "path",
+          6
+        ],
+        "type": "equal",
+        "value": "virtual_currency"
+      },
+      {
+        "point": [
+          "path",
+          7
+        ],
+        "type": "absent",
+        "value": null
+      },
+      {
+        "point": [
+          "action_name"
+        ],
+        "type": "equal",
+        "value": "package"
+      },
+      {
+        "point": [
+          "action_ext"
+        ],
+        "type": "absent",
+        "value": null
+      }
+    ],
+    "instance": "5",
+    "path": "/api/v2/project/*/admin/items/virtual_currency/package"
+  },
+  {
+    "conditions": [
+      {
+        "point": [
+          "instance"
+        ],
+        "type": "equal",
+        "value": "17"
+      },
+      {
+        "point": [
+          "path",
+          0
+        ],
+        "type": "equal",
+        "value": "plugins"
+      },
+      {
+        "point": [
+          "path",
+          1
+        ],
+        "type": "equal",
+        "value": "editors"
+      },
+      {
+        "point": [
+          "path",
+          2
+        ],
+        "type": "equal",
+        "value": "jckeditor"
+      },
+      {
+        "point": [
+          "path",
+          3
+        ],
+        "type": "equal",
+        "value": "plugins"
+      },
+      {
+        "point": [
+          "path",
+          4
+        ],
+        "type": "equal",
+        "value": "jtreelink"
+      },
+      {
+        "point": [
+          "path",
+          5
+        ],
+        "type": "equal",
+        "value": "dialogs"
+      },
+      {
+        "point": [
+          "path",
+          6
+        ],
+        "type": "absent",
+        "value": null
+      },
+      {
+        "point": [
+          "action_name"
+        ],
+        "type": "equal",
+        "value": "links"
+      },
+      {
+        "point": [
+          "action_ext"
+        ],
+        "type": "equal",
+        "value": "php"
+      }
+    ],
+    "instance": "17",
+    "path": "/plugins/editors/jckeditor/plugins/jtreelink/dialogs/links.php"
+  },
+  {
+    "conditions": [
+      {
+        "point": [
+          "instance"
+        ],
+        "type": "equal",
+        "value": "5"
+      },
+      {
+        "point": [
+          "path",
+          0
+        ],
+        "type": "equal",
+        "value": "api"
+      },
+      {
+        "point": [
+          "path",
+          1
+        ],
+        "type": "equal",
+        "value": "v2"
+      },
+      {
+        "point": [
+          "path",
+          2
+        ],
+        "type": "equal",
+        "value": "project"
+      },
+      {
+        "point": [
+          "path",
+          4
+        ],
+        "type": "equal",
+        "value": "admin"
+      },
+      {
+        "point": [
+          "path",
+          5
+        ],
+        "type": "equal",
+        "value": "items"
+      },
+      {
+        "point": [
+          "path",
+          6
+        ],
+        "type": "equal",
+        "value": "bundle"
+      },
+      {
+        "point": [
+          "path",
+          7
+        ],
+        "type": "equal",
+        "value": "sku"
+      },
+      {
+        "point": [
+          "path",
+          8
+        ],
+        "type": "absent",
+        "value": null
+      },
+      {
+        "point": [
+          "action_name"
+        ],
+        "type": "equal",
+        "value": "webstore"
+      }
+    ],
+    "instance": "5",
+    "path": "/api/v2/project/*/admin/items/bundle/sku/webstore.*"
+  },
+  {
+    "conditions": [
+      {
+        "point": [
+          "method"
+        ],
+        "type": "equal",
+        "value": "PUT"
+      },
+      {
+        "point": [
+          "path",
+          0
+        ],
+        "type": "equal",
+        "value": "api"
+      },
+      {
+        "point": [
+          "path",
+          1
+        ],
+        "type": "equal",
+        "value": "merchant"
+      },
+      {
+        "point": [
+          "path",
+          3
+        ],
+        "type": "equal",
+        "value": "project"
+      },
+      {
+        "point": [
+          "path",
+          5
+        ],
+        "type": "equal",
+        "value": "ui"
+      },
+      {
+        "point": [
+          "path",
+          7
+        ],
+        "type": "equal",
+        "value": "page"
+      },
+      {
+        "point": [
+          "path",
+          9
+        ],
+        "type": "absent",
+        "value": null
+      },
+      {
+        "point": [
+          "action_name"
+        ],
+        "type": "equal",
+        "value": "changeVersion"
+      },
+      {
+        "point": [
+          "action_ext"
+        ],
+        "type": "absent",
+        "value": null
+      },
+      {
+        "point": [
+          "instance"
+        ],
+        "type": "equal",
+        "value": "235"
+      }
+    ],
+    "instance": "235",
+    "path": "/api/merchant/*/project/*/ui/*/page/*/changeVersion"
+  },
+  {
+    "conditions": [
+      {
+        "point": [
+          "path",
+          0
+        ],
+        "type": "equal",
+        "value": "merchant"
+      },
+      {
+        "point": [
+          "path",
+          1
+        ],
+        "type": "equal",
+        "value": "current"
+      },
+      {
+        "point": [
+          "path",
+          2
+        ],
+        "type": "equal",
+        "value": "merchants"
+      },
+      {
+        "point": [
+          "path",
+          4
+        ],
+        "type": "equal",
+        "value": "blackhawk"
+      },
+      {
+        "point": [
+          "path",
+          5
+        ],
+        "type": "equal",
+        "value": "csv"
+      },
+      {
+        "point": [
+          "path",
+          6
+        ],
+        "type": "absent",
+        "value": null
+      },
+      {
+        "point": [
+          "action_name"
+        ],
+        "type": "equal",
+        "value": "upload"
+      },
+      {
+        "point": [
+          "action_ext"
+        ],
+        "type": "absent",
+        "value": null
+      },
+      {
+        "point": [
+          "method"
+        ],
+        "type": "equal",
+        "value": "POST"
+      },
+      {
+        "point": [
+          "instance"
+        ],
+        "type": "equal",
+        "value": "84"
+      }
+    ],
+    "instance": "84",
+    "path": "/merchant/current/merchants/*/blackhawk/csv/upload"
+  },
+  {
+    "conditions": [
+      {
+        "point": [
+          "path",
+          0
+        ],
+        "type": "equal",
+        "value": "api"
+      },
+      {
+        "point": [
+          "path",
+          1
+        ],
+        "type": "equal",
+        "value": "merchant"
+      },
+      {
+        "point": [
+          "path",
+          2
+        ],
+        "type": "equal",
+        "value": "merchants"
+      },
+      {
+        "point": [
+          "path",
+          4
+        ],
+        "type": "equal",
+        "value": "network"
+      },
+      {
+        "point": [
+          "path",
+          5
+        ],
+        "type": "equal",
+        "value": "onboarding"
+      },
+      {
+        "point": [
+          "path",
+          6
+        ],
+        "type": "equal",
+        "value": "campaigns"
+      },
+      {
+        "point": [
+          "path",
+          8
+        ],
+        "type": "absent",
+        "value": null
+      },
+      {
+        "point": [
+          "action_name"
+        ],
+        "type": "equal",
+        "value": "pin_codes"
+      },
+      {
+        "point": [
+          "action_ext"
+        ],
+        "type": "absent",
+        "value": null
+      },
+      {
+        "point": [
+          "instance"
+        ],
+        "type": "equal",
+        "value": "2"
+      }
+    ],
+    "instance": "2",
+    "path": "/api/merchant/merchants/*/network/onboarding/campaigns/*/pin_codes"
+  },
+  {
+    "conditions": [
+      {
+        "point": [
+          "path",
+          0
+        ],
+        "type": "equal",
+        "value": "api"
+      },
+      {
+        "point": [
+          "path",
+          1
+        ],
+        "type": "equal",
+        "value": "v2"
+      },
+      {
+        "point": [
+          "path",
+          2
+        ],
+        "type": "equal",
+        "value": "project"
+      },
+      {
+        "point": [
+          "path",
+          4
+        ],
+        "type": "equal",
+        "value": "admin"
+      },
+      {
+        "point": [
+          "path",
+          5
+        ],
+        "type": "equal",
+        "value": "items"
+      },
+      {
+        "point": [
+          "path",
+          6
+        ],
+        "type": "equal",
+        "value": "virtual_items"
+      },
+      {
+        "point": [
+          "path",
+          7
+        ],
+        "type": "equal",
+        "value": "sku"
+      },
+      {
+        "point": [
+          "path",
+          8
+        ],
+        "type": "absent",
+        "value": null
+      },
+      {
+        "point": [
+          "action_ext"
+        ],
+        "type": "absent",
+        "value": null
+      },
+      {
+        "point": [
+          "instance"
+        ],
+        "type": "equal",
+        "value": "5"
+      }
+    ],
+    "instance": "5",
+    "path": "/api/v2/project/*/admin/items/virtual_items/sku/*"
+  },
+  {
+    "conditions": [
+      {
+        "point": [
+          "instance"
+        ],
+        "type": "equal",
+        "value": "5"
+      },
+      {
+        "point": [
+          "path",
+          0
+        ],
+        "type": "equal",
+        "value": "api"
+      },
+      {
+        "point": [
+          "path",
+          1
+        ],
+        "type": "equal",
+        "value": "v2"
+      },
+      {
+        "point": [
+          "path",
+          2
+        ],
+        "type": "equal",
+        "value": "project"
+      },
+      {
+        "point": [
+          "path",
+          4
+        ],
+        "type": "equal",
+        "value": "admin"
+      },
+      {
+        "point": [
+          "path",
+          5
+        ],
+        "type": "equal",
+        "value": "items"
+      },
+      {
+        "point": [
+          "path",
+          6
+        ],
+        "type": "equal",
+        "value": "virtual_currency"
+      },
+      {
+        "point": [
+          "path",
+          7
+        ],
+        "type": "equal",
+        "value": "package"
+      },
+      {
+        "point": [
+          "path",
+          8
+        ],
+        "type": "absent",
+        "value": null
+      },
+      {
+        "point": [
+          "action_name"
+        ],
+        "type": "equal",
+        "value": "ungrouped"
+      },
+      {
+        "point": [
+          "action_ext"
+        ],
+        "type": "absent",
+        "value": null
+      }
+    ],
+    "instance": "5",
+    "path": "/api/v2/project/*/admin/items/virtual_currency/package/ungrouped"
+  },
+  {
+    "conditions": [
+      {
+        "point": [
+          "instance"
+        ],
+        "type": "equal",
+        "value": "26"
+      },
+      {
+        "point": [
+          "path",
+          0
+        ],
+        "type": "equal",
+        "value": "api"
+      },
+      {
+        "point": [
+          "path",
+          1
+        ],
+        "type": "equal",
+        "value": "75"
+      },
+      {
+        "point": [
+          "path",
+          2
+        ],
+        "type": "equal",
+        "value": "envelope"
+      },
+      {
+        "point": [
+          "path",
+          3
+        ],
+        "type": "equal",
+        "value": "_static"
+      },
+      {
+        "point": [
+          "path",
+          4
+        ],
+        "type": "equal",
+        "value": "dist"
+      },
+      {
+        "point": [
+          "path",
+          5
+        ],
+        "type": "equal",
+        "value": "sentry"
+      },
+      {
+        "point": [
+          "path",
+          6
+        ],
+        "type": "equal",
+        "value": "entrypoints"
+      },
+      {
+        "point": [
+          "path",
+          7
+        ],
+        "type": "equal",
+        "value": "app.js"
+      },
+      {
+        "point": [
+          "path",
+          8
+        ],
+        "type": "absent",
+        "value": null
+      },
+      {
+        "point": [
+          "action_name"
+        ],
+        "type": "equal",
+        "value": "admin"
+      },
+      {
+        "point": [
+          "action_ext"
+        ],
+        "type": "absent",
+        "value": null
+      }
+    ],
+    "instance": "26",
+    "path": "/api/75/envelope/_static/dist/sentry/entrypoints/app.js/admin"
+  },
+  {
+    "conditions": [
+      {
+        "point": [
+          "instance"
+        ],
+        "type": "equal",
+        "value": "5"
+      },
+      {
+        "point": [
+          "path",
+          0
+        ],
+        "type": "equal",
+        "value": "api"
+      },
+      {
+        "point": [
+          "path",
+          1
+        ],
+        "type": "equal",
+        "value": "v2"
+      },
+      {
+        "point": [
+          "path",
+          2
+        ],
+        "type": "equal",
+        "value": "project"
+      },
+      {
+        "point": [
+          "path",
+          4
+        ],
+        "type": "equal",
+        "value": "admin"
+      },
+      {
+        "point": [
+          "path",
+          5
+        ],
+        "type": "equal",
+        "value": "items"
+      },
+      {
+        "point": [
+          "path",
+          6
+        ],
+        "type": "equal",
+        "value": "game"
+      },
+      {
+        "point": [
+          "path",
+          7
+        ],
+        "type": "equal",
+        "value": "key"
+      },
+      {
+        "point": [
+          "path",
+          8
+        ],
+        "type": "equal",
+        "value": "upload"
+      },
+      {
+        "point": [
+          "path",
+          9
+        ],
+        "type": "equal",
+        "value": "id"
+      },
+      {
+        "point": [
+          "path",
+          10
+        ],
+        "type": "absent",
+        "value": null
+      },
+      {
+        "point": [
+          "action_ext"
+        ],
+        "type": "absent",
+        "value": null
+      }
+    ],
+    "instance": "5",
+    "path": "/api/v2/project/*/admin/items/game/key/upload/id/*"
+  },
+  {
+    "conditions": [
+      {
+        "point": [
+          "path",
+          0
+        ],
+        "type": "equal",
+        "value": "api"
+      },
+      {
+        "point": [
+          "path",
+          1
+        ],
+        "type": "equal",
+        "value": "v2"
+      },
+      {
+        "point": [
+          "path",
+          2
+        ],
+        "type": "equal",
+        "value": "project"
+      },
+      {
+        "point": [
+          "path",
+          4
+        ],
+        "type": "equal",
+        "value": "items"
+      },
+      {
+        "point": [
+          "path",
+          5
+        ],
+        "type": "equal",
+        "value": "physical_good"
+      },
+      {
+        "point": [
+          "path",
+          6
+        ],
+        "type": "equal",
+        "value": "delivery"
+      },
+      {
+        "point": [
+          "path",
+          7
+        ],
+        "type": "equal",
+        "value": "shipping_methods"
+      },
+      {
+        "point": [
+          "path",
+          8
+        ],
+        "type": "equal",
+        "value": "cart"
+      },
+      {
+        "point": [
+          "path",
+          9
+        ],
+        "type": "absent",
+        "value": null
+      },
+      {
+        "point": [
+          "action_name"
+        ],
+        "type": "equal",
+        "value": "current"
+      },
+      {
+        "point": [
+          "action_ext"
+        ],
+        "type": "absent",
+        "value": null
+      },
+      {
+        "point": [
+          "instance"
+        ],
+        "type": "equal",
+        "value": "5"
+      }
+    ],
+    "instance": "5",
+    "path": "/api/v2/project/*/items/physical_good/delivery/shipping_methods/cart/current"
+  }
+]

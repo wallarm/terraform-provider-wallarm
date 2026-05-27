@@ -52,7 +52,7 @@ func resourceWallarmRateLimit() *schema.Resource {
 
 		// Optional+Default("rps") — stable API default, mutable via WithTimeUnit;
 		// removing the line plans `current → "rps"` symmetrically (per
-		// .claude/schema_decision_rules.md §A row 2).
+		// references/schema-decisions.md §A row 2).
 		"time_unit": {
 			Type:         schema.TypeString,
 			Optional:     true,

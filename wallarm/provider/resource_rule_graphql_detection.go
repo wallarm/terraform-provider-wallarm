@@ -23,7 +23,7 @@ func resourceWallarmGraphqlDetection() *schema.Resource {
 		// All API-defaulted int fields below use Optional+Default(<API default>).
 		// Schema default matches the API default so re-plan is clean, AND
 		// removing the line from HCL plans `current → default` symmetrically
-		// (per the v2.3.9 audit; see .claude/schema_decision_rules.md §A row 2).
+		// (see references/schema-decisions.md §A row 2).
 		// All four are mutable in-place via Update — confirmed by per-field
 		// PUT mutability probe. max_value_size_kb has documented range 1..100;
 		// other fields API-enforced.

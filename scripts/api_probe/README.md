@@ -7,7 +7,7 @@ Discovery tool for Wallarm rule-creation API constraints. For every rule type li
 3. *(Optional)* If `API_PROBE_MUTABILITY=1`, sends per-field PUTs with each API-defaulted field flipped to a different value, then compares the response body to confirm whether the field is mutable, immutable-but-silently-dropped, or rejected.
 4. **DELETEs** the rule it just created via `/v1/objects/hint/delete` so probing leaves no state behind.
 
-Output: a markdown report listing per-rule-type results — handy ground truth for schema decisions (see `.claude/schema_decision_rules.md`).
+Output: a markdown report listing per-rule-type results — handy ground truth for schema decisions (see `references/schema-decisions.md`).
 
 ## Required env vars
 
@@ -83,7 +83,7 @@ The script writes a markdown report with two sections:
 1. **Summary table** — one row per rule type with success/failure, required fields, API-defaulted fields, and any range errors encountered.
 2. **Per-rule-type detail** — full Create/Update outcomes, the wire payload that succeeded, and (when `API_PROBE_MUTABILITY=1`) the per-field mutability classifications.
 
-Probe results are checked into `.claude/api_probe_results.md` (gitignored) as a working snapshot of API ground truth — refresh by re-running the probe after any API update.
+The script writes results to `api_probe_results.md` in the working directory by default (override via the `API_PROBE_OUT` env var). Treat the output as a working snapshot of API ground truth — refresh by re-running the probe after any API update.
 
 ## Known limitations of the per-field mutability probe
 
