@@ -294,10 +294,6 @@ Each rule in `rules_json` carries its own `action` block — rules from differen
 
 **Templates** (`hcl_generator_templates.go`): use `hclwrite` + `cty` for proper HCL generation with correct escaping.
 
-## Rules engine module
-
-This module lives in a separate repository (`terraform-wallarm-api`).
-
 ## Regex syntax (Pire engine)
 
 Rules using regex fields are executed by the **Pire** engine. Limited syntax: no lookahead/lookbehind, no backreferences, no capture groups. Terraform HCL: double backslashes (`\\w`, `\\d`).
