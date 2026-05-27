@@ -185,13 +185,15 @@ func resourceWallarmAPIDiscoveryConfig() *schema.Resource {
 	}
 }
 
-func resourceWallarmAPIDiscoveryConfigRead(_ context.Context, d *schema.ResourceData, m any) diag.Diagnostics {
-	client := apiClient(m)
+// resolveAPIDiscoveryConfigClientID returns the client_id to operate on.
+// On Read/Update of an existing resource d.Id() carries the composite
+// "<client_id>/apid_config" — prefer that. Falls back to retrieveClientID
+// (HCL value or provider default) for Create.
+func resolveAPIDiscoveryConfigClientID(d *schema.ResourceData, m any) (int, error) {
 	clientID, err := retrieveClientID(d, m)
 	if err != nil {
-		return diag.FromErr(err)
+		return 0, err
 	}
-	// Import sets d.Id() to the composite "<client_id>/apid_config"; parse the prefix.
 	if id := d.Id(); id != "" {
 		prefix := id
 		if i := strings.IndexByte(id, '/'); i >= 0 {
@@ -200,6 +202,15 @@ func resourceWallarmAPIDiscoveryConfigRead(_ context.Context, d *schema.Resource
 		if parsed, perr := strconv.Atoi(prefix); perr == nil {
 			clientID = parsed
 		}
+	}
+	return clientID, nil
+}
+
+func resourceWallarmAPIDiscoveryConfigRead(_ context.Context, d *schema.ResourceData, m any) diag.Diagnostics {
+	client := apiClient(m)
+	clientID, err := resolveAPIDiscoveryConfigClientID(d, m)
+	if err != nil {
+		return diag.FromErr(err)
 	}
 
 	cfg, err := client.APIDiscoveryConfigRead(clientID)
@@ -220,13 +231,28 @@ func resourceWallarmAPIDiscoveryConfigRead(_ context.Context, d *schema.Resource
 	return nil
 }
 
-// Create / Update handlers wire to the same upsert. Full body via expand;
-// then read back to refresh Computed fields.
+// Create wires through Update: the API endpoint upserts (record always exists),
+// so there's no distinct create call. Update sends the full POST body, sets the
+// composite ID, then Reads to refresh Computed fields.
 func resourceWallarmAPIDiscoveryConfigCreate(ctx context.Context, d *schema.ResourceData, m any) diag.Diagnostics {
 	return resourceWallarmAPIDiscoveryConfigUpdate(ctx, d, m)
 }
 
 func resourceWallarmAPIDiscoveryConfigUpdate(ctx context.Context, d *schema.ResourceData, m any) diag.Diagnostics {
+	client := apiClient(m)
+	clientID, err := resolveAPIDiscoveryConfigClientID(d, m)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+
+	cfg := expandAPIDiscoveryConfig(d)
+	cfg.ClientID = clientID
+
+	if err := client.APIDiscoveryConfigUpdate(clientID, cfg); err != nil {
+		return diag.FromErr(err)
+	}
+
+	d.SetId(fmt.Sprintf("%d/%s", clientID, apiDiscoveryConfigIDSuffix))
 	return resourceWallarmAPIDiscoveryConfigRead(ctx, d, m)
 }
 
