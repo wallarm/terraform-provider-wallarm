@@ -257,8 +257,27 @@ func resourceWallarmAPIDiscoveryConfigUpdate(ctx context.Context, d *schema.Reso
 		return diag.FromErr(err)
 	}
 
+	// The POST endpoint validates the full body: even fields we expose as
+	// Computed-only (allowed_content_types_patterns, sensitive_samples,
+	// server_variability, extensions_whitelist, call_points_storage_limit,
+	// group_soap) are required server-side. Read the current config first
+	// and carry those fields through so the editable subset can be sent
+	// without nuking unrelated settings.
+	current, err := client.APIDiscoveryConfigRead(clientID)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+
 	cfg := expandAPIDiscoveryConfig(d)
 	cfg.ClientID = clientID
+	if current != nil {
+		cfg.CallPointsStorageLimit = current.CallPointsStorageLimit
+		cfg.GroupSOAP = current.GroupSOAP
+		cfg.AllowedContentTypesPatterns = current.AllowedContentTypesPatterns
+		cfg.SensitiveSamples = current.SensitiveSamples
+		cfg.ServerVariability = current.ServerVariability
+		cfg.ExtensionsWhitelist = current.ExtensionsWhitelist
+	}
 
 	if err := client.APIDiscoveryConfigUpdate(clientID, cfg); err != nil {
 		return diag.FromErr(err)
