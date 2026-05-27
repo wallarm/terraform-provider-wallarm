@@ -176,6 +176,32 @@ func TestExpandAPIDiscoveryConfig_RoundTrip(t *testing.T) {
 	}
 }
 
+func TestParseClientIDFromCompositeID(t *testing.T) {
+	t.Parallel()
+	cases := []struct {
+		name   string
+		id     string
+		want   int
+		wantOK bool
+	}{
+		{name: "composite id", id: "22510/apid_config", want: 22510, wantOK: true},
+		{name: "bare numeric id (pre-rename state)", id: "22510", want: 22510, wantOK: true},
+		{name: "empty id", id: "", want: 0, wantOK: false},
+		{name: "non-numeric prefix", id: "notanumber/apid_config", want: 0, wantOK: false},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			got, ok := parseClientIDFromCompositeID(tc.id)
+			if ok != tc.wantOK {
+				t.Errorf("ok: got %v, want %v", ok, tc.wantOK)
+			}
+			if got != tc.want {
+				t.Errorf("id: got %d, want %d", got, tc.want)
+			}
+		})
+	}
+}
+
 func TestExpandAPIDiscoveryConfig_DefaultsApplied(t *testing.T) {
 	t.Parallel()
 
@@ -228,14 +254,14 @@ func newAPIDiscoveryConfigResourceData(t *testing.T, raw map[string]any) *schema
 // Singleton — tests must run sequentially (no ParallelTest) since they all
 // mutate the same per-tenant config record.
 
-func testAccAPIDiscoveryConfigHCL(enabled bool, typeThreshold, piiThreshold float64) string {
+func testAccAPIDiscoveryConfigHCL(enabled bool, typeThreshold, piiThreshold float64, disabledApps string) string {
 	return fmt.Sprintf(`
 resource "wallarm_api_discovery_config" "test" {
   enabled                  = %t
   apply_extended_filter    = true
   type_detection_threshold = %g
   pii_detection_threshold  = %g
-  disabled_apps            = []
+  disabled_apps            = %s
 
   protocols {
     rest    = true
@@ -250,7 +276,7 @@ resource "wallarm_api_discovery_config" "test" {
     min_time  = 300
   }
 }
-`, enabled, typeThreshold, piiThreshold)
+`, enabled, typeThreshold, piiThreshold, disabledApps)
 }
 
 func TestAccAPIDiscoveryConfig_BasicLifecycle(t *testing.T) {
@@ -262,9 +288,9 @@ func TestAccAPIDiscoveryConfig_BasicLifecycle(t *testing.T) {
 		// CheckDestroy is intentionally nil: the singleton record always exists.
 		// Delete is a noop; the API config persists after the test.
 		Steps: []resource.TestStep{
-			// Step 1: apply with one set of values.
+			// Step 1: apply with one set of values + empty disabled_apps.
 			{
-				Config: testAccAPIDiscoveryConfigHCL(true, 0.5, 0.1),
+				Config: testAccAPIDiscoveryConfigHCL(true, 0.5, 0.1, "[]"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "enabled", "true"),
 					resource.TestCheckResourceAttr(resourceName, "apply_extended_filter", "true"),
@@ -274,16 +300,20 @@ func TestAccAPIDiscoveryConfig_BasicLifecycle(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "protocols.0.mcp", "true"),
 					resource.TestCheckResourceAttr(resourceName, "endpoint_stability.0.min_count", "2"),
 					resource.TestCheckResourceAttr(resourceName, "endpoint_stability.0.min_time", "300"),
+					resource.TestCheckResourceAttr(resourceName, "disabled_apps.#", "0"),
 					resource.TestCheckResourceAttrSet(resourceName, "call_points_storage_limit"),
 				),
 			},
-			// Step 2: mutate enabled + thresholds; in-place update.
+			// Step 2: mutate enabled + thresholds + populate disabled_apps; in-place update.
 			{
-				Config: testAccAPIDiscoveryConfigHCL(false, 0.8, 0.2),
+				Config: testAccAPIDiscoveryConfigHCL(false, 0.8, 0.2, "[42, 7]"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "enabled", "false"),
 					resource.TestCheckResourceAttr(resourceName, "type_detection_threshold", "0.8"),
 					resource.TestCheckResourceAttr(resourceName, "pii_detection_threshold", "0.2"),
+					resource.TestCheckResourceAttr(resourceName, "disabled_apps.#", "2"),
+					resource.TestCheckResourceAttr(resourceName, "disabled_apps.0", "42"),
+					resource.TestCheckResourceAttr(resourceName, "disabled_apps.1", "7"),
 				),
 			},
 			// Step 3: import-verify round-trip.

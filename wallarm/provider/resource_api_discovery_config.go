@@ -185,6 +185,24 @@ func resourceWallarmAPIDiscoveryConfig() *schema.Resource {
 	}
 }
 
+// parseClientIDFromCompositeID extracts the numeric client_id prefix from a
+// composite "<client_id>/<suffix>" or a bare numeric ID. Returns ok=false when
+// the ID is empty or the prefix can't be parsed as an int.
+func parseClientIDFromCompositeID(id string) (int, bool) {
+	if id == "" {
+		return 0, false
+	}
+	prefix := id
+	if i := strings.IndexByte(id, '/'); i >= 0 {
+		prefix = id[:i]
+	}
+	parsed, err := strconv.Atoi(prefix)
+	if err != nil {
+		return 0, false
+	}
+	return parsed, true
+}
+
 // resolveAPIDiscoveryConfigClientID returns the client_id to operate on.
 // On Read/Update of an existing resource d.Id() carries the composite
 // "<client_id>/apid_config" — prefer that. Falls back to retrieveClientID
@@ -194,14 +212,8 @@ func resolveAPIDiscoveryConfigClientID(d *schema.ResourceData, m any) (int, erro
 	if err != nil {
 		return 0, err
 	}
-	if id := d.Id(); id != "" {
-		prefix := id
-		if i := strings.IndexByte(id, '/'); i >= 0 {
-			prefix = id[:i]
-		}
-		if parsed, perr := strconv.Atoi(prefix); perr == nil {
-			clientID = parsed
-		}
+	if parsed, ok := parseClientIDFromCompositeID(d.Id()); ok {
+		clientID = parsed
 	}
 	return clientID, nil
 }
@@ -263,13 +275,19 @@ func flattenAPIDiscoveryConfig(cfg *wallarm.APIDiscoveryConfig) map[string]any {
 	if cfg == nil {
 		return nil
 	}
+	// Normalise nil → empty so d.Set surfaces a stable [] in state instead of
+	// drifting to "no value".
+	disabledApps := cfg.DisabledApps
+	if disabledApps == nil {
+		disabledApps = []int{}
+	}
 	return map[string]any{
 		"client_id":                cfg.ClientID,
 		"enabled":                  cfg.Enabled,
 		"apply_extended_filter":    cfg.ApplyExtendedFilter,
 		"type_detection_threshold": cfg.TypeDetectionThreshold,
 		"pii_detection_threshold":  cfg.PIIDetectionThreshold,
-		"disabled_apps":            cfg.DisabledApps,
+		"disabled_apps":            disabledApps,
 		"protocols": []map[string]any{{
 			"rest":    cfg.Protocols.REST,
 			"graphql": cfg.Protocols.GraphQL,
