@@ -296,7 +296,7 @@ Each rule in `rules_json` carries its own `action` block — rules from differen
 
 ## Regex syntax (Pire engine)
 
-Rules using regex fields are executed by the **Pire** engine. Limited syntax: no lookahead/lookbehind, no backreferences, no capture groups. Terraform HCL: double backslashes (`\\w`, `\\d`).
+Rules using regex fields are executed by the **Pire** engine. See `references/regex.md` — covers supported/unsupported constructs, anchoring, HCL/JSON escaping, and practical examples for `wallarm_rule_regex`, `condition type = "regex"`, `enumerated_parameters.*_regexps`, and credential-stuffing rules.
 
 ## Known issues / SDK gotchas
 
