@@ -139,7 +139,7 @@ func TestExpandAPIDiscoveryConfig_RoundTrip(t *testing.T) {
 		}},
 	}
 
-	d := newAPIDiscoveryResourceData(t, raw)
+	d := newAPIDiscoveryConfigResourceData(t, raw)
 	d.SetId("22510")
 
 	cfg := expandAPIDiscoveryConfig(d)
@@ -180,7 +180,7 @@ func TestExpandAPIDiscoveryConfig_DefaultsApplied(t *testing.T) {
 	raw := map[string]any{
 		"client_id": 22510,
 	}
-	d := newAPIDiscoveryResourceData(t, raw)
+	d := newAPIDiscoveryConfigResourceData(t, raw)
 	d.SetId("22510")
 
 	cfg := expandAPIDiscoveryConfig(d)
@@ -212,10 +212,10 @@ func TestExpandAPIDiscoveryConfig_DefaultsApplied(t *testing.T) {
 	}
 }
 
-// newAPIDiscoveryResourceData builds a *schema.ResourceData with the resource's
+// newAPIDiscoveryConfigResourceData builds a *schema.ResourceData with the resource's
 // schema and the given raw HCL state. Used by the unit tests above.
-func newAPIDiscoveryResourceData(t *testing.T, raw map[string]any) *schema.ResourceData {
+func newAPIDiscoveryConfigResourceData(t *testing.T, raw map[string]any) *schema.ResourceData {
 	t.Helper()
-	r := resourceWallarmAPIDiscovery()
+	r := resourceWallarmAPIDiscoveryConfig()
 	return schema.TestResourceDataRaw(t, r.Schema, raw)
 }

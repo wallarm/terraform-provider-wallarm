@@ -2,8 +2,10 @@ package wallarm
 
 import (
 	"context"
+	"fmt"
 	"math"
 	"strconv"
+	"strings"
 
 	wallarm "github.com/wallarm/wallarm-go"
 
@@ -12,14 +14,19 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
-// resourceWallarmAPIDiscovery — singleton config per client_id, mirroring the
-// console's Settings → API Discovery page.
-func resourceWallarmAPIDiscovery() *schema.Resource {
+// apiDiscoveryConfigIDSuffix is appended to the client_id to form the composite
+// resource ID `<client_id>/apid_config`. Collision-safe alongside other
+// singleton resources that key off client_id.
+const apiDiscoveryConfigIDSuffix = "apid_config"
+
+// resourceWallarmAPIDiscoveryConfig — singleton config per client_id, mirroring
+// the console's Settings → API Discovery page.
+func resourceWallarmAPIDiscoveryConfig() *schema.Resource {
 	return &schema.Resource{
-		ReadContext:   resourceWallarmAPIDiscoveryRead,
-		CreateContext: resourceWallarmAPIDiscoveryCreate,
-		UpdateContext: resourceWallarmAPIDiscoveryUpdate,
-		DeleteContext: resourceWallarmAPIDiscoveryDelete,
+		ReadContext:   resourceWallarmAPIDiscoveryConfigRead,
+		CreateContext: resourceWallarmAPIDiscoveryConfigCreate,
+		UpdateContext: resourceWallarmAPIDiscoveryConfigUpdate,
+		DeleteContext: resourceWallarmAPIDiscoveryConfigDelete,
 
 		Importer: &schema.ResourceImporter{
 			StateContext: schema.ImportStatePassthroughContext,
@@ -178,15 +185,19 @@ func resourceWallarmAPIDiscovery() *schema.Resource {
 	}
 }
 
-func resourceWallarmAPIDiscoveryRead(_ context.Context, d *schema.ResourceData, m any) diag.Diagnostics {
+func resourceWallarmAPIDiscoveryConfigRead(_ context.Context, d *schema.ResourceData, m any) diag.Diagnostics {
 	client := apiClient(m)
 	clientID, err := retrieveClientID(d, m)
 	if err != nil {
 		return diag.FromErr(err)
 	}
-	// Import sets d.Id() = "<client_id>"; honour it.
+	// Import sets d.Id() to the composite "<client_id>/apid_config"; parse the prefix.
 	if id := d.Id(); id != "" {
-		if parsed, perr := strconv.Atoi(id); perr == nil {
+		prefix := id
+		if i := strings.IndexByte(id, '/'); i >= 0 {
+			prefix = id[:i]
+		}
+		if parsed, perr := strconv.Atoi(prefix); perr == nil {
 			clientID = parsed
 		}
 	}
@@ -200,7 +211,7 @@ func resourceWallarmAPIDiscoveryRead(_ context.Context, d *schema.ResourceData, 
 		return nil
 	}
 
-	d.SetId(strconv.Itoa(clientID))
+	d.SetId(fmt.Sprintf("%d/%s", clientID, apiDiscoveryConfigIDSuffix))
 	for k, v := range flattenAPIDiscoveryConfig(cfg) {
 		if err := d.Set(k, v); err != nil {
 			return diag.FromErr(err)
@@ -211,12 +222,12 @@ func resourceWallarmAPIDiscoveryRead(_ context.Context, d *schema.ResourceData, 
 
 // Create / Update handlers wire to the same upsert. Full body via expand;
 // then read back to refresh Computed fields.
-func resourceWallarmAPIDiscoveryCreate(ctx context.Context, d *schema.ResourceData, m any) diag.Diagnostics {
-	return resourceWallarmAPIDiscoveryUpdate(ctx, d, m)
+func resourceWallarmAPIDiscoveryConfigCreate(ctx context.Context, d *schema.ResourceData, m any) diag.Diagnostics {
+	return resourceWallarmAPIDiscoveryConfigUpdate(ctx, d, m)
 }
 
-func resourceWallarmAPIDiscoveryUpdate(ctx context.Context, d *schema.ResourceData, m any) diag.Diagnostics {
-	return resourceWallarmAPIDiscoveryRead(ctx, d, m)
+func resourceWallarmAPIDiscoveryConfigUpdate(ctx context.Context, d *schema.ResourceData, m any) diag.Diagnostics {
+	return resourceWallarmAPIDiscoveryConfigRead(ctx, d, m)
 }
 
 // flattenAPIDiscoveryConfig converts the wallarm-go struct into a map keyed
@@ -320,7 +331,7 @@ func expandAPIDiscoveryConfig(d *schema.ResourceData) *wallarm.APIDiscoveryConfi
 	return cfg
 }
 
-func resourceWallarmAPIDiscoveryDelete(_ context.Context, _ *schema.ResourceData, _ any) diag.Diagnostics {
+func resourceWallarmAPIDiscoveryConfigDelete(_ context.Context, _ *schema.ResourceData, _ any) diag.Diagnostics {
 	// Settings are a singleton — cannot be deleted, only modified.
 	return nil
 }
