@@ -745,7 +745,7 @@
           "HOST"
         ],
         "type": "iequal",
-        "value": "80.lv"
+        "value": "example.com"
       },
       {
         "point": [
@@ -777,7 +777,7 @@
         "value": "90"
       }
     ],
-    "domain": "80.lv",
+    "domain": "example.com",
     "instance": "90",
     "path": "/"
   },
@@ -2260,10 +2260,10 @@
           "HOST"
         ],
         "type": "iequal",
-        "value": "mall-cms.x.la"
+        "value": "multi.example.com"
       }
     ],
-    "domain": "mall-cms.x.la",
+    "domain": "multi.example.com",
     "instance": "185",
     "path": "/api/users/login"
   },
