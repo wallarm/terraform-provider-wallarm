@@ -55,6 +55,10 @@ func TestBuildActionFromHit_BasicWithInstance(t *testing.T) {
 func TestBuildActionFromHit_DefaultAppPoolID(t *testing.T) {
 	result := buildActionFromHit("example.com", "/api", -1, true)
 
+	if len(result) == 0 {
+		t.Fatal("expected non-empty result")
+	}
+
 	found := false
 	for _, c := range result {
 		pm, _ := c["point"].(map[string]interface{})
