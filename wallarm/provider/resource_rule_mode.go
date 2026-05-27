@@ -38,7 +38,7 @@ func resourceWallarmMode() *schema.Resource {
 	}
 }
 
-func resourceWallarmModeCreate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceWallarmModeCreate(ctx context.Context, d *schema.ResourceData, m any) diag.Diagnostics {
 	if diags := guardExistingHint(d, m, "wallarm_mode", "wallarm_rule_mode",
 		func(c, a int, r *wallarm.ActionBody) string {
 			return fmt.Sprintf("%d/%d/%d/%s", c, a, r.ID, r.Mode)
@@ -86,7 +86,7 @@ func resourceWallarmModeCreate(ctx context.Context, d *schema.ResourceData, m in
 	return resourceWallarmModeRead(ctx, d, m)
 }
 
-func resourceWallarmModeRead(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceWallarmModeRead(_ context.Context, d *schema.ResourceData, m any) diag.Diagnostics {
 	clientID, err := retrieveClientID(d, m)
 	if err != nil {
 		return diag.FromErr(err)
@@ -94,7 +94,7 @@ func resourceWallarmModeRead(_ context.Context, d *schema.ResourceData, m interf
 	return diag.FromErr(resourcerule.Read(d, clientID, apiClient(m), resourcerule.ReadOptionWithAction))
 }
 
-func resourceWallarmModeImport(_ context.Context, d *schema.ResourceData, _ interface{}) ([]*schema.ResourceData, error) {
+func resourceWallarmModeImport(_ context.Context, d *schema.ResourceData, _ any) ([]*schema.ResourceData, error) {
 	idAttr := strings.SplitN(d.Id(), "/", 4)
 	if len(idAttr) == 4 {
 		clientID, err := strconv.Atoi(idAttr[0])

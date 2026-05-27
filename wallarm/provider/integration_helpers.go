@@ -25,7 +25,7 @@ func isNotFoundError(err error) bool {
 // ("{client_id}/{type}/{integration_id}"), validates the type segment, and
 // populates client_id, integration_id on the ResourceData.
 func importIntegration(integrationType string) schema.StateContextFunc {
-	return func(_ context.Context, d *schema.ResourceData, _ interface{}) ([]*schema.ResourceData, error) {
+	return func(_ context.Context, d *schema.ResourceData, _ any) ([]*schema.ResourceData, error) {
 		parts := strings.SplitN(d.Id(), "/", 4)
 		if len(parts) != 3 {
 			return nil, fmt.Errorf("invalid id (%q) specified, should be in format \"{client_id}/%s/{integration_id}\"", d.Id(), integrationType)
@@ -52,13 +52,13 @@ func importIntegration(integrationType string) schema.StateContextFunc {
 // with_headers is only set to true on events of type "siem".
 func validateWithHeadersOnlySiem() schema.CustomizeDiffFunc {
 	return customdiff.All(
-		func(_ context.Context, d *schema.ResourceDiff, _ interface{}) error {
+		func(_ context.Context, d *schema.ResourceDiff, _ any) error {
 			events, ok := d.GetOk("event")
 			if !ok {
 				return nil
 			}
 			for _, e := range events.(*schema.Set).List() {
-				m := e.(map[string]interface{})
+				m := e.(map[string]any)
 				eventType, _ := m["event_type"].(string)
 				withHeaders, _ := m["with_headers"].(bool)
 				if withHeaders && eventType != eventTypeSIEM {
@@ -71,14 +71,14 @@ func validateWithHeadersOnlySiem() schema.CustomizeDiffFunc {
 }
 
 // TODO: add test — empty set per resource type returns defaults, populated events with hit→siem mapping, with_headers on siem
-func expandWallarmEventToIntEvents(d interface{}, resourceType string) *[]wallarm.IntegrationEvents {
+func expandWallarmEventToIntEvents(d any, resourceType string) *[]wallarm.IntegrationEvents {
 	cfg := d.(*schema.Set).List()
 	events := []wallarm.IntegrationEvents{}
 	if len(cfg) == 0 || cfg[0] == nil {
-		var defaultEvents []map[string]interface{}
+		var defaultEvents []map[string]any
 		switch resourceType {
 		case "email":
-			defaultEvents = []map[string]interface{}{
+			defaultEvents = []map[string]any{
 				{
 					"event_type": "system",
 					"active":     false},
@@ -102,7 +102,7 @@ func expandWallarmEventToIntEvents(d interface{}, resourceType string) *[]wallar
 					"active":     false},
 			}
 		case "data_dog", "insight_connect", "splunk", "sumo_logic", "web_hooks":
-			defaultEvents = []map[string]interface{}{
+			defaultEvents = []map[string]any{
 				{
 					"event_type": eventTypeSIEM,
 					"active":     false},
@@ -132,7 +132,7 @@ func expandWallarmEventToIntEvents(d interface{}, resourceType string) *[]wallar
 					"active":     false},
 			}
 		case "telegram":
-			defaultEvents = []map[string]interface{}{
+			defaultEvents = []map[string]any{
 				{
 					"event_type": "system",
 					"active":     false},
@@ -165,7 +165,7 @@ func expandWallarmEventToIntEvents(d interface{}, resourceType string) *[]wallar
 					"active":     false},
 			}
 		case "ms_teams", "opsgenie", "pager_duty", "slack":
-			defaultEvents = []map[string]interface{}{
+			defaultEvents = []map[string]any{
 				{
 					"event_type": "system",
 					"active":     false},
@@ -189,7 +189,7 @@ func expandWallarmEventToIntEvents(d interface{}, resourceType string) *[]wallar
 					"active":     false},
 			}
 		default:
-			defaultEvents = []map[string]interface{}{
+			defaultEvents = []map[string]any{
 				{
 					"event_type": "system",
 					"active":     false},
@@ -225,7 +225,7 @@ func expandWallarmEventToIntEvents(d interface{}, resourceType string) *[]wallar
 
 	for _, conf := range cfg {
 
-		m := conf.(map[string]interface{})
+		m := conf.(map[string]any)
 		e := wallarm.IntegrationEvents{}
 		event, ok := m["event_type"]
 		if ok {

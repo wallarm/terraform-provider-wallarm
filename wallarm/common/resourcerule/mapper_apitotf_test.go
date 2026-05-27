@@ -19,7 +19,7 @@ func TestThresholdToTF_Values(t *testing.T) {
 	if len(got) != 1 {
 		t.Fatalf("expected 1 element, got %d", len(got))
 	}
-	m := got[0].(map[string]interface{})
+	m := got[0].(map[string]any)
 	if m["count"] != 10 || m["period"] != 60 {
 		t.Errorf("expected count=10 period=60, got %v", m)
 	}
@@ -38,7 +38,7 @@ func TestReactionToTF_Values(t *testing.T) {
 	if len(got) != 1 {
 		t.Fatalf("expected 1 element, got %d", len(got))
 	}
-	m := got[0].(map[string]interface{})
+	m := got[0].(map[string]any)
 	if m["block_by_session"] != 600 {
 		t.Errorf("expected block_by_session=600, got %v", m["block_by_session"])
 	}
@@ -55,7 +55,7 @@ func TestReactionToTF_OmitsAbsentKeys(t *testing.T) {
 	if len(got) != 1 {
 		t.Fatalf("expected 1 element, got %d", len(got))
 	}
-	m := got[0].(map[string]interface{})
+	m := got[0].(map[string]any)
 	if m["block_by_ip"] != 3600 {
 		t.Errorf("expected block_by_ip=3600, got %v", m["block_by_ip"])
 	}
@@ -95,7 +95,7 @@ func TestAdvancedConditionsToTF_Values(t *testing.T) {
 	if len(got) != 1 {
 		t.Fatalf("expected 1, got %d", len(got))
 	}
-	m := got[0].(map[string]interface{})
+	m := got[0].(map[string]any)
 	if m["field"] != "ip" || m["operator"] != "eq" {
 		t.Errorf("wrong fields: %v", m)
 	}
@@ -119,7 +119,7 @@ func TestEnumeratedParametersToTF_RegexpMode(t *testing.T) {
 	if len(got) != 1 {
 		t.Fatalf("expected 1 element, got %d", len(got))
 	}
-	m := got[0].(map[string]interface{})
+	m := got[0].(map[string]any)
 	if m["mode"] != "regexp" {
 		t.Errorf("mode: got %v, want regexp", m["mode"])
 	}
@@ -135,21 +135,21 @@ func TestEnumeratedParametersToTF_ExactMode(t *testing.T) {
 	got := EnumeratedParametersToTF(&wallarm.EnumeratedParameters{
 		Mode: "exact",
 		Points: []*wallarm.Points{
-			{Point: []interface{}{"get", "password"}, Sensitive: true},
+			{Point: []any{"get", "password"}, Sensitive: true},
 		},
 	})
 	if len(got) != 1 {
 		t.Fatalf("expected 1 element, got %d", len(got))
 	}
-	m := got[0].(map[string]interface{})
+	m := got[0].(map[string]any)
 	if m["mode"] != "exact" {
 		t.Errorf("mode: got %v, want exact", m["mode"])
 	}
-	points, ok := m["points"].([]interface{})
+	points, ok := m["points"].([]any)
 	if !ok || len(points) != 1 {
 		t.Fatalf("points: got %v", m["points"])
 	}
-	p := points[0].(map[string]interface{})
+	p := points[0].(map[string]any)
 	if p["sensitive"] != true {
 		t.Errorf("sensitive: got %v, want true", p["sensitive"])
 	}
@@ -163,12 +163,12 @@ func TestArbitraryConditionsToTF_Nil(t *testing.T) {
 
 func TestArbitraryConditionsToTF_SingleCondition(t *testing.T) {
 	got := ArbitraryConditionsToTF([]wallarm.ArbitraryConditionResp{
-		{Point: []interface{}{"header", "HOST"}, Operator: "eq", Value: []string{"example.com"}},
+		{Point: []any{"header", "HOST"}, Operator: "eq", Value: []string{"example.com"}},
 	})
 	if len(got) != 1 {
 		t.Fatalf("expected 1 element, got %d", len(got))
 	}
-	m := got[0].(map[string]interface{})
+	m := got[0].(map[string]any)
 	if m["operator"] != "eq" {
 		t.Errorf("operator: got %v, want eq", m["operator"])
 	}
@@ -176,11 +176,11 @@ func TestArbitraryConditionsToTF_SingleCondition(t *testing.T) {
 		t.Errorf("value: got %v", m["value"])
 	}
 	// Paired point ("header", "HOST") wraps to one sub-array of two elements.
-	point := m["point"].([]interface{})
+	point := m["point"].([]any)
 	if len(point) != 1 {
 		t.Fatalf("expected 1 sub-array, got %d: %v", len(point), point)
 	}
-	inner := point[0].([]interface{})
+	inner := point[0].([]any)
 	if len(inner) != 2 || inner[0] != "header" || inner[1] != "HOST" {
 		t.Errorf("expected [[\"header\",\"HOST\"]], got %v", point)
 	}
@@ -197,25 +197,25 @@ func TestArbitraryConditionsToTF_SingleCondition(t *testing.T) {
 func TestArbitraryConditionsToTF_MultiStepPointChain(t *testing.T) {
 	cases := []struct {
 		name string
-		flat []interface{}
+		flat []any
 		want [][]string
 	}{
 		{
 			name: "post -> json_doc -> hash:user_id",
-			flat: []interface{}{"post", "json_doc", "hash", "user_id"},
+			flat: []any{"post", "json_doc", "hash", "user_id"},
 			want: [][]string{{"post"}, {"json_doc"}, {"hash", "user_id"}},
 		},
 		{
 			// XML chain: post (simple) -> xml (simple) -> xml_tag:foo (paired) -> xml_attr:bar (paired)
 			// Guards the v2.3.9 follow-up: v2.3.8 only had post/json/hash coverage.
 			name: "post -> xml -> xml_tag:foo -> xml_attr:bar",
-			flat: []interface{}{"post", "xml", "xml_tag", "foo", "xml_attr", "bar"},
+			flat: []any{"post", "xml", "xml_tag", "foo", "xml_attr", "bar"},
 			want: [][]string{{"post"}, {"xml"}, {"xml_tag", "foo"}, {"xml_attr", "bar"}},
 		},
 		{
 			// Protobuf chain: post -> grpc:1 (paired w/ index) -> protobuf:field (paired)
 			name: "post -> grpc:1 -> protobuf:field",
-			flat: []interface{}{"post", "grpc", float64(1), "protobuf", "field"},
+			flat: []any{"post", "grpc", float64(1), "protobuf", "field"},
 			want: [][]string{{"post"}, {"grpc", "1"}, {"protobuf", "field"}},
 		},
 	}
@@ -224,12 +224,12 @@ func TestArbitraryConditionsToTF_MultiStepPointChain(t *testing.T) {
 			got := ArbitraryConditionsToTF([]wallarm.ArbitraryConditionResp{
 				{Point: tc.flat, Operator: "imatch", Value: []string{"[0-9]+"}},
 			})
-			point := got[0].(map[string]interface{})["point"].([]interface{})
+			point := got[0].(map[string]any)["point"].([]any)
 			if len(point) != len(tc.want) {
 				t.Fatalf("expected %d sub-arrays, got %d: %v", len(tc.want), len(point), point)
 			}
 			for i, sub := range tc.want {
-				inner := point[i].([]interface{})
+				inner := point[i].([]any)
 				if len(inner) != len(sub) {
 					t.Errorf("sub-array %d: expected %d elements, got %d (%v)", i, len(sub), len(inner), inner)
 					continue

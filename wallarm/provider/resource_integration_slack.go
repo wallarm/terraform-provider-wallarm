@@ -96,7 +96,7 @@ func resourceWallarmSlack() *schema.Resource {
 	}
 }
 
-func resourceWallarmSlackCreate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceWallarmSlackCreate(ctx context.Context, d *schema.ResourceData, m any) diag.Diagnostics {
 	client := apiClient(m)
 	clientID, err := retrieveClientID(d, m)
 	if err != nil {
@@ -129,7 +129,7 @@ func resourceWallarmSlackCreate(ctx context.Context, d *schema.ResourceData, m i
 	return resourceWallarmSlackRead(ctx, d, m)
 }
 
-func resourceWallarmSlackRead(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceWallarmSlackRead(_ context.Context, d *schema.ResourceData, m any) diag.Diagnostics {
 	client := apiClient(m)
 	clientID, err := retrieveClientID(d, m)
 	if err != nil {
@@ -153,7 +153,7 @@ func resourceWallarmSlackRead(_ context.Context, d *schema.ResourceData, m inter
 	return nil
 }
 
-func resourceWallarmSlackUpdate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceWallarmSlackUpdate(ctx context.Context, d *schema.ResourceData, m any) diag.Diagnostics {
 	client := apiClient(m)
 	clientID, err := retrieveClientID(d, m)
 	if err != nil {
@@ -186,7 +186,7 @@ func resourceWallarmSlackUpdate(ctx context.Context, d *schema.ResourceData, m i
 		resID := fmt.Sprintf("%d/%s/%d", clientID, updateRes.Body.Type, updateRes.Body.ID)
 		d.SetId(resID)
 	} else {
-		updateBody := make(map[string]interface{})
+		updateBody := make(map[string]any)
 		if d.HasChange("name") {
 			updateBody["name"] = d.Get("name").(string)
 		}
@@ -210,7 +210,7 @@ func resourceWallarmSlackUpdate(ctx context.Context, d *schema.ResourceData, m i
 	return resourceWallarmSlackRead(ctx, d, m)
 }
 
-func resourceWallarmSlackDelete(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceWallarmSlackDelete(_ context.Context, d *schema.ResourceData, m any) diag.Diagnostics {
 	client := apiClient(m)
 	integrationID := d.Get("integration_id").(int)
 	if err := client.IntegrationDelete(integrationID); err != nil {

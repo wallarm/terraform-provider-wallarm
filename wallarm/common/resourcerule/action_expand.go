@@ -15,7 +15,7 @@ func ExpandSetToActionDetailsList(action *schema.Set) ([]wallarm.ActionDetails, 
 	var as []wallarm.ActionDetails
 	for _, actionMap := range action.List() {
 		// Derive maps consecutively from a Set List
-		actionMap := actionMap.(map[string]interface{})
+		actionMap := actionMap.(map[string]any)
 
 		// Make keys of map sorted to
 		// then iterate over a map in order
@@ -29,7 +29,7 @@ func ExpandSetToActionDetailsList(action *schema.Set) ([]wallarm.ActionDetails, 
 		for _, k := range keys {
 			switch k {
 			case "point":
-				point := actionMap[k].(map[string]interface{})
+				point := actionMap[k].(map[string]any)
 				for pointKey, pointValue := range point {
 					switch pointKey {
 					case Path:
@@ -39,10 +39,10 @@ func ExpandSetToActionDetailsList(action *schema.Set) ([]wallarm.ActionDetails, 
 						if err != nil {
 							return nil, err
 						}
-						a.Point = []interface{}{pointKey, pointValue}
+						a.Point = []any{pointKey, pointValue}
 					case "action_name", "action_ext", "method",
 						"proto", "scheme", "uri":
-						a.Point = []interface{}{pointKey}
+						a.Point = []any{pointKey}
 						// This is required by the API when case is insensitive
 						switch {
 						case actionMap["type"] == Iequal:
@@ -53,25 +53,25 @@ func ExpandSetToActionDetailsList(action *schema.Set) ([]wallarm.ActionDetails, 
 							a.Value = pointValue.(string)
 						}
 					case "instance":
-						a.Point = []interface{}{pointKey}
+						a.Point = []any{pointKey}
 						a.Value = pointValue.(string)
 						a.Type = "equal" // default; overridden by the "type" key if explicitly set
 					case Header:
 						// This is required by the API when a header field is specified
-						a.Point = []interface{}{pointKey, strings.ToUpper(pointValue.(string))}
+						a.Point = []any{pointKey, strings.ToUpper(pointValue.(string))}
 					case "query":
 						// This is required by the API when case is insensitive
 						if actionMap["type"] == Iequal {
-							a.Point = []interface{}{"get", strings.ToLower(pointValue.(string))}
+							a.Point = []any{"get", strings.ToLower(pointValue.(string))}
 						} else {
-							a.Point = []interface{}{"get", pointValue.(string)}
+							a.Point = []any{"get", pointValue.(string)}
 						}
 					default:
 						// This is required by the API when case is insensitive
 						if actionMap["type"] == "iequal" {
-							a.Point = []interface{}{pointKey, strings.ToLower(pointValue.(string))}
+							a.Point = []any{pointKey, strings.ToLower(pointValue.(string))}
 						} else {
-							a.Point = []interface{}{pointKey, pointValue.(string)}
+							a.Point = []any{pointKey, pointValue.(string)}
 						}
 					}
 				}
@@ -109,7 +109,7 @@ func ExpandSetToActionDetailsList(action *schema.Set) ([]wallarm.ActionDetails, 
 // WrapPointElements converts a flat API point array into a 2D string slice
 // for the Terraform point schema. 2-part elements (hash, header, get, form_urlencoded, etc.)
 // consume the next element as their value; 1-part elements (post, json_doc, uri, etc.) stand alone.
-func WrapPointElements(input []interface{}) [][]string {
+func WrapPointElements(input []any) [][]string {
 	var result [][]string // This will store the final result as a 2D slice of strings
 	i := 0
 
@@ -160,13 +160,13 @@ func WrapPointElements(input []interface{}) [][]string {
 // ExpandPointsToTwoDimensionalArray converts the Terraform point schema (list of lists of strings)
 // to the API TwoDimensionalSlice format. Numeric-value point types (path, array, etc.) are
 // converted from string to float64.
-func ExpandPointsToTwoDimensionalArray(ps []interface{}) (wallarm.TwoDimensionalSlice, error) {
+func ExpandPointsToTwoDimensionalArray(ps []any) (wallarm.TwoDimensionalSlice, error) {
 	if len(ps) == 0 {
 		return nil, nil
 	}
 	points := make(wallarm.TwoDimensionalSlice, len(ps))
 	for i, point := range ps {
-		pointSlice := point.([]interface{})
+		pointSlice := point.([]any)
 		switch pointSlice[0] {
 		case "path", "array", "grpc", "json_array", "xml_comment",
 			"xml_dtd_entity", "xml_pi", "xml_tag_array":

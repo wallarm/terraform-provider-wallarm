@@ -89,7 +89,7 @@ func violationModeSchema(desc string) *schema.Schema {
 	}
 }
 
-func resourceWallarmAPISpecPolicyPut(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceWallarmAPISpecPolicyPut(ctx context.Context, d *schema.ResourceData, m any) diag.Diagnostics {
 	client := apiClient(m)
 	clientID := d.Get("client_id").(int)
 	apiSpecID := d.Get("api_spec_id").(int)
@@ -132,7 +132,7 @@ func resourceWallarmAPISpecPolicyPut(ctx context.Context, d *schema.ResourceData
 	return resourceWallarmAPISpecPolicyRead(ctx, d, m)
 }
 
-func resourceWallarmAPISpecPolicyRead(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceWallarmAPISpecPolicyRead(_ context.Context, d *schema.ResourceData, m any) diag.Diagnostics {
 	client := apiClient(m)
 	clientID := d.Get("client_id").(int)
 	apiSpecID := d.Get("api_spec_id").(int)
@@ -174,7 +174,7 @@ func setPolicyToState(d *schema.ResourceData, p *wallarm.APISpecPolicy) diag.Dia
 	return nil
 }
 
-func resourceWallarmAPISpecPolicyDelete(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceWallarmAPISpecPolicyDelete(_ context.Context, d *schema.ResourceData, m any) diag.Diagnostics {
 	client := apiClient(m)
 	clientID := d.Get("client_id").(int)
 	apiSpecID := d.Get("api_spec_id").(int)
@@ -213,7 +213,7 @@ func resourceWallarmAPISpecPolicyDelete(_ context.Context, d *schema.ResourceDat
 	return nil
 }
 
-func resourceWallarmAPISpecPolicyImport(_ context.Context, d *schema.ResourceData, _ interface{}) ([]*schema.ResourceData, error) {
+func resourceWallarmAPISpecPolicyImport(_ context.Context, d *schema.ResourceData, _ any) ([]*schema.ResourceData, error) {
 	parts := strings.Split(d.Id(), "/")
 	if len(parts) != 3 || parts[2] != "policy" {
 		return nil, fmt.Errorf("invalid id %q, expected {client_id}/{api_spec_id}/policy", d.Id())

@@ -17,7 +17,7 @@ import (
 // persists server-side; this helper drops the resource from state and emits
 // an INFO log instead.
 func CounterDelete(resourceName string) schema.DeleteContextFunc {
-	return func(_ context.Context, d *schema.ResourceData, _ interface{}) diag.Diagnostics {
+	return func(_ context.Context, d *schema.ResourceData, _ any) diag.Diagnostics {
 		log.Printf("[INFO] %s %s removed from state; "+
 			"the Wallarm API auto-cleans counters after their last trigger reference is gone",
 			resourceName, d.Id())

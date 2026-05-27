@@ -11,11 +11,11 @@ func TestEnumeratedParametersToAPI_RegexpModeAbsentBoolsYieldNilPointer(t *testi
 	// HCL, so under normal Create/Update the keys ARE present and the
 	// mapper sends `&false`. This test asserts the contract for callers
 	// that build the map directly (unit tests, future helpers).
-	input := []interface{}{
-		map[string]interface{}{
+	input := []any{
+		map[string]any{
 			"mode":          "regexp",
-			"name_regexps":  []interface{}{"foo"},
-			"value_regexps": []interface{}{"bar"},
+			"name_regexps":  []any{"foo"},
+			"value_regexps": []any{"bar"},
 		},
 	}
 	got, err := EnumeratedParametersToAPI(input)
@@ -31,7 +31,7 @@ func TestEnumeratedParametersToAPI_RegexpModeAbsentBoolsYieldNilPointer(t *testi
 }
 
 func TestThresholdToAPI_Empty(t *testing.T) {
-	got, err := ThresholdToAPI([]interface{}{})
+	got, err := ThresholdToAPI([]any{})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -41,8 +41,8 @@ func TestThresholdToAPI_Empty(t *testing.T) {
 }
 
 func TestThresholdToAPI_Values(t *testing.T) {
-	input := []interface{}{
-		map[string]interface{}{"count": 10, "period": 60},
+	input := []any{
+		map[string]any{"count": 10, "period": 60},
 	}
 	got, err := ThresholdToAPI(input)
 	if err != nil {
@@ -54,7 +54,7 @@ func TestThresholdToAPI_Values(t *testing.T) {
 }
 
 func TestReactionToAPI_Empty(t *testing.T) {
-	got, err := ReactionToAPI([]interface{}{})
+	got, err := ReactionToAPI([]any{})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -64,8 +64,8 @@ func TestReactionToAPI_Empty(t *testing.T) {
 }
 
 func TestReactionToAPI_Values(t *testing.T) {
-	input := []interface{}{
-		map[string]interface{}{"block_by_session": 600, "block_by_ip": 0, "graylist_by_ip": 0},
+	input := []any{
+		map[string]any{"block_by_session": 600, "block_by_ip": 0, "graylist_by_ip": 0},
 	}
 	got, err := ReactionToAPI(input)
 	if err != nil {
@@ -80,7 +80,7 @@ func TestReactionToAPI_Values(t *testing.T) {
 }
 
 func TestEnumeratedParametersToAPI_Empty(t *testing.T) {
-	got, err := EnumeratedParametersToAPI([]interface{}{})
+	got, err := EnumeratedParametersToAPI([]any{})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -90,7 +90,7 @@ func TestEnumeratedParametersToAPI_Empty(t *testing.T) {
 }
 
 func TestAdvancedConditionsToAPI_Empty(t *testing.T) {
-	got, err := AdvancedConditionsToAPI([]interface{}{})
+	got, err := AdvancedConditionsToAPI([]any{})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -100,11 +100,11 @@ func TestAdvancedConditionsToAPI_Empty(t *testing.T) {
 }
 
 func TestAdvancedConditionsToAPI_Values(t *testing.T) {
-	input := []interface{}{
-		map[string]interface{}{
+	input := []any{
+		map[string]any{
 			"field":    "ip",
 			"operator": "eq",
-			"value":    []interface{}{"1.2.3.4"},
+			"value":    []any{"1.2.3.4"},
 		},
 	}
 	got, err := AdvancedConditionsToAPI(input)
@@ -123,11 +123,11 @@ func TestAdvancedConditionsToAPI_Values(t *testing.T) {
 }
 
 func TestEnumeratedParametersToAPI_RegexpMode(t *testing.T) {
-	input := []interface{}{
-		map[string]interface{}{
+	input := []any{
+		map[string]any{
 			"mode":                  "regexp",
-			"name_regexps":          []interface{}{"^user_"},
-			"value_regexps":         []interface{}{"\\d+"},
+			"name_regexps":          []any{"^user_"},
+			"value_regexps":         []any{"\\d+"},
 			"plain_parameters":      true,
 			"additional_parameters": false,
 		},
@@ -154,11 +154,11 @@ func TestEnumeratedParametersToAPI_RegexpModePassesThroughLists(t *testing.T) {
 	// v2.3.8: the mapper no longer substitutes [""] for empty lists.
 	// EnumeratedParamsCustomizeDiff guarantees both lists are non-empty in
 	// regexp mode at plan time; the mapper just passes them through.
-	input := []interface{}{
-		map[string]interface{}{
+	input := []any{
+		map[string]any{
 			"mode":          "regexp",
-			"name_regexps":  []interface{}{""},
-			"value_regexps": []interface{}{"foo"},
+			"name_regexps":  []any{""},
+			"value_regexps": []any{"foo"},
 		},
 	}
 	got, err := EnumeratedParametersToAPI(input)
@@ -180,11 +180,11 @@ func TestEnumeratedParametersToAPI_RegexpModePassesThroughLists(t *testing.T) {
 // the field from the JSON → API rejects regexp-mode payload. convertRegexpList
 // preserves nil → "" so the user's HCL `[""]` reaches the wire unchanged.
 func TestEnumeratedParametersToAPI_RegexpListsPreserveNils(t *testing.T) {
-	input := []interface{}{
-		map[string]interface{}{
+	input := []any{
+		map[string]any{
 			"mode":          "regexp",
-			"name_regexps":  []interface{}{"foo", "bar"},
-			"value_regexps": []interface{}{nil}, // user wrote `[""]` in HCL
+			"name_regexps":  []any{"foo", "bar"},
+			"value_regexps": []any{nil}, // user wrote `[""]` in HCL
 		},
 	}
 	got, err := EnumeratedParametersToAPI(input)
@@ -197,12 +197,12 @@ func TestEnumeratedParametersToAPI_RegexpListsPreserveNils(t *testing.T) {
 }
 
 func TestEnumeratedParametersToAPI_ExactMode(t *testing.T) {
-	input := []interface{}{
-		map[string]interface{}{
+	input := []any{
+		map[string]any{
 			"mode": "exact",
-			"points": []interface{}{
-				map[string]interface{}{
-					"point":     []interface{}{"get", "password"},
+			"points": []any{
+				map[string]any{
+					"point":     []any{"get", "password"},
 					"sensitive": true,
 				},
 			},
@@ -224,8 +224,8 @@ func TestEnumeratedParametersToAPI_ExactMode(t *testing.T) {
 }
 
 func TestEnumeratedParametersToAPI_ExactModeEmptyPoints(t *testing.T) {
-	input := []interface{}{
-		map[string]interface{}{"mode": "exact", "points": []interface{}{}},
+	input := []any{
+		map[string]any{"mode": "exact", "points": []any{}},
 	}
 	got, err := EnumeratedParametersToAPI(input)
 	if err != nil {
@@ -240,7 +240,7 @@ func TestEnumeratedParametersToAPI_ExactModeEmptyPoints(t *testing.T) {
 }
 
 func TestArbitraryConditionsToAPI_Empty(t *testing.T) {
-	got, err := ArbitraryConditionsToAPI([]interface{}{})
+	got, err := ArbitraryConditionsToAPI([]any{})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -250,13 +250,13 @@ func TestArbitraryConditionsToAPI_Empty(t *testing.T) {
 }
 
 func TestArbitraryConditionsToAPI_SingleCondition(t *testing.T) {
-	input := []interface{}{
-		map[string]interface{}{
-			"point": []interface{}{
-				[]interface{}{"header", "HOST"},
+	input := []any{
+		map[string]any{
+			"point": []any{
+				[]any{"header", "HOST"},
 			},
 			"operator": "eq",
-			"value":    []interface{}{"example.com"},
+			"value":    []any{"example.com"},
 		},
 	}
 	got, err := ArbitraryConditionsToAPI(input)

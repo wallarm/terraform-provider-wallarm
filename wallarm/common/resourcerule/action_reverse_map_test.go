@@ -22,77 +22,77 @@ func TestReverseMapActions(t *testing.T) {
 		{
 			name: "simple /api/v1/users",
 			actions: []wallarm.ActionDetails{
-				{Type: "iequal", Value: "example.com", Point: []interface{}{"header", "HOST"}},
-				{Type: "equal", Value: "users", Point: []interface{}{"action_name"}},
-				{Type: "absent", Point: []interface{}{"action_ext"}},
-				{Type: "equal", Value: "api", Point: []interface{}{"path", float64(0)}},
-				{Type: "equal", Value: "v1", Point: []interface{}{"path", float64(1)}},
-				{Type: "absent", Point: []interface{}{"path", float64(2)}},
+				{Type: "iequal", Value: "example.com", Point: []any{"header", "HOST"}},
+				{Type: "equal", Value: "users", Point: []any{"action_name"}},
+				{Type: "absent", Point: []any{"action_ext"}},
+				{Type: "equal", Value: "api", Point: []any{"path", float64(0)}},
+				{Type: "equal", Value: "v1", Point: []any{"path", float64(1)}},
+				{Type: "absent", Point: []any{"path", float64(2)}},
 			},
 			wantPath: "/api/v1/users", wantDomain: "example.com",
 		},
 		{
 			name: "with extension /api/v1/data.json",
 			actions: []wallarm.ActionDetails{
-				{Type: "equal", Value: "data", Point: []interface{}{"action_name"}},
-				{Type: "equal", Value: "json", Point: []interface{}{"action_ext"}},
-				{Type: "equal", Value: "api", Point: []interface{}{"path", float64(0)}},
-				{Type: "equal", Value: "v1", Point: []interface{}{"path", float64(1)}},
-				{Type: "absent", Point: []interface{}{"path", float64(2)}},
+				{Type: "equal", Value: "data", Point: []any{"action_name"}},
+				{Type: "equal", Value: "json", Point: []any{"action_ext"}},
+				{Type: "equal", Value: "api", Point: []any{"path", float64(0)}},
+				{Type: "equal", Value: "v1", Point: []any{"path", float64(1)}},
+				{Type: "absent", Point: []any{"path", float64(2)}},
 			},
 			wantPath: "/api/v1/data.json",
 		},
 		{
 			name: "root /",
 			actions: []wallarm.ActionDetails{
-				{Type: "equal", Value: "", Point: []interface{}{"action_name"}},
-				{Type: "absent", Point: []interface{}{"action_ext"}},
-				{Type: "absent", Point: []interface{}{"path", float64(0)}},
+				{Type: "equal", Value: "", Point: []any{"action_name"}},
+				{Type: "absent", Point: []any{"action_ext"}},
+				{Type: "absent", Point: []any{"path", float64(0)}},
 			},
 			wantPath: "/",
 		},
 		{
 			name: "wildcard /api/*/users (gap in path indices)",
 			actions: []wallarm.ActionDetails{
-				{Type: "equal", Value: "users", Point: []interface{}{"action_name"}},
-				{Type: "absent", Point: []interface{}{"action_ext"}},
-				{Type: "equal", Value: "api", Point: []interface{}{"path", float64(0)}},
-				{Type: "absent", Point: []interface{}{"path", float64(2)}},
+				{Type: "equal", Value: "users", Point: []any{"action_name"}},
+				{Type: "absent", Point: []any{"action_ext"}},
+				{Type: "equal", Value: "api", Point: []any{"path", float64(0)}},
+				{Type: "absent", Point: []any{"path", float64(2)}},
 			},
 			wantPath: "/api/*/users",
 		},
 		{
 			name: "globstar /api/**/admin (no limiter)",
 			actions: []wallarm.ActionDetails{
-				{Type: "equal", Value: "admin", Point: []interface{}{"action_name"}},
-				{Type: "absent", Point: []interface{}{"action_ext"}},
-				{Type: "equal", Value: "api", Point: []interface{}{"path", float64(0)}},
+				{Type: "equal", Value: "admin", Point: []any{"action_name"}},
+				{Type: "absent", Point: []any{"action_ext"}},
+				{Type: "equal", Value: "api", Point: []any{"path", float64(0)}},
 			},
 			wantPath: "/api/**/admin",
 		},
 		{
 			name: "wildcard action_name /articles/*",
 			actions: []wallarm.ActionDetails{
-				{Type: "equal", Value: "articles", Point: []interface{}{"path", float64(0)}},
-				{Type: "absent", Point: []interface{}{"path", float64(1)}},
-				{Type: "absent", Point: []interface{}{"action_ext"}},
+				{Type: "equal", Value: "articles", Point: []any{"path", float64(0)}},
+				{Type: "absent", Point: []any{"path", float64(1)}},
+				{Type: "absent", Point: []any{"action_ext"}},
 			},
 			wantPath: "/articles/*",
 		},
 		{
 			name: "wildcard extension /api/rfp/jobs.*",
 			actions: []wallarm.ActionDetails{
-				{Type: "equal", Value: "jobs", Point: []interface{}{"action_name"}},
-				{Type: "equal", Value: "api", Point: []interface{}{"path", float64(0)}},
-				{Type: "equal", Value: "rfp", Point: []interface{}{"path", float64(1)}},
-				{Type: "absent", Point: []interface{}{"path", float64(2)}},
+				{Type: "equal", Value: "jobs", Point: []any{"action_name"}},
+				{Type: "equal", Value: "api", Point: []any{"path", float64(0)}},
+				{Type: "equal", Value: "rfp", Point: []any{"path", float64(1)}},
+				{Type: "absent", Point: []any{"path", float64(2)}},
 			},
 			wantPath: "/api/rfp/jobs.*",
 		},
 		{
 			name: "no path conditions -> /**/*.*",
 			actions: []wallarm.ActionDetails{
-				{Type: "equal", Value: "20", Point: []interface{}{"instance"}},
+				{Type: "equal", Value: "20", Point: []any{"instance"}},
 			},
 			wantPath: "/**/*.*", wantInst: "20",
 		},
@@ -104,30 +104,30 @@ func TestReverseMapActions(t *testing.T) {
 		{
 			name: "with method and scheme",
 			actions: []wallarm.ActionDetails{
-				{Type: "iequal", Value: "example.com", Point: []interface{}{"header", "HOST"}},
-				{Type: "equal", Value: "users", Point: []interface{}{"action_name"}},
-				{Type: "absent", Point: []interface{}{"action_ext"}},
-				{Type: "absent", Point: []interface{}{"path", float64(0)}},
-				{Type: "equal", Value: "POST", Point: []interface{}{"method"}},
-				{Type: "equal", Value: "https", Point: []interface{}{"scheme"}},
+				{Type: "iequal", Value: "example.com", Point: []any{"header", "HOST"}},
+				{Type: "equal", Value: "users", Point: []any{"action_name"}},
+				{Type: "absent", Point: []any{"action_ext"}},
+				{Type: "absent", Point: []any{"path", float64(0)}},
+				{Type: "equal", Value: "POST", Point: []any{"method"}},
+				{Type: "equal", Value: "https", Point: []any{"scheme"}},
 			},
 			wantPath: "/users", wantDomain: "example.com", wantMethod: "POST", wantScheme: "https",
 		},
 		{
 			name: "with instance",
 			actions: []wallarm.ActionDetails{
-				{Type: "equal", Value: "1", Point: []interface{}{"instance"}},
-				{Type: "equal", Value: "endpoint", Point: []interface{}{"action_name"}},
-				{Type: "absent", Point: []interface{}{"action_ext"}},
-				{Type: "equal", Value: "api", Point: []interface{}{"path", float64(0)}},
-				{Type: "absent", Point: []interface{}{"path", float64(1)}},
+				{Type: "equal", Value: "1", Point: []any{"instance"}},
+				{Type: "equal", Value: "endpoint", Point: []any{"action_name"}},
+				{Type: "absent", Point: []any{"action_ext"}},
+				{Type: "equal", Value: "api", Point: []any{"path", float64(0)}},
+				{Type: "absent", Point: []any{"path", float64(1)}},
 			},
 			wantPath: "/api/endpoint", wantInst: "1",
 		},
 		{
 			name: "URI fallback",
 			actions: []wallarm.ActionDetails{
-				{Type: "equal", Value: "/very/deep/path", Point: []interface{}{"uri"}},
+				{Type: "equal", Value: "/very/deep/path", Point: []any{"uri"}},
 			},
 			wantPath: "/very/deep/path",
 		},
@@ -161,7 +161,7 @@ func TestReverseMapRealExamples(t *testing.T) {
 		Conditions []wallarm.ActionDetails `json:"conditions"`
 		Path       string                  `json:"path"`
 		Domain     string                  `json:"domain"`
-		Instance   interface{}             `json:"instance"`
+		Instance   any                     `json:"instance"`
 		Method     string                  `json:"method"`
 		Scheme     string                  `json:"scheme"`
 		Proto      string                  `json:"proto"`
@@ -363,7 +363,7 @@ func TestRealExamplesRoundTrip(t *testing.T) {
 		Conditions []wallarm.ActionDetails `json:"conditions"`
 		Path       string                  `json:"path"`
 		Domain     string                  `json:"domain"`
-		Instance   interface{}             `json:"instance"`
+		Instance   any                     `json:"instance"`
 		Method     string                  `json:"method"`
 		Scheme     string                  `json:"scheme"`
 		Proto      string                  `json:"proto"`

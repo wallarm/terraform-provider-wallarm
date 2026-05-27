@@ -109,7 +109,7 @@ func resourceWallarmDataDog() *schema.Resource {
 	}
 }
 
-func resourceWallarmDataDogCreate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceWallarmDataDogCreate(ctx context.Context, d *schema.ResourceData, m any) diag.Diagnostics {
 	client := apiClient(m)
 	clientID, err := retrieveClientID(d, m)
 	if err != nil {
@@ -146,7 +146,7 @@ func resourceWallarmDataDogCreate(ctx context.Context, d *schema.ResourceData, m
 	return resourceWallarmDataDogRead(ctx, d, m)
 }
 
-func resourceWallarmDataDogRead(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceWallarmDataDogRead(_ context.Context, d *schema.ResourceData, m any) diag.Diagnostics {
 	client := apiClient(m)
 	clientID, err := retrieveClientID(d, m)
 	if err != nil {
@@ -171,7 +171,7 @@ func resourceWallarmDataDogRead(_ context.Context, d *schema.ResourceData, m int
 	return nil
 }
 
-func resourceWallarmDataDogUpdate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceWallarmDataDogUpdate(ctx context.Context, d *schema.ResourceData, m any) diag.Diagnostics {
 	client := apiClient(m)
 	clientID, err := retrieveClientID(d, m)
 	if err != nil {
@@ -207,7 +207,7 @@ func resourceWallarmDataDogUpdate(ctx context.Context, d *schema.ResourceData, m
 		resID := fmt.Sprintf("%d/%s/%d", clientID, updateRes.Body.Type, updateRes.Body.ID)
 		d.SetId(resID)
 	} else {
-		updateBody := make(map[string]interface{})
+		updateBody := make(map[string]any)
 		if d.HasChange("name") {
 			updateBody["name"] = d.Get("name").(string)
 		}
@@ -234,7 +234,7 @@ func resourceWallarmDataDogUpdate(ctx context.Context, d *schema.ResourceData, m
 	return resourceWallarmDataDogRead(ctx, d, m)
 }
 
-func resourceWallarmDataDogDelete(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceWallarmDataDogDelete(_ context.Context, d *schema.ResourceData, m any) diag.Diagnostics {
 	client := apiClient(m)
 	integrationID := d.Get("integration_id").(int)
 	if err := client.IntegrationDelete(integrationID); err != nil {

@@ -38,7 +38,7 @@ func resourceWallarmDisableStamp() *schema.Resource {
 	}
 }
 
-func resourceWallarmDisableStampCreate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceWallarmDisableStampCreate(ctx context.Context, d *schema.ResourceData, m any) diag.Diagnostics {
 	client := apiClient(m)
 	clientID, err := retrieveClientID(d, m)
 	if err != nil {
@@ -47,7 +47,7 @@ func resourceWallarmDisableStampCreate(ctx context.Context, d *schema.ResourceDa
 	fields := getCommonResourceRuleFieldsDTOFromResourceData(d)
 	stamp := d.Get("stamp").(int)
 
-	ps := d.Get("point").([]interface{})
+	ps := d.Get("point").([]any)
 	if err := d.Set("point", ps); err != nil {
 		return diag.FromErr(fmt.Errorf("error setting point: %w", err))
 	}
@@ -92,7 +92,7 @@ func resourceWallarmDisableStampCreate(ctx context.Context, d *schema.ResourceDa
 	return resourceWallarmDisableStampRead(ctx, d, m)
 }
 
-func resourceWallarmDisableStampRead(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceWallarmDisableStampRead(_ context.Context, d *schema.ResourceData, m any) diag.Diagnostics {
 	clientID, err := retrieveClientID(d, m)
 	if err != nil {
 		return diag.FromErr(err)

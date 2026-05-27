@@ -17,12 +17,12 @@ func (e *ruleNotFoundError) Error() string {
 }
 
 // retrieveClientID extracts client_id from a resource or falls back to the provider default.
-func retrieveClientID(d *schema.ResourceData, m interface{}) (int, error) {
+func retrieveClientID(d *schema.ResourceData, m any) (int, error) {
 	meta := m.(*ProviderMeta)
 	return meta.RetrieveClientID(d)
 }
 
 // apiClient extracts the wallarm.API client from the provider meta.
-func apiClient(m interface{}) wallarm.API {
+func apiClient(m any) wallarm.API {
 	return m.(*ProviderMeta).Client
 }

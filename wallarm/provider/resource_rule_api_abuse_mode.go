@@ -39,7 +39,7 @@ func resourceWallarmAPIAbuseMode() *schema.Resource {
 	}
 }
 
-func resourceWallarmAPIAbuseModeCreate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceWallarmAPIAbuseModeCreate(ctx context.Context, d *schema.ResourceData, m any) diag.Diagnostics {
 	if diags := guardExistingHint(d, m, ruleTypeAPIAbuseMode, "wallarm_rule_api_abuse_mode", nil); diags.HasError() {
 		return diags
 	}
@@ -80,7 +80,7 @@ func resourceWallarmAPIAbuseModeCreate(ctx context.Context, d *schema.ResourceDa
 	return resourceWallarmAPIAbuseModeRead(ctx, d, m)
 }
 
-func resourceWallarmAPIAbuseModeRead(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceWallarmAPIAbuseModeRead(_ context.Context, d *schema.ResourceData, m any) diag.Diagnostics {
 	clientID, err := retrieveClientID(d, m)
 	if err != nil {
 		return diag.FromErr(err)

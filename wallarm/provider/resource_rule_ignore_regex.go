@@ -39,7 +39,7 @@ func resourceWallarmIgnoreRegex() *schema.Resource {
 	}
 }
 
-func resourceWallarmIgnoreRegexCreate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceWallarmIgnoreRegexCreate(ctx context.Context, d *schema.ResourceData, m any) diag.Diagnostics {
 	client := apiClient(m)
 	clientID, err := retrieveClientID(d, m)
 	if err != nil {
@@ -48,7 +48,7 @@ func resourceWallarmIgnoreRegexCreate(ctx context.Context, d *schema.ResourceDat
 	fields := getCommonResourceRuleFieldsDTOFromResourceData(d)
 	regexID := d.Get("regex_id").(int)
 
-	ps := d.Get("point").([]interface{})
+	ps := d.Get("point").([]any)
 	if err := d.Set("point", ps); err != nil {
 		return diag.FromErr(fmt.Errorf("error setting point: %w", err))
 	}
@@ -93,7 +93,7 @@ func resourceWallarmIgnoreRegexCreate(ctx context.Context, d *schema.ResourceDat
 	return resourceWallarmIgnoreRegexRead(ctx, d, m)
 }
 
-func resourceWallarmIgnoreRegexRead(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceWallarmIgnoreRegexRead(_ context.Context, d *schema.ResourceData, m any) diag.Diagnostics {
 	clientID, err := retrieveClientID(d, m)
 	if err != nil {
 		return diag.FromErr(err)
@@ -102,7 +102,7 @@ func resourceWallarmIgnoreRegexRead(_ context.Context, d *schema.ResourceData, m
 		resourcerule.ReadOptionWithPoint, resourcerule.ReadOptionWithRegexID))
 }
 
-func resourceWallarmIgnoreRegexImport(_ context.Context, d *schema.ResourceData, _ interface{}) ([]*schema.ResourceData, error) {
+func resourceWallarmIgnoreRegexImport(_ context.Context, d *schema.ResourceData, _ any) ([]*schema.ResourceData, error) {
 	idAttr := strings.SplitN(d.Id(), "/", 4)
 	if len(idAttr) < 3 {
 		return nil, fmt.Errorf("invalid id (%q) specified, should be in format \"{clientID}/{actionID}/{ruleID}[/{type}]\"", d.Id())

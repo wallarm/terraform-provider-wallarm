@@ -41,7 +41,7 @@ func resourceWallarmRateLimitEnum() *schema.Resource {
 	}
 }
 
-func resourceWallarmRateLimitEnumCreate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceWallarmRateLimitEnumCreate(ctx context.Context, d *schema.ResourceData, m any) diag.Diagnostics {
 	clientID, err := retrieveClientID(d, m)
 	if err != nil {
 		return diag.FromErr(err)
@@ -50,7 +50,7 @@ func resourceWallarmRateLimitEnumCreate(ctx context.Context, d *schema.ResourceD
 		"rate_limit_enum", "rate_limit", resourceWallarmRateLimitEnumRead, m)
 }
 
-func resourceWallarmRateLimitEnumRead(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceWallarmRateLimitEnumRead(_ context.Context, d *schema.ResourceData, m any) diag.Diagnostics {
 	clientID, err := retrieveClientID(d, m)
 	if err != nil {
 		return diag.FromErr(err)

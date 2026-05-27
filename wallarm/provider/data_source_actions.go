@@ -86,7 +86,7 @@ func dataSourceWallarmActions() *schema.Resource {
 	}
 }
 
-func dataSourceWallarmActionsRead(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func dataSourceWallarmActionsRead(_ context.Context, d *schema.ResourceData, m any) diag.Diagnostics {
 	client := apiClient(m)
 	clientID, err := retrieveClientID(d, m)
 	if err != nil {
@@ -121,13 +121,13 @@ func dataSourceWallarmActionsRead(_ context.Context, d *schema.ResourceData, m i
 
 	log.Printf("[DEBUG] data.wallarm_actions: fetched %d actions for client_id=%d", len(allEntries), clientID)
 
-	actions := make([]map[string]interface{}, len(allEntries))
+	actions := make([]map[string]any, len(allEntries))
 	for i, entry := range allEntries {
 		conditions := flattenActionConditions(entry.Conditions)
 		condHash := resourcerule.ConditionsHash(entry.Conditions)
 		dirName := resourcerule.ActionDirName(entry.Conditions)
 
-		action := map[string]interface{}{
+		action := map[string]any{
 			"action_id":         entry.ID,
 			"conditions":        conditions,
 			"conditions_hash":   condHash,

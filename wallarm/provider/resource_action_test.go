@@ -8,11 +8,11 @@ import (
 
 func TestFlattenActionConditions(t *testing.T) {
 	conditions := []wallarm.ActionDetails{
-		{Type: "iequal", Point: []interface{}{"header", "HOST"}, Value: "example.com"},
-		{Type: "equal", Point: []interface{}{"path", float64(0)}, Value: "api"},
-		{Type: "absent", Point: []interface{}{"path", float64(1)}, Value: nil},
-		{Type: "equal", Point: []interface{}{"instance"}, Value: "13"},
-		{Type: "equal", Point: []interface{}{"action_name"}, Value: "login"},
+		{Type: "iequal", Point: []any{"header", "HOST"}, Value: "example.com"},
+		{Type: "equal", Point: []any{"path", float64(0)}, Value: "api"},
+		{Type: "absent", Point: []any{"path", float64(1)}, Value: nil},
+		{Type: "equal", Point: []any{"instance"}, Value: "13"},
+		{Type: "equal", Point: []any{"action_name"}, Value: "login"},
 	}
 
 	result := flattenActionConditions(conditions)
@@ -78,23 +78,23 @@ func TestFlattenActionConditions_Empty(t *testing.T) {
 func TestFlattenActionConditions_RoundTrip(t *testing.T) {
 	// Flatten then convert back via schemaActionToDetails should preserve semantics.
 	original := []wallarm.ActionDetails{
-		{Type: "iequal", Point: []interface{}{"header", "HOST"}, Value: "example.com"},
-		{Type: "equal", Point: []interface{}{"path", float64(0)}, Value: "api"},
+		{Type: "iequal", Point: []any{"header", "HOST"}, Value: "example.com"},
+		{Type: "equal", Point: []any{"path", float64(0)}, Value: "api"},
 	}
 
 	flat := flattenActionConditions(original)
 
 	// Convert flat format to schema format (as buildActionFromHit would produce).
-	schemaActions := make([]map[string]interface{}, 0, len(flat))
+	schemaActions := make([]map[string]any, 0, len(flat))
 	for _, f := range flat {
 		point := f["point"].([]string)
-		pointMap := make(map[string]interface{})
+		pointMap := make(map[string]any)
 		if len(point) >= 2 {
 			pointMap[point[0]] = point[1]
 		} else if len(point) == 1 {
 			pointMap[point[0]] = f["value"]
 		}
-		schemaActions = append(schemaActions, map[string]interface{}{
+		schemaActions = append(schemaActions, map[string]any{
 			"type":  f["type"],
 			"value": f["value"],
 			"point": pointMap,

@@ -43,7 +43,7 @@ func resourceWallarmBola() *schema.Resource {
 	}
 }
 
-func resourceWallarmBolaCreate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceWallarmBolaCreate(ctx context.Context, d *schema.ResourceData, m any) diag.Diagnostics {
 	clientID, err := retrieveClientID(d, m)
 	if err != nil {
 		return diag.FromErr(err)
@@ -52,7 +52,7 @@ func resourceWallarmBolaCreate(ctx context.Context, d *schema.ResourceData, m in
 		"bola", "bola", resourceWallarmBolaRead, m)
 }
 
-func resourceWallarmBolaRead(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceWallarmBolaRead(_ context.Context, d *schema.ResourceData, m any) diag.Diagnostics {
 	clientID, err := retrieveClientID(d, m)
 	if err != nil {
 		return diag.FromErr(err)

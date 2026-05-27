@@ -43,7 +43,7 @@ func resourceWallarmEnum() *schema.Resource {
 	}
 }
 
-func resourceWallarmEnumCreate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceWallarmEnumCreate(ctx context.Context, d *schema.ResourceData, m any) diag.Diagnostics {
 	clientID, err := retrieveClientID(d, m)
 	if err != nil {
 		return diag.FromErr(err)
@@ -52,7 +52,7 @@ func resourceWallarmEnumCreate(ctx context.Context, d *schema.ResourceData, m in
 		"enum", "enum", resourceWallarmEnumRead, m)
 }
 
-func resourceWallarmEnumRead(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceWallarmEnumRead(_ context.Context, d *schema.ResourceData, m any) diag.Diagnostics {
 	clientID, err := retrieveClientID(d, m)
 	if err != nil {
 		return diag.FromErr(err)

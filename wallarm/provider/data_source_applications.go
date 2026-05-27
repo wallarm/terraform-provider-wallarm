@@ -40,7 +40,7 @@ func dataSourceWallarmApplications() *schema.Resource {
 	}
 }
 
-func dataSourceWallarmApplicationsRead(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func dataSourceWallarmApplicationsRead(_ context.Context, d *schema.ResourceData, m any) diag.Diagnostics {
 	client := apiClient(m)
 	clientID, err := retrieveClientID(d, m)
 	if err != nil {
@@ -60,12 +60,12 @@ func dataSourceWallarmApplicationsRead(_ context.Context, d *schema.ResourceData
 		return diag.FromErr(err)
 	}
 
-	apps := make([]interface{}, 0)
+	apps := make([]any, 0)
 	for _, app := range appResp.Body {
 		if app.Deleted || app.ID == nil {
 			continue
 		}
-		apps = append(apps, map[string]interface{}{
+		apps = append(apps, map[string]any{
 			"app_id":    *app.ID,
 			"name":      app.Name,
 			"client_id": app.Clientid,

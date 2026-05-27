@@ -6,20 +6,20 @@ import (
 	"github.com/wallarm/wallarm-go"
 )
 
-func ThresholdToTF(threshold *wallarm.Threshold) []interface{} {
+func ThresholdToTF(threshold *wallarm.Threshold) []any {
 	if threshold == nil {
 		return nil
 	}
 
-	return []interface{}{
-		map[string]interface{}{
+	return []any{
+		map[string]any{
 			"count":  threshold.Count,
 			"period": threshold.Period,
 		},
 	}
 }
 
-func ReactionToTF(reaction *wallarm.Reaction) []interface{} {
+func ReactionToTF(reaction *wallarm.Reaction) []any {
 	if reaction == nil {
 		return nil
 	}
@@ -31,7 +31,7 @@ func ReactionToTF(reaction *wallarm.Reaction) []interface{} {
 	// stray block_by_session=0 / graylist_by_ip=0 values into terraform import
 	// + -generate-config-out output, which the IntBetween(600, 315569520)
 	// validator would then reject at plan time.
-	m := map[string]interface{}{}
+	m := map[string]any{}
 	if reaction.BlockBySession != nil {
 		m["block_by_session"] = *reaction.BlockBySession
 	}
@@ -41,15 +41,15 @@ func ReactionToTF(reaction *wallarm.Reaction) []interface{} {
 	if reaction.GraylistByIP != nil {
 		m["graylist_by_ip"] = *reaction.GraylistByIP
 	}
-	return []interface{}{m}
+	return []any{m}
 }
 
-func EnumeratedParametersToTF(enumeratedParameters *wallarm.EnumeratedParameters) []interface{} {
+func EnumeratedParametersToTF(enumeratedParameters *wallarm.EnumeratedParameters) []any {
 	if enumeratedParameters == nil {
 		return nil
 	}
 
-	result := map[string]interface{}{
+	result := map[string]any{
 		"mode": enumeratedParameters.Mode,
 	}
 	switch enumeratedParameters.Mode {
@@ -66,22 +66,22 @@ func EnumeratedParametersToTF(enumeratedParameters *wallarm.EnumeratedParameters
 		}
 	}
 
-	return []interface{}{result}
+	return []any{result}
 }
 
-func mapPointsToTF(points []*wallarm.Points) []interface{} {
+func mapPointsToTF(points []*wallarm.Points) []any {
 	if len(points) == 0 {
 		return nil
 	}
 
-	result := make([]interface{}, 0, len(points))
+	result := make([]any, 0, len(points))
 	for _, pts := range points {
 		if pts == nil {
 			continue
 		}
-		point := make([]interface{}, 0, len(pts.Point))
+		point := make([]any, 0, len(pts.Point))
 		point = append(point, pts.Point...)
-		result = append(result, map[string]interface{}{
+		result = append(result, map[string]any{
 			"point":     point,
 			"sensitive": pts.Sensitive,
 		})
@@ -90,14 +90,14 @@ func mapPointsToTF(points []*wallarm.Points) []interface{} {
 	return result
 }
 
-func AdvancedConditionsToTF(advancedConditions []wallarm.AdvancedCondition) []interface{} {
+func AdvancedConditionsToTF(advancedConditions []wallarm.AdvancedCondition) []any {
 	if advancedConditions == nil {
 		return nil
 	}
 
-	result := make([]interface{}, 0, len(advancedConditions))
+	result := make([]any, 0, len(advancedConditions))
 	for _, advancedCondition := range advancedConditions {
-		result = append(result, map[string]interface{}{
+		result = append(result, map[string]any{
 			"field":    advancedCondition.Field,
 			"operator": advancedCondition.Operator,
 			"value":    advancedCondition.Value,
@@ -107,12 +107,12 @@ func AdvancedConditionsToTF(advancedConditions []wallarm.AdvancedCondition) []in
 	return result
 }
 
-func ArbitraryConditionsToTF(arbitraryConditions []wallarm.ArbitraryConditionResp) []interface{} {
+func ArbitraryConditionsToTF(arbitraryConditions []wallarm.ArbitraryConditionResp) []any {
 	if arbitraryConditions == nil {
 		return nil
 	}
 
-	result := make([]interface{}, 0, len(arbitraryConditions))
+	result := make([]any, 0, len(arbitraryConditions))
 	for _, arbitraryCondition := range arbitraryConditions {
 		// API returns `point` as a flat array (e.g.
 		// ["post", "json_doc", "hash", "user_id"]). The Terraform schema
@@ -121,7 +121,7 @@ func ArbitraryConditionsToTF(arbitraryConditions []wallarm.ArbitraryConditionRes
 		// WrapPointElements consults the same paired/simple element table
 		// used by the rule-level `point` field so the round-trip matches
 		// what the user wrote in HCL.
-		result = append(result, map[string]interface{}{
+		result = append(result, map[string]any{
 			"point":    wrappedPointToInterface(WrapPointElements(arbitraryCondition.Point)),
 			"operator": arbitraryCondition.Operator,
 			"value":    arbitraryCondition.Value,
@@ -132,12 +132,12 @@ func ArbitraryConditionsToTF(arbitraryConditions []wallarm.ArbitraryConditionRes
 }
 
 // wrappedPointToInterface converts the [][]string output of WrapPointElements
-// to the []interface{} of []interface{} shape SDKv2 expects when setting a
+// to the []any of []any shape SDKv2 expects when setting a
 // nested `TypeList` of `TypeList` of `TypeString`.
-func wrappedPointToInterface(in [][]string) []interface{} {
-	out := make([]interface{}, 0, len(in))
+func wrappedPointToInterface(in [][]string) []any {
+	out := make([]any, 0, len(in))
 	for _, sub := range in {
-		inner := make([]interface{}, 0, len(sub))
+		inner := make([]any, 0, len(sub))
 		for _, s := range sub {
 			inner = append(inner, s)
 		}

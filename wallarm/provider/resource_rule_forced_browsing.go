@@ -41,7 +41,7 @@ func resourceWallarmForcedBrowsing() *schema.Resource {
 	}
 }
 
-func resourceWallarmForcedBrowsingCreate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceWallarmForcedBrowsingCreate(ctx context.Context, d *schema.ResourceData, m any) diag.Diagnostics {
 	clientID, err := retrieveClientID(d, m)
 	if err != nil {
 		return diag.FromErr(err)
@@ -50,7 +50,7 @@ func resourceWallarmForcedBrowsingCreate(ctx context.Context, d *schema.Resource
 		"forced_browsing", "dirbust", resourceWallarmForcedBrowsingRead, m)
 }
 
-func resourceWallarmForcedBrowsingRead(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceWallarmForcedBrowsingRead(_ context.Context, d *schema.ResourceData, m any) diag.Diagnostics {
 	clientID, err := retrieveClientID(d, m)
 	if err != nil {
 		return diag.FromErr(err)

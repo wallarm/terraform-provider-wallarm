@@ -31,7 +31,7 @@ func newDeleteResource(t *testing.T) *schema.ResourceData {
 			"rule_id":   {Type: schema.TypeInt, Optional: true},
 		},
 	}
-	d := schema.TestResourceDataRaw(t, res.Schema, map[string]interface{}{
+	d := schema.TestResourceDataRaw(t, res.Schema, map[string]any{
 		"client_id": 8649,
 		"rule_id":   1234,
 	})
@@ -46,7 +46,7 @@ func TestDelete_SuccessPathReturnsNoDiagnostics(t *testing.T) {
 			Body:   []wallarm.ActionBody{{ID: 1234, ActionID: 5678}},
 		},
 	}
-	del := Delete(func(_ interface{}) wallarm.API { return stub })
+	del := Delete(func(_ any) wallarm.API { return stub })
 
 	diags := del(context.Background(), newDeleteResource(t), nil)
 	if diags.HasError() {
@@ -59,7 +59,7 @@ func TestDelete_EmptyBodyDoesNotError(t *testing.T) {
 	stub := &stubDeleteAPI{
 		resp: &wallarm.HintDeleteResp{Status: 200, Body: []wallarm.ActionBody{}},
 	}
-	del := Delete(func(_ interface{}) wallarm.API { return stub })
+	del := Delete(func(_ any) wallarm.API { return stub })
 
 	diags := del(context.Background(), newDeleteResource(t), nil)
 	if diags.HasError() {
@@ -70,7 +70,7 @@ func TestDelete_EmptyBodyDoesNotError(t *testing.T) {
 
 func TestDelete_APIErrorReturnsDiagnostic(t *testing.T) {
 	stub := &stubDeleteAPI{err: context.Canceled}
-	del := Delete(func(_ interface{}) wallarm.API { return stub })
+	del := Delete(func(_ any) wallarm.API { return stub })
 
 	diags := del(context.Background(), newDeleteResource(t), nil)
 	if !diags.HasError() {

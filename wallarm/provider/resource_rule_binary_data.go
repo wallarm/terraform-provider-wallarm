@@ -31,7 +31,7 @@ func resourceWallarmBinaryData() *schema.Resource {
 	}
 }
 
-func resourceWallarmBinaryDataCreate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceWallarmBinaryDataCreate(ctx context.Context, d *schema.ResourceData, m any) diag.Diagnostics {
 	client := apiClient(m)
 	clientID, err := retrieveClientID(d, m)
 	if err != nil {
@@ -39,7 +39,7 @@ func resourceWallarmBinaryDataCreate(ctx context.Context, d *schema.ResourceData
 	}
 	fields := getCommonResourceRuleFieldsDTOFromResourceData(d)
 
-	ps := d.Get("point").([]interface{})
+	ps := d.Get("point").([]any)
 	if err := d.Set("point", ps); err != nil {
 		return diag.FromErr(fmt.Errorf("error setting point: %w", err))
 	}
@@ -84,7 +84,7 @@ func resourceWallarmBinaryDataCreate(ctx context.Context, d *schema.ResourceData
 	return resourceWallarmBinaryDataRead(ctx, d, m)
 }
 
-func resourceWallarmBinaryDataRead(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceWallarmBinaryDataRead(_ context.Context, d *schema.ResourceData, m any) diag.Diagnostics {
 	clientID, err := retrieveClientID(d, m)
 	if err != nil {
 		return diag.FromErr(err)

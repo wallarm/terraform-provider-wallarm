@@ -110,7 +110,7 @@ func resourceWallarmInsightConnect() *schema.Resource {
 	}
 }
 
-func resourceWallarmInsightConnectCreate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceWallarmInsightConnectCreate(ctx context.Context, d *schema.ResourceData, m any) diag.Diagnostics {
 	client := apiClient(m)
 	clientID, err := retrieveClientID(d, m)
 	if err != nil {
@@ -147,7 +147,7 @@ func resourceWallarmInsightConnectCreate(ctx context.Context, d *schema.Resource
 	return resourceWallarmInsightConnectRead(ctx, d, m)
 }
 
-func resourceWallarmInsightConnectRead(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceWallarmInsightConnectRead(_ context.Context, d *schema.ResourceData, m any) diag.Diagnostics {
 	client := apiClient(m)
 	clientID, err := retrieveClientID(d, m)
 	if err != nil {
@@ -172,7 +172,7 @@ func resourceWallarmInsightConnectRead(_ context.Context, d *schema.ResourceData
 	return nil
 }
 
-func resourceWallarmInsightConnectUpdate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceWallarmInsightConnectUpdate(ctx context.Context, d *schema.ResourceData, m any) diag.Diagnostics {
 	client := apiClient(m)
 	clientID, err := retrieveClientID(d, m)
 	if err != nil {
@@ -208,7 +208,7 @@ func resourceWallarmInsightConnectUpdate(ctx context.Context, d *schema.Resource
 		resID := fmt.Sprintf("%d/%s/%d", clientID, updateRes.Body.Type, updateRes.Body.ID)
 		d.SetId(resID)
 	} else {
-		updateBody := make(map[string]interface{})
+		updateBody := make(map[string]any)
 		if d.HasChange("name") {
 			updateBody["name"] = d.Get("name").(string)
 		}
@@ -235,7 +235,7 @@ func resourceWallarmInsightConnectUpdate(ctx context.Context, d *schema.Resource
 	return resourceWallarmInsightConnectRead(ctx, d, m)
 }
 
-func resourceWallarmInsightConnectDelete(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceWallarmInsightConnectDelete(_ context.Context, d *schema.ResourceData, m any) diag.Diagnostics {
 	client := apiClient(m)
 	integrationID := d.Get("integration_id").(int)
 	if err := client.IntegrationDelete(integrationID); err != nil {

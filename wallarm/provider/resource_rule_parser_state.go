@@ -44,7 +44,7 @@ func resourceWallarmParserState() *schema.Resource {
 	}
 }
 
-func resourceWallarmParserStateCreate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceWallarmParserStateCreate(ctx context.Context, d *schema.ResourceData, m any) diag.Diagnostics {
 	client := apiClient(m)
 	clientID, err := retrieveClientID(d, m)
 	if err != nil {
@@ -54,7 +54,7 @@ func resourceWallarmParserStateCreate(ctx context.Context, d *schema.ResourceDat
 	parser := d.Get("parser").(string)
 	state := d.Get("state").(string)
 
-	ps := d.Get("point").([]interface{})
+	ps := d.Get("point").([]any)
 	if err := d.Set("point", ps); err != nil {
 		return diag.FromErr(fmt.Errorf("error setting point: %w", err))
 	}
@@ -100,7 +100,7 @@ func resourceWallarmParserStateCreate(ctx context.Context, d *schema.ResourceDat
 	return resourceWallarmParserStateRead(ctx, d, m)
 }
 
-func resourceWallarmParserStateRead(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceWallarmParserStateRead(_ context.Context, d *schema.ResourceData, m any) diag.Diagnostics {
 	clientID, err := retrieveClientID(d, m)
 	if err != nil {
 		return diag.FromErr(err)

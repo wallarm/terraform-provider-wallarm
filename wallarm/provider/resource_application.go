@@ -33,7 +33,7 @@ func resourceWallarmApp() *schema.Resource {
 				Type:     schema.TypeInt,
 				Required: true,
 				ForceNew: true,
-				ValidateFunc: func(val interface{}, key string) (warns []string, errs []error) {
+				ValidateFunc: func(val any, key string) (warns []string, errs []error) {
 					v := val.(int)
 					if v != -1 && v <= 0 {
 						errs = append(errs, fmt.Errorf("%q must be -1 (default application) or a positive integer, got: %d", key, v))
@@ -45,7 +45,7 @@ func resourceWallarmApp() *schema.Resource {
 	}
 }
 
-func resourceWallarmAppCreate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceWallarmAppCreate(ctx context.Context, d *schema.ResourceData, m any) diag.Diagnostics {
 	client := apiClient(m)
 	clientID, err := retrieveClientID(d, m)
 	if err != nil {
@@ -76,7 +76,7 @@ func resourceWallarmAppCreate(ctx context.Context, d *schema.ResourceData, m int
 	return resourceWallarmAppRead(ctx, d, m)
 }
 
-func resourceWallarmAppRead(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceWallarmAppRead(_ context.Context, d *schema.ResourceData, m any) diag.Diagnostics {
 	client := apiClient(m)
 	clientID, err := retrieveClientID(d, m)
 	if err != nil {
@@ -107,7 +107,7 @@ func resourceWallarmAppRead(_ context.Context, d *schema.ResourceData, m interfa
 	return nil
 }
 
-func resourceWallarmAppUpdate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceWallarmAppUpdate(ctx context.Context, d *schema.ResourceData, m any) diag.Diagnostics {
 	client := apiClient(m)
 	clientID, err := retrieveClientID(d, m)
 	if err != nil {
@@ -135,7 +135,7 @@ func resourceWallarmAppUpdate(ctx context.Context, d *schema.ResourceData, m int
 	return resourceWallarmAppRead(ctx, d, m)
 }
 
-func resourceWallarmAppDelete(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceWallarmAppDelete(_ context.Context, d *schema.ResourceData, m any) diag.Diagnostics {
 	client := apiClient(m)
 	clientID, err := retrieveClientID(d, m)
 	if err != nil {
@@ -162,7 +162,7 @@ func resourceWallarmAppDelete(_ context.Context, d *schema.ResourceData, m inter
 	return nil
 }
 
-func resourceWallarmAppImport(ctx context.Context, d *schema.ResourceData, m interface{}) ([]*schema.ResourceData, error) {
+func resourceWallarmAppImport(ctx context.Context, d *schema.ResourceData, m any) ([]*schema.ResourceData, error) {
 	idAttr := strings.SplitN(d.Id(), "/", 2)
 	if len(idAttr) != 2 {
 		return nil, fmt.Errorf("invalid id (%q) specified, should be in format \"{clientID}/{appID}\"", d.Id())

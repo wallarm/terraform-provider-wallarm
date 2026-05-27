@@ -13,18 +13,18 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-func flattenAPISpecAuthHeaders(hdrs []wallarm.APISpecAuthHeader) []interface{} {
-	out := make([]interface{}, 0, len(hdrs))
+func flattenAPISpecAuthHeaders(hdrs []wallarm.APISpecAuthHeader) []any {
+	out := make([]any, 0, len(hdrs))
 	for _, h := range hdrs {
-		out = append(out, map[string]interface{}{"key": h.Key, "value": h.Value})
+		out = append(out, map[string]any{"key": h.Key, "value": h.Value})
 	}
 	return out
 }
 
-func expandAPISpecAuthHeaders(raw []interface{}) []wallarm.APISpecAuthHeader {
+func expandAPISpecAuthHeaders(raw []any) []wallarm.APISpecAuthHeader {
 	out := make([]wallarm.APISpecAuthHeader, 0, len(raw))
 	for _, r := range raw {
-		m := r.(map[string]interface{})
+		m := r.(map[string]any)
 		out = append(out, wallarm.APISpecAuthHeader{
 			Key:   m["key"].(string),
 			Value: m["value"].(string),
@@ -33,11 +33,11 @@ func expandAPISpecAuthHeaders(raw []interface{}) []wallarm.APISpecAuthHeader {
 	return out
 }
 
-func flattenAPISpecFile(f *wallarm.APISpecFile) []interface{} {
+func flattenAPISpecFile(f *wallarm.APISpecFile) []any {
 	if f == nil {
 		return nil
 	}
-	return []interface{}{map[string]interface{}{
+	return []any{map[string]any{
 		"name":       f.Name,
 		"signed_url": f.SignedURL,
 		"checksum":   f.Checksum,
@@ -255,7 +255,7 @@ func resourceWallarmAPISpec() *schema.Resource {
 	}
 }
 
-func resourceWallarmAPISpecCreate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceWallarmAPISpecCreate(ctx context.Context, d *schema.ResourceData, m any) diag.Diagnostics {
 	client := apiClient(m)
 
 	apiSpecBody := wallarm.APISpecCreate{
@@ -265,9 +265,9 @@ func resourceWallarmAPISpecCreate(ctx context.Context, d *schema.ResourceData, m
 		RegularFileUpdate: d.Get("regular_file_update").(bool),
 		APIDetection:      d.Get("api_detection").(bool),
 		ClientID:          d.Get("client_id").(int),
-		Instances:         d.Get("instances").([]interface{}),
-		Domains:           d.Get("domains").([]interface{}),
-		AuthHeaders:       expandAPISpecAuthHeaders(d.Get("auth_headers").([]interface{})),
+		Instances:         d.Get("instances").([]any),
+		Domains:           d.Get("domains").([]any),
+		AuthHeaders:       expandAPISpecAuthHeaders(d.Get("auth_headers").([]any)),
 	}
 
 	createRes, err := client.APISpecCreate(&apiSpecBody)
@@ -284,7 +284,7 @@ func resourceWallarmAPISpecCreate(ctx context.Context, d *schema.ResourceData, m
 	return resourceWallarmAPISpecRead(ctx, d, m)
 }
 
-func resourceWallarmAPISpecRead(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceWallarmAPISpecRead(_ context.Context, d *schema.ResourceData, m any) diag.Diagnostics {
 	client := apiClient(m)
 	clientID := d.Get("client_id").(int)
 	apiSpecID := d.Get("api_spec_id").(int)
@@ -304,7 +304,7 @@ func resourceWallarmAPISpecRead(_ context.Context, d *schema.ResourceData, m int
 	return nil
 }
 
-func resourceWallarmAPISpecUpdate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceWallarmAPISpecUpdate(ctx context.Context, d *schema.ResourceData, m any) diag.Diagnostics {
 	client := apiClient(m)
 	clientID := d.Get("client_id").(int)
 	apiSpecID := d.Get("api_spec_id").(int)
@@ -331,13 +331,13 @@ func resourceWallarmAPISpecUpdate(ctx context.Context, d *schema.ResourceData, m
 		body.APIDetection = &v
 	}
 	if d.HasChange("domains") {
-		body.Domains = d.Get("domains").([]interface{})
+		body.Domains = d.Get("domains").([]any)
 	}
 	if d.HasChange("instances") {
-		body.Instances = d.Get("instances").([]interface{})
+		body.Instances = d.Get("instances").([]any)
 	}
 	if d.HasChange("auth_headers") {
-		ah := expandAPISpecAuthHeaders(d.Get("auth_headers").([]interface{}))
+		ah := expandAPISpecAuthHeaders(d.Get("auth_headers").([]any))
 		body.AuthHeaders = &ah
 	}
 
@@ -351,7 +351,7 @@ func resourceWallarmAPISpecUpdate(ctx context.Context, d *schema.ResourceData, m
 	return resourceWallarmAPISpecRead(ctx, d, m)
 }
 
-func resourceWallarmAPISpecDelete(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceWallarmAPISpecDelete(_ context.Context, d *schema.ResourceData, m any) diag.Diagnostics {
 	client := apiClient(m)
 	clientID := d.Get("client_id").(int)
 	apiSpecID := d.Get("api_spec_id").(int)
@@ -366,7 +366,7 @@ func resourceWallarmAPISpecDelete(_ context.Context, d *schema.ResourceData, m i
 }
 
 // resourceWallarmAPISpecImport parses a 2-part import ID "{client_id}/{api_spec_id}".
-func resourceWallarmAPISpecImport(_ context.Context, d *schema.ResourceData, _ interface{}) ([]*schema.ResourceData, error) {
+func resourceWallarmAPISpecImport(_ context.Context, d *schema.ResourceData, _ any) ([]*schema.ResourceData, error) {
 	parts := strings.Split(d.Id(), "/")
 	if len(parts) != 2 {
 		return nil, fmt.Errorf("invalid id (%q) specified, should be in format \"{client_id}/{api_spec_id}\"", d.Id())

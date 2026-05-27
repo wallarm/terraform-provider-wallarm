@@ -150,7 +150,7 @@ func resourceWallarmWebhook() *schema.Resource {
 	}
 }
 
-func resourceWallarmWebhookCreate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceWallarmWebhookCreate(ctx context.Context, d *schema.ResourceData, m any) diag.Diagnostics {
 	client := apiClient(m)
 	clientID, err := retrieveClientID(d, m)
 	if err != nil {
@@ -164,7 +164,7 @@ func resourceWallarmWebhookCreate(ctx context.Context, d *schema.ResourceData, m
 	caVerify := d.Get("ca_verify").(bool)
 	timeout := d.Get("timeout").(int)
 	openTimeout := d.Get("open_timeout").(int)
-	headers := d.Get("headers").(map[string]interface{})
+	headers := d.Get("headers").(map[string]any)
 	format := d.Get("format").(string)
 
 	events := expandWallarmEventToIntEvents(d.Get("event"), "web_hooks")
@@ -201,7 +201,7 @@ func resourceWallarmWebhookCreate(ctx context.Context, d *schema.ResourceData, m
 	return resourceWallarmWebhookRead(ctx, d, m)
 }
 
-func resourceWallarmWebhookRead(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceWallarmWebhookRead(_ context.Context, d *schema.ResourceData, m any) diag.Diagnostics {
 	client := apiClient(m)
 	clientID, err := retrieveClientID(d, m)
 	if err != nil {
@@ -226,7 +226,7 @@ func resourceWallarmWebhookRead(_ context.Context, d *schema.ResourceData, m int
 	return nil
 }
 
-func resourceWallarmWebhookUpdate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceWallarmWebhookUpdate(ctx context.Context, d *schema.ResourceData, m any) diag.Diagnostics {
 	client := apiClient(m)
 	clientID, err := retrieveClientID(d, m)
 	if err != nil {
@@ -254,7 +254,7 @@ func resourceWallarmWebhookUpdate(ctx context.Context, d *schema.ResourceData, m
 				OpenTimeout: d.Get("open_timeout").(int),
 				CaFile:      d.Get("ca_file").(string),
 				CaVerify:    d.Get("ca_verify").(bool),
-				Headers:     d.Get("headers").(map[string]interface{}),
+				Headers:     d.Get("headers").(map[string]any),
 				Format:      d.Get("format").(string),
 				Subtype:     "web_hooks",
 			},
@@ -269,7 +269,7 @@ func resourceWallarmWebhookUpdate(ctx context.Context, d *schema.ResourceData, m
 		resID := fmt.Sprintf("%d/%s/%d", clientID, updateRes.Body.Type, updateRes.Body.ID)
 		d.SetId(resID)
 	} else {
-		updateBody := make(map[string]interface{})
+		updateBody := make(map[string]any)
 		if d.HasChange("name") {
 			updateBody["name"] = d.Get("name").(string)
 		}
@@ -284,7 +284,7 @@ func resourceWallarmWebhookUpdate(ctx context.Context, d *schema.ResourceData, m
 				OpenTimeout: d.Get("open_timeout").(int),
 				CaFile:      d.Get("ca_file").(string),
 				CaVerify:    d.Get("ca_verify").(bool),
-				Headers:     d.Get("headers").(map[string]interface{}),
+				Headers:     d.Get("headers").(map[string]any),
 				Format:      d.Get("format").(string),
 				Subtype:     "web_hooks",
 			}
@@ -303,7 +303,7 @@ func resourceWallarmWebhookUpdate(ctx context.Context, d *schema.ResourceData, m
 	return resourceWallarmWebhookRead(ctx, d, m)
 }
 
-func resourceWallarmWebhookDelete(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceWallarmWebhookDelete(_ context.Context, d *schema.ResourceData, m any) diag.Diagnostics {
 	client := apiClient(m)
 	integrationID := d.Get("integration_id").(int)
 	if err := client.IntegrationDelete(integrationID); err != nil {

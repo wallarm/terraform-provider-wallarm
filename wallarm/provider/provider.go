@@ -178,13 +178,13 @@ func Provider() *schema.Provider {
 		},
 	}
 
-	provider.ConfigureContextFunc = func(ctx context.Context, d *schema.ResourceData) (interface{}, diag.Diagnostics) {
+	provider.ConfigureContextFunc = func(ctx context.Context, d *schema.ResourceData) (any, diag.Diagnostics) {
 		return ProviderConfigure(ctx, d, provider)
 	}
 	return provider
 }
 
-func ProviderConfigure(_ context.Context, d *schema.ResourceData, p *schema.Provider) (interface{}, diag.Diagnostics) {
+func ProviderConfigure(_ context.Context, d *schema.ResourceData, p *schema.Provider) (any, diag.Diagnostics) {
 	retryOpt := wallarm.UsingRetryPolicy(d.Get("retries").(int), d.Get("min_backoff").(int), d.Get("max_backoff").(int))
 	options := []wallarm.Option{retryOpt}
 

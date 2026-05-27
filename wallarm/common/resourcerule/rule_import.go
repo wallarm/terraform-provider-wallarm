@@ -12,7 +12,7 @@ import (
 // Import is used by rule resources whose import is purely a
 // string parse with no API lookup.
 func Import(ruleType string) schema.StateContextFunc {
-	return func(_ context.Context, d *schema.ResourceData, _ interface{}) ([]*schema.ResourceData, error) {
+	return func(_ context.Context, d *schema.ResourceData, _ any) ([]*schema.ResourceData, error) {
 		parts := strings.SplitN(d.Id(), "/", 4)
 		if len(parts) != 3 {
 			return nil, fmt.Errorf("invalid id (%q) specified, should be in format \"{clientID}/{actionID}/{ruleID}\"", d.Id())

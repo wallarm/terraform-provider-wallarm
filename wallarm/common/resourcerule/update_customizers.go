@@ -133,13 +133,13 @@ func WithName(d *schema.ResourceData, p *wallarm.HintUpdateV3Params) error {
 
 func WithValues(d *schema.ResourceData, p *wallarm.HintUpdateV3Params) error {
 	// `values` is TypeSet on wallarm_rule_set_response_header — extract the
-	// underlying []interface{} via .List() before string conversion.
+	// underlying []any via .List() before string conversion.
 	raw := d.Get("values")
-	var items []interface{}
+	var items []any
 	switch v := raw.(type) {
 	case *schema.Set:
 		items = v.List()
-	case []interface{}:
+	case []any:
 		items = v
 	default:
 		return nil
@@ -155,7 +155,7 @@ func WithFileType(d *schema.ResourceData, p *wallarm.HintUpdateV3Params) error {
 }
 
 func WithThreshold(d *schema.ResourceData, p *wallarm.HintUpdateV3Params) error {
-	t, err := ThresholdToAPI(d.Get("threshold").([]interface{}))
+	t, err := ThresholdToAPI(d.Get("threshold").([]any))
 	if err != nil {
 		return err
 	}
@@ -164,7 +164,7 @@ func WithThreshold(d *schema.ResourceData, p *wallarm.HintUpdateV3Params) error 
 }
 
 func WithReaction(d *schema.ResourceData, p *wallarm.HintUpdateV3Params) error {
-	r, err := ReactionToAPI(d.Get("reaction").([]interface{}))
+	r, err := ReactionToAPI(d.Get("reaction").([]any))
 	if err != nil {
 		return err
 	}
@@ -173,7 +173,7 @@ func WithReaction(d *schema.ResourceData, p *wallarm.HintUpdateV3Params) error {
 }
 
 func WithEnumeratedParameters(d *schema.ResourceData, p *wallarm.HintUpdateV3Params) error {
-	e, err := EnumeratedParametersToAPI(d.Get("enumerated_parameters").([]interface{}))
+	e, err := EnumeratedParametersToAPI(d.Get("enumerated_parameters").([]any))
 	if err != nil {
 		return err
 	}

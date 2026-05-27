@@ -58,7 +58,7 @@ func resourceWallarmNode() *schema.Resource {
 	}
 }
 
-func resourceWallarmNodeCreate(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceWallarmNodeCreate(_ context.Context, d *schema.ResourceData, m any) diag.Diagnostics {
 	client := apiClient(m)
 	clientID, err := retrieveClientID(d, m)
 	if err != nil {
@@ -91,7 +91,7 @@ func resourceWallarmNodeCreate(_ context.Context, d *schema.ResourceData, m inte
 	return nil
 }
 
-func resourceWallarmNodeRead(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceWallarmNodeRead(_ context.Context, d *schema.ResourceData, m any) diag.Diagnostics {
 	client := apiClient(m)
 	clientID, err := retrieveClientID(d, m)
 	if err != nil {
@@ -125,7 +125,7 @@ func resourceWallarmNodeRead(_ context.Context, d *schema.ResourceData, m interf
 	return nil
 }
 
-func resourceWallarmNodeDelete(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceWallarmNodeDelete(_ context.Context, d *schema.ResourceData, m any) diag.Diagnostics {
 	client := apiClient(m)
 	nodeID := d.Get("node_id").(int)
 	if err := client.NodeDelete(nodeID); err != nil {
@@ -141,7 +141,7 @@ func resourceWallarmNodeDelete(_ context.Context, d *schema.ResourceData, m inte
 // resourceWallarmNodeImport handles terraform import.
 // Format: {client_id}/{node_id}
 // Example: terraform import wallarm_node.my_node 8649/12345
-func resourceWallarmNodeImport(_ context.Context, d *schema.ResourceData, m interface{}) ([]*schema.ResourceData, error) {
+func resourceWallarmNodeImport(_ context.Context, d *schema.ResourceData, m any) ([]*schema.ResourceData, error) {
 	client := apiClient(m)
 	idParts := strings.SplitN(d.Id(), "/", 2)
 	if len(idParts) != 2 {

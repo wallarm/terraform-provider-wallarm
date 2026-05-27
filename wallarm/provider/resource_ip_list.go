@@ -125,7 +125,7 @@ func resourceWallarmIPList(listType wallarm.IPListType) *schema.Resource {
 }
 
 func resourceWallarmIPListCreate(listType wallarm.IPListType) schema.CreateContextFunc {
-	return func(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+	return func(_ context.Context, d *schema.ResourceData, m any) diag.Diagnostics {
 		client := apiClient(m)
 		clientID, err := retrieveClientID(d, m)
 		if err != nil {
@@ -148,7 +148,7 @@ func resourceWallarmIPListCreate(listType wallarm.IPListType) schema.CreateConte
 
 		var apps []int
 		if v, ok := d.GetOk("application"); ok {
-			applications := v.([]interface{})
+			applications := v.([]any)
 			apps = make([]int, len(applications))
 			for i := range applications {
 				apps[i] = applications[i].(int)
@@ -220,7 +220,7 @@ func resourceWallarmIPListCreate(listType wallarm.IPListType) schema.CreateConte
 }
 
 func resourceWallarmIPListRead(listType wallarm.IPListType) schema.ReadContextFunc {
-	return func(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+	return func(_ context.Context, d *schema.ResourceData, m any) diag.Diagnostics {
 		client := apiClient(m)
 		clientID, err := retrieveClientID(d, m)
 		if err != nil {
@@ -244,7 +244,7 @@ func resourceWallarmIPListRead(listType wallarm.IPListType) schema.ReadContextFu
 
 		if len(found) == 0 {
 			if !d.IsNewResource() {
-				oldAddrs := d.Get("address_id").([]interface{})
+				oldAddrs := d.Get("address_id").([]any)
 				if len(oldAddrs) > 0 {
 					log.Printf("[WARN] IP list %s was previously tracked but no longer found — removing from state", d.Id())
 					d.SetId("")
@@ -271,7 +271,7 @@ func resourceWallarmIPListRead(listType wallarm.IPListType) schema.ReadContextFu
 }
 
 func resourceWallarmIPListUpdate(listType wallarm.IPListType) schema.UpdateContextFunc {
-	return func(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+	return func(ctx context.Context, d *schema.ResourceData, m any) diag.Diagnostics {
 		client := apiClient(m)
 		clientID, err := retrieveClientID(d, m)
 		if err != nil {
@@ -287,7 +287,7 @@ func resourceWallarmIPListUpdate(listType wallarm.IPListType) schema.UpdateConte
 
 		// For grouped types or when metadata changed, do full delete+create.
 		// Use address_id from state to delete old entries.
-		addrIDs := d.Get("address_id").([]interface{})
+		addrIDs := d.Get("address_id").([]any)
 		if len(addrIDs) > 0 {
 			if diags := deleteByAddrIDs(client, clientID, addrIDs); diags != nil {
 				return diags
@@ -302,15 +302,15 @@ func resourceWallarmIPListUpdate(listType wallarm.IPListType) schema.UpdateConte
 func ipListSubnetDiffUpdate(
 	_ context.Context,
 	d *schema.ResourceData,
-	_ interface{},
+	_ any,
 	client wallarm.API,
 	clientID int,
 	listType wallarm.IPListType,
 	cache *IPListCache,
 ) diag.Diagnostics {
 	oldRaw, newRaw := d.GetChange("ip_range")
-	oldIPs := toStringSet(oldRaw.([]interface{}))
-	newIPs := toStringSet(newRaw.([]interface{}))
+	oldIPs := toStringSet(oldRaw.([]any))
+	newIPs := toStringSet(newRaw.([]any))
 
 	var removed []string
 	for ip := range oldIPs {
@@ -371,7 +371,7 @@ func ipListSubnetDiffUpdate(
 
 		var apps []int
 		if v, ok := d.GetOk("application"); ok {
-			for _, a := range v.([]interface{}) {
+			for _, a := range v.([]any) {
 				apps = append(apps, a.(int))
 			}
 		} else {
@@ -405,10 +405,10 @@ func ipListSubnetDiffUpdate(
 }
 
 // deleteByAddrIDs deletes IP list entries using group IDs from the address_id state.
-func deleteByAddrIDs(client wallarm.API, clientID int, addrIDs []interface{}) diag.Diagnostics {
+func deleteByAddrIDs(client wallarm.API, clientID int, addrIDs []any) diag.Diagnostics {
 	ruleTypeIDs := make(map[string][]int)
 	for _, entry := range addrIDs {
-		e := entry.(map[string]interface{})
+		e := entry.(map[string]any)
 		ruleType := e["rule_type"].(string)
 		id := e["ip_id"].(int)
 		ruleTypeIDs[ruleType] = append(ruleTypeIDs[ruleType], id)
@@ -437,7 +437,7 @@ func ipListConfigValues(d *schema.ResourceData) []string {
 	var values []string
 	for _, field := range []string{"ip_range", "country", "datacenter", "proxy_type"} {
 		if v, ok := d.GetOk(field); ok {
-			for _, item := range v.([]interface{}) {
+			for _, item := range v.([]any) {
 				values = append(values, item.(string))
 			}
 		}
@@ -446,15 +446,15 @@ func ipListConfigValues(d *schema.ResourceData) []string {
 }
 
 // cacheEntriesToAddrIDs converts cache entries to the address_id schema format, sorted by group ID.
-func cacheEntriesToAddrIDs(entries []IPCacheEntry) []interface{} {
+func cacheEntriesToAddrIDs(entries []IPCacheEntry) []any {
 	// Sort by GroupID for deterministic ordering.
 	sort.Slice(entries, func(i, j int) bool {
 		return entries[i].GroupID < entries[j].GroupID
 	})
 
-	addrIDs := make([]interface{}, 0, len(entries))
+	addrIDs := make([]any, 0, len(entries))
 	for _, entry := range entries {
-		addrIDs = append(addrIDs, map[string]interface{}{
+		addrIDs = append(addrIDs, map[string]any{
 			"rule_type": entry.RuleType,
 			"value":     entry.RawValue,
 			"ip_id":     entry.GroupID,
@@ -463,7 +463,7 @@ func cacheEntriesToAddrIDs(entries []IPCacheEntry) []interface{} {
 	return addrIDs
 }
 
-func toStringSet(items []interface{}) map[string]bool {
+func toStringSet(items []any) map[string]bool {
 	set := make(map[string]bool, len(items))
 	for _, item := range items {
 		set[item.(string)] = true
@@ -472,7 +472,7 @@ func toStringSet(items []interface{}) map[string]bool {
 }
 
 func resourceWallarmIPListDelete(listType wallarm.IPListType) schema.DeleteContextFunc {
-	return func(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+	return func(_ context.Context, d *schema.ResourceData, m any) diag.Diagnostics {
 		client := apiClient(m)
 		clientID, err := retrieveClientID(d, m)
 		if err != nil {
@@ -481,7 +481,7 @@ func resourceWallarmIPListDelete(listType wallarm.IPListType) schema.DeleteConte
 		cache := m.(*ProviderMeta).IPListCache
 
 		// Primary: use address_id from state (populated by Read during refresh).
-		addrIDs := d.Get("address_id").([]interface{})
+		addrIDs := d.Get("address_id").([]any)
 		if len(addrIDs) > 0 {
 			log.Printf("[DEBUG] IPListDelete: using %d address_id entries from state", len(addrIDs))
 			if diags := deleteByAddrIDs(client, clientID, addrIDs); diags != nil {
@@ -580,7 +580,7 @@ func parseAppIDsKey(s string) ([]int, error) {
 //
 // TODO: refactor to reduce cyclomatic complexity — extract subnet/grouped type handling into separate functions.
 func resourceWallarmIPListImport(listType wallarm.IPListType) schema.StateContextFunc { //nolint:gocyclo // complex import logic, refactor planned
-	return func(_ context.Context, d *schema.ResourceData, m interface{}) ([]*schema.ResourceData, error) {
+	return func(_ context.Context, d *schema.ResourceData, m any) ([]*schema.ResourceData, error) {
 		client := apiClient(m)
 
 		parts := strings.SplitN(d.Id(), "/", 6)
@@ -641,7 +641,7 @@ func resourceWallarmIPListImport(listType wallarm.IPListType) schema.StateContex
 			// Collect all subnets with this expiration.
 			type subnetEntry struct {
 				ip     string
-				addrID map[string]interface{}
+				addrID map[string]any
 				reason string
 				apps   []int
 			}
@@ -657,7 +657,7 @@ func resourceWallarmIPListImport(listType wallarm.IPListType) schema.StateContex
 				for _, v := range g.Values {
 					allEntries = append(allEntries, subnetEntry{
 						ip: strings.TrimSuffix(v, "/32"),
-						addrID: map[string]interface{}{
+						addrID: map[string]any{
 							"rule_type": g.RuleType,
 							"value":     v,
 							"ip_id":     g.ID,
@@ -725,7 +725,7 @@ func resourceWallarmIPListImport(listType wallarm.IPListType) schema.StateContex
 			}
 
 			var ips []string
-			var addrIDs []interface{}
+			var addrIDs []any
 			var reason string
 			var apps []int
 			for _, e := range entries {
@@ -773,8 +773,8 @@ func resourceWallarmIPListImport(listType wallarm.IPListType) schema.StateContex
 			return nil, fmt.Errorf("IP list group %d not found", groupID)
 		}
 
-		addrIDs := []interface{}{
-			map[string]interface{}{
+		addrIDs := []any{
+			map[string]any{
 				"rule_type": found.RuleType,
 				"value":     strings.Join(found.Values, ","),
 				"ip_id":     found.ID,
@@ -819,7 +819,7 @@ func buildRulesFromSchema(d *schema.ResourceData) ([]wallarm.AccessRuleEntry, di
 
 	// subnet rules from ip_range
 	if v, ok := d.GetOk("ip_range"); ok {
-		ipRange := v.([]interface{})
+		ipRange := v.([]any)
 		var ips []string
 		for _, v := range ipRange {
 			ip := v.(string)
@@ -844,7 +844,7 @@ func buildRulesFromSchema(d *schema.ResourceData) ([]wallarm.AccessRuleEntry, di
 
 	// location rules from country
 	if v, ok := d.GetOk("country"); ok {
-		countries := v.([]interface{})
+		countries := v.([]any)
 		var vals []string
 		for _, c := range countries {
 			vals = append(vals, c.(string))
@@ -859,7 +859,7 @@ func buildRulesFromSchema(d *schema.ResourceData) ([]wallarm.AccessRuleEntry, di
 
 	// datacenter rules from datacenter
 	if v, ok := d.GetOk("datacenter"); ok {
-		sources := v.([]interface{})
+		sources := v.([]any)
 		var vals []string
 		for _, s := range sources {
 			vals = append(vals, s.(string))
@@ -874,7 +874,7 @@ func buildRulesFromSchema(d *schema.ResourceData) ([]wallarm.AccessRuleEntry, di
 
 	// proxy_type rules from proxy_type
 	if v, ok := d.GetOk("proxy_type"); ok {
-		proxies := v.([]interface{})
+		proxies := v.([]any)
 		var vals []string
 		for _, p := range proxies {
 			vals = append(vals, p.(string))

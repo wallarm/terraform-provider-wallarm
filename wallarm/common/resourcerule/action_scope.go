@@ -203,7 +203,7 @@ func scopeActionSchema(forceNew, computed bool) *schema.Schema {
 //
 // Also validates that "uri" conditions are not mixed with "path", "action_name",
 // "action_ext", or "query" conditions (mutually exclusive in the Wallarm API).
-func ActionScopeCustomizeDiff(_ context.Context, d *schema.ResourceDiff, _ interface{}) error {
+func ActionScopeCustomizeDiff(_ context.Context, d *schema.ResourceDiff, _ any) error {
 	// Validate explicit action blocks (point keys, URI conflicts, type/value rules).
 	if err := validateActionBlocks(d); err != nil {
 		return err
@@ -221,12 +221,12 @@ func ActionScopeCustomizeDiff(_ context.Context, d *schema.ResourceDiff, _ inter
 
 	// Also check list-type scope fields (query and header blocks).
 	if !hasScopeFields {
-		if v, ok := d.GetOk("action_query"); ok && len(v.([]interface{})) > 0 {
+		if v, ok := d.GetOk("action_query"); ok && len(v.([]any)) > 0 {
 			hasScopeFields = true
 		}
 	}
 	if !hasScopeFields {
-		if v, ok := d.GetOk("action_header"); ok && len(v.([]interface{})) > 0 {
+		if v, ok := d.GetOk("action_header"); ok && len(v.([]any)) > 0 {
 			hasScopeFields = true
 		}
 	}
@@ -250,8 +250,8 @@ func ActionScopeCustomizeDiff(_ context.Context, d *schema.ResourceDiff, _ inter
 	// Extract query params.
 	var queryParams []QueryParam
 	if v, ok := d.GetOk("action_query"); ok {
-		for _, q := range v.([]interface{}) {
-			qm := q.(map[string]interface{})
+		for _, q := range v.([]any) {
+			qm := q.(map[string]any)
 			queryParams = append(queryParams, QueryParam{
 				Key:   qm["key"].(string),
 				Value: qm["value"].(string),
@@ -263,8 +263,8 @@ func ActionScopeCustomizeDiff(_ context.Context, d *schema.ResourceDiff, _ inter
 	// Extract headers.
 	var headerParams []HeaderParam
 	if v, ok := d.GetOk("action_header"); ok {
-		for _, h := range v.([]interface{}) {
-			hm := h.(map[string]interface{})
+		for _, h := range v.([]any) {
+			hm := h.(map[string]any)
 			headerParams = append(headerParams, HeaderParam{
 				Name:  hm["name"].(string),
 				Value: hm["value"].(string),
@@ -278,9 +278,9 @@ func ActionScopeCustomizeDiff(_ context.Context, d *schema.ResourceDiff, _ inter
 
 	// Build Set items directly in TF schema format.
 	// ResourceDiff.SetNew is stricter than ResourceData.Set:
-	// - point must be map[string]interface{} (not map[string]string)
+	// - point must be map[string]any (not map[string]string)
 	// - value must be explicit string (not "" with Computed, which becomes "known after apply")
-	items := make([]interface{}, 0, len(actions))
+	items := make([]any, 0, len(actions))
 	for _, a := range actions {
 		items = append(items, ActionDetailToSchemaItem(a))
 	}
@@ -371,12 +371,12 @@ func validateActionSet(actionSet *schema.Set) error {
 	var conflictingPoints []string
 
 	for _, item := range actionSet.List() {
-		m, ok := item.(map[string]interface{})
+		m, ok := item.(map[string]any)
 		if !ok {
 			continue
 		}
 
-		pointMap, ok := m["point"].(map[string]interface{})
+		pointMap, ok := m["point"].(map[string]any)
 		if !ok || len(pointMap) == 0 {
 			// Skip empty point maps — can be TypeSet zero-value artifacts
 			// from Computed action blocks during plan.
@@ -430,14 +430,14 @@ func validateActionSet(actionSet *schema.Set) error {
 }
 
 // ActionDetailToSchemaItem converts an ActionDetails to the map format expected by
-// ResourceDiff.SetNew for the action TypeSet. Uses map[string]interface{} for point
+// ResourceDiff.SetNew for the action TypeSet. Uses map[string]any for point
 // (not map[string]string) and explicit string values (not empty with Computed).
-func ActionDetailToSchemaItem(a wallarm.ActionDetails) map[string]interface{} {
+func ActionDetailToSchemaItem(a wallarm.ActionDetails) map[string]any {
 	pointKey := ActionPointKey(a)
 	value := ActionValueString(a)
 	condType := a.Type
 
-	pointMap := map[string]interface{}{}
+	pointMap := map[string]any{}
 
 	switch pointKey {
 	case pointKeyHeader:
@@ -469,7 +469,7 @@ func ActionDetailToSchemaItem(a wallarm.ActionDetails) map[string]interface{} {
 		value = ""
 	}
 
-	return map[string]interface{}{
+	return map[string]any{
 		"type":  condType,
 		"value": value,
 		"point": pointMap,

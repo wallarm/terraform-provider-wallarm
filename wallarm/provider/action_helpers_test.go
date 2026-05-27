@@ -13,7 +13,7 @@ import (
 // TypeSet schema populated from the given action map. Used by
 // existingHintForAction tests to avoid pulling in any specific rule resource's
 // full schema.
-func newRuleResourceDataForTest(t *testing.T, actionMap map[string]interface{}, clientID int) *schema.ResourceData {
+func newRuleResourceDataForTest(t *testing.T, actionMap map[string]any, clientID int) *schema.ResourceData {
 	t.Helper()
 	res := &schema.Resource{
 		Schema: map[string]*schema.Schema{
@@ -21,8 +21,8 @@ func newRuleResourceDataForTest(t *testing.T, actionMap map[string]interface{}, 
 			"client_id": {Type: schema.TypeInt, Optional: true},
 		},
 	}
-	return schema.TestResourceDataRaw(t, res.Schema, map[string]interface{}{
-		"action":    []interface{}{actionMap},
+	return schema.TestResourceDataRaw(t, res.Schema, map[string]any{
+		"action":    []any{actionMap},
 		"client_id": clientID,
 	})
 }
@@ -45,7 +45,7 @@ func makeAction(host string) []wallarm.ActionDetails {
 		{
 			Type:  "iequal",
 			Value: host,
-			Point: []interface{}{"header", "HOST"},
+			Point: []any{"header", "HOST"},
 		},
 	}
 }
@@ -59,7 +59,7 @@ func fillerActions(n, idStart int) []wallarm.ActionEntry {
 			ID:       idStart + i,
 			Clientid: 1,
 			Conditions: []wallarm.ActionDetails{
-				{Type: "iequal", Value: "filler", Point: []interface{}{"path", float64(i)}},
+				{Type: "iequal", Value: "filler", Point: []any{"path", float64(i)}},
 			},
 		}
 	}
@@ -175,10 +175,10 @@ func TestFindActionByConditionsHash_PageCap(t *testing.T) {
 // schema.ResourceData → ExpandSetToActionDetailsList → ConditionsHash →
 // findActionByConditionsHash → HintRead by ActionID+Type → matched rule returned.
 func TestExistingHintForAction_Match(t *testing.T) {
-	d := newRuleResourceDataForTest(t, map[string]interface{}{
+	d := newRuleResourceDataForTest(t, map[string]any{
 		"type":  "iequal",
 		"value": "test.example.com",
-		"point": map[string]interface{}{"header": "HOST"},
+		"point": map[string]any{"header": "HOST"},
 	}, 1)
 
 	// Use the same expansion the production code will use, so hashes match.
@@ -211,10 +211,10 @@ func TestExistingHintForAction_Match(t *testing.T) {
 // TestExistingHintForAction_NoMatch verifies the empty-tenant path: ActionList
 // returns nothing → (0, nil, false, nil), no HintRead call made.
 func TestExistingHintForAction_NoMatch(t *testing.T) {
-	d := newRuleResourceDataForTest(t, map[string]interface{}{
+	d := newRuleResourceDataForTest(t, map[string]any{
 		"type":  "iequal",
 		"value": "no-match.example.com",
-		"point": map[string]interface{}{"header": "HOST"},
+		"point": map[string]any{"header": "HOST"},
 	}, 1)
 
 	mock := &mockHintAPI{} // no actions, no hints
@@ -236,10 +236,10 @@ func TestExistingHintForAction_NoMatch(t *testing.T) {
 // path: action exists with matching conditions, but no hint of the wanted type
 // is attached. Returns (0, nil, false, nil) — the action match alone isn't enough.
 func TestExistingHintForAction_ActionMatchesButNoHint(t *testing.T) {
-	d := newRuleResourceDataForTest(t, map[string]interface{}{
+	d := newRuleResourceDataForTest(t, map[string]any{
 		"type":  "iequal",
 		"value": "action-only.example.com",
-		"point": map[string]interface{}{"header": "HOST"},
+		"point": map[string]any{"header": "HOST"},
 	}, 1)
 	wantedConditions, err := resourcerule.ExpandSetToActionDetailsList(d.Get("action").(*schema.Set))
 	if err != nil {

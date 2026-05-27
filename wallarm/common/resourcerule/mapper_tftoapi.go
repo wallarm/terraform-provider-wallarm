@@ -7,11 +7,11 @@ import (
 	"github.com/wallarm/wallarm-go"
 )
 
-func EnumeratedParametersToAPI(enumeratedParameters []interface{}) (*wallarm.EnumeratedParameters, error) {
+func EnumeratedParametersToAPI(enumeratedParameters []any) (*wallarm.EnumeratedParameters, error) {
 	if len(enumeratedParameters) == 0 {
 		return nil, nil
 	}
-	enumeratedParameterObj, ok := enumeratedParameters[0].(map[string]interface{})
+	enumeratedParameterObj, ok := enumeratedParameters[0].(map[string]any)
 	if !ok {
 		return nil, fmt.Errorf("enumerated_parameters[0]: expected map, got %T", enumeratedParameters[0])
 	}
@@ -24,7 +24,7 @@ func EnumeratedParametersToAPI(enumeratedParameters []interface{}) (*wallarm.Enu
 	}
 }
 
-func mapEnumeratedParameterRegexpToAPI(enumeratedParameter map[string]interface{}) (*wallarm.EnumeratedParameters, error) {
+func mapEnumeratedParameterRegexpToAPI(enumeratedParameter map[string]any) (*wallarm.EnumeratedParameters, error) {
 	// EnumeratedParamsCustomizeDiff guarantees both lists are non-empty in
 	// regexp mode at plan time. We use convertRegexpList (not the shared
 	// ConvertToStringSlice, which skips nils) so an HCL `[""]` survives —
@@ -32,13 +32,13 @@ func mapEnumeratedParameterRegexpToAPI(enumeratedParameter map[string]interface{
 	// which arrives at d.Get as a nil entry. Skipping the nil would produce
 	// an empty slice, which `omitempty` strips from JSON, and the API
 	// rejects regexp mode without name_regexps/value_regexps keys.
-	nameRegexpsRaw, ok := enumeratedParameter["name_regexps"].([]interface{})
+	nameRegexpsRaw, ok := enumeratedParameter["name_regexps"].([]any)
 	if !ok {
 		return nil, fmt.Errorf("enumerated_parameters.name_regexps: expected list, got %T", enumeratedParameter["name_regexps"])
 	}
 	nameRegexps := convertRegexpList(nameRegexpsRaw)
 
-	valueRegexpsRaw, ok := enumeratedParameter["value_regexps"].([]interface{})
+	valueRegexpsRaw, ok := enumeratedParameter["value_regexps"].([]any)
 	if !ok {
 		return nil, fmt.Errorf("enumerated_parameters.value_regexps: expected list, got %T", enumeratedParameter["value_regexps"])
 	}
@@ -63,24 +63,24 @@ func mapEnumeratedParameterRegexpToAPI(enumeratedParameter map[string]interface{
 	return result, nil
 }
 
-func mapEnumeratedParameterExactToAPI(enumeratedParameter map[string]interface{}) (*wallarm.EnumeratedParameters, error) {
+func mapEnumeratedParameterExactToAPI(enumeratedParameter map[string]any) (*wallarm.EnumeratedParameters, error) {
 	result := &wallarm.EnumeratedParameters{
 		Mode: modeExact,
 	}
 
-	pointsList, ok := enumeratedParameter["points"].([]interface{})
+	pointsList, ok := enumeratedParameter["points"].([]any)
 	if !ok || len(pointsList) == 0 {
 		return result, nil
 	}
 
 	points := make([]*wallarm.Points, 0, len(pointsList))
 	for _, item := range pointsList {
-		pointsObj, ok := item.(map[string]interface{})
+		pointsObj, ok := item.(map[string]any)
 		if !ok {
 			continue
 		}
 
-		point, _ := pointsObj["point"].([]interface{})
+		point, _ := pointsObj["point"].([]any)
 		sensitive, _ := pointsObj["sensitive"].(bool)
 
 		points = append(points, &wallarm.Points{
@@ -93,12 +93,12 @@ func mapEnumeratedParameterExactToAPI(enumeratedParameter map[string]interface{}
 	return result, nil
 }
 
-func ReactionToAPI(reaction []interface{}) (*wallarm.Reaction, error) {
+func ReactionToAPI(reaction []any) (*wallarm.Reaction, error) {
 	if len(reaction) == 0 {
 		return nil, nil
 	}
 
-	reactionObj, ok := reaction[0].(map[string]interface{})
+	reactionObj, ok := reaction[0].(map[string]any)
 	if !ok {
 		return nil, fmt.Errorf("reaction[0]: expected map, got %T", reaction[0])
 	}
@@ -121,12 +121,12 @@ func ReactionToAPI(reaction []interface{}) (*wallarm.Reaction, error) {
 	}, nil
 }
 
-func ThresholdToAPI(threshold []interface{}) (*wallarm.Threshold, error) {
+func ThresholdToAPI(threshold []any) (*wallarm.Threshold, error) {
 	if len(threshold) == 0 {
 		return nil, nil
 	}
 
-	thresholdObj, ok := threshold[0].(map[string]interface{})
+	thresholdObj, ok := threshold[0].(map[string]any)
 	if !ok {
 		return nil, fmt.Errorf("threshold[0]: expected map, got %T", threshold[0])
 	}
@@ -140,18 +140,18 @@ func ThresholdToAPI(threshold []interface{}) (*wallarm.Threshold, error) {
 	}, nil
 }
 
-func AdvancedConditionsToAPI(advancedConditions []interface{}) ([]wallarm.AdvancedCondition, error) {
+func AdvancedConditionsToAPI(advancedConditions []any) ([]wallarm.AdvancedCondition, error) {
 	if len(advancedConditions) == 0 {
 		return nil, nil
 	}
 
 	response := make([]wallarm.AdvancedCondition, 0, len(advancedConditions))
 	for i, advancedCondition := range advancedConditions {
-		advancedConditionObj, ok := advancedCondition.(map[string]interface{})
+		advancedConditionObj, ok := advancedCondition.(map[string]any)
 		if !ok {
 			return nil, fmt.Errorf("advanced_condition[%d]: expected map, got %T", i, advancedCondition)
 		}
-		valueRaw, ok := advancedConditionObj["value"].([]interface{})
+		valueRaw, ok := advancedConditionObj["value"].([]any)
 		if !ok {
 			return nil, fmt.Errorf("advanced_condition[%d].value: expected list, got %T", i, advancedConditionObj["value"])
 		}
@@ -167,22 +167,22 @@ func AdvancedConditionsToAPI(advancedConditions []interface{}) ([]wallarm.Advanc
 	return response, nil
 }
 
-func ArbitraryConditionsToAPI(arbitraryConditions []interface{}) ([]wallarm.ArbitraryConditionReq, error) {
+func ArbitraryConditionsToAPI(arbitraryConditions []any) ([]wallarm.ArbitraryConditionReq, error) {
 	if len(arbitraryConditions) == 0 {
 		return nil, nil
 	}
 
 	response := make([]wallarm.ArbitraryConditionReq, 0, len(arbitraryConditions))
 	for i, arbitraryCondition := range arbitraryConditions {
-		arbitraryConditionObj, ok := arbitraryCondition.(map[string]interface{})
+		arbitraryConditionObj, ok := arbitraryCondition.(map[string]any)
 		if !ok {
 			return nil, fmt.Errorf("arbitrary_condition[%d]: expected map, got %T", i, arbitraryCondition)
 		}
-		pointRaw, ok := arbitraryConditionObj["point"].([]interface{})
+		pointRaw, ok := arbitraryConditionObj["point"].([]any)
 		if !ok {
 			return nil, fmt.Errorf("arbitrary_condition[%d].point: expected list, got %T", i, arbitraryConditionObj["point"])
 		}
-		valueRaw, ok := arbitraryConditionObj["value"].([]interface{})
+		valueRaw, ok := arbitraryConditionObj["value"].([]any)
 		if !ok {
 			return nil, fmt.Errorf("arbitrary_condition[%d].value: expected list, got %T", i, arbitraryConditionObj["value"])
 		}
@@ -197,11 +197,11 @@ func ArbitraryConditionsToAPI(arbitraryConditions []interface{}) ([]wallarm.Arbi
 	return response, nil
 }
 
-// convertRegexpList converts a TF []interface{} regexp list into []string,
+// convertRegexpList converts a TF []any regexp list into []string,
 // preserving nil entries as "". The shared ConvertToStringSlice skips nils;
 // here that would silently drop the user's `[""]` (which SDKv2 normalizes to
 // cty.NullVal at d.Get) and the API would reject the regexp-mode payload.
-func convertRegexpList(input []interface{}) []string {
+func convertRegexpList(input []any) []string {
 	out := make([]string, 0, len(input))
 	for _, v := range input {
 		if v == nil {
@@ -217,18 +217,18 @@ func convertRegexpList(input []interface{}) []string {
 	return out
 }
 
-func mapPointToAPI(point []interface{}) wallarm.TwoDimensionalSlice {
+func mapPointToAPI(point []any) wallarm.TwoDimensionalSlice {
 	response := make(wallarm.TwoDimensionalSlice, 0, len(point))
 	if len(point) == 0 {
 		return response
 	}
 
 	for _, p1 := range point {
-		p1Slice, ok := p1.([]interface{})
+		p1Slice, ok := p1.([]any)
 		if !ok {
 			continue
 		}
-		p1ToResp := make([]interface{}, 0, len(p1Slice))
+		p1ToResp := make([]any, 0, len(p1Slice))
 		p1ToResp = append(p1ToResp, p1Slice...)
 		response = append(response, p1ToResp)
 	}

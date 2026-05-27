@@ -200,7 +200,7 @@ func dataSourceWallarmSecurityIssues() *schema.Resource {
 	}
 }
 
-func dataSourceWallarmSecurityIssuesRead(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func dataSourceWallarmSecurityIssuesRead(_ context.Context, d *schema.ResourceData, m any) diag.Diagnostics {
 	client := apiClient(m)
 	clientID, err := retrieveClientID(d, m)
 	if err != nil {
@@ -220,9 +220,9 @@ func dataSourceWallarmSecurityIssuesRead(_ context.Context, d *schema.ResourceDa
 		return diag.FromErr(err)
 	}
 
-	issues := make([]interface{}, 0)
+	issues := make([]any, 0)
 	for _, v := range resp {
-		issue := map[string]interface{}{
+		issue := map[string]any{
 			"id":                         v.ID,
 			"client_id":                  v.ClientID,
 			"severity":                   v.Severity,
@@ -245,27 +245,27 @@ func dataSourceWallarmSecurityIssuesRead(_ context.Context, d *schema.ResourceDa
 		}
 
 		// Mitigations — vpatch may be absent when the issue has no virtual-patch mitigation.
-		mitigations := map[string]interface{}{"vpatch": []interface{}{}}
+		mitigations := map[string]any{"vpatch": []any{}}
 		if v.Mitigations.Vpatch != nil {
-			mitigations["vpatch"] = []interface{}{
-				map[string]interface{}{
+			mitigations["vpatch"] = []any{
+				map[string]any{
 					"rule_id": v.Mitigations.Vpatch.RuleID,
 				},
 			}
 		}
-		issue["mitigations"] = []interface{}{mitigations}
+		issue["mitigations"] = []any{mitigations}
 
 		// Issue Type
-		issueType := map[string]interface{}{
+		issueType := map[string]any{
 			"id":   v.IssueType.ID,
 			"name": v.IssueType.Name,
 		}
-		issue["issue_type"] = []interface{}{issueType}
+		issue["issue_type"] = []any{issueType}
 
 		// OWASP
-		owasp := make([]interface{}, 0, len(v.Owasp))
+		owasp := make([]any, 0, len(v.Owasp))
 		for _, o := range v.Owasp {
-			owasp = append(owasp, map[string]interface{}{
+			owasp = append(owasp, map[string]any{
 				"id":        o.ID,
 				"name":      o.Name,
 				"full_name": o.FullName,
@@ -275,9 +275,9 @@ func dataSourceWallarmSecurityIssuesRead(_ context.Context, d *schema.ResourceDa
 		issue["owasp"] = owasp
 
 		// Tags
-		tags := make([]interface{}, 0, len(v.Tags))
+		tags := make([]any, 0, len(v.Tags))
 		for _, t := range v.Tags {
-			tags = append(tags, map[string]interface{}{
+			tags = append(tags, map[string]any{
 				"id":   t.ID,
 				"name": t.Name,
 				"slug": t.Slug,

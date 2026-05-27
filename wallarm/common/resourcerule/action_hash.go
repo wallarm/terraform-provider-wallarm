@@ -12,14 +12,14 @@ import (
 // HashResponseActionDetails is the hash function for the action TypeSet.
 // It transforms API point arrays into point maps as a side effect (e.g.,
 // ["header","HOST"] → {header: "HOST"}, ["get","key"] → {query: "key"}).
-func HashResponseActionDetails(v interface{}) int {
+func HashResponseActionDetails(v any) int {
 	var buf bytes.Buffer
-	m := v.(map[string]interface{})
-	var p []interface{}
+	m := v.(map[string]any)
+	var p []any
 	buf.WriteString(fmt.Sprintf("%s-", m["type"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["value"].(string)))
 	if val, ok := m["point"]; ok {
-		p = val.([]interface{})
+		p = val.([]any)
 		switch p[0].(string) {
 		case "action_name":
 			pointMap := make(map[string]string)
@@ -82,8 +82,8 @@ func HashResponseActionDetails(v interface{}) int {
 // For instance conditions, type "" and "equal" are normalized to the same value
 // so that config (type="" / omitted) and state (type="equal") produce the same
 // hash. Other types like "regex" are preserved to detect actual type changes.
-func HashActionDetails(v interface{}) int {
-	m := v.(map[string]interface{})
+func HashActionDetails(v any) int {
+	m := v.(map[string]any)
 	var buf bytes.Buffer
 
 	condType := m["type"].(string)
@@ -94,11 +94,11 @@ func HashActionDetails(v interface{}) int {
 		value = strings.ToLower(value)
 	}
 
-	// Detect point format: []interface{} (API) or map (config/transformed).
+	// Detect point format: []any (API) or map (config/transformed).
 	var pointStr string
 	if val, ok := m["point"]; ok {
 		switch p := val.(type) {
-		case []interface{}:
+		case []any:
 			// API format — compute what the transformed point map would be.
 			pointMap := make(map[string]string)
 			key := p[0].(string)
@@ -125,7 +125,7 @@ func HashActionDetails(v interface{}) int {
 			}
 			p = uppercaseHeaderName(p)
 			pointStr = fmt.Sprintf("%v", p)
-		case map[string]interface{}:
+		case map[string]any:
 			// Config format from Terraform SDK.
 			if _, isInstance := p["instance"]; isInstance {
 				condType = normalizeInstanceType(condType)
@@ -171,8 +171,8 @@ func lowercaseValueBearingPointEntries(p map[string]string) map[string]string {
 	return out
 }
 
-func lowercaseValueBearingPointEntriesIface(p map[string]interface{}) map[string]interface{} {
-	out := make(map[string]interface{}, len(p))
+func lowercaseValueBearingPointEntriesIface(p map[string]any) map[string]any {
+	out := make(map[string]any, len(p))
 	for k, v := range p {
 		if s, ok := v.(string); ok && PointValuePoints[k] {
 			out[k] = strings.ToLower(s)
@@ -202,12 +202,12 @@ func uppercaseHeaderName(p map[string]string) map[string]string {
 	return out
 }
 
-func uppercaseHeaderNameIface(p map[string]interface{}) map[string]interface{} {
+func uppercaseHeaderNameIface(p map[string]any) map[string]any {
 	hdr, ok := p["header"].(string)
 	if !ok || strings.ToUpper(hdr) == hdr {
 		return p
 	}
-	out := make(map[string]interface{}, len(p))
+	out := make(map[string]any, len(p))
 	for k, v := range p {
 		out[k] = v
 	}
@@ -216,16 +216,16 @@ func uppercaseHeaderNameIface(p map[string]interface{}) map[string]interface{} {
 }
 
 // TransformAPIActionToSchema transforms an API-format action map (point as
-// []interface{}) into the Terraform config format (point as map[string]string).
+// []any) into the Terraform config format (point as map[string]string).
 // Unlike HashResponseActionDetails, this is a pure transform with no hash
 // computation. It performs the same mutations that HashResponseActionDetails
 // applies as side effects.
-func TransformAPIActionToSchema(m map[string]interface{}) {
+func TransformAPIActionToSchema(m map[string]any) {
 	val, ok := m["point"]
 	if !ok {
 		return
 	}
-	p, ok := val.([]interface{})
+	p, ok := val.([]any)
 	if !ok {
 		return // Already transformed (map format) — nothing to do.
 	}
@@ -264,12 +264,12 @@ func TransformAPIActionToSchema(m map[string]interface{}) {
 
 // ActionDetailsToMap converts an API ActionDetails struct to a Terraform-compatible map
 // via JSON marshal/unmarshal. Ensures "value" key is always present.
-func ActionDetailsToMap(actionDetails wallarm.ActionDetails) (map[string]interface{}, error) {
+func ActionDetailsToMap(actionDetails wallarm.ActionDetails) (map[string]any, error) {
 	jsonActions, err := json.Marshal(actionDetails)
 	if err != nil {
 		return nil, err
 	}
-	var mapActions map[string]interface{}
+	var mapActions map[string]any
 	if err = json.Unmarshal(jsonActions, &mapActions); err != nil {
 		return nil, err
 	}

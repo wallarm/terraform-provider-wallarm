@@ -269,7 +269,7 @@ func ExpandPathToActions(path, domain, instance, method, scheme, proto string, q
 		actions = append(actions, wallarm.ActionDetails{
 			Type:  condTypeEqual,
 			Value: instance,
-			Point: []interface{}{pointKeyInstance},
+			Point: []any{pointKeyInstance},
 		})
 	}
 
@@ -278,7 +278,7 @@ func ExpandPathToActions(path, domain, instance, method, scheme, proto string, q
 		actions = append(actions, wallarm.ActionDetails{
 			Type:  "iequal",
 			Value: domain,
-			Point: []interface{}{pointKeyHeader, "HOST"},
+			Point: []any{pointKeyHeader, "HOST"},
 		})
 	}
 
@@ -291,7 +291,7 @@ func ExpandPathToActions(path, domain, instance, method, scheme, proto string, q
 		actions = append(actions, wallarm.ActionDetails{
 			Type:  t,
 			Value: h.Value,
-			Point: []interface{}{pointKeyHeader, strings.ToUpper(h.Name)},
+			Point: []any{pointKeyHeader, strings.ToUpper(h.Name)},
 		})
 	}
 
@@ -303,21 +303,21 @@ func ExpandPathToActions(path, domain, instance, method, scheme, proto string, q
 		actions = append(actions, wallarm.ActionDetails{
 			Type:  condTypeEqual,
 			Value: method,
-			Point: []interface{}{pointKeyMethod},
+			Point: []any{pointKeyMethod},
 		})
 	}
 	if scheme != "" {
 		actions = append(actions, wallarm.ActionDetails{
 			Type:  condTypeEqual,
 			Value: scheme,
-			Point: []interface{}{pointKeyScheme},
+			Point: []any{pointKeyScheme},
 		})
 	}
 	if proto != "" {
 		actions = append(actions, wallarm.ActionDetails{
 			Type:  condTypeEqual,
 			Value: proto,
-			Point: []interface{}{pointKeyProto},
+			Point: []any{pointKeyProto},
 		})
 	}
 
@@ -330,7 +330,7 @@ func ExpandPathToActions(path, domain, instance, method, scheme, proto string, q
 		actions = append(actions, wallarm.ActionDetails{
 			Type:  t,
 			Value: q.Value,
-			Point: []interface{}{pointKeyGet, q.Key},
+			Point: []any{pointKeyGet, q.Key},
 		})
 	}
 
@@ -351,9 +351,9 @@ func expandPath(path string) []wallarm.ActionDetails {
 	// Root path "/"
 	if path == "/" {
 		return []wallarm.ActionDetails{
-			{Type: condTypeEqual, Value: "", Point: []interface{}{pointKeyActionName}},
-			{Type: condTypeAbsent, Value: nil, Point: []interface{}{pointKeyActionExt}},
-			{Type: condTypeAbsent, Value: nil, Point: []interface{}{pointKeyPath, float64(0)}},
+			{Type: condTypeEqual, Value: "", Point: []any{pointKeyActionName}},
+			{Type: condTypeAbsent, Value: nil, Point: []any{pointKeyActionExt}},
+			{Type: condTypeAbsent, Value: nil, Point: []any{pointKeyPath, float64(0)}},
 		}
 	}
 
@@ -388,7 +388,7 @@ func expandPath(path string) []wallarm.ActionDetails {
 		actions = append(actions, wallarm.ActionDetails{
 			Type:  condTypeEqual,
 			Value: actionName,
-			Point: []interface{}{pointKeyActionName},
+			Point: []any{pointKeyActionName},
 		})
 	}
 
@@ -399,7 +399,7 @@ func expandPath(path string) []wallarm.ActionDetails {
 			actions = append(actions, wallarm.ActionDetails{
 				Type:  condTypeEqual,
 				Value: actionExt,
-				Point: []interface{}{pointKeyActionExt},
+				Point: []any{pointKeyActionExt},
 			})
 		}
 		// Wildcard extension *.* -> skip action_ext condition
@@ -408,7 +408,7 @@ func expandPath(path string) []wallarm.ActionDetails {
 		actions = append(actions, wallarm.ActionDetails{
 			Type:  condTypeAbsent,
 			Value: nil,
-			Point: []interface{}{pointKeyActionExt},
+			Point: []any{pointKeyActionExt},
 		})
 	}
 
@@ -418,7 +418,7 @@ func expandPath(path string) []wallarm.ActionDetails {
 			actions = append(actions, wallarm.ActionDetails{
 				Type:  condTypeEqual,
 				Value: seg,
-				Point: []interface{}{pointKeyPath, float64(i)},
+				Point: []any{pointKeyPath, float64(i)},
 			})
 		}
 	}
@@ -429,7 +429,7 @@ func expandPath(path string) []wallarm.ActionDetails {
 		actions = append(actions, wallarm.ActionDetails{
 			Type:  condTypeAbsent,
 			Value: nil,
-			Point: []interface{}{pointKeyPath, float64(limiterIdx)},
+			Point: []any{pointKeyPath, float64(limiterIdx)},
 		})
 	}
 
@@ -561,7 +561,7 @@ type RuleExportEntry struct {
 	Query                []QueryParam                  `json:"query,omitempty"`
 	Headers              []HeaderParam                 `json:"headers,omitempty"`
 	Action               []wallarm.ActionDetails       `json:"action"`
-	Point                []interface{}                 `json:"point,omitempty"`
+	Point                []any                         `json:"point,omitempty"`
 	VariativityDisabled  bool                          `json:"variativity_disabled"`
 	Comment              string                        `json:"comment"`
 	AttackType           string                        `json:"attack_type,omitempty"`
@@ -590,7 +590,7 @@ type RuleExportEntry struct {
 	DebugEnabled         bool                          `json:"debug_enabled,omitempty"`
 	HeaderName           string                        `json:"header_name,omitempty"`
 	HeaderValues         []string                      `json:"header_values,omitempty"`
-	LoginPoint           []interface{}                 `json:"login_point,omitempty"`
+	LoginPoint           []any                         `json:"login_point,omitempty"`
 	LoginRegex           string                        `json:"login_regex,omitempty"`
 	CaseSensitive        bool                          `json:"case_sensitive,omitempty"`
 	CredStuffType        string                        `json:"cred_stuff_type,omitempty"`

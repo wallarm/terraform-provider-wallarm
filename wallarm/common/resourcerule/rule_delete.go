@@ -14,8 +14,8 @@ import (
 // and on the no-op path (HTTP 200 with empty body — rule already absent or
 // blocked server-side); the no-op case is logged at WARN to surface drift
 // that would otherwise go unnoticed.
-func Delete(cp func(m interface{}) wallarm.API) schema.DeleteContextFunc {
-	return func(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func Delete(cp func(m any) wallarm.API) schema.DeleteContextFunc {
+	return func(_ context.Context, d *schema.ResourceData, m any) diag.Diagnostics {
 		clientID := d.Get("client_id").(int)
 		ruleID := d.Get("rule_id").(int)
 

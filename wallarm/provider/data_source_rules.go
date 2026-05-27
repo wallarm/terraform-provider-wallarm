@@ -153,7 +153,7 @@ func dataSourceWallarmRules() *schema.Resource {
 	}
 }
 
-func dataSourceWallarmRulesRead(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func dataSourceWallarmRulesRead(_ context.Context, d *schema.ResourceData, m any) diag.Diagnostics {
 	client := apiClient(m)
 	clientID, err := retrieveClientID(d, m)
 	if err != nil {
@@ -163,7 +163,7 @@ func dataSourceWallarmRulesRead(_ context.Context, d *schema.ResourceData, m int
 	// Build optional type filter set.
 	typeFilter := make(map[string]bool)
 	if v, ok := d.GetOk("type"); ok {
-		for _, t := range v.([]interface{}) {
+		for _, t := range v.([]any) {
 			typeFilter[t.(string)] = true
 		}
 	}
@@ -245,7 +245,7 @@ func dataSourceWallarmRulesRead(_ context.Context, d *schema.ResourceData, m int
 	}
 
 	// Build basic rules list (backward-compatible).
-	basicRules := make([]interface{}, 0, len(filteredRules))
+	basicRules := make([]any, 0, len(filteredRules))
 	for _, rule := range filteredRules {
 		var importID string
 		if resourcerule.FourPartIDTypes[rule.Type] {
@@ -254,7 +254,7 @@ func dataSourceWallarmRulesRead(_ context.Context, d *schema.ResourceData, m int
 			importID = fmt.Sprintf("%d/%d/%d", clientID, rule.ActionID, rule.ID)
 		}
 
-		basicRules = append(basicRules, map[string]interface{}{
+		basicRules = append(basicRules, map[string]any{
 			"rule_id":            rule.ID,
 			"action_id":          rule.ActionID,
 			"client_id":          clientID,
@@ -266,9 +266,9 @@ func dataSourceWallarmRulesRead(_ context.Context, d *schema.ResourceData, m int
 
 	// Build full export list with reverse-mapped fields.
 	exported := resourcerule.ExportRules(filteredRules, clientID)
-	exportList := make([]interface{}, 0, len(exported))
+	exportList := make([]any, 0, len(exported))
 	for _, e := range exported {
-		entry := map[string]interface{}{
+		entry := map[string]any{
 			"rule_id":            e.RuleID,
 			"action_id":          e.ActionID,
 			"client_id":          e.ClientID,
@@ -324,7 +324,7 @@ func dataSourceWallarmRulesRead(_ context.Context, d *schema.ResourceData, m int
 		entry["query_json"] = mustJSON(e.Query)
 		entry["headers_json"] = mustJSON(e.Headers)
 		// Convert action to TF format (point as map) before serializing.
-		tfActions := make([]map[string]interface{}, 0, len(e.Action))
+		tfActions := make([]map[string]any, 0, len(e.Action))
 		for _, a := range e.Action {
 			m, err := resourcerule.ActionDetailsToMap(a)
 			if err != nil {
@@ -356,7 +356,7 @@ func dataSourceWallarmRulesRead(_ context.Context, d *schema.ResourceData, m int
 }
 
 // mustJSON serializes a value to JSON string. Returns "null" on nil, "[]" on empty slices.
-func mustJSON(v interface{}) string {
+func mustJSON(v any) string {
 	if v == nil {
 		return "null"
 	}

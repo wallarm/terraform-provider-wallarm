@@ -88,7 +88,7 @@ func resourceWallarmEmail() *schema.Resource {
 	}
 }
 
-func resourceWallarmEmailCreate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceWallarmEmailCreate(ctx context.Context, d *schema.ResourceData, m any) diag.Diagnostics {
 	client := apiClient(m)
 	clientID, err := retrieveClientID(d, m)
 	if err != nil {
@@ -121,7 +121,7 @@ func resourceWallarmEmailCreate(ctx context.Context, d *schema.ResourceData, m i
 	return resourceWallarmEmailRead(ctx, d, m)
 }
 
-func resourceWallarmEmailRead(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceWallarmEmailRead(_ context.Context, d *schema.ResourceData, m any) diag.Diagnostics {
 	client := apiClient(m)
 	clientID, err := retrieveClientID(d, m)
 	if err != nil {
@@ -146,7 +146,7 @@ func resourceWallarmEmailRead(_ context.Context, d *schema.ResourceData, m inter
 	return nil
 }
 
-func resourceWallarmEmailUpdate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceWallarmEmailUpdate(ctx context.Context, d *schema.ResourceData, m any) diag.Diagnostics {
 	client := apiClient(m)
 	clientID, err := retrieveClientID(d, m)
 	if err != nil {
@@ -206,7 +206,7 @@ func resourceWallarmEmailUpdate(ctx context.Context, d *schema.ResourceData, m i
 	return resourceWallarmEmailRead(ctx, d, m)
 }
 
-func resourceWallarmEmailDelete(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceWallarmEmailDelete(_ context.Context, d *schema.ResourceData, m any) diag.Diagnostics {
 	client := apiClient(m)
 	integrationID := d.Get("integration_id").(int)
 	if err := client.IntegrationDelete(integrationID); err != nil {
@@ -215,8 +215,8 @@ func resourceWallarmEmailDelete(_ context.Context, d *schema.ResourceData, m int
 	return nil
 }
 
-func expandInterfaceToStringList(list interface{}) []string {
-	ifaceList := list.([]interface{})
+func expandInterfaceToStringList(list any) []string {
+	ifaceList := list.([]any)
 	vs := []string{}
 	for _, v := range ifaceList {
 		vs = append(vs, v.(string))

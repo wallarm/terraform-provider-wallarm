@@ -137,7 +137,7 @@ func resourceWallarmRulesSettings() *schema.Resource {
 	}
 }
 
-func resourceWallarmRulesSettingsRead(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceWallarmRulesSettingsRead(_ context.Context, d *schema.ResourceData, m any) diag.Diagnostics {
 	client := apiClient(m)
 
 	// Parse client_id from the composite ID on import.
@@ -228,7 +228,7 @@ func resourceWallarmRulesSettingsRead(_ context.Context, d *schema.ResourceData,
 	return nil
 }
 
-func resourceWallarmRulesSettingsCreate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceWallarmRulesSettingsCreate(ctx context.Context, d *schema.ResourceData, m any) diag.Diagnostics {
 	clientID, err := retrieveClientID(d, m)
 	if err != nil {
 		return diag.FromErr(err)
@@ -242,14 +242,14 @@ func resourceWallarmRulesSettingsCreate(ctx context.Context, d *schema.ResourceD
 	return resourceWallarmRulesSettingsRead(ctx, d, m)
 }
 
-func resourceWallarmRulesSettingsUpdate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceWallarmRulesSettingsUpdate(ctx context.Context, d *schema.ResourceData, m any) diag.Diagnostics {
 	if err := updateRulesSettings(d, m); err != nil {
 		return diag.FromErr(err)
 	}
 	return resourceWallarmRulesSettingsRead(ctx, d, m)
 }
 
-func resourceWallarmRulesSettingsDelete(_ context.Context, _ *schema.ResourceData, _ interface{}) diag.Diagnostics {
+func resourceWallarmRulesSettingsDelete(_ context.Context, _ *schema.ResourceData, _ any) diag.Diagnostics {
 	// Settings are a singleton — cannot be deleted, only modified.
 	return nil
 }
@@ -292,7 +292,7 @@ func setNullableInt(d *schema.ResourceData, key string, target **int) {
 	}
 }
 
-func updateRulesSettings(d *schema.ResourceData, m interface{}) error {
+func updateRulesSettings(d *schema.ResourceData, m any) error {
 	client := apiClient(m)
 	clientID, err := retrieveClientID(d, m)
 	if err != nil {

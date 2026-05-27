@@ -13,7 +13,7 @@ import (
 func TestCounterDelete_NoAPICallNoPanic(t *testing.T) {
 	del := CounterDelete("wallarm_rule_test_counter")
 
-	d := schema.TestResourceDataRaw(t, map[string]*schema.Schema{}, map[string]interface{}{})
+	d := schema.TestResourceDataRaw(t, map[string]*schema.Schema{}, map[string]any{})
 	d.SetId("1/2/3")
 
 	diags := del(context.Background(), d, nil)

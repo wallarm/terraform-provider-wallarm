@@ -12,20 +12,20 @@ func TestHashResponseActionDetails_Baseline(t *testing.T) {
 	tests := []struct {
 		name string
 		// input is the API-format map (as produced by ActionDetailsToMap)
-		input map[string]interface{}
+		input map[string]any
 		// wantHash is the expected hash value
 		wantHash int
 		// After hashing, the map is mutated. These are the expected values.
 		wantType  string
 		wantValue string
-		wantPoint interface{} // map[string]string after transform
+		wantPoint any // map[string]string after transform
 	}{
 		{
 			name: "header",
-			input: map[string]interface{}{
+			input: map[string]any{
 				"type":  "iequal",
 				"value": "example.com",
-				"point": []interface{}{"header", "HOST"},
+				"point": []any{"header", "HOST"},
 			},
 			wantHash:  HashString("iequal-example.com-map[header:HOST]-"),
 			wantType:  "iequal",
@@ -34,10 +34,10 @@ func TestHashResponseActionDetails_Baseline(t *testing.T) {
 		},
 		{
 			name: "instance",
-			input: map[string]interface{}{
+			input: map[string]any{
 				"type":  "equal",
 				"value": "9",
-				"point": []interface{}{"instance"},
+				"point": []any{"instance"},
 			},
 			wantHash:  HashString("equal-9-map[instance:9]-"),
 			wantType:  "",
@@ -46,10 +46,10 @@ func TestHashResponseActionDetails_Baseline(t *testing.T) {
 		},
 		{
 			name: "path",
-			input: map[string]interface{}{
+			input: map[string]any{
 				"type":  "equal",
 				"value": "api",
-				"point": []interface{}{"path", float64(0)},
+				"point": []any{"path", float64(0)},
 			},
 			wantHash:  HashString("equal-api-map[path:0]-"),
 			wantType:  "equal",
@@ -58,10 +58,10 @@ func TestHashResponseActionDetails_Baseline(t *testing.T) {
 		},
 		{
 			name: "action_name",
-			input: map[string]interface{}{
+			input: map[string]any{
 				"type":  "iequal",
 				"value": "login",
-				"point": []interface{}{"action_name"},
+				"point": []any{"action_name"},
 			},
 			wantHash:  HashString("iequal-login-map[action_name:login]-"),
 			wantType:  "iequal",
@@ -70,10 +70,10 @@ func TestHashResponseActionDetails_Baseline(t *testing.T) {
 		},
 		{
 			name: "action_ext",
-			input: map[string]interface{}{
+			input: map[string]any{
 				"type":  "equal",
 				"value": "php",
-				"point": []interface{}{"action_ext"},
+				"point": []any{"action_ext"},
 			},
 			wantHash:  HashString("equal-php-map[action_ext:php]-"),
 			wantType:  "equal",
@@ -82,10 +82,10 @@ func TestHashResponseActionDetails_Baseline(t *testing.T) {
 		},
 		{
 			name: "method",
-			input: map[string]interface{}{
+			input: map[string]any{
 				"type":  "equal",
 				"value": "GET",
-				"point": []interface{}{"method"},
+				"point": []any{"method"},
 			},
 			wantHash:  HashString("equal-GET-map[method:GET]-"),
 			wantType:  "equal",
@@ -94,10 +94,10 @@ func TestHashResponseActionDetails_Baseline(t *testing.T) {
 		},
 		{
 			name: "scheme",
-			input: map[string]interface{}{
+			input: map[string]any{
 				"type":  "equal",
 				"value": "https",
-				"point": []interface{}{"scheme"},
+				"point": []any{"scheme"},
 			},
 			wantHash:  HashString("equal-https-map[scheme:https]-"),
 			wantType:  "equal",
@@ -106,10 +106,10 @@ func TestHashResponseActionDetails_Baseline(t *testing.T) {
 		},
 		{
 			name: "proto",
-			input: map[string]interface{}{
+			input: map[string]any{
 				"type":  "equal",
 				"value": "1.1",
-				"point": []interface{}{"proto"},
+				"point": []any{"proto"},
 			},
 			wantHash:  HashString("equal-1.1-map[proto:1.1]-"),
 			wantType:  "equal",
@@ -118,10 +118,10 @@ func TestHashResponseActionDetails_Baseline(t *testing.T) {
 		},
 		{
 			name: "uri",
-			input: map[string]interface{}{
+			input: map[string]any{
 				"type":  "equal",
 				"value": "/api/v1",
-				"point": []interface{}{"uri"},
+				"point": []any{"uri"},
 			},
 			wantHash:  HashString("equal-/api/v1-map[uri:/api/v1]-"),
 			wantType:  "equal",
@@ -130,10 +130,10 @@ func TestHashResponseActionDetails_Baseline(t *testing.T) {
 		},
 		{
 			name: "query (get → query)",
-			input: map[string]interface{}{
+			input: map[string]any{
 				"type":  "equal",
 				"value": "test",
-				"point": []interface{}{"get", "search"},
+				"point": []any{"get", "search"},
 			},
 			wantHash:  HashString("equal-test-map[query:search]-"),
 			wantType:  "equal",
@@ -142,10 +142,10 @@ func TestHashResponseActionDetails_Baseline(t *testing.T) {
 		},
 		{
 			name: "absent action_ext",
-			input: map[string]interface{}{
+			input: map[string]any{
 				"type":  "absent",
 				"value": "",
-				"point": []interface{}{"action_ext"},
+				"point": []any{"action_ext"},
 			},
 			wantHash:  HashString("absent--map[action_ext:]-"),
 			wantType:  "absent",
@@ -187,84 +187,84 @@ func TestHashResponseActionDetails_Baseline(t *testing.T) {
 func TestTransformAPIActionToSchema(t *testing.T) {
 	tests := []struct {
 		name      string
-		input     map[string]interface{}
+		input     map[string]any
 		wantType  string
 		wantValue string
 		wantPoint map[string]string
 	}{
 		{
 			name:      "header",
-			input:     map[string]interface{}{"type": "iequal", "value": "example.com", "point": []interface{}{"header", "HOST"}},
+			input:     map[string]any{"type": "iequal", "value": "example.com", "point": []any{"header", "HOST"}},
 			wantType:  "iequal",
 			wantValue: "example.com",
 			wantPoint: map[string]string{"header": "HOST"},
 		},
 		{
 			name:      "instance — type preserved, value moved to point",
-			input:     map[string]interface{}{"type": "equal", "value": "9", "point": []interface{}{"instance"}},
+			input:     map[string]any{"type": "equal", "value": "9", "point": []any{"instance"}},
 			wantType:  "equal",
 			wantValue: "",
 			wantPoint: map[string]string{"instance": "9"},
 		},
 		{
 			name:      "path",
-			input:     map[string]interface{}{"type": "equal", "value": "api", "point": []interface{}{"path", float64(0)}},
+			input:     map[string]any{"type": "equal", "value": "api", "point": []any{"path", float64(0)}},
 			wantType:  "equal",
 			wantValue: "api",
 			wantPoint: map[string]string{"path": "0"},
 		},
 		{
 			name:      "action_name",
-			input:     map[string]interface{}{"type": "iequal", "value": "login", "point": []interface{}{"action_name"}},
+			input:     map[string]any{"type": "iequal", "value": "login", "point": []any{"action_name"}},
 			wantType:  "iequal",
 			wantValue: "",
 			wantPoint: map[string]string{"action_name": "login"},
 		},
 		{
 			name:      "action_ext",
-			input:     map[string]interface{}{"type": "equal", "value": "php", "point": []interface{}{"action_ext"}},
+			input:     map[string]any{"type": "equal", "value": "php", "point": []any{"action_ext"}},
 			wantType:  "equal",
 			wantValue: "",
 			wantPoint: map[string]string{"action_ext": "php"},
 		},
 		{
 			name:      "method",
-			input:     map[string]interface{}{"type": "equal", "value": "GET", "point": []interface{}{"method"}},
+			input:     map[string]any{"type": "equal", "value": "GET", "point": []any{"method"}},
 			wantType:  "equal",
 			wantValue: "",
 			wantPoint: map[string]string{"method": "GET"},
 		},
 		{
 			name:      "scheme",
-			input:     map[string]interface{}{"type": "equal", "value": "https", "point": []interface{}{"scheme"}},
+			input:     map[string]any{"type": "equal", "value": "https", "point": []any{"scheme"}},
 			wantType:  "equal",
 			wantValue: "",
 			wantPoint: map[string]string{"scheme": "https"},
 		},
 		{
 			name:      "proto",
-			input:     map[string]interface{}{"type": "equal", "value": "1.1", "point": []interface{}{"proto"}},
+			input:     map[string]any{"type": "equal", "value": "1.1", "point": []any{"proto"}},
 			wantType:  "equal",
 			wantValue: "",
 			wantPoint: map[string]string{"proto": "1.1"},
 		},
 		{
 			name:      "uri",
-			input:     map[string]interface{}{"type": "equal", "value": "/api/v1", "point": []interface{}{"uri"}},
+			input:     map[string]any{"type": "equal", "value": "/api/v1", "point": []any{"uri"}},
 			wantType:  "equal",
 			wantValue: "",
 			wantPoint: map[string]string{"uri": "/api/v1"},
 		},
 		{
 			name:      "query (get → query)",
-			input:     map[string]interface{}{"type": "equal", "value": "test", "point": []interface{}{"get", "search"}},
+			input:     map[string]any{"type": "equal", "value": "test", "point": []any{"get", "search"}},
 			wantType:  "equal",
 			wantValue: "test",
 			wantPoint: map[string]string{"query": "search"},
 		},
 		{
 			name:      "absent action_ext",
-			input:     map[string]interface{}{"type": "absent", "value": "", "point": []interface{}{"action_ext"}},
+			input:     map[string]any{"type": "absent", "value": "", "point": []any{"action_ext"}},
 			wantType:  "absent",
 			wantValue: "",
 			wantPoint: map[string]string{"action_ext": ""},
@@ -297,10 +297,10 @@ func TestTransformAPIActionToSchema(t *testing.T) {
 // TestTransformAPIActionToSchema_AlreadyTransformed verifies that calling
 // TransformAPIActionToSchema on already-transformed data is a no-op.
 func TestTransformAPIActionToSchema_AlreadyTransformed(t *testing.T) {
-	input := map[string]interface{}{
+	input := map[string]any{
 		"type":  "",
 		"value": "",
-		"point": map[string]interface{}{"instance": "9"},
+		"point": map[string]any{"instance": "9"},
 	}
 
 	// Should not panic or modify.
@@ -316,88 +316,88 @@ func TestTransformAPIActionToSchema_AlreadyTransformed(t *testing.T) {
 
 // TestHashActionDetails_ConsistentAcrossFormats verifies that HashActionDetails
 // produces the same hash for the same logical condition regardless of whether
-// the input is in API format ([]interface{}) or config format (map).
+// the input is in API format ([]any) or config format (map).
 func TestHashActionDetails_ConsistentAcrossFormats(t *testing.T) {
 	tests := []struct {
 		name      string
-		apiFormat map[string]interface{}
-		cfgFormat map[string]interface{}
+		apiFormat map[string]any
+		cfgFormat map[string]any
 	}{
 		{
 			name: "header",
-			apiFormat: map[string]interface{}{
+			apiFormat: map[string]any{
 				"type": "iequal", "value": "example.com",
-				"point": []interface{}{"header", "HOST"},
+				"point": []any{"header", "HOST"},
 			},
-			cfgFormat: map[string]interface{}{
+			cfgFormat: map[string]any{
 				"type": "iequal", "value": "example.com",
-				"point": map[string]interface{}{"header": "HOST"},
+				"point": map[string]any{"header": "HOST"},
 			},
 		},
 		{
 			name: "instance — type equal vs empty both hash the same",
-			apiFormat: map[string]interface{}{
+			apiFormat: map[string]any{
 				"type": "equal", "value": "9",
-				"point": []interface{}{"instance"},
+				"point": []any{"instance"},
 			},
-			cfgFormat: map[string]interface{}{
+			cfgFormat: map[string]any{
 				"type": "", "value": "9",
-				"point": map[string]interface{}{"instance": "9"},
+				"point": map[string]any{"instance": "9"},
 			},
 		},
 		{
 			name: "instance — type equal in both formats",
-			apiFormat: map[string]interface{}{
+			apiFormat: map[string]any{
 				"type": "equal", "value": "9",
-				"point": []interface{}{"instance"},
+				"point": []any{"instance"},
 			},
-			cfgFormat: map[string]interface{}{
+			cfgFormat: map[string]any{
 				"type": "equal", "value": "9",
-				"point": map[string]interface{}{"instance": "9"},
+				"point": map[string]any{"instance": "9"},
 			},
 		},
 		{
 			name: "path",
-			apiFormat: map[string]interface{}{
+			apiFormat: map[string]any{
 				"type": "equal", "value": "api",
-				"point": []interface{}{"path", float64(0)},
+				"point": []any{"path", float64(0)},
 			},
-			cfgFormat: map[string]interface{}{
+			cfgFormat: map[string]any{
 				"type": "equal", "value": "api",
-				"point": map[string]interface{}{"path": "0"},
+				"point": map[string]any{"path": "0"},
 			},
 		},
 		{
 			name: "action_name",
-			apiFormat: map[string]interface{}{
+			apiFormat: map[string]any{
 				"type": "iequal", "value": "login",
-				"point": []interface{}{"action_name"},
+				"point": []any{"action_name"},
 			},
-			cfgFormat: map[string]interface{}{
+			cfgFormat: map[string]any{
 				"type": "iequal", "value": "login",
-				"point": map[string]interface{}{"action_name": "login"},
+				"point": map[string]any{"action_name": "login"},
 			},
 		},
 		{
 			name: "query (get → query)",
-			apiFormat: map[string]interface{}{
+			apiFormat: map[string]any{
 				"type": "equal", "value": "test",
-				"point": []interface{}{"get", "search"},
+				"point": []any{"get", "search"},
 			},
-			cfgFormat: map[string]interface{}{
+			cfgFormat: map[string]any{
 				"type": "equal", "value": "test",
-				"point": map[string]interface{}{"query": "search"},
+				"point": map[string]any{"query": "search"},
 			},
 		},
 		{
 			name: "method",
-			apiFormat: map[string]interface{}{
+			apiFormat: map[string]any{
 				"type": "equal", "value": "GET",
-				"point": []interface{}{"method"},
+				"point": []any{"method"},
 			},
-			cfgFormat: map[string]interface{}{
+			cfgFormat: map[string]any{
 				"type": "equal", "value": "GET",
-				"point": map[string]interface{}{"method": "GET"},
+				"point": map[string]any{"method": "GET"},
 			},
 		},
 	}
@@ -416,17 +416,17 @@ func TestHashActionDetails_ConsistentAcrossFormats(t *testing.T) {
 // TestHashActionDetails_InstanceTypeChange verifies that changing instance type
 // from "equal" to "regex" produces a different hash, triggering ForceNew.
 func TestHashActionDetails_InstanceTypeChange(t *testing.T) {
-	equalInstance := map[string]interface{}{
+	equalInstance := map[string]any{
 		"type": "equal", "value": "9",
-		"point": map[string]interface{}{"instance": "9"},
+		"point": map[string]any{"instance": "9"},
 	}
-	emptyInstance := map[string]interface{}{
+	emptyInstance := map[string]any{
 		"type": "", "value": "9",
-		"point": map[string]interface{}{"instance": "9"},
+		"point": map[string]any{"instance": "9"},
 	}
-	regexInstance := map[string]interface{}{
+	regexInstance := map[string]any{
 		"type": "regex", "value": "9",
-		"point": map[string]interface{}{"instance": "9"},
+		"point": map[string]any{"instance": "9"},
 	}
 
 	equalHash := HashActionDetails(equalInstance)
@@ -447,10 +447,10 @@ func TestHashActionDetails_InstanceTypeChange(t *testing.T) {
 // TestHashActionDetails_NoSideEffects verifies HashActionDetails does not
 // mutate the input map.
 func TestHashActionDetails_NoSideEffects(t *testing.T) {
-	input := map[string]interface{}{
+	input := map[string]any{
 		"type":  "equal",
 		"value": "9",
-		"point": []interface{}{"instance"},
+		"point": []any{"instance"},
 	}
 
 	HashActionDetails(input)
@@ -462,7 +462,7 @@ func TestHashActionDetails_NoSideEffects(t *testing.T) {
 	if input["value"].(string) != "9" {
 		t.Errorf("value was mutated to %q", input["value"])
 	}
-	p := input["point"].([]interface{})
+	p := input["point"].([]any)
 	if len(p) != 1 || p[0].(string) != "instance" {
 		t.Errorf("point was mutated to %v", input["point"])
 	}
@@ -471,15 +471,15 @@ func TestHashActionDetails_NoSideEffects(t *testing.T) {
 // TestHashActionDetails_IequalValueCaseInsensitive: iequal values share a
 // hash regardless of case because the API downcases them server-side.
 func TestHashActionDetails_IequalValueCaseInsensitive(t *testing.T) {
-	mixed := map[string]interface{}{
+	mixed := map[string]any{
 		"type":  "iequal",
 		"value": "Example.COM",
-		"point": map[string]interface{}{"header": "HOST"},
+		"point": map[string]any{"header": "HOST"},
 	}
-	lower := map[string]interface{}{
+	lower := map[string]any{
 		"type":  "iequal",
 		"value": "example.com",
-		"point": map[string]interface{}{"header": "HOST"},
+		"point": map[string]any{"header": "HOST"},
 	}
 	if HashActionDetails(mixed) != HashActionDetails(lower) {
 		t.Errorf("iequal: expected case-insensitive hashes\n  mixed=%d\n  lower=%d",
@@ -493,15 +493,15 @@ func TestHashActionDetails_IequalValueCaseInsensitive(t *testing.T) {
 // of case in the point-map value.
 func TestHashActionDetails_IequalValueBearingPointCaseInsensitive(t *testing.T) {
 	for _, key := range []string{"action_name", "action_ext", "method", "instance", "scheme", "uri", "proto"} {
-		mixed := map[string]interface{}{
+		mixed := map[string]any{
 			"type":  "iequal",
 			"value": "",
-			"point": map[string]interface{}{key: "TEST"},
+			"point": map[string]any{key: "TEST"},
 		}
-		lower := map[string]interface{}{
+		lower := map[string]any{
 			"type":  "iequal",
 			"value": "",
-			"point": map[string]interface{}{key: "test"},
+			"point": map[string]any{key: "test"},
 		}
 		if HashActionDetails(mixed) != HashActionDetails(lower) {
 			t.Errorf("%s: expected case-insensitive hashes for iequal\n  mixed=%d\n  lower=%d",
@@ -534,15 +534,15 @@ func TestLowercaseValueBearingPointEntries(t *testing.T) {
 // case-sensitive so a real value change still produces a different hash.
 func TestHashActionDetails_NonIequalValueCaseSensitive(t *testing.T) {
 	for _, condType := range []string{"equal", "regex"} {
-		mixed := map[string]interface{}{
+		mixed := map[string]any{
 			"type":  condType,
 			"value": "Example.COM",
-			"point": map[string]interface{}{"header": "HOST"},
+			"point": map[string]any{"header": "HOST"},
 		}
-		lower := map[string]interface{}{
+		lower := map[string]any{
 			"type":  condType,
 			"value": "example.com",
-			"point": map[string]interface{}{"header": "HOST"},
+			"point": map[string]any{"header": "HOST"},
 		}
 		if HashActionDetails(mixed) == HashActionDetails(lower) {
 			t.Errorf("%s: expected case-sensitive hashes, got equal", condType)
@@ -552,13 +552,13 @@ func TestHashActionDetails_NonIequalValueCaseSensitive(t *testing.T) {
 
 // TestHashResponseActionDetails_ConfigFormatPanics documents that the current
 // HashResponseActionDetails panics when given config-format data (point as
-// map[string]interface{} instead of []interface{}). This is the limitation
+// map[string]any instead of []any). This is the limitation
 // we're fixing: it can only handle API-format data.
 func TestHashResponseActionDetails_ConfigFormatPanics(t *testing.T) {
-	input := map[string]interface{}{
+	input := map[string]any{
 		"type":  "",
 		"value": "",
-		"point": map[string]interface{}{"instance": "9"},
+		"point": map[string]any{"instance": "9"},
 	}
 
 	defer func() {

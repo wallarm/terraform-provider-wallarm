@@ -38,7 +38,7 @@ func resourceWallarmUploads() *schema.Resource {
 	}
 }
 
-func resourceWallarmUploadsCreate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceWallarmUploadsCreate(ctx context.Context, d *schema.ResourceData, m any) diag.Diagnostics {
 	client := apiClient(m)
 	clientID, err := retrieveClientID(d, m)
 	if err != nil {
@@ -47,7 +47,7 @@ func resourceWallarmUploadsCreate(ctx context.Context, d *schema.ResourceData, m
 	fields := getCommonResourceRuleFieldsDTOFromResourceData(d)
 	fileType := d.Get("file_type").(string)
 
-	ps := d.Get("point").([]interface{})
+	ps := d.Get("point").([]any)
 	if err := d.Set("point", ps); err != nil {
 		return diag.FromErr(fmt.Errorf("error setting point: %w", err))
 	}
@@ -92,7 +92,7 @@ func resourceWallarmUploadsCreate(ctx context.Context, d *schema.ResourceData, m
 	return resourceWallarmUploadsRead(ctx, d, m)
 }
 
-func resourceWallarmUploadsRead(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceWallarmUploadsRead(_ context.Context, d *schema.ResourceData, m any) diag.Diagnostics {
 	clientID, err := retrieveClientID(d, m)
 	if err != nil {
 		return diag.FromErr(err)
