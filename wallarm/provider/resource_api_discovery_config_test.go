@@ -1,9 +1,12 @@
 package wallarm
 
 import (
+	"fmt"
 	"reflect"
+	"regexp"
 	"testing"
 
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	wallarm "github.com/wallarm/wallarm-go"
 )
@@ -218,4 +221,95 @@ func newAPIDiscoveryConfigResourceData(t *testing.T, raw map[string]any) *schema
 	t.Helper()
 	r := resourceWallarmAPIDiscoveryConfig()
 	return schema.TestResourceDataRaw(t, r.Schema, raw)
+}
+
+// --- Acceptance tests (TF_ACC-gated) ---------------------------------------
+
+// Singleton — tests must run sequentially (no ParallelTest) since they all
+// mutate the same per-tenant config record.
+
+func testAccAPIDiscoveryConfigHCL(enabled bool, typeThreshold, piiThreshold float64) string {
+	return fmt.Sprintf(`
+resource "wallarm_api_discovery_config" "test" {
+  enabled                  = %t
+  apply_extended_filter    = true
+  type_detection_threshold = %g
+  pii_detection_threshold  = %g
+  disabled_apps            = []
+
+  protocols {
+    rest    = true
+    graphql = true
+    soap    = true
+    grpc    = true
+    mcp     = true
+  }
+
+  endpoint_stability {
+    min_count = 2
+    min_time  = 300
+  }
+}
+`, enabled, typeThreshold, piiThreshold)
+}
+
+func TestAccAPIDiscoveryConfig_BasicLifecycle(t *testing.T) {
+	const resourceName = "wallarm_api_discovery_config.test"
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV5ProviderFactories: testAccProtoV5ProviderFactories,
+		// CheckDestroy is intentionally nil: the singleton record always exists.
+		// Delete is a noop; the API config persists after the test.
+		Steps: []resource.TestStep{
+			// Step 1: apply with one set of values.
+			{
+				Config: testAccAPIDiscoveryConfigHCL(true, 0.5, 0.1),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "enabled", "true"),
+					resource.TestCheckResourceAttr(resourceName, "apply_extended_filter", "true"),
+					resource.TestCheckResourceAttr(resourceName, "type_detection_threshold", "0.5"),
+					resource.TestCheckResourceAttr(resourceName, "pii_detection_threshold", "0.1"),
+					resource.TestCheckResourceAttr(resourceName, "protocols.0.rest", "true"),
+					resource.TestCheckResourceAttr(resourceName, "protocols.0.mcp", "true"),
+					resource.TestCheckResourceAttr(resourceName, "endpoint_stability.0.min_count", "2"),
+					resource.TestCheckResourceAttr(resourceName, "endpoint_stability.0.min_time", "300"),
+					resource.TestCheckResourceAttrSet(resourceName, "call_points_storage_limit"),
+				),
+			},
+			// Step 2: mutate enabled + thresholds; in-place update.
+			{
+				Config: testAccAPIDiscoveryConfigHCL(false, 0.8, 0.2),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "enabled", "false"),
+					resource.TestCheckResourceAttr(resourceName, "type_detection_threshold", "0.8"),
+					resource.TestCheckResourceAttr(resourceName, "pii_detection_threshold", "0.2"),
+				),
+			},
+			// Step 3: import-verify round-trip.
+			{
+				ResourceName:      resourceName,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
+func TestAccAPIDiscoveryConfig_ThresholdOutOfRange(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV5ProviderFactories: testAccProtoV5ProviderFactories,
+		Steps: []resource.TestStep{
+			{
+				Config: `
+resource "wallarm_api_discovery_config" "bad" {
+  type_detection_threshold = 1.5
+}
+`,
+				PlanOnly:    true,
+				ExpectError: regexp.MustCompile(`expected type_detection_threshold to be in the range`),
+			},
+		},
+	})
 }
