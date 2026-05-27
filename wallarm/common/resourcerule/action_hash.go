@@ -16,8 +16,8 @@ func HashResponseActionDetails(v any) int {
 	var buf bytes.Buffer
 	m := v.(map[string]any)
 	var p []any
-	buf.WriteString(fmt.Sprintf("%s-", m["type"].(string)))
-	buf.WriteString(fmt.Sprintf("%s-", m["value"].(string)))
+	fmt.Fprintf(&buf, "%s-", m["type"].(string))
+	fmt.Fprintf(&buf, "%s-", m["value"].(string))
 	if val, ok := m["point"]; ok {
 		p = val.([]any)
 		switch p[0].(string) {
@@ -71,7 +71,7 @@ func HashResponseActionDetails(v any) int {
 			m["point"] = pointMap
 		}
 
-		buf.WriteString(fmt.Sprintf("%v-", m["point"]))
+		fmt.Fprintf(&buf, "%v-", m["point"])
 	}
 	return HashString(buf.String())
 }
@@ -138,10 +138,10 @@ func HashActionDetails(v any) int {
 		}
 	}
 
-	buf.WriteString(fmt.Sprintf("%s-", condType))
-	buf.WriteString(fmt.Sprintf("%s-", value))
+	fmt.Fprintf(&buf, "%s-", condType)
+	fmt.Fprintf(&buf, "%s-", value)
 	if pointStr != "" {
-		buf.WriteString(fmt.Sprintf("%s-", pointStr))
+		fmt.Fprintf(&buf, "%s-", pointStr)
 	}
 	return HashString(buf.String())
 }
