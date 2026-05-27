@@ -237,9 +237,10 @@ func generateRuleFiles(d *schema.ResourceData, clientID int, m any) ([]string, i
 	// Apply defaults for Optional+Computed fields.
 	source, _ := d.Get("source").(string)
 	prefix := "fp"
-	if source == generatorSourceAPI {
+	switch source {
+	case generatorSourceAPI:
 		prefix = "rule"
-	} else if source == "" {
+	case "":
 		source = generatorSourceRules
 	}
 	if v, ok := d.GetOk("resource_prefix"); ok {

@@ -44,10 +44,10 @@ func ExpandSetToActionDetailsList(action *schema.Set) ([]wallarm.ActionDetails, 
 						"proto", "scheme", "uri":
 						a.Point = []any{pointKey}
 						// This is required by the API when case is insensitive
-						switch {
-						case actionMap["type"] == Iequal:
+						switch actionMap["type"] {
+						case Iequal:
 							a.Value = strings.ToLower(pointValue.(string))
-						case actionMap["type"] == "absent":
+						case "absent":
 							a.Value = nil
 						default:
 							a.Value = pointValue.(string)
