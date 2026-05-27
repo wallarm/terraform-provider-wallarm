@@ -12,4 +12,11 @@ Cache at `ProviderMeta` level with per-rule-type fetching and Create serializati
 
 ## API limits
 
-See the API Limits & Constants table in `CLAUDE.md` §1 — `IPListPageSize`, `IPListMaxSubnets`, `IPListCacheMaxRetries`, `IPListCacheRetryDelay`.
+`wallarm/provider/constants.go` (authoritative):
+
+| Constant | Value | Purpose |
+|---|---|---|
+| `IPListPageSize` | 1000 | IP list groups per API call |
+| `IPListMaxSubnets` | 1000 | Max subnet values per IP list resource |
+| `IPListCacheMaxRetries` | 3 | Cache refresh retries |
+| `IPListCacheRetryDelay` | 3s | Wait between retries |

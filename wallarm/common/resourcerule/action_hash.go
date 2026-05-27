@@ -89,7 +89,7 @@ func HashActionDetails(v interface{}) int {
 	condType := m["type"].(string)
 	value := m["value"].(string)
 
-	// `iequal` values are downcased server-side (CLAUDE.md "Condition.iequal").
+	// `iequal` values are downcased server-side (references/rules.md, Condition section).
 	if condType == "iequal" {
 		value = strings.ToLower(value)
 	}
