@@ -4,7 +4,7 @@ Covers all `wallarm_rule_*` resources, the action+condition+hint domain model, p
 
 ## Resource catalog
 
-Full list of supported `wallarm_rule_*` resources, grouped by purpose. The 2D grouping in `.claude/manual-testing/rules/` (gitignored) mirrors this. `wallarm_rule_generator` is excluded — it is not an API rule, but an HCL emitter used by the import workflow.
+Full list of supported `wallarm_rule_*` resources, grouped by purpose. `wallarm_rule_generator` is excluded — it is not an API rule, but an HCL emitter used by the import workflow.
 
 **Filtration mode**
 
@@ -296,7 +296,7 @@ Each rule in `rules_json` carries its own `action` block — rules from differen
 
 ## Rules engine module
 
-This module lives in a separate repository (`terraform-wallarm-api`). Full documentation in `.claude/rules_engine_module.md` (gitignored, internal).
+This module lives in a separate repository (`terraform-wallarm-api`).
 
 ## Regex syntax (Pire engine)
 

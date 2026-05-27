@@ -10,7 +10,8 @@
 //     the rule.
 //  4. Logs "stuck" if no progress between retries (max 20 attempts).
 //
-// Output is a Markdown table at .claude/api_probe_results.md (gitignored).
+// Output is a Markdown table written to `api_probe_results.md` in the working
+// directory (override the path via `API_PROBE_OUT`).
 //
 // Required env vars:
 //

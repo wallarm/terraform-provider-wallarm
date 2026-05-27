@@ -5,7 +5,7 @@ Reference extracted from Wallarm's Proton library type definitions. Two stable e
 1. **Attack types** — numeric IDs paired with attack-name symbols, grouped by purpose.
 2. **Point types** — request-parser elements with classification flags (simple / keys / array / parser / immutable / pollution) and a rating.
 
-Upstream source: `gl.wallarm.com/wallarm-node/meganode/.../proton/types.rb`. Snapshot lives in `.claude/types.rb` (gitignored); re-sync from upstream when the API evolves and update this file.
+Upstream source: `gl.wallarm.com/wallarm-node/meganode/-/blob/main/libs/c/libproton/ruby/lib/proton/types.rb`. Re-sync from upstream when the API evolves.
 
 ---
 
