@@ -35,11 +35,6 @@ dev-clean:
 	@rm -rf ~/.terraform.d/plugins/registry.terraform.io/wallarm/wallarm/$(DEV_VERSION)
 	@echo "Dev provider (v$(DEV_VERSION)) removed. Run 'terraform init -upgrade' to switch to released version."
 
-init-plugin: build
-	@echo "Initializing and copying the Wallarm provider..."
-	./scripts/plugindircheck.sh $(GOOS) $(GOARCH) $(VERSION)
-	@terraform init
-
 lint:
 	@echo "Running golangci-lint..."
 	@go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
@@ -66,4 +61,4 @@ fmt:
 fmtcheck:
 	@sh -c "'$(CURDIR)/scripts/gofmtcheck.sh'"
 
-.PHONY: install build init dev dev-clean init-plugin test testacc vet fmt fmtcheck
+.PHONY: install build init dev dev-clean test testacc vet fmt fmtcheck
