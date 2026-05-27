@@ -36,7 +36,7 @@ func resourceWallarmBolaCounter() *schema.Resource {
 	}
 }
 
-func resourceWallarmBolaCounterCreate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceWallarmBolaCounterCreate(ctx context.Context, d *schema.ResourceData, m any) diag.Diagnostics {
 	client := apiClient(m)
 	clientID, err := retrieveClientID(d, m)
 	if err != nil {
@@ -76,7 +76,7 @@ func resourceWallarmBolaCounterCreate(ctx context.Context, d *schema.ResourceDat
 	return resourceWallarmBolaCounterRead(ctx, d, m)
 }
 
-func resourceWallarmBolaCounterRead(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceWallarmBolaCounterRead(_ context.Context, d *schema.ResourceData, m any) diag.Diagnostics {
 	clientID, err := retrieveClientID(d, m)
 	if err != nil {
 		return diag.FromErr(err)

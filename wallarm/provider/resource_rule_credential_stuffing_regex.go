@@ -52,7 +52,7 @@ func resourceWallarmCredentialStuffingRegex() *schema.Resource {
 	}
 }
 
-func resourceWallarmCredentialStuffingRegexCreate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceWallarmCredentialStuffingRegexCreate(ctx context.Context, d *schema.ResourceData, m any) diag.Diagnostics {
 	client := apiClient(m)
 	clientID, err := retrieveClientID(d, m)
 	if err != nil {
@@ -100,7 +100,7 @@ func resourceWallarmCredentialStuffingRegexCreate(ctx context.Context, d *schema
 	return resourceWallarmCredentialStuffingRegexRead(ctx, d, m)
 }
 
-func resourceWallarmCredentialStuffingRegexRead(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceWallarmCredentialStuffingRegexRead(_ context.Context, d *schema.ResourceData, m any) diag.Diagnostics {
 	client := apiClient(m)
 	clientID, err := retrieveClientID(d, m)
 	if err != nil {
@@ -148,7 +148,7 @@ func resourceWallarmCredentialStuffingRegexRead(_ context.Context, d *schema.Res
 	return nil
 }
 
-func resourceWallarmCredentialStuffingRegexDelete(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceWallarmCredentialStuffingRegexDelete(_ context.Context, d *schema.ResourceData, m any) diag.Diagnostics {
 	client := apiClient(m)
 	clientID, err := retrieveClientID(d, m)
 	if err != nil {
@@ -171,7 +171,7 @@ func resourceWallarmCredentialStuffingRegexDelete(_ context.Context, d *schema.R
 	return nil
 }
 
-func resourceWallarmCredentialStuffingRegexImport(_ context.Context, d *schema.ResourceData, m interface{}) ([]*schema.ResourceData, error) {
+func resourceWallarmCredentialStuffingRegexImport(_ context.Context, d *schema.ResourceData, m any) ([]*schema.ResourceData, error) {
 	client := apiClient(m)
 	idParts := strings.SplitN(d.Id(), "/", 3)
 	if len(idParts) != 3 {

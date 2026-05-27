@@ -43,7 +43,7 @@ func resourceWallarmBrute() *schema.Resource {
 	}
 }
 
-func resourceWallarmBruteCreate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceWallarmBruteCreate(ctx context.Context, d *schema.ResourceData, m any) diag.Diagnostics {
 	clientID, err := retrieveClientID(d, m)
 	if err != nil {
 		return diag.FromErr(err)
@@ -52,7 +52,7 @@ func resourceWallarmBruteCreate(ctx context.Context, d *schema.ResourceData, m i
 		"brute", "brute", resourceWallarmBruteRead, m)
 }
 
-func resourceWallarmBruteRead(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceWallarmBruteRead(_ context.Context, d *schema.ResourceData, m any) diag.Diagnostics {
 	clientID, err := retrieveClientID(d, m)
 	if err != nil {
 		return diag.FromErr(err)

@@ -52,7 +52,7 @@ func ConditionsHash(conditions []wallarm.ActionDetails) string {
 // Port of Ruby's HasPoint.calculate_point_hash:
 //
 //	Digest::SHA2.hexdigest(JSON.raw_pack(point_array))
-func PointHash(point []interface{}) string {
+func PointHash(point []any) string {
 	packed := rawPack(point)
 	sum := sha256.Sum256([]byte(packed))
 	return hex.EncodeToString(sum[:])
@@ -92,7 +92,7 @@ func serializeCondition(c wallarm.ActionDetails) string {
 //	String → "escaped_string"
 //	int/float → number
 //	nil    → null
-func rawPack(v interface{}) string {
+func rawPack(v any) string {
 	switch val := v.(type) {
 	case nil:
 		return "null"
@@ -108,7 +108,7 @@ func rawPack(v interface{}) string {
 		return fmt.Sprintf("%g", val)
 	case json.Number:
 		return val.String()
-	case []interface{}:
+	case []any:
 		parts := make([]string, len(val))
 		for i, elem := range val {
 			parts[i] = rawPack(elem)
@@ -122,11 +122,11 @@ func rawPack(v interface{}) string {
 	}
 }
 
-// interfaceSlice converts []interface{} to itself (passthrough) or handles
+// interfaceSlice converts []any to itself (passthrough) or handles
 // the case where Point might need conversion.
-func interfaceSlice(s []interface{}) interface{} {
+func interfaceSlice(s []any) any {
 	if s == nil {
-		return []interface{}{}
+		return []any{}
 	}
 	return s
 }

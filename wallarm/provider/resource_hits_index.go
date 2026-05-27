@@ -52,13 +52,13 @@ func resourceWallarmHitsIndex() *schema.Resource {
 // hitsIndexCustomizeDiff makes ready and cached_request_ids known at plan time.
 // On Create: ready=false, cached_request_ids=empty.
 // On Update: ready=true (from state), cached_request_ids=request_ids (from state).
-func hitsIndexCustomizeDiff(_ context.Context, d *schema.ResourceDiff, _ interface{}) error {
+func hitsIndexCustomizeDiff(_ context.Context, d *schema.ResourceDiff, _ any) error {
 	if d.Id() == "" {
 		// Create: not ready yet, no cached IDs.
 		if err := d.SetNew("ready", false); err != nil {
 			return err
 		}
-		return d.SetNew("cached_request_ids", schema.NewSet(schema.HashString, []interface{}{}))
+		return d.SetNew("cached_request_ids", schema.NewSet(schema.HashString, []any{}))
 	}
 	// Update: preserve old cached_request_ids from state so new IDs appear as
 	// "uncached" during plan, enabling the data source gating to fetch them.
@@ -69,7 +69,7 @@ func hitsIndexCustomizeDiff(_ context.Context, d *schema.ResourceDiff, _ interfa
 
 // ─── CRUD ───────────────────────────────────────────────────────────────────
 
-func resourceHitsIndexCreate(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceHitsIndexCreate(_ context.Context, d *schema.ResourceData, m any) diag.Diagnostics {
 	clientID, err := retrieveClientID(d, m)
 	if err != nil {
 		return diag.FromErr(err)
@@ -89,7 +89,7 @@ func resourceHitsIndexCreate(_ context.Context, d *schema.ResourceData, m interf
 	return syncCachedRequestIDs(d)
 }
 
-func resourceHitsIndexRead(_ context.Context, d *schema.ResourceData, _ interface{}) diag.Diagnostics {
+func resourceHitsIndexRead(_ context.Context, d *schema.ResourceData, _ any) diag.Diagnostics {
 	// Ensure ready is true (resource exists).
 	if err := d.Set("ready", true); err != nil {
 		return diag.FromErr(err)
@@ -97,11 +97,11 @@ func resourceHitsIndexRead(_ context.Context, d *schema.ResourceData, _ interfac
 	return syncCachedRequestIDs(d)
 }
 
-func resourceHitsIndexUpdate(_ context.Context, d *schema.ResourceData, _ interface{}) diag.Diagnostics {
+func resourceHitsIndexUpdate(_ context.Context, d *schema.ResourceData, _ any) diag.Diagnostics {
 	return syncCachedRequestIDs(d)
 }
 
-func resourceHitsIndexDelete(_ context.Context, d *schema.ResourceData, _ interface{}) diag.Diagnostics {
+func resourceHitsIndexDelete(_ context.Context, d *schema.ResourceData, _ any) diag.Diagnostics {
 	d.SetId("")
 	return nil
 }

@@ -21,7 +21,7 @@ func TestBuildActionFromHit_BasicWithInstance(t *testing.T) {
 	// Check instance condition is present.
 	found := false
 	for _, c := range result {
-		pm, _ := c["point"].(map[string]interface{})
+		pm, _ := c["point"].(map[string]any)
 		if _, ok := pm["instance"]; ok {
 			found = true
 			if pm["instance"] != "42" {
@@ -36,7 +36,7 @@ func TestBuildActionFromHit_BasicWithInstance(t *testing.T) {
 	// Check HOST header is present with iequal.
 	found = false
 	for _, c := range result {
-		pm, _ := c["point"].(map[string]interface{})
+		pm, _ := c["point"].(map[string]any)
 		if v, ok := pm["header"]; ok && v == "HOST" {
 			found = true
 			if c["type"] != "iequal" {
@@ -61,7 +61,7 @@ func TestBuildActionFromHit_DefaultAppPoolID(t *testing.T) {
 
 	found := false
 	for _, c := range result {
-		pm, _ := c["point"].(map[string]interface{})
+		pm, _ := c["point"].(map[string]any)
 		v, ok := pm["instance"]
 		if !ok {
 			continue
@@ -83,7 +83,7 @@ func TestBuildActionFromHit_WithoutInstance(t *testing.T) {
 	result := buildActionFromHit("example.com", "/api", 42, false)
 
 	for _, c := range result {
-		pm, _ := c["point"].(map[string]interface{})
+		pm, _ := c["point"].(map[string]any)
 		if _, ok := pm["instance"]; ok {
 			t.Error("expected no instance condition when includeInstance=false")
 		}
@@ -96,7 +96,7 @@ func TestBuildActionFromHit_RootPath(t *testing.T) {
 	hasActionName := false
 	hasAbsentPath := false
 	for _, c := range result {
-		pm, _ := c["point"].(map[string]interface{})
+		pm, _ := c["point"].(map[string]any)
 		if _, ok := pm["action_name"]; ok {
 			hasActionName = true
 			if c["type"] != "equal" {
@@ -121,7 +121,7 @@ func TestBuildActionFromHit_PathWithExtension(t *testing.T) {
 	hasActionName := false
 	hasActionExt := false
 	for _, c := range result {
-		pm, _ := c["point"].(map[string]interface{})
+		pm, _ := c["point"].(map[string]any)
 		if v, ok := pm["action_name"]; ok && v == "users" {
 			hasActionName = true
 		}
@@ -144,7 +144,7 @@ func TestBuildActionFromHit_EmptyDomain(t *testing.T) {
 	result := buildActionFromHit("", "/api", 0, true)
 
 	for _, c := range result {
-		pm, _ := c["point"].(map[string]interface{})
+		pm, _ := c["point"].(map[string]any)
 		if _, ok := pm["header"]; ok {
 			t.Error("expected no HOST header condition when domain is empty")
 		}
@@ -163,7 +163,7 @@ func TestLocationToConditions_RootPath(t *testing.T) {
 		t.Fatalf("expected 3 conditions for root path, got %d", len(result))
 	}
 
-	pm0, _ := result[0]["point"].(map[string]interface{})
+	pm0, _ := result[0]["point"].(map[string]any)
 	if _, ok := pm0["action_name"]; !ok {
 		t.Error("expected action_name in first condition")
 	}
@@ -171,7 +171,7 @@ func TestLocationToConditions_RootPath(t *testing.T) {
 		t.Errorf("expected type=equal for action_name, got %v", result[0]["type"])
 	}
 
-	pm1, _ := result[1]["point"].(map[string]interface{})
+	pm1, _ := result[1]["point"].(map[string]any)
 	if _, ok := pm1["action_ext"]; !ok {
 		t.Error("expected action_ext in second condition")
 	}
@@ -179,7 +179,7 @@ func TestLocationToConditions_RootPath(t *testing.T) {
 		t.Errorf("expected type=absent for action_ext, got %v", result[1]["type"])
 	}
 
-	pm2, _ := result[2]["point"].(map[string]interface{})
+	pm2, _ := result[2]["point"].(map[string]any)
 	if v, ok := pm2["path"]; !ok || v != "0" {
 		t.Error("expected absent path[0] in third condition")
 	}
@@ -196,12 +196,12 @@ func TestLocationToConditions_SimplePath(t *testing.T) {
 		t.Fatalf("expected 3 conditions for /api, got %d", len(result))
 	}
 
-	pm0, _ := result[0]["point"].(map[string]interface{})
+	pm0, _ := result[0]["point"].(map[string]any)
 	if v := pm0["action_name"]; v != "api" {
 		t.Errorf("expected action_name=api, got %v", v)
 	}
 
-	pm1, _ := result[1]["point"].(map[string]interface{})
+	pm1, _ := result[1]["point"].(map[string]any)
 	if _, ok := pm1["action_ext"]; !ok {
 		t.Error("expected absent action_ext condition")
 	}
@@ -222,12 +222,12 @@ func TestLocationToConditions_MultiSegment(t *testing.T) {
 		t.Fatalf("expected 5 conditions for /api/v1/users, got %d", len(result))
 	}
 
-	pm0, _ := result[0]["point"].(map[string]interface{})
+	pm0, _ := result[0]["point"].(map[string]any)
 	if v := pm0["action_name"]; v != "users" {
 		t.Errorf("expected action_name=users, got %v", v)
 	}
 
-	pm2, _ := result[2]["point"].(map[string]interface{})
+	pm2, _ := result[2]["point"].(map[string]any)
 	if v := pm2["path"]; v != "0" {
 		t.Errorf("expected path index 0, got %v", v)
 	}
@@ -235,7 +235,7 @@ func TestLocationToConditions_MultiSegment(t *testing.T) {
 		t.Errorf("expected path value=api, got %v", result[2]["value"])
 	}
 
-	pm3, _ := result[3]["point"].(map[string]interface{})
+	pm3, _ := result[3]["point"].(map[string]any)
 	if v := pm3["path"]; v != "1" {
 		t.Errorf("expected path index 1, got %v", v)
 	}
@@ -256,11 +256,11 @@ func TestLocationToConditions_PathWithExtension(t *testing.T) {
 		t.Fatalf("expected 4 conditions for /api/data.json, got %d", len(result))
 	}
 
-	pm0, _ := result[0]["point"].(map[string]interface{})
+	pm0, _ := result[0]["point"].(map[string]any)
 	if v := pm0["action_name"]; v != "data" {
 		t.Errorf("expected action_name=data, got %v", v)
 	}
-	pm1, _ := result[1]["point"].(map[string]interface{})
+	pm1, _ := result[1]["point"].(map[string]any)
 	if v := pm1["action_ext"]; v != "json" {
 		t.Errorf("expected action_ext=json, got %v", v)
 	}
@@ -274,7 +274,7 @@ func TestLocationToConditions_PathNoExtension(t *testing.T) {
 		t.Fatalf("expected 4 conditions for /api/login, got %d", len(result))
 	}
 
-	pm0, _ := result[0]["point"].(map[string]interface{})
+	pm0, _ := result[0]["point"].(map[string]any)
 	if v := pm0["action_name"]; v != "login" {
 		t.Errorf("expected action_name=login, got %v", v)
 	}
@@ -290,7 +290,7 @@ func TestActionNameExtConditions_WithExtension(t *testing.T) {
 		t.Fatalf("expected 2 conditions, got %d", len(result))
 	}
 
-	pm0, _ := result[0]["point"].(map[string]interface{})
+	pm0, _ := result[0]["point"].(map[string]any)
 	if v := pm0["action_name"]; v != "file" {
 		t.Errorf("expected action_name=file, got %v", v)
 	}
@@ -298,7 +298,7 @@ func TestActionNameExtConditions_WithExtension(t *testing.T) {
 		t.Errorf("expected type=equal for action_name, got %v", result[0]["type"])
 	}
 
-	pm1, _ := result[1]["point"].(map[string]interface{})
+	pm1, _ := result[1]["point"].(map[string]any)
 	if v := pm1["action_ext"]; v != "json" {
 		t.Errorf("expected action_ext=json, got %v", v)
 	}
@@ -314,12 +314,12 @@ func TestActionNameExtConditions_WithoutExtension(t *testing.T) {
 		t.Fatalf("expected 2 conditions, got %d", len(result))
 	}
 
-	pm0, _ := result[0]["point"].(map[string]interface{})
+	pm0, _ := result[0]["point"].(map[string]any)
 	if v := pm0["action_name"]; v != "login" {
 		t.Errorf("expected action_name=login, got %v", v)
 	}
 
-	pm1, _ := result[1]["point"].(map[string]interface{})
+	pm1, _ := result[1]["point"].(map[string]any)
 	if _, ok := pm1["action_ext"]; !ok {
 		t.Error("expected action_ext key in second condition")
 	}
@@ -374,11 +374,11 @@ func TestMergeHits_EmptyRelated(t *testing.T) {
 }
 
 func TestSchemaActionToDetails_HeaderCondition(t *testing.T) {
-	action := []map[string]interface{}{
+	action := []map[string]any{
 		{
 			"type":  "iequal",
 			"value": "example.com",
-			"point": map[string]interface{}{"header": "HOST"},
+			"point": map[string]any{"header": "HOST"},
 		},
 	}
 
@@ -400,11 +400,11 @@ func TestSchemaActionToDetails_HeaderCondition(t *testing.T) {
 }
 
 func TestSchemaActionToDetails_PathCondition(t *testing.T) {
-	action := []map[string]interface{}{
+	action := []map[string]any{
 		{
 			"type":  "equal",
 			"value": "api",
-			"point": map[string]interface{}{"path": "0"},
+			"point": map[string]any{"path": "0"},
 		},
 	}
 
@@ -427,11 +427,11 @@ func TestSchemaActionToDetails_PathCondition(t *testing.T) {
 }
 
 func TestSchemaActionToDetails_InstanceCondition(t *testing.T) {
-	action := []map[string]interface{}{
+	action := []map[string]any{
 		{
 			"type":  "equal",
 			"value": "",
-			"point": map[string]interface{}{"instance": "42"},
+			"point": map[string]any{"instance": "42"},
 		},
 	}
 
@@ -449,11 +449,11 @@ func TestSchemaActionToDetails_InstanceCondition(t *testing.T) {
 }
 
 func TestSchemaActionToDetails_ActionNameCondition(t *testing.T) {
-	action := []map[string]interface{}{
+	action := []map[string]any{
 		{
 			"type":  "equal",
 			"value": "",
-			"point": map[string]interface{}{"action_name": "users"},
+			"point": map[string]any{"action_name": "users"},
 		},
 	}
 
@@ -471,11 +471,11 @@ func TestSchemaActionToDetails_ActionNameCondition(t *testing.T) {
 }
 
 func TestSchemaActionToDetails_AbsentCondition(t *testing.T) {
-	action := []map[string]interface{}{
+	action := []map[string]any{
 		{
 			"type":  "absent",
 			"value": "",
-			"point": map[string]interface{}{"path": "0"},
+			"point": map[string]any{"path": "0"},
 		},
 	}
 
@@ -498,7 +498,7 @@ func TestBuildRulesFromHits_BasicGrouping(t *testing.T) {
 			ID:     []string{"a", "1"},
 			Type:   "sqli",
 			Stamps: []int{100, 200},
-			Point:  []interface{}{"get", "q"},
+			Point:  []any{"get", "q"},
 			Domain: "example.com",
 			Path:   "/api",
 			PoolID: 1,
@@ -507,7 +507,7 @@ func TestBuildRulesFromHits_BasicGrouping(t *testing.T) {
 			ID:     []string{"a", "2"},
 			Type:   "xss",
 			Stamps: []int{300},
-			Point:  []interface{}{"get", "q"},
+			Point:  []any{"get", "q"},
 			Domain: "example.com",
 			Path:   "/api",
 			PoolID: 1,
@@ -515,7 +515,7 @@ func TestBuildRulesFromHits_BasicGrouping(t *testing.T) {
 	}
 
 	actionDetails := []wallarm.ActionDetails{
-		{Type: "iequal", Point: []interface{}{"header", "HOST"}, Value: "example.com"},
+		{Type: "iequal", Point: []any{"header", "HOST"}, Value: "example.com"},
 	}
 
 	groups, schemaActions := groupHitsForRules(hits, actionDetails, defaultAllowedAttackTypes)

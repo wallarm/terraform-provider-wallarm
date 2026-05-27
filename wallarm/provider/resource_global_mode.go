@@ -62,7 +62,7 @@ func resourceWallarmGlobalMode() *schema.Resource {
 	}
 }
 
-func resourceWallarmGlobalModeCreate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceWallarmGlobalModeCreate(ctx context.Context, d *schema.ResourceData, m any) diag.Diagnostics {
 	client := apiClient(m)
 	clientID, err := retrieveClientID(d, m)
 	if err != nil {
@@ -100,7 +100,7 @@ func resourceWallarmGlobalModeCreate(ctx context.Context, d *schema.ResourceData
 	return resourceWallarmGlobalModeRead(ctx, d, m)
 }
 
-func resourceWallarmGlobalModeRead(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceWallarmGlobalModeRead(_ context.Context, d *schema.ResourceData, m any) diag.Diagnostics {
 	client := apiClient(m)
 
 	// Parse client_id from composite ID on import.
@@ -161,7 +161,7 @@ func resourceWallarmGlobalModeRead(_ context.Context, d *schema.ResourceData, m 
 	return nil
 }
 
-func resourceWallarmGlobalModeUpdate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceWallarmGlobalModeUpdate(ctx context.Context, d *schema.ResourceData, m any) diag.Diagnostics {
 	client := apiClient(m)
 	clientID, err := retrieveClientID(d, m)
 	if err != nil {
@@ -199,7 +199,7 @@ func resourceWallarmGlobalModeUpdate(ctx context.Context, d *schema.ResourceData
 	return resourceWallarmGlobalModeRead(ctx, d, m)
 }
 
-func resourceWallarmGlobalModeDelete(_ context.Context, _ *schema.ResourceData, _ interface{}) diag.Diagnostics {
+func resourceWallarmGlobalModeDelete(_ context.Context, _ *schema.ResourceData, _ any) diag.Diagnostics {
 	// Global settings are a singleton — cannot be deleted, only modified.
 	return nil
 }

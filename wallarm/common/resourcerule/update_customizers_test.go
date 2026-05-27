@@ -44,7 +44,7 @@ func TestUpdateCustomizers_Simple(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			d := schema.TestResourceDataRaw(t, map[string]*schema.Schema{
 				tc.field: {Type: schema.TypeString, Optional: true},
-			}, map[string]interface{}{tc.field: tc.value})
+			}, map[string]any{tc.field: tc.value})
 			p := &wallarm.HintUpdateV3Params{}
 			if err := tc.customize(d, p); err != nil {
 				t.Fatalf("unexpected error: %v", err)
@@ -81,7 +81,7 @@ func TestUpdateCustomizers_Simple(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			d := schema.TestResourceDataRaw(t, map[string]*schema.Schema{
 				tc.field: {Type: schema.TypeInt, Optional: true},
-			}, map[string]interface{}{tc.field: tc.value})
+			}, map[string]any{tc.field: tc.value})
 			p := &wallarm.HintUpdateV3Params{}
 			if err := tc.customize(d, p); err != nil {
 				t.Fatalf("unexpected error: %v", err)
@@ -109,7 +109,7 @@ func TestUpdateCustomizers_Simple(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			d := schema.TestResourceDataRaw(t, map[string]*schema.Schema{
 				tc.field: {Type: schema.TypeBool, Optional: true},
-			}, map[string]interface{}{tc.field: tc.value})
+			}, map[string]any{tc.field: tc.value})
 			p := &wallarm.HintUpdateV3Params{}
 			if err := tc.customize(d, p); err != nil {
 				t.Fatalf("unexpected error: %v", err)
@@ -128,7 +128,7 @@ func TestUpdateCustomizers_Simple(t *testing.T) {
 func TestWithValues_TypeSet(t *testing.T) {
 	d := schema.TestResourceDataRaw(t, map[string]*schema.Schema{
 		"values": {Type: schema.TypeSet, Optional: true, Elem: &schema.Schema{Type: schema.TypeString}},
-	}, map[string]interface{}{"values": []interface{}{"a", "b"}})
+	}, map[string]any{"values": []any{"a", "b"}})
 	p := &wallarm.HintUpdateV3Params{}
 	if err := WithValues(d, p); err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -141,7 +141,7 @@ func TestWithValues_TypeSet(t *testing.T) {
 func TestWithValues_TypeList(t *testing.T) {
 	d := schema.TestResourceDataRaw(t, map[string]*schema.Schema{
 		"values": {Type: schema.TypeList, Optional: true, Elem: &schema.Schema{Type: schema.TypeString}},
-	}, map[string]interface{}{"values": []interface{}{"a", "b", "c"}})
+	}, map[string]any{"values": []any{"a", "b", "c"}})
 	p := &wallarm.HintUpdateV3Params{}
 	if err := WithValues(d, p); err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -163,8 +163,8 @@ func TestWithThreshold_Success(t *testing.T) {
 				"period": {Type: schema.TypeInt, Optional: true},
 			},
 		}},
-	}, map[string]interface{}{
-		"threshold": []interface{}{map[string]interface{}{"count": 99, "period": 60}},
+	}, map[string]any{
+		"threshold": []any{map[string]any{"count": 99, "period": 60}},
 	})
 	p := &wallarm.HintUpdateV3Params{}
 	if err := WithThreshold(d, p); err != nil {
@@ -184,8 +184,8 @@ func TestWithReaction_Success(t *testing.T) {
 				"graylist_by_ip":   {Type: schema.TypeInt, Optional: true},
 			},
 		}},
-	}, map[string]interface{}{
-		"reaction": []interface{}{map[string]interface{}{"block_by_session": 3000, "block_by_ip": 4000}},
+	}, map[string]any{
+		"reaction": []any{map[string]any{"block_by_session": 3000, "block_by_ip": 4000}},
 	})
 	p := &wallarm.HintUpdateV3Params{}
 	if err := WithReaction(d, p); err != nil {

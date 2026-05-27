@@ -96,14 +96,14 @@ func resourceWallarmAction() *schema.Resource {
 
 // resourceWallarmActionCreate looks up an existing action in the API by conditions match.
 // If found, stores action_id. If not found (rules not yet created), stores null action_id.
-func resourceWallarmActionCreate(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceWallarmActionCreate(_ context.Context, d *schema.ResourceData, m any) diag.Diagnostics {
 	client := apiClient(m)
 	clientID, err := retrieveClientID(d, m)
 	if err != nil {
 		return diag.FromErr(err)
 	}
 
-	conditions := expandActionConditions(d.Get("conditions").([]interface{}))
+	conditions := expandActionConditions(d.Get("conditions").([]any))
 	condHash := resourcerule.ConditionsHash(conditions)
 	dirName := resourcerule.ActionDirName(conditions)
 
@@ -134,14 +134,14 @@ func resourceWallarmActionCreate(_ context.Context, d *schema.ResourceData, m in
 // resourceWallarmActionRead refreshes the action state from the API.
 // Only makes API calls when action_id is not yet known. Once action_id is
 // populated, the action is considered stable — no re-reads on subsequent plans.
-func resourceWallarmActionRead(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceWallarmActionRead(_ context.Context, d *schema.ResourceData, m any) diag.Diagnostics {
 	client := apiClient(m)
 	clientID, err := retrieveClientID(d, m)
 	if err != nil {
 		return diag.FromErr(err)
 	}
 
-	conditions := expandActionConditions(d.Get("conditions").([]interface{}))
+	conditions := expandActionConditions(d.Get("conditions").([]any))
 	condHash := resourcerule.ConditionsHash(conditions)
 	dirName := resourcerule.ActionDirName(conditions)
 
@@ -174,14 +174,14 @@ func resourceWallarmActionRead(_ context.Context, d *schema.ResourceData, m inte
 }
 
 // resourceWallarmActionDelete removes the action from state only. No API call.
-func resourceWallarmActionDelete(_ context.Context, d *schema.ResourceData, _ interface{}) diag.Diagnostics {
+func resourceWallarmActionDelete(_ context.Context, d *schema.ResourceData, _ any) diag.Diagnostics {
 	d.SetId("")
 	return nil
 }
 
 // resourceWallarmActionImport imports an action by action_id.
 // Format: {action_id} or {client_id}/{action_id}
-func resourceWallarmActionImport(_ context.Context, d *schema.ResourceData, m interface{}) ([]*schema.ResourceData, error) {
+func resourceWallarmActionImport(_ context.Context, d *schema.ResourceData, m any) ([]*schema.ResourceData, error) {
 	client := apiClient(m)
 
 	var clientID, actionID int
@@ -236,14 +236,14 @@ func resourceWallarmActionImport(_ context.Context, d *schema.ResourceData, m in
 // --- Helpers ---
 
 // expandActionConditions converts the schema conditions list to []ActionDetails.
-func expandActionConditions(raw []interface{}) []wallarm.ActionDetails {
+func expandActionConditions(raw []any) []wallarm.ActionDetails {
 	conditions := make([]wallarm.ActionDetails, 0, len(raw))
 	for _, item := range raw {
-		m := item.(map[string]interface{})
+		m := item.(map[string]any)
 		condType := m["type"].(string)
 
-		pointRaw := m["point"].([]interface{})
-		point := make([]interface{}, len(pointRaw))
+		pointRaw := m["point"].([]any)
+		point := make([]any, len(pointRaw))
 		for i, p := range pointRaw {
 			s := p.(string)
 			// Try to parse as integer (path indices come as strings from schema).
@@ -254,7 +254,7 @@ func expandActionConditions(raw []interface{}) []wallarm.ActionDetails {
 			}
 		}
 
-		var value interface{}
+		var value any
 		if v, ok := m["value"]; ok && v.(string) != "" {
 			value = v.(string)
 		} else if condType != hitsCondTypeAbsent && condType != "" {
@@ -272,8 +272,8 @@ func expandActionConditions(raw []interface{}) []wallarm.ActionDetails {
 }
 
 // flattenActionConditions converts []ActionDetails to the schema format.
-func flattenActionConditions(conditions []wallarm.ActionDetails) []map[string]interface{} {
-	result := make([]map[string]interface{}, len(conditions))
+func flattenActionConditions(conditions []wallarm.ActionDetails) []map[string]any {
+	result := make([]map[string]any, len(conditions))
 	for i, c := range conditions {
 		point := make([]string, len(c.Point))
 		for j, p := range c.Point {
@@ -297,7 +297,7 @@ func flattenActionConditions(conditions []wallarm.ActionDetails) []map[string]in
 			}
 		}
 
-		result[i] = map[string]interface{}{
+		result[i] = map[string]any{
 			"type":  c.Type,
 			"point": point,
 			"value": value,

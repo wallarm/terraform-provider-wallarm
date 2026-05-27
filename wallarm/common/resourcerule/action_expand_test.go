@@ -9,7 +9,7 @@ import (
 )
 
 // newActionSet creates a schema.Set with HashActionDetails for testing.
-func newActionSet(items ...map[string]interface{}) *schema.Set {
+func newActionSet(items ...map[string]any) *schema.Set {
 	s := schema.NewSet(HashActionDetails, nil)
 	for _, item := range items {
 		s.Add(item)
@@ -28,10 +28,10 @@ func TestExpandSetToActionDetailsList_Empty(t *testing.T) {
 }
 
 func TestExpandSetToActionDetailsList_HeaderIequal(t *testing.T) {
-	input := newActionSet(map[string]interface{}{
+	input := newActionSet(map[string]any{
 		"type":  "iequal",
 		"value": "Example.Com",
-		"point": map[string]interface{}{"header": "HOST"},
+		"point": map[string]any{"header": "HOST"},
 	})
 	result, err := ExpandSetToActionDetailsList(input)
 	if err != nil {
@@ -53,10 +53,10 @@ func TestExpandSetToActionDetailsList_HeaderIequal(t *testing.T) {
 }
 
 func TestExpandSetToActionDetailsList_PathEqual(t *testing.T) {
-	input := newActionSet(map[string]interface{}{
+	input := newActionSet(map[string]any{
 		"type":  "equal",
 		"value": "",
-		"point": map[string]interface{}{Path: "0"},
+		"point": map[string]any{Path: "0"},
 	})
 	result, err := ExpandSetToActionDetailsList(input)
 	if err != nil {
@@ -79,10 +79,10 @@ func TestExpandSetToActionDetailsList_PathEqual(t *testing.T) {
 }
 
 func TestExpandSetToActionDetailsList_Instance(t *testing.T) {
-	input := newActionSet(map[string]interface{}{
+	input := newActionSet(map[string]any{
 		"type":  "",
 		"value": "",
-		"point": map[string]interface{}{"instance": "42"},
+		"point": map[string]any{"instance": "42"},
 	})
 	result, err := ExpandSetToActionDetailsList(input)
 	if err != nil {
@@ -104,10 +104,10 @@ func TestExpandSetToActionDetailsList_Instance(t *testing.T) {
 }
 
 func TestExpandSetToActionDetailsList_QueryIequal(t *testing.T) {
-	input := newActionSet(map[string]interface{}{
+	input := newActionSet(map[string]any{
 		"type":  "iequal",
 		"value": "SearchVal",
-		"point": map[string]interface{}{"query": "Q"},
+		"point": map[string]any{"query": "Q"},
 	})
 	result, err := ExpandSetToActionDetailsList(input)
 	if err != nil {
@@ -127,10 +127,10 @@ func TestExpandSetToActionDetailsList_QueryIequal(t *testing.T) {
 }
 
 func TestExpandSetToActionDetailsList_ActionName(t *testing.T) {
-	input := newActionSet(map[string]interface{}{
+	input := newActionSet(map[string]any{
 		"type":  "equal",
 		"value": "",
-		"point": map[string]interface{}{"action_name": "login"},
+		"point": map[string]any{"action_name": "login"},
 	})
 	result, err := ExpandSetToActionDetailsList(input)
 	if err != nil {
@@ -149,10 +149,10 @@ func TestExpandSetToActionDetailsList_ActionName(t *testing.T) {
 }
 
 func TestExpandSetToActionDetailsList_Absent(t *testing.T) {
-	input := newActionSet(map[string]interface{}{
+	input := newActionSet(map[string]any{
 		"type":  "absent",
 		"value": "",
-		"point": map[string]interface{}{"action_ext": ""},
+		"point": map[string]any{"action_ext": ""},
 	})
 	result, err := ExpandSetToActionDetailsList(input)
 	if err != nil {
@@ -171,7 +171,7 @@ func TestExpandSetToActionDetailsList_Absent(t *testing.T) {
 }
 
 func TestWrapPointElements_Paired(t *testing.T) {
-	input := []interface{}{"header", "HOST"}
+	input := []any{"header", "HOST"}
 	result := WrapPointElements(input)
 	expected := [][]string{{"header", "HOST"}}
 	if !reflect.DeepEqual(result, expected) {
@@ -180,7 +180,7 @@ func TestWrapPointElements_Paired(t *testing.T) {
 }
 
 func TestWrapPointElements_Simple(t *testing.T) {
-	input := []interface{}{"post"}
+	input := []any{"post"}
 	result := WrapPointElements(input)
 	expected := [][]string{{"post"}}
 	if !reflect.DeepEqual(result, expected) {
@@ -189,7 +189,7 @@ func TestWrapPointElements_Simple(t *testing.T) {
 }
 
 func TestWrapPointElements_IntegerIndex(t *testing.T) {
-	input := []interface{}{"path", 0}
+	input := []any{"path", 0}
 	result := WrapPointElements(input)
 	expected := [][]string{{"path", "0"}}
 	if !reflect.DeepEqual(result, expected) {
@@ -198,7 +198,7 @@ func TestWrapPointElements_IntegerIndex(t *testing.T) {
 }
 
 func TestWrapPointElements_MultiLevelChain(t *testing.T) {
-	input := []interface{}{"post", "form_urlencoded", "username"}
+	input := []any{"post", "form_urlencoded", "username"}
 	result := WrapPointElements(input)
 	expected := [][]string{{"post"}, {"form_urlencoded", "username"}}
 	if !reflect.DeepEqual(result, expected) {
@@ -207,7 +207,7 @@ func TestWrapPointElements_MultiLevelChain(t *testing.T) {
 }
 
 func TestWrapPointElements_Empty(t *testing.T) {
-	result := WrapPointElements([]interface{}{})
+	result := WrapPointElements([]any{})
 	if len(result) != 0 {
 		t.Errorf("expected nil or empty, got %v", result)
 	}
@@ -215,7 +215,7 @@ func TestWrapPointElements_Empty(t *testing.T) {
 
 func TestWrapPointElements_ComplexChain(t *testing.T) {
 	// post > json_doc > hash "password"
-	input := []interface{}{"post", "json_doc", "hash", "password"}
+	input := []any{"post", "json_doc", "hash", "password"}
 	result := WrapPointElements(input)
 	expected := [][]string{{"post"}, {"json_doc"}, {"hash", "password"}}
 	if !reflect.DeepEqual(result, expected) {
@@ -224,7 +224,7 @@ func TestWrapPointElements_ComplexChain(t *testing.T) {
 }
 
 func TestExpandPointsToTwoDimensionalArray_Empty(t *testing.T) {
-	result, err := ExpandPointsToTwoDimensionalArray([]interface{}{})
+	result, err := ExpandPointsToTwoDimensionalArray([]any{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -234,8 +234,8 @@ func TestExpandPointsToTwoDimensionalArray_Empty(t *testing.T) {
 }
 
 func TestExpandPointsToTwoDimensionalArray_NumericPath(t *testing.T) {
-	input := []interface{}{
-		[]interface{}{"path", "0"},
+	input := []any{
+		[]any{"path", "0"},
 	}
 	result, err := ExpandPointsToTwoDimensionalArray(input)
 	if err != nil {
@@ -251,8 +251,8 @@ func TestExpandPointsToTwoDimensionalArray_NumericPath(t *testing.T) {
 }
 
 func TestExpandPointsToTwoDimensionalArray_NonNumeric(t *testing.T) {
-	input := []interface{}{
-		[]interface{}{"header", "HOST"},
+	input := []any{
+		[]any{"header", "HOST"},
 	}
 	result, err := ExpandPointsToTwoDimensionalArray(input)
 	if err != nil {
@@ -267,7 +267,7 @@ func TestExpandPointsToTwoDimensionalArray_NonNumeric(t *testing.T) {
 }
 
 func TestConvertToStringSlice_Basic(t *testing.T) {
-	result := ConvertToStringSlice([]interface{}{"a", "b", "c"})
+	result := ConvertToStringSlice([]any{"a", "b", "c"})
 	expected := []string{"a", "b", "c"}
 	if !reflect.DeepEqual(result, expected) {
 		t.Errorf("expected %v, got %v", expected, result)
@@ -275,7 +275,7 @@ func TestConvertToStringSlice_Basic(t *testing.T) {
 }
 
 func TestConvertToStringSlice_SkipsNil(t *testing.T) {
-	result := ConvertToStringSlice([]interface{}{"a", nil, "b"})
+	result := ConvertToStringSlice([]any{"a", nil, "b"})
 	expected := []string{"a", "b"}
 	if !reflect.DeepEqual(result, expected) {
 		t.Errorf("expected %v, got %v", expected, result)
@@ -283,14 +283,14 @@ func TestConvertToStringSlice_SkipsNil(t *testing.T) {
 }
 
 func TestConvertToStringSlice_NonString(t *testing.T) {
-	result := ConvertToStringSlice([]interface{}{42, true})
+	result := ConvertToStringSlice([]any{42, true})
 	if len(result) != 2 || result[0] != "42" || result[1] != "true" {
 		t.Errorf("expected [42 true], got %v", result)
 	}
 }
 
 func TestConvertToStringSlice_Empty(t *testing.T) {
-	result := ConvertToStringSlice([]interface{}{})
+	result := ConvertToStringSlice([]any{})
 	if len(result) != 0 {
 		t.Errorf("expected empty, got %v", result)
 	}
@@ -300,7 +300,7 @@ func TestActionDetailsToMap_Basic(t *testing.T) {
 	input := wallarm.ActionDetails{
 		Type:  "equal",
 		Value: "test",
-		Point: []interface{}{"header", "HOST"},
+		Point: []any{"header", "HOST"},
 	}
 	result, err := ActionDetailsToMap(input)
 	if err != nil {
@@ -317,7 +317,7 @@ func TestActionDetailsToMap_Basic(t *testing.T) {
 func TestActionDetailsToMap_NilValue(t *testing.T) {
 	input := wallarm.ActionDetails{
 		Type:  "absent",
-		Point: []interface{}{"action_ext"},
+		Point: []any{"action_ext"},
 	}
 	result, err := ActionDetailsToMap(input)
 	if err != nil {

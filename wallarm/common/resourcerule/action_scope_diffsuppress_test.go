@@ -10,35 +10,35 @@ import (
 func TestSuppressIequalValueCaseDiff(t *testing.T) {
 	cases := []struct {
 		name    string
-		setItem map[string]interface{}
+		setItem map[string]any
 		old     string
 		newVal  string
 		want    bool
 	}{
 		{
 			name:    "iequal: case-only diff suppressed",
-			setItem: map[string]interface{}{"type": "iequal", "value": "example.com"},
+			setItem: map[string]any{"type": "iequal", "value": "example.com"},
 			old:     "example.com",
 			newVal:  "Example.COM",
 			want:    true,
 		},
 		{
 			name:    "iequal: substantive diff NOT suppressed",
-			setItem: map[string]interface{}{"type": "iequal", "value": "foo.com"},
+			setItem: map[string]any{"type": "iequal", "value": "foo.com"},
 			old:     "foo.com",
 			newVal:  "bar.com",
 			want:    false,
 		},
 		{
 			name:    "equal: case-only diff NOT suppressed",
-			setItem: map[string]interface{}{"type": "equal", "value": "Foo"},
+			setItem: map[string]any{"type": "equal", "value": "Foo"},
 			old:     "Foo",
 			newVal:  "foo",
 			want:    false,
 		},
 		{
 			name:    "regex: case-only diff NOT suppressed",
-			setItem: map[string]interface{}{"type": "regex", "value": ".*"},
+			setItem: map[string]any{"type": "regex", "value": ".*"},
 			old:     ".*",
 			newVal:  ".+",
 			want:    false,
@@ -51,8 +51,8 @@ func TestSuppressIequalValueCaseDiff(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			d := schema.TestResourceDataRaw(t, res.Schema, map[string]interface{}{
-				"action": []interface{}{tc.setItem},
+			d := schema.TestResourceDataRaw(t, res.Schema, map[string]any{
+				"action": []any{tc.setItem},
 			})
 			set := d.Get("action").(*schema.Set)
 			hash := set.F(set.List()[0])
@@ -69,7 +69,7 @@ func TestSuppressIequalValueCaseDiff(t *testing.T) {
 func TestSuppressIequalPointValueCaseDiff(t *testing.T) {
 	cases := []struct {
 		name     string
-		setItem  map[string]interface{}
+		setItem  map[string]any
 		pointKey string
 		old      string
 		newVal   string
@@ -77,7 +77,7 @@ func TestSuppressIequalPointValueCaseDiff(t *testing.T) {
 	}{
 		{
 			name:     "iequal + action_name: case-only diff suppressed",
-			setItem:  map[string]interface{}{"type": "iequal", "value": "", "point": map[string]interface{}{"action_name": "test"}},
+			setItem:  map[string]any{"type": "iequal", "value": "", "point": map[string]any{"action_name": "test"}},
 			pointKey: "action_name",
 			old:      "test",
 			newVal:   "TEST",
@@ -85,7 +85,7 @@ func TestSuppressIequalPointValueCaseDiff(t *testing.T) {
 		},
 		{
 			name:     "iequal + method: case-only diff suppressed",
-			setItem:  map[string]interface{}{"type": "iequal", "value": "", "point": map[string]interface{}{"method": "get"}},
+			setItem:  map[string]any{"type": "iequal", "value": "", "point": map[string]any{"method": "get"}},
 			pointKey: "method",
 			old:      "get",
 			newVal:   "GET",
@@ -93,7 +93,7 @@ func TestSuppressIequalPointValueCaseDiff(t *testing.T) {
 		},
 		{
 			name:     "iequal + instance: case-only diff suppressed",
-			setItem:  map[string]interface{}{"type": "iequal", "value": "", "point": map[string]interface{}{"instance": "pool"}},
+			setItem:  map[string]any{"type": "iequal", "value": "", "point": map[string]any{"instance": "pool"}},
 			pointKey: "instance",
 			old:      "pool",
 			newVal:   "POOL",
@@ -101,7 +101,7 @@ func TestSuppressIequalPointValueCaseDiff(t *testing.T) {
 		},
 		{
 			name:     "header: case-only diff suppressed (HTTP names are case-insensitive)",
-			setItem:  map[string]interface{}{"type": "iequal", "value": "example.com", "point": map[string]interface{}{"header": "HOST"}},
+			setItem:  map[string]any{"type": "iequal", "value": "example.com", "point": map[string]any{"header": "HOST"}},
 			pointKey: "header",
 			old:      "HOST",
 			newVal:   "host",
@@ -109,7 +109,7 @@ func TestSuppressIequalPointValueCaseDiff(t *testing.T) {
 		},
 		{
 			name:     "header: case-only diff suppressed even with type=equal (header is always case-insensitive)",
-			setItem:  map[string]interface{}{"type": "equal", "value": "x", "point": map[string]interface{}{"header": "X-Foo"}},
+			setItem:  map[string]any{"type": "equal", "value": "x", "point": map[string]any{"header": "X-Foo"}},
 			pointKey: "header",
 			old:      "X-Foo",
 			newVal:   "X-FOO",
@@ -117,7 +117,7 @@ func TestSuppressIequalPointValueCaseDiff(t *testing.T) {
 		},
 		{
 			name:     "header: substantive diff NOT suppressed",
-			setItem:  map[string]interface{}{"type": "iequal", "value": "example.com", "point": map[string]interface{}{"header": "HOST"}},
+			setItem:  map[string]any{"type": "iequal", "value": "example.com", "point": map[string]any{"header": "HOST"}},
 			pointKey: "header",
 			old:      "HOST",
 			newVal:   "REFERER",
@@ -125,7 +125,7 @@ func TestSuppressIequalPointValueCaseDiff(t *testing.T) {
 		},
 		{
 			name:     "equal + action_name: case-only diff NOT suppressed",
-			setItem:  map[string]interface{}{"type": "equal", "value": "", "point": map[string]interface{}{"action_name": "Foo"}},
+			setItem:  map[string]any{"type": "equal", "value": "", "point": map[string]any{"action_name": "Foo"}},
 			pointKey: "action_name",
 			old:      "Foo",
 			newVal:   "foo",
@@ -133,7 +133,7 @@ func TestSuppressIequalPointValueCaseDiff(t *testing.T) {
 		},
 		{
 			name:     "iequal + action_name: substantive diff NOT suppressed",
-			setItem:  map[string]interface{}{"type": "iequal", "value": "", "point": map[string]interface{}{"action_name": "foo"}},
+			setItem:  map[string]any{"type": "iequal", "value": "", "point": map[string]any{"action_name": "foo"}},
 			pointKey: "action_name",
 			old:      "foo",
 			newVal:   "bar",
@@ -147,8 +147,8 @@ func TestSuppressIequalPointValueCaseDiff(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			d := schema.TestResourceDataRaw(t, res.Schema, map[string]interface{}{
-				"action": []interface{}{tc.setItem},
+			d := schema.TestResourceDataRaw(t, res.Schema, map[string]any{
+				"action": []any{tc.setItem},
 			})
 			set := d.Get("action").(*schema.Set)
 			hash := set.F(set.List()[0])

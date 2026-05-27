@@ -41,7 +41,7 @@ func resourceWallarmCredentialStuffingPoint() *schema.Resource {
 	}
 }
 
-func resourceWallarmCredentialStuffingPointCreate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceWallarmCredentialStuffingPointCreate(ctx context.Context, d *schema.ResourceData, m any) diag.Diagnostics {
 	client := apiClient(m)
 	clientID, err := retrieveClientID(d, m)
 	if err != nil {
@@ -50,13 +50,13 @@ func resourceWallarmCredentialStuffingPointCreate(ctx context.Context, d *schema
 	fields := getCommonResourceRuleFieldsDTOFromResourceData(d)
 	credStuffType := d.Get("cred_stuff_type").(string)
 
-	iPoint := d.Get("point").([]interface{})
+	iPoint := d.Get("point").([]any)
 	point, err := resourcerule.ExpandPointsToTwoDimensionalArray(iPoint)
 	if err != nil {
 		return diag.FromErr(err)
 	}
 
-	iLoginPoint := d.Get("login_point").([]interface{})
+	iLoginPoint := d.Get("login_point").([]any)
 	loginPoint, err := resourcerule.ExpandPointsToTwoDimensionalArray(iLoginPoint)
 	if err != nil {
 		return diag.FromErr(err)
@@ -97,7 +97,7 @@ func resourceWallarmCredentialStuffingPointCreate(ctx context.Context, d *schema
 	return resourceWallarmCredentialStuffingPointRead(ctx, d, m)
 }
 
-func resourceWallarmCredentialStuffingPointRead(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceWallarmCredentialStuffingPointRead(_ context.Context, d *schema.ResourceData, m any) diag.Diagnostics {
 	client := apiClient(m)
 	clientID, err := retrieveClientID(d, m)
 	if err != nil {
@@ -148,7 +148,7 @@ func resourceWallarmCredentialStuffingPointRead(_ context.Context, d *schema.Res
 	return nil
 }
 
-func resourceWallarmCredentialStuffingPointDelete(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceWallarmCredentialStuffingPointDelete(_ context.Context, d *schema.ResourceData, m any) diag.Diagnostics {
 	client := apiClient(m)
 	clientID, err := retrieveClientID(d, m)
 	if err != nil {
@@ -171,7 +171,7 @@ func resourceWallarmCredentialStuffingPointDelete(_ context.Context, d *schema.R
 	return nil
 }
 
-func resourceWallarmCredentialStuffingPointImport(_ context.Context, d *schema.ResourceData, m interface{}) ([]*schema.ResourceData, error) {
+func resourceWallarmCredentialStuffingPointImport(_ context.Context, d *schema.ResourceData, m any) ([]*schema.ResourceData, error) {
 	client := apiClient(m)
 	idParts := strings.SplitN(d.Id(), "/", 3)
 	if len(idParts) != 3 {

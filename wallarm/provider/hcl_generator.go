@@ -121,7 +121,7 @@ func resourceWallarmRuleGenerator() *schema.Resource {
 
 // ─── CRUD ───────────────────────────────────────────────────────────────────────
 
-func resourceWallarmRuleGeneratorCreate(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceWallarmRuleGeneratorCreate(_ context.Context, d *schema.ResourceData, m any) diag.Diagnostics {
 	clientID, err := resolveGeneratorClientID(d, m)
 	if err != nil {
 		return diag.FromErr(err)
@@ -145,8 +145,8 @@ func resourceWallarmRuleGeneratorCreate(_ context.Context, d *schema.ResourceDat
 	return nil
 }
 
-func resourceWallarmRuleGeneratorRead(_ context.Context, d *schema.ResourceData, _ interface{}) diag.Diagnostics {
-	files, ok := d.Get("generated_files").([]interface{})
+func resourceWallarmRuleGeneratorRead(_ context.Context, d *schema.ResourceData, _ any) diag.Diagnostics {
+	files, ok := d.Get("generated_files").([]any)
 	if !ok || len(files) == 0 {
 		return nil
 	}
@@ -169,7 +169,7 @@ func resourceWallarmRuleGeneratorRead(_ context.Context, d *schema.ResourceData,
 	return nil
 }
 
-func resourceWallarmRuleGeneratorUpdate(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceWallarmRuleGeneratorUpdate(_ context.Context, d *schema.ResourceData, m any) diag.Diagnostics {
 	clientID, err := resolveGeneratorClientID(d, m)
 	if err != nil {
 		return diag.FromErr(err)
@@ -189,7 +189,7 @@ func resourceWallarmRuleGeneratorUpdate(_ context.Context, d *schema.ResourceDat
 	return nil
 }
 
-func resourceWallarmRuleGeneratorDelete(_ context.Context, d *schema.ResourceData, _ interface{}) diag.Diagnostics {
+func resourceWallarmRuleGeneratorDelete(_ context.Context, d *schema.ResourceData, _ any) diag.Diagnostics {
 	log.Printf("[DEBUG] wallarm_rule_generator: removing from state (files persist on disk)")
 	d.SetId("")
 	return nil
@@ -198,7 +198,7 @@ func resourceWallarmRuleGeneratorDelete(_ context.Context, d *schema.ResourceDat
 // ─── Core pipeline ──────────────────────────────────────────────────────────────
 
 // resolveGeneratorClientID returns client_id from schema or falls back to provider default.
-func resolveGeneratorClientID(d *schema.ResourceData, m interface{}) (int, error) {
+func resolveGeneratorClientID(d *schema.ResourceData, m any) (int, error) {
 	if v, ok := d.GetOk("client_id"); ok && v.(int) > 0 {
 		return v.(int), nil
 	}
@@ -229,7 +229,7 @@ type rulesJSONEntry struct {
 	Action       []rulesJSONAction `json:"action"`
 }
 
-func generateRuleFiles(d *schema.ResourceData, clientID int, m interface{}) ([]string, int, error) {
+func generateRuleFiles(d *schema.ResourceData, clientID int, m any) ([]string, int, error) {
 	outputDir := d.Get("output_dir").(string)
 	ruleTypes := resolveRuleTypes(d)
 	movedFrom, _ := d.Get("moved_from").(string)
@@ -237,9 +237,10 @@ func generateRuleFiles(d *schema.ResourceData, clientID int, m interface{}) ([]s
 	// Apply defaults for Optional+Computed fields.
 	source, _ := d.Get("source").(string)
 	prefix := "fp"
-	if source == generatorSourceAPI {
+	switch source {
+	case generatorSourceAPI:
 		prefix = "rule"
-	} else if source == "" {
+	case "":
 		source = generatorSourceRules
 	}
 	if v, ok := d.GetOk("resource_prefix"); ok {
@@ -346,7 +347,7 @@ func generateFromRulesJSON(d *schema.ResourceData, clientID int, outputDir, pref
 
 // generateFromAPI fetches existing rules from the Wallarm API and generates HCL configs.
 // Each rule becomes a standalone resource block with its point, action conditions, and rule-specific fields.
-func generateFromAPI(m interface{}, clientID int, outputDir, prefix, filename, comment string, ruleTypes []string, split bool, movedFrom string) ([]string, int, error) {
+func generateFromAPI(m any, clientID int, outputDir, prefix, filename, comment string, ruleTypes []string, split bool, movedFrom string) ([]string, int, error) {
 	client := apiClient(m)
 
 	// Map API rule types to internal types used by the generator.
@@ -506,8 +507,8 @@ func generateFromAPI(m interface{}, clientID int, outputDir, prefix, filename, c
 	return allFiles, totalRules, nil
 }
 
-// convertAPIPoint converts the API's flat point []interface{} to wrapped [][]string.
-func convertAPIPoint(point []interface{}) [][]string {
+// convertAPIPoint converts the API's flat point []any to wrapped [][]string.
+func convertAPIPoint(point []any) [][]string {
 	wrapped := resourcerule.WrapPointElements(point)
 	result := make([][]string, 0, len(wrapped))
 	for _, inner := range wrapped {
@@ -661,7 +662,7 @@ func generateStaticFiles(outputDir, prefix, filename string, clientID int, comme
 
 func resolveRuleTypes(d *schema.ResourceData) []string {
 	if v, ok := d.GetOk("rule_types"); ok {
-		items := v.([]interface{})
+		items := v.([]any)
 		types := make([]string, 0, len(items))
 		for _, item := range items {
 			types = append(types, item.(string))

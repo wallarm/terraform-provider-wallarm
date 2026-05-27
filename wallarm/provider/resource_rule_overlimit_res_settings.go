@@ -47,7 +47,7 @@ func resourceWallarmOverlimitResSettings() *schema.Resource {
 	}
 }
 
-func resourceWallarmOverlimitResSettingsCreate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceWallarmOverlimitResSettingsCreate(ctx context.Context, d *schema.ResourceData, m any) diag.Diagnostics {
 	if diags := guardExistingHint(d, m, "overlimit_res_settings", "wallarm_rule_overlimit_res_settings", nil); diags.HasError() {
 		return diags
 	}
@@ -100,7 +100,7 @@ func resourceWallarmOverlimitResSettingsCreate(ctx context.Context, d *schema.Re
 	return resourceWallarmOverlimitResSettingsRead(ctx, d, m)
 }
 
-func resourceWallarmOverlimitResSettingsRead(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceWallarmOverlimitResSettingsRead(_ context.Context, d *schema.ResourceData, m any) diag.Diagnostics {
 	clientID, err := retrieveClientID(d, m)
 	if err != nil {
 		return diag.FromErr(err)

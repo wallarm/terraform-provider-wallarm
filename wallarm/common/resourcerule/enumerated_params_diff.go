@@ -28,11 +28,11 @@ import (
 // produced a perpetual diff. Forcing explicit user-supplied values keeps
 // HCL and state aligned. `points` is rejected (regexp mode ignores it).
 func EnumeratedParamsCustomizeDiff(_ context.Context, d *schema.ResourceDiff, _ any) error {
-	raw, ok := d.Get("enumerated_parameters").([]interface{})
+	raw, ok := d.Get("enumerated_parameters").([]any)
 	if !ok || len(raw) == 0 {
 		return nil
 	}
-	block, ok := raw[0].(map[string]interface{})
+	block, ok := raw[0].(map[string]any)
 	if !ok {
 		return nil
 	}
@@ -42,16 +42,16 @@ func EnumeratedParamsCustomizeDiff(_ context.Context, d *schema.ResourceDiff, _ 
 // validateEnumeratedParamsBlock is the pure-data half of
 // EnumeratedParamsCustomizeDiff — separated so it can be unit-tested with
 // hand-built `block` maps, no *schema.ResourceDiff.
-func validateEnumeratedParamsBlock(block map[string]interface{}) error {
+func validateEnumeratedParamsBlock(block map[string]any) error {
 	mode, _ := block["mode"].(string)
 
 	switch mode {
 	case modeExact:
 		var bad []string
-		if v, _ := block["name_regexps"].([]interface{}); len(v) > 0 {
+		if v, _ := block["name_regexps"].([]any); len(v) > 0 {
 			bad = append(bad, "name_regexps")
 		}
-		if v, _ := block["value_regexps"].([]interface{}); len(v) > 0 {
+		if v, _ := block["value_regexps"].([]any); len(v) > 0 {
 			bad = append(bad, "value_regexps")
 		}
 		// Bool fields: error only when true. Schema is Optional+Default:false,
@@ -71,17 +71,17 @@ func validateEnumeratedParamsBlock(block map[string]interface{}) error {
 			)
 		}
 	case modeRegexp:
-		if v, _ := block["points"].([]interface{}); len(v) > 0 {
+		if v, _ := block["points"].([]any); len(v) > 0 {
 			return fmt.Errorf(
 				"enumerated_parameters: `points` not allowed when mode = %q (use name_regexps / value_regexps)",
 				modeRegexp,
 			)
 		}
 		var missing []string
-		if v, _ := block["name_regexps"].([]interface{}); len(v) == 0 {
+		if v, _ := block["name_regexps"].([]any); len(v) == 0 {
 			missing = append(missing, "name_regexps")
 		}
-		if v, _ := block["value_regexps"].([]interface{}); len(v) == 0 {
+		if v, _ := block["value_regexps"].([]any); len(v) == 0 {
 			missing = append(missing, "value_regexps")
 		}
 		if len(missing) > 0 {

@@ -22,7 +22,7 @@ import (
 //   - rule:     the existing rule itself (callers read fields like Mode for ID
 //     formatting when needed)
 //   - exists:   true iff a match was found
-func existingHintForAction(d *schema.ResourceData, m interface{}, hintType string) (actionID int, rule *wallarm.ActionBody, exists bool, err error) {
+func existingHintForAction(d *schema.ResourceData, m any, hintType string) (actionID int, rule *wallarm.ActionBody, exists bool, err error) {
 	client := apiClient(m)
 	clientID, err := retrieveClientID(d, m)
 	if err != nil {
@@ -49,7 +49,7 @@ func existingHintForAction(d *schema.ResourceData, m interface{}, hintType strin
 	// point; otherwise pass empty (existing filter behavior).
 	var points wallarm.TwoDimensionalSlice
 	if ps, ok := d.GetOk("point"); ok {
-		expanded, err := resourcerule.ExpandPointsToTwoDimensionalArray(ps.([]interface{}))
+		expanded, err := resourcerule.ExpandPointsToTwoDimensionalArray(ps.([]any))
 		if err != nil {
 			return 0, nil, false, err
 		}
@@ -137,7 +137,7 @@ func ImportAsExistsError(resourceName, id string) error {
 // `{clientID}/{actionID}/{ruleID}` format. Resources with a 4-part import ID
 // (e.g., wallarm_rule_mode) pass an idFmt that appends their suffix.
 func guardExistingHint(
-	d *schema.ResourceData, m interface{},
+	d *schema.ResourceData, m any,
 	hintType, resourceName string,
 	idFmt func(clientID, actionID int, r *wallarm.ActionBody) string,
 ) diag.Diagnostics {

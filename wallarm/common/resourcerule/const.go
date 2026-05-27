@@ -35,8 +35,8 @@ const (
 	CreateOptionWithAction CreateOption = "with_action"
 )
 
-// ConvertToStringSlice converts []interface{} to []string, skipping nils.
-func ConvertToStringSlice(input []interface{}) []string {
+// ConvertToStringSlice converts []any to []string, skipping nils.
+func ConvertToStringSlice(input []any) []string {
 	result := make([]string, 0, len(input))
 	for _, v := range input {
 		if v == nil {

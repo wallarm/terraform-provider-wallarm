@@ -12,8 +12,8 @@ import (
 
 func TestSyncCachedRequestIDs_Basic(t *testing.T) {
 	r := resourceWallarmHitsIndex()
-	d := schema.TestResourceDataRaw(t, r.Schema, map[string]interface{}{
-		"request_ids": []interface{}{"abc123", "def456", "ghi789"},
+	d := schema.TestResourceDataRaw(t, r.Schema, map[string]any{
+		"request_ids": []any{"abc123", "def456", "ghi789"},
 	})
 
 	diags := syncCachedRequestIDs(d)
@@ -34,8 +34,8 @@ func TestSyncCachedRequestIDs_Basic(t *testing.T) {
 
 func TestSyncCachedRequestIDs_Empty(t *testing.T) {
 	r := resourceWallarmHitsIndex()
-	d := schema.TestResourceDataRaw(t, r.Schema, map[string]interface{}{
-		"request_ids": []interface{}{},
+	d := schema.TestResourceDataRaw(t, r.Schema, map[string]any{
+		"request_ids": []any{},
 	})
 
 	diags := syncCachedRequestIDs(d)

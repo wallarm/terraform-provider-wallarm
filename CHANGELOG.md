@@ -4,6 +4,10 @@
 
 * **`data.wallarm_hits`: emit `instance` condition for default-app (poolID=-1) hits** — fixes 4-vs-5 condition hash mismatch on instance-included API clients.
 
+### Internal
+
+* **Lint modernization** — `interface{}` → `any` across `wallarm/` and `scripts/` (~990 sites); `WriteString(fmt.Sprintf)` → `fmt.Fprintf` (25 sites); 2 tagged-switch conversions. No behavior change.
+
 ## [v2.3.9] - 2026-05-04
 
 > Rules polish batch — naming cleanup, schema-shape audit (symmetric remove-restores-default), safety hardening, test gap fills. Bumps `wallarm-go` to v0.12.2.

@@ -39,7 +39,7 @@ func testUpdateSchema() *schema.Resource {
 
 func TestUpdate_Success(t *testing.T) {
 	mock := &mockUpdateAPI{}
-	cp := func(_ interface{}) wallarm.API { return mock }
+	cp := func(_ any) wallarm.API { return mock }
 
 	d := testUpdateSchema().TestResourceData()
 	d.Set("rule_id", 42)
@@ -153,7 +153,7 @@ func TestGetPointerIfConfigured_NilRawConfigReturnsNil(t *testing.T) {
 
 func TestUpdate_APIError(t *testing.T) {
 	mock := &mockUpdateAPI{err: errors.New("boom")}
-	cp := func(_ interface{}) wallarm.API { return mock }
+	cp := func(_ any) wallarm.API { return mock }
 
 	d := testUpdateSchema().TestResourceData()
 	d.Set("rule_id", 1)

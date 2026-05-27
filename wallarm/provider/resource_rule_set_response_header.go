@@ -47,7 +47,7 @@ func resourceWallarmSetResponseHeader() *schema.Resource {
 	}
 }
 
-func resourceWallarmSetResponseHeaderCreate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceWallarmSetResponseHeaderCreate(ctx context.Context, d *schema.ResourceData, m any) diag.Diagnostics {
 	client := apiClient(m)
 	clientID, err := retrieveClientID(d, m)
 	if err != nil {
@@ -99,7 +99,7 @@ func resourceWallarmSetResponseHeaderCreate(ctx context.Context, d *schema.Resou
 	return resourceWallarmSetResponseHeaderRead(ctx, d, m)
 }
 
-func resourceWallarmSetResponseHeaderRead(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceWallarmSetResponseHeaderRead(_ context.Context, d *schema.ResourceData, m any) diag.Diagnostics {
 	clientID, err := retrieveClientID(d, m)
 	if err != nil {
 		return diag.FromErr(err)

@@ -38,7 +38,7 @@ func rawStateHasKey(raw cty.Value, key string) bool {
 // each of which defines only a subset of the fields. In SDK v2 d.Set() logs an
 // [ERROR] and panics (in test mode) for keys not in the schema; checking
 // beforehand avoids both.
-func setIfExists(d *schema.ResourceData, key string, value interface{}) {
+func setIfExists(d *schema.ResourceData, key string, value any) {
 	if !rawStateHasKey(d.GetRawState(), key) {
 		return
 	}
@@ -151,8 +151,8 @@ func Create(
 	cli wallarm.API,
 	clientID int,
 	ruleType, attackType string,
-	readMethod func(context.Context, *schema.ResourceData, interface{}) diag.Diagnostics,
-	m interface{},
+	readMethod func(context.Context, *schema.ResourceData, any) diag.Diagnostics,
+	m any,
 ) diag.Diagnostics {
 	actionsFromState := d.Get("action").(*schema.Set)
 	action, err := ExpandSetToActionDetailsList(actionsFromState)
@@ -160,37 +160,37 @@ func Create(
 		return diag.FromErr(errors.WithMessage(err, "on ExpandSetToActionDetailsList"))
 	}
 
-	enumeratedParametersFromState := GetValueWithTypeCastingOrDefault[[]interface{}](d, "enumerated_parameters")
+	enumeratedParametersFromState := GetValueWithTypeCastingOrDefault[[]any](d, "enumerated_parameters")
 	enumeratedParameters, err := EnumeratedParametersToAPI(enumeratedParametersFromState)
 	if err != nil {
 		return diag.FromErr(err)
 	}
 
-	reactionFromState := GetValueWithTypeCastingOrDefault[[]interface{}](d, "reaction")
+	reactionFromState := GetValueWithTypeCastingOrDefault[[]any](d, "reaction")
 	reaction, err := ReactionToAPI(reactionFromState)
 	if err != nil {
 		return diag.FromErr(err)
 	}
 
-	thresholdFromState := GetValueWithTypeCastingOrDefault[[]interface{}](d, "threshold")
+	thresholdFromState := GetValueWithTypeCastingOrDefault[[]any](d, "threshold")
 	threshold, err := ThresholdToAPI(thresholdFromState)
 	if err != nil {
 		return diag.FromErr(err)
 	}
 
-	advancedConditionsFromState := GetValueWithTypeCastingOrDefault[[]interface{}](d, "advanced_conditions")
+	advancedConditionsFromState := GetValueWithTypeCastingOrDefault[[]any](d, "advanced_conditions")
 	advancedConditions, err := AdvancedConditionsToAPI(advancedConditionsFromState)
 	if err != nil {
 		return diag.FromErr(err)
 	}
 
-	arbitraryConditionsFromState := GetValueWithTypeCastingOrDefault[[]interface{}](d, "arbitrary_conditions")
+	arbitraryConditionsFromState := GetValueWithTypeCastingOrDefault[[]any](d, "arbitrary_conditions")
 	arbitraryConditions, err := ArbitraryConditionsToAPI(arbitraryConditionsFromState)
 	if err != nil {
 		return diag.FromErr(err)
 	}
 
-	pointFromState := GetValueWithTypeCastingOrDefault[[]interface{}](d, "point")
+	pointFromState := GetValueWithTypeCastingOrDefault[[]any](d, "point")
 	points, err := ExpandPointsToTwoDimensionalArray(pointFromState)
 	if err != nil {
 		return diag.FromErr(err)
@@ -314,8 +314,8 @@ type UpdateCustomizer func(*schema.ResourceData, *wallarm.HintUpdateV3Params) er
 // customizers.
 //
 // cp extracts the wallarm.API client from the SDK's untyped meta value.
-func Update(cp func(m interface{}) wallarm.API, customizers ...UpdateCustomizer) schema.UpdateContextFunc {
-	return func(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func Update(cp func(m any) wallarm.API, customizers ...UpdateCustomizer) schema.UpdateContextFunc {
+	return func(_ context.Context, d *schema.ResourceData, m any) diag.Diagnostics {
 		params := &wallarm.HintUpdateV3Params{
 			VariativityDisabled: lo.ToPtr(d.Get("variativity_disabled").(bool)),
 			Comment:             lo.ToPtr(d.Get("comment").(string)),

@@ -28,11 +28,11 @@ func TestConditionsHash_EmptyConditions(t *testing.T) {
 func TestConditionsHash_SimplePath(t *testing.T) {
 	// endpoint_path: "/import/mode/test"
 	conditions := []wallarm.ActionDetails{
-		{Type: "equal", Point: []interface{}{"path", float64(0)}, Value: "import"},
-		{Type: "equal", Point: []interface{}{"path", float64(1)}, Value: "mode"},
-		{Type: "absent", Point: []interface{}{"path", float64(2)}, Value: nil},
-		{Type: "equal", Point: []interface{}{"action_name"}, Value: "test"},
-		{Type: "absent", Point: []interface{}{"action_ext"}, Value: nil},
+		{Type: "equal", Point: []any{"path", float64(0)}, Value: "import"},
+		{Type: "equal", Point: []any{"path", float64(1)}, Value: "mode"},
+		{Type: "absent", Point: []any{"path", float64(2)}, Value: nil},
+		{Type: "equal", Point: []any{"action_name"}, Value: "test"},
+		{Type: "absent", Point: []any{"action_ext"}, Value: nil},
 	}
 	got := ConditionsHash(conditions)
 	want := "e3a1ef0f6cf7fa1ee309ec81f63d623569b123cd88e62a7498dc9af6b733591b"
@@ -44,10 +44,10 @@ func TestConditionsHash_SimplePath(t *testing.T) {
 func TestConditionsHash_DomainAndPath(t *testing.T) {
 	// endpoint_path: "/", endpoint_domain: "example.com"
 	conditions := []wallarm.ActionDetails{
-		{Type: "iequal", Point: []interface{}{"header", "HOST"}, Value: "example.com"},
-		{Type: "absent", Point: []interface{}{"path", float64(0)}, Value: nil},
-		{Type: "equal", Point: []interface{}{"action_name"}, Value: ""},
-		{Type: "absent", Point: []interface{}{"action_ext"}, Value: nil},
+		{Type: "iequal", Point: []any{"header", "HOST"}, Value: "example.com"},
+		{Type: "absent", Point: []any{"path", float64(0)}, Value: nil},
+		{Type: "equal", Point: []any{"action_name"}, Value: ""},
+		{Type: "absent", Point: []any{"action_ext"}, Value: nil},
 	}
 	got := ConditionsHash(conditions)
 	want := "661cad9d4e1f1c8cf972668d9c01d8c0062f02920a1a1647572abd60b62755b1"
@@ -60,17 +60,17 @@ func TestConditionsHash_Complex(t *testing.T) {
 	// endpoint_path: "/path/action.ext", endpoint_domain: "example.com", endpoint_instance: "13"
 	// 11 conditions: method, host, path, action_name, action_ext, query, instance, proto, scheme, header regex
 	conditions := []wallarm.ActionDetails{
-		{Type: "equal", Point: []interface{}{"method"}, Value: "POST"},
-		{Type: "iequal", Point: []interface{}{"header", "HOST"}, Value: "example.com"},
-		{Type: "equal", Point: []interface{}{"path", float64(0)}, Value: "path"},
-		{Type: "absent", Point: []interface{}{"path", float64(1)}, Value: nil},
-		{Type: "equal", Point: []interface{}{"action_name"}, Value: "action"},
-		{Type: "equal", Point: []interface{}{"action_ext"}, Value: "ext"},
-		{Type: "equal", Point: []interface{}{"get", "key"}, Value: "val"},
-		{Type: "equal", Point: []interface{}{"instance"}, Value: "13"},
-		{Type: "equal", Point: []interface{}{"proto"}, Value: "1.1"},
-		{Type: "equal", Point: []interface{}{"scheme"}, Value: "https"},
-		{Type: "regex", Point: []interface{}{"header", "CONTENT-TYPE"}, Value: "application/.*"},
+		{Type: "equal", Point: []any{"method"}, Value: "POST"},
+		{Type: "iequal", Point: []any{"header", "HOST"}, Value: "example.com"},
+		{Type: "equal", Point: []any{"path", float64(0)}, Value: "path"},
+		{Type: "absent", Point: []any{"path", float64(1)}, Value: nil},
+		{Type: "equal", Point: []any{"action_name"}, Value: "action"},
+		{Type: "equal", Point: []any{"action_ext"}, Value: "ext"},
+		{Type: "equal", Point: []any{"get", "key"}, Value: "val"},
+		{Type: "equal", Point: []any{"instance"}, Value: "13"},
+		{Type: "equal", Point: []any{"proto"}, Value: "1.1"},
+		{Type: "equal", Point: []any{"scheme"}, Value: "https"},
+		{Type: "regex", Point: []any{"header", "CONTENT-TYPE"}, Value: "application/.*"},
 	}
 	got := ConditionsHash(conditions)
 	want := "c522d1d19df25efd77ff21d973127f9515db97aa29c7373aba3f3d33fe86c42c"
@@ -82,12 +82,12 @@ func TestConditionsHash_Complex(t *testing.T) {
 func TestConditionsHash_OrderIndependent(t *testing.T) {
 	// Same conditions in different order must produce the same hash.
 	a := []wallarm.ActionDetails{
-		{Type: "equal", Point: []interface{}{"path", float64(0)}, Value: "api"},
-		{Type: "iequal", Point: []interface{}{"header", "HOST"}, Value: "example.com"},
+		{Type: "equal", Point: []any{"path", float64(0)}, Value: "api"},
+		{Type: "iequal", Point: []any{"header", "HOST"}, Value: "example.com"},
 	}
 	b := []wallarm.ActionDetails{
-		{Type: "iequal", Point: []interface{}{"header", "HOST"}, Value: "example.com"},
-		{Type: "equal", Point: []interface{}{"path", float64(0)}, Value: "api"},
+		{Type: "iequal", Point: []any{"header", "HOST"}, Value: "example.com"},
+		{Type: "equal", Point: []any{"path", float64(0)}, Value: "api"},
 	}
 	if ConditionsHash(a) != ConditionsHash(b) {
 		t.Error("same conditions in different order produced different hashes")
@@ -96,10 +96,10 @@ func TestConditionsHash_OrderIndependent(t *testing.T) {
 
 func TestConditionsHash_DifferentConditions(t *testing.T) {
 	a := []wallarm.ActionDetails{
-		{Type: "equal", Point: []interface{}{"path", float64(0)}, Value: "api"},
+		{Type: "equal", Point: []any{"path", float64(0)}, Value: "api"},
 	}
 	b := []wallarm.ActionDetails{
-		{Type: "equal", Point: []interface{}{"path", float64(0)}, Value: "admin"},
+		{Type: "equal", Point: []any{"path", float64(0)}, Value: "admin"},
 	}
 	if ConditionsHash(a) == ConditionsHash(b) {
 		t.Error("different conditions produced the same hash")
@@ -109,11 +109,11 @@ func TestConditionsHash_DifferentConditions(t *testing.T) {
 func TestPointHash(t *testing.T) {
 	tests := []struct {
 		name  string
-		point []interface{}
+		point []any
 	}{
-		{"simple", []interface{}{"header", "HOST"}},
-		{"path_index", []interface{}{"path", float64(0)}},
-		{"single", []interface{}{"action_name"}},
+		{"simple", []any{"header", "HOST"}},
+		{"path_index", []any{"path", float64(0)}},
+		{"single", []any{"action_name"}},
 	}
 
 	for _, tt := range tests {
@@ -126,15 +126,15 @@ func TestPointHash(t *testing.T) {
 	}
 
 	// Same point → same hash
-	h1 := PointHash([]interface{}{"header", "HOST"})
-	h2 := PointHash([]interface{}{"header", "HOST"})
+	h1 := PointHash([]any{"header", "HOST"})
+	h2 := PointHash([]any{"header", "HOST"})
 	if h1 != h2 {
 		t.Error("same point produced different hashes")
 	}
 
 	// Different point → different hash
-	h3 := PointHash([]interface{}{"header", "HOST"})
-	h4 := PointHash([]interface{}{"header", "COOKIE"})
+	h3 := PointHash([]any{"header", "HOST"})
+	h4 := PointHash([]any{"header", "COOKIE"})
 	if h3 == h4 {
 		t.Error("different points produced the same hash")
 	}
@@ -143,7 +143,7 @@ func TestPointHash(t *testing.T) {
 func TestRawPack(t *testing.T) {
 	tests := []struct {
 		name string
-		in   interface{}
+		in   any
 		want string
 	}{
 		{"nil", nil, "null"},
@@ -153,10 +153,10 @@ func TestRawPack(t *testing.T) {
 		{"int", 42, "42"},
 		{"float_whole", float64(3), "3"},
 		{"float_decimal", float64(1.5), "1.5"},
-		{"empty_array", []interface{}{}, "[]"},
-		{"string_array", []interface{}{"a", "b"}, `["a","b"]`},
-		{"mixed_array", []interface{}{"path", float64(0)}, `["path",0]`},
-		{"nested_array", []interface{}{[]interface{}{"a", "b"}, []interface{}{"c"}}, `[["a","b"],["c"]]`},
+		{"empty_array", []any{}, "[]"},
+		{"string_array", []any{"a", "b"}, `["a","b"]`},
+		{"mixed_array", []any{"path", float64(0)}, `["path",0]`},
+		{"nested_array", []any{[]any{"a", "b"}, []any{"c"}}, `[["a","b"],["c"]]`},
 	}
 
 	for _, tt := range tests {
@@ -174,7 +174,7 @@ func TestSerializeCondition(t *testing.T) {
 	// then the outer array raw_packs it again (quotes + escapes).
 	c := wallarm.ActionDetails{
 		Type:  "equal",
-		Point: []interface{}{"path", float64(0)},
+		Point: []any{"path", float64(0)},
 		Value: "import",
 	}
 	got := serializeCondition(c)
@@ -188,7 +188,7 @@ func TestSerializeCondition(t *testing.T) {
 	// Absent condition with nil value
 	c2 := wallarm.ActionDetails{
 		Type:  "absent",
-		Point: []interface{}{"action_ext"},
+		Point: []any{"action_ext"},
 		Value: nil,
 	}
 	got2 := serializeCondition(c2)
@@ -200,7 +200,7 @@ func TestSerializeCondition(t *testing.T) {
 	// Empty string value (e.g., action_name = "")
 	c3 := wallarm.ActionDetails{
 		Type:  "equal",
-		Point: []interface{}{"action_name"},
+		Point: []any{"action_name"},
 		Value: "",
 	}
 	got3 := serializeCondition(c3)

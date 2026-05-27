@@ -93,12 +93,12 @@ func hclSimpleRef(resourceType, name string) hclwrite.Tokens {
 func writeActionBlocks(body *hclwrite.Body, conditions []ActionCondition) {
 	for _, c := range conditions {
 		// Convert to ActionDetails so we can reuse the shared conversion logic.
-		point := make([]interface{}, len(c.Point))
+		point := make([]any, len(c.Point))
 		for i, p := range c.Point {
 			point[i] = p
 		}
 
-		var value interface{} = c.Value
+		var value any = c.Value
 		if c.Value == "" {
 			value = nil
 		}
@@ -123,7 +123,7 @@ func writeActionBlocks(body *hclwrite.Body, conditions []ActionCondition) {
 		}
 
 		pointMap := make(map[string]cty.Value)
-		for k, v := range schemaItem["point"].(map[string]interface{}) {
+		for k, v := range schemaItem["point"].(map[string]any) {
 			pointMap[k] = cty.StringVal(fmt.Sprintf("%v", v))
 		}
 		ab.SetAttributeValue("point", cty.ObjectVal(pointMap))

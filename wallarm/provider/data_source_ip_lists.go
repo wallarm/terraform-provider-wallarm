@@ -72,7 +72,7 @@ func dataSourceWallarmIPLists() *schema.Resource {
 	}
 }
 
-func dataSourceWallarmIPListsRead(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func dataSourceWallarmIPListsRead(_ context.Context, d *schema.ResourceData, m any) diag.Diagnostics {
 	client := apiClient(m)
 	clientID, err := retrieveClientID(d, m)
 	if err != nil {
@@ -89,23 +89,23 @@ func dataSourceWallarmIPListsRead(_ context.Context, d *schema.ResourceData, m i
 
 	// Filter out expired entries.
 	now := int(time.Now().Unix())
-	entries := make([]interface{}, 0, len(groups))
+	entries := make([]any, 0, len(groups))
 	for _, g := range groups {
 		if g.ExpiredAt > 0 && g.ExpiredAt < now {
 			continue
 		}
 
-		appIDs := make([]interface{}, len(g.ApplicationIDs))
+		appIDs := make([]any, len(g.ApplicationIDs))
 		for i, id := range g.ApplicationIDs {
 			appIDs[i] = id
 		}
 
-		values := make([]interface{}, len(g.Values))
+		values := make([]any, len(g.Values))
 		for i, v := range g.Values {
 			values[i] = v
 		}
 
-		entries = append(entries, map[string]interface{}{
+		entries = append(entries, map[string]any{
 			"id":              g.ID,
 			"rule_type":       g.RuleType,
 			"values":          values,

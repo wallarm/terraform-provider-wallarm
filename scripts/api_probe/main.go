@@ -675,7 +675,7 @@ const emptyMark = "—"
 func writeReport(results []Result, outPath string) error {
 	var sb strings.Builder
 	sb.WriteString("# Wallarm API Rule-Type Probe Results\n\n")
-	sb.WriteString(fmt.Sprintf("Generated: %s\n\n", time.Now().Format(time.RFC3339)))
+	fmt.Fprintf(&sb, "Generated: %s\n\n", time.Now().Format(time.RFC3339))
 	sb.WriteString("| Rule type | Create | Update (same body) | Min fields sent | API defaults filled | Range constraints | Notes |\n")
 	sb.WriteString("|---|---|---|---|---|---|---|\n")
 	for _, r := range results {
@@ -710,7 +710,7 @@ func writeReport(results []Result, outPath string) error {
 			notes = notes[:200] + "…"
 		}
 		notes = strings.ReplaceAll(notes, "|", "\\|")
-		sb.WriteString(fmt.Sprintf("| `%s` | %s | %s | %s | %s | %s | %s |\n",
+		fmt.Fprintf(&sb, "| `%s` | %s | %s | %s | %s | %s | %s |\n",
 			r.RuleType,
 			status,
 			updateStatus,
@@ -718,22 +718,22 @@ func writeReport(results []Result, outPath string) error {
 			joinKVDefaults(r.APIDefaults),
 			strings.Join(ranges, "<br>"),
 			notes,
-		))
+		)
 	}
 	sb.WriteString("\n## Per-rule detail\n")
 	for _, r := range results {
-		sb.WriteString(fmt.Sprintf("\n### `%s`\n\n", r.RuleType))
-		sb.WriteString(fmt.Sprintf("- Success: %v\n", r.Success))
-		sb.WriteString(fmt.Sprintf("- Attempts: %d\n", r.Attempts))
+		fmt.Fprintf(&sb, "\n### `%s`\n\n", r.RuleType)
+		fmt.Fprintf(&sb, "- Success: %v\n", r.Success)
+		fmt.Fprintf(&sb, "- Attempts: %d\n", r.Attempts)
 		if len(r.MinimalFields) > 0 {
-			sb.WriteString(fmt.Sprintf("- Minimal Create body fields: %s\n", joinBackticked(r.MinimalFields)))
+			fmt.Fprintf(&sb, "- Minimal Create body fields: %s\n", joinBackticked(r.MinimalFields))
 		}
 		if len(r.APIDefaults) > 0 {
 			sb.WriteString("- API-default values for omitted fields:\n")
 			keys := mapKeys(r.APIDefaults)
 			sort.Strings(keys)
 			for _, k := range keys {
-				sb.WriteString(fmt.Sprintf("  - `%s` = `%v`\n", k, r.APIDefaults[k]))
+				fmt.Fprintf(&sb, "  - `%s` = `%v`\n", k, r.APIDefaults[k])
 			}
 		}
 		if len(r.RangeErrors) > 0 {
@@ -741,24 +741,24 @@ func writeReport(results []Result, outPath string) error {
 			keys := mapKeys(r.RangeErrors)
 			sort.Strings(keys)
 			for _, k := range keys {
-				sb.WriteString(fmt.Sprintf("  - `%s`: %s\n", k, r.RangeErrors[k]))
+				fmt.Fprintf(&sb, "  - `%s`: %s\n", k, r.RangeErrors[k])
 			}
 		}
 		if r.FinalErrorBody != "" {
-			sb.WriteString(fmt.Sprintf("- Last error body: `%s`\n", strings.ReplaceAll(r.FinalErrorBody, "`", "")))
+			fmt.Fprintf(&sb, "- Last error body: `%s`\n", strings.ReplaceAll(r.FinalErrorBody, "`", ""))
 		}
 		if r.UpdateAttempted {
-			sb.WriteString(fmt.Sprintf("- Update probe (PUT /v3/hint/{id} with same body): HTTP %d, ok=%v\n", r.UpdateStatus, r.UpdateOK))
+			fmt.Fprintf(&sb, "- Update probe (PUT /v3/hint/{id} with same body): HTTP %d, ok=%v\n", r.UpdateStatus, r.UpdateOK)
 			if len(r.UpdateFieldErrors) > 0 {
 				keys := mapKeys(r.UpdateFieldErrors)
 				sort.Strings(keys)
 				sb.WriteString("  - Field errors:\n")
 				for _, k := range keys {
-					sb.WriteString(fmt.Sprintf("    - `%s`: %s\n", k, r.UpdateFieldErrors[k]))
+					fmt.Fprintf(&sb, "    - `%s`: %s\n", k, r.UpdateFieldErrors[k])
 				}
 			}
 			if r.UpdateBody != "" && !r.UpdateOK {
-				sb.WriteString(fmt.Sprintf("  - Raw body: `%s`\n", strings.ReplaceAll(r.UpdateBody, "`", "")))
+				fmt.Fprintf(&sb, "  - Raw body: `%s`\n", strings.ReplaceAll(r.UpdateBody, "`", ""))
 			}
 		}
 		if len(r.FieldMutability) > 0 {
@@ -766,7 +766,7 @@ func writeReport(results []Result, outPath string) error {
 			keys := mapKeys(r.FieldMutability)
 			sort.Strings(keys)
 			for _, k := range keys {
-				sb.WriteString(fmt.Sprintf("    - `%s`: %s\n", k, r.FieldMutability[k]))
+				fmt.Fprintf(&sb, "    - `%s`: %s\n", k, r.FieldMutability[k])
 			}
 		}
 	}

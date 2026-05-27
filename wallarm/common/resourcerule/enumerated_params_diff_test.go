@@ -10,28 +10,28 @@ func TestValidateEnumeratedParamsBlock(t *testing.T) {
 
 	cases := []struct {
 		name        string
-		block       map[string]interface{}
+		block       map[string]any
 		wantErrSubs []string
 	}{
 		// --- exact mode happy paths ---
 		{
 			name: "exact: only points",
-			block: map[string]interface{}{
+			block: map[string]any{
 				"mode": "exact",
-				"points": []interface{}{
-					map[string]interface{}{"point": []interface{}{"header", "REFERER"}, "sensitive": true},
+				"points": []any{
+					map[string]any{"point": []any{"header", "REFERER"}, "sensitive": true},
 				},
 			},
 		},
 		{
 			name: "exact: empty everything",
-			block: map[string]interface{}{
+			block: map[string]any{
 				"mode": "exact",
 			},
 		},
 		{
 			name: "exact: bool fields false (post-import auto-config) → no error",
-			block: map[string]interface{}{
+			block: map[string]any{
 				"mode":                  "exact",
 				"additional_parameters": false,
 				"plain_parameters":      false,
@@ -40,24 +40,24 @@ func TestValidateEnumeratedParamsBlock(t *testing.T) {
 		// --- exact mode list rejections ---
 		{
 			name: "exact: name_regexps populated → error",
-			block: map[string]interface{}{
+			block: map[string]any{
 				"mode":         "exact",
-				"name_regexps": []interface{}{"foo"},
+				"name_regexps": []any{"foo"},
 			},
 			wantErrSubs: []string{"name_regexps", "exact"},
 		},
 		{
 			name: "exact: value_regexps populated → error",
-			block: map[string]interface{}{
+			block: map[string]any{
 				"mode":          "exact",
-				"value_regexps": []interface{}{"bar"},
+				"value_regexps": []any{"bar"},
 			},
 			wantErrSubs: []string{"value_regexps", "exact"},
 		},
 		// --- exact mode bool rejections (only when true) ---
 		{
 			name: "exact: additional_parameters=true → error",
-			block: map[string]interface{}{
+			block: map[string]any{
 				"mode":                  "exact",
 				"additional_parameters": true,
 			},
@@ -65,7 +65,7 @@ func TestValidateEnumeratedParamsBlock(t *testing.T) {
 		},
 		{
 			name: "exact: plain_parameters=true → error",
-			block: map[string]interface{}{
+			block: map[string]any{
 				"mode":             "exact",
 				"plain_parameters": true,
 			},
@@ -73,9 +73,9 @@ func TestValidateEnumeratedParamsBlock(t *testing.T) {
 		},
 		{
 			name: "exact: multiple violations listed",
-			block: map[string]interface{}{
+			block: map[string]any{
 				"mode":                  "exact",
-				"name_regexps":          []interface{}{"foo"},
+				"name_regexps":          []any{"foo"},
 				"additional_parameters": true,
 				"plain_parameters":      true,
 			},
@@ -84,18 +84,18 @@ func TestValidateEnumeratedParamsBlock(t *testing.T) {
 		// --- regexp mode happy paths ---
 		{
 			name: "regexp: name_regexps + value_regexps populated → ok",
-			block: map[string]interface{}{
+			block: map[string]any{
 				"mode":          "regexp",
-				"name_regexps":  []interface{}{"foo"},
-				"value_regexps": []interface{}{"bar"},
+				"name_regexps":  []any{"foo"},
+				"value_regexps": []any{"bar"},
 			},
 		},
 		{
 			name: "regexp: full payload (user opted out one filter with [\"\"])",
-			block: map[string]interface{}{
+			block: map[string]any{
 				"mode":                  "regexp",
-				"name_regexps":          []interface{}{"foo"},
-				"value_regexps":         []interface{}{""},
+				"name_regexps":          []any{"foo"},
+				"value_regexps":         []any{""},
 				"additional_parameters": true,
 				"plain_parameters":      false,
 			},
@@ -103,35 +103,35 @@ func TestValidateEnumeratedParamsBlock(t *testing.T) {
 		// --- regexp mode rejections ---
 		{
 			name: "regexp: points populated → error",
-			block: map[string]interface{}{
+			block: map[string]any{
 				"mode":          "regexp",
-				"name_regexps":  []interface{}{"foo"},
-				"value_regexps": []interface{}{"bar"},
-				"points": []interface{}{
-					map[string]interface{}{"point": []interface{}{"header", "REFERER"}, "sensitive": false},
+				"name_regexps":  []any{"foo"},
+				"value_regexps": []any{"bar"},
+				"points": []any{
+					map[string]any{"point": []any{"header", "REFERER"}, "sensitive": false},
 				},
 			},
 			wantErrSubs: []string{"points", "regexp"},
 		},
 		{
 			name: "regexp: value_regexps missing → error",
-			block: map[string]interface{}{
+			block: map[string]any{
 				"mode":         "regexp",
-				"name_regexps": []interface{}{"foo"},
+				"name_regexps": []any{"foo"},
 			},
 			wantErrSubs: []string{"value_regexps", "regexp"},
 		},
 		{
 			name: "regexp: name_regexps missing → error",
-			block: map[string]interface{}{
+			block: map[string]any{
 				"mode":          "regexp",
-				"value_regexps": []interface{}{"bar"},
+				"value_regexps": []any{"bar"},
 			},
 			wantErrSubs: []string{"name_regexps", "regexp"},
 		},
 		{
 			name: "regexp: both lists missing → both listed in error",
-			block: map[string]interface{}{
+			block: map[string]any{
 				"mode": "regexp",
 			},
 			wantErrSubs: []string{"name_regexps", "value_regexps", "regexp"},
@@ -139,9 +139,9 @@ func TestValidateEnumeratedParamsBlock(t *testing.T) {
 		// --- unknown mode is no-op (validation handled by schema ValidateFunc) ---
 		{
 			name: "unknown mode: no-op (caught elsewhere)",
-			block: map[string]interface{}{
+			block: map[string]any{
 				"mode":         "weird",
-				"name_regexps": []interface{}{"x"},
+				"name_regexps": []any{"x"},
 			},
 		},
 	}

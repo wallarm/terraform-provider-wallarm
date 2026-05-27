@@ -63,18 +63,18 @@ func (t *loggingTransport) RoundTrip(req *http.Request) (*http.Response, error) 
 
 func (t *loggingTransport) logRequest(req *http.Request, body []byte) {
 	var buf bytes.Buffer
-	buf.WriteString(fmt.Sprintf("---[ REQUEST ]---\n%s %s %s\nHost: %s\n",
-		req.Method, req.URL.RequestURI(), req.Proto, req.URL.Host))
+	fmt.Fprintf(&buf, "---[ REQUEST ]---\n%s %s %s\nHost: %s\n",
+		req.Method, req.URL.RequestURI(), req.Proto, req.URL.Host)
 	for key, vals := range req.Header {
 		for _, val := range vals {
 			if isSensitiveHTTPHeader(key) {
 				val = maskHTTPValue(val)
 			}
-			buf.WriteString(fmt.Sprintf("%s: %s\n", key, val))
+			fmt.Fprintf(&buf, "%s: %s\n", key, val)
 		}
 	}
 	if len(body) > 0 {
-		buf.WriteString(fmt.Sprintf("\n%s\n", string(body)))
+		fmt.Fprintf(&buf, "\n%s\n", string(body))
 	}
 	buf.WriteString("---[ END REQUEST ]---")
 	log.Printf("[DEBUG] %s", buf.String())
@@ -82,14 +82,14 @@ func (t *loggingTransport) logRequest(req *http.Request, body []byte) {
 
 func (t *loggingTransport) logResponse(resp *http.Response, body []byte) {
 	var buf bytes.Buffer
-	buf.WriteString(fmt.Sprintf("---[ RESPONSE ]---\n%s %s\n", resp.Proto, resp.Status))
+	fmt.Fprintf(&buf, "---[ RESPONSE ]---\n%s %s\n", resp.Proto, resp.Status)
 	for key, vals := range resp.Header {
 		for _, val := range vals {
-			buf.WriteString(fmt.Sprintf("%s: %s\n", key, val))
+			fmt.Fprintf(&buf, "%s: %s\n", key, val)
 		}
 	}
 	if len(body) > 0 {
-		buf.WriteString(fmt.Sprintf("\n%s\n", string(body)))
+		fmt.Fprintf(&buf, "\n%s\n", string(body))
 	}
 	buf.WriteString("---[ END RESPONSE ]---")
 	log.Printf("[DEBUG] %s", buf.String())

@@ -71,7 +71,7 @@ func resourceWallarmRegex() *schema.Resource {
 	}
 }
 
-func resourceWallarmRegexCreate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceWallarmRegexCreate(ctx context.Context, d *schema.ResourceData, m any) diag.Diagnostics {
 	experimental := d.Get("experimental").(bool)
 	var actionType string
 	if experimental {
@@ -89,7 +89,7 @@ func resourceWallarmRegexCreate(ctx context.Context, d *schema.ResourceData, m i
 	regex := d.Get("regex").(string)
 	attackType := d.Get("attack_type").(string)
 
-	ps := d.Get("point").([]interface{})
+	ps := d.Get("point").([]any)
 	if err := d.Set("point", ps); err != nil {
 		return diag.FromErr(fmt.Errorf("error setting point: %w", err))
 	}
@@ -135,7 +135,7 @@ func resourceWallarmRegexCreate(ctx context.Context, d *schema.ResourceData, m i
 	return resourceWallarmRegexRead(ctx, d, m)
 }
 
-func resourceWallarmRegexRead(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceWallarmRegexRead(_ context.Context, d *schema.ResourceData, m any) diag.Diagnostics {
 	clientID, err := retrieveClientID(d, m)
 	if err != nil {
 		return diag.FromErr(err)
@@ -150,7 +150,7 @@ func resourceWallarmRegexRead(_ context.Context, d *schema.ResourceData, m inter
 	return nil
 }
 
-func resourceWallarmRegexImport(_ context.Context, d *schema.ResourceData, _ interface{}) ([]*schema.ResourceData, error) {
+func resourceWallarmRegexImport(_ context.Context, d *schema.ResourceData, _ any) ([]*schema.ResourceData, error) {
 	idAttr := strings.SplitN(d.Id(), "/", 4)
 	if len(idAttr) == 4 {
 		clientID, err := strconv.Atoi(idAttr[0])

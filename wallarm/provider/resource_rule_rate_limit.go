@@ -73,7 +73,7 @@ func resourceWallarmRateLimit() *schema.Resource {
 	}
 }
 
-func resourceWallarmRateLimitCreate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceWallarmRateLimitCreate(ctx context.Context, d *schema.ResourceData, m any) diag.Diagnostics {
 	client := apiClient(m)
 	clientID, err := retrieveClientID(d, m)
 	if err != nil {
@@ -87,7 +87,7 @@ func resourceWallarmRateLimitCreate(ctx context.Context, d *schema.ResourceData,
 		return diag.FromErr(err)
 	}
 
-	iPoint := d.Get("point").([]interface{})
+	iPoint := d.Get("point").([]any)
 	point, err := resourcerule.ExpandPointsToTwoDimensionalArray(iPoint)
 	if err != nil {
 		return diag.FromErr(err)
@@ -135,7 +135,7 @@ func resourceWallarmRateLimitCreate(ctx context.Context, d *schema.ResourceData,
 	return resourceWallarmRateLimitRead(ctx, d, m)
 }
 
-func resourceWallarmRateLimitRead(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceWallarmRateLimitRead(_ context.Context, d *schema.ResourceData, m any) diag.Diagnostics {
 	clientID, err := retrieveClientID(d, m)
 	if err != nil {
 		return diag.FromErr(err)

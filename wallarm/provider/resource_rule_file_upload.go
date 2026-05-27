@@ -69,7 +69,7 @@ func resourceWallarmFileUploadSizeLimit() *schema.Resource {
 	}
 }
 
-func resourceWallarmFileUploadSizeLimitCreate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceWallarmFileUploadSizeLimitCreate(ctx context.Context, d *schema.ResourceData, m any) diag.Diagnostics {
 	clientID, err := retrieveClientID(d, m)
 	if err != nil {
 		return diag.FromErr(err)
@@ -78,7 +78,7 @@ func resourceWallarmFileUploadSizeLimitCreate(ctx context.Context, d *schema.Res
 		"file_upload_size_limit", "", resourceWallarmFileUploadSizeLimitRead, m)
 }
 
-func resourceWallarmFileUploadSizeLimitRead(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceWallarmFileUploadSizeLimitRead(_ context.Context, d *schema.ResourceData, m any) diag.Diagnostics {
 	clientID, err := retrieveClientID(d, m)
 	if err != nil {
 		return diag.FromErr(err)

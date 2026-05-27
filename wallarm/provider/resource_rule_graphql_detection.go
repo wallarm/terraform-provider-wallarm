@@ -83,7 +83,7 @@ func resourceWallarmGraphqlDetection() *schema.Resource {
 	}
 }
 
-func resourceWallarmGraphqlDetectionCreate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceWallarmGraphqlDetectionCreate(ctx context.Context, d *schema.ResourceData, m any) diag.Diagnostics {
 	clientID, err := retrieveClientID(d, m)
 	if err != nil {
 		return diag.FromErr(err)
@@ -92,7 +92,7 @@ func resourceWallarmGraphqlDetectionCreate(ctx context.Context, d *schema.Resour
 		"graphql_detection", "", resourceWallarmGraphqlDetectionRead, m)
 }
 
-func resourceWallarmGraphqlDetectionRead(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceWallarmGraphqlDetectionRead(_ context.Context, d *schema.ResourceData, m any) diag.Diagnostics {
 	clientID, err := retrieveClientID(d, m)
 	if err != nil {
 		return diag.FromErr(err)

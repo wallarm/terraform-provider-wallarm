@@ -114,7 +114,7 @@ func dataSourceWallarmNode() *schema.Resource {
 	}
 }
 
-func dataSourceWallarmNodeRead(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func dataSourceWallarmNodeRead(_ context.Context, d *schema.ResourceData, m any) diag.Diagnostics {
 	client := apiClient(m)
 	clientID, err := retrieveClientID(d, m)
 	if err != nil {
@@ -126,7 +126,7 @@ func dataSourceWallarmNodeRead(_ context.Context, d *schema.ResourceData, m inte
 		filter.Type = "all" //nolint:goconst // different semantic contexts
 	}
 
-	nodes := make([]interface{}, 0)
+	nodes := make([]any, 0)
 	var node *wallarm.NodeRead
 	var nodePOST *wallarm.NodeReadPOST
 	nodeReadBody := wallarm.NodeReadByFilter{
@@ -161,7 +161,7 @@ func dataSourceWallarmNodeRead(_ context.Context, d *schema.ResourceData, m inte
 	}
 	if POST {
 		for _, b := range nodePOST.Body {
-			nodes = append(nodes, map[string]interface{}{
+			nodes = append(nodes, map[string]any{
 				"type":      b.Type,
 				"uuid":      b.ID,
 				"hostname":  b.Hostname,
@@ -175,7 +175,7 @@ func dataSourceWallarmNodeRead(_ context.Context, d *schema.ResourceData, m inte
 		}
 	} else {
 		for _, b := range node.Body {
-			nodes = append(nodes, map[string]interface{}{
+			nodes = append(nodes, map[string]any{
 				"type":                  b.Type,
 				"id":                    b.ID,
 				"uuid":                  b.UUID,
@@ -202,14 +202,14 @@ func dataSourceWallarmNodeRead(_ context.Context, d *schema.ResourceData, m inte
 	return nil
 }
 
-func expandWallarmNode(d interface{}) *searchFilterWallarmNode {
-	cfg := d.([]interface{})
+func expandWallarmNode(d any) *searchFilterWallarmNode {
+	cfg := d.([]any)
 	filter := &searchFilterWallarmNode{}
 	if len(cfg) == 0 || cfg[0] == nil {
 		return filter
 	}
 
-	m := cfg[0].(map[string]interface{})
+	m := cfg[0].(map[string]any)
 
 	typeNode, ok := m["type"]
 	if ok {
@@ -241,12 +241,12 @@ type searchFilterWallarmNode struct {
 	UUID     string
 }
 
-func interfaceToString(i interface{}) string {
+func interfaceToString(i any) string {
 	r, _ := i.(string)
 	return r
 }
 
-func interfaceToInt(i interface{}) int {
+func interfaceToInt(i any) int {
 	r, _ := i.(int)
 	return r
 }

@@ -238,7 +238,7 @@ func dataSourceWallarmHits() *schema.Resource {
 	}
 }
 
-func dataSourceWallarmHitsRead(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func dataSourceWallarmHitsRead(_ context.Context, d *schema.ResourceData, m any) diag.Diagnostics {
 	client := apiClient(m)
 	clientID, err := retrieveClientID(d, m)
 	if err != nil {
@@ -361,22 +361,22 @@ func dataSourceWallarmHitsRead(_ context.Context, d *schema.ResourceData, m inte
 }
 
 // buildTimeRange extracts the time range from schema or defaults to 6 months.
-func buildTimeRange(d *schema.ResourceData) [][]interface{} {
+func buildTimeRange(d *schema.ResourceData) [][]any {
 	if v, ok := d.GetOk("time"); ok {
-		tl := v.([]interface{})
+		tl := v.([]any)
 		if len(tl) == 2 {
-			return [][]interface{}{{tl[0], tl[1]}}
+			return [][]any{{tl[0], tl[1]}}
 		}
 	}
 	sixMonthsAgo := time.Now().AddDate(0, -6, 0).Unix()
 	now := time.Now().Unix()
-	return [][]interface{}{{sixMonthsAgo, now}}
+	return [][]any{{sixMonthsAgo, now}}
 }
 
 // resolveAttackTypes returns the attack types to filter by, using schema override or defaults.
 func resolveAttackTypes(d *schema.ResourceData) []string {
 	if v, ok := d.GetOk("attack_types"); ok {
-		items := v.([]interface{})
+		items := v.([]any)
 		types := make([]string, 0, len(items))
 		for _, item := range items {
 			types = append(types, item.(string))
@@ -389,7 +389,7 @@ func resolveAttackTypes(d *schema.ResourceData) []string {
 }
 
 // fetchDirectHits fetches hits by request_id with standard noise filters.
-func fetchDirectHits(client wallarm.API, clientID int, requestID string, timeRange [][]interface{}) ([]*wallarm.Hit, error) {
+func fetchDirectHits(client wallarm.API, clientID int, requestID string, timeRange [][]any) ([]*wallarm.Hit, error) {
 	resp, err := client.HitRead(&wallarm.HitReadRequest{
 		Filter: &wallarm.HitFilter{
 			ClientID:        clientID,
@@ -420,7 +420,7 @@ func fetchRelatedHitsByAttackIDs(
 	clientID int,
 	directHits []*wallarm.Hit,
 	attackTypes []string,
-	timeRange [][]interface{},
+	timeRange [][]any,
 	refDomain, refPath string,
 	refPoolID int,
 ) ([]*wallarm.Hit, error) {
@@ -535,53 +535,53 @@ func hitKey(h *wallarm.Hit) string {
 // setEmptyHitsState sets empty values for all computed fields.
 func setEmptyHitsState(d *schema.ResourceData) diag.Diagnostics {
 	var diags diag.Diagnostics
-	if err := d.Set("action", schema.NewSet(resourcerule.HashActionDetails, []interface{}{})); err != nil {
+	if err := d.Set("action", schema.NewSet(resourcerule.HashActionDetails, []any{})); err != nil {
 		diags = append(diags, diag.FromErr(err)...)
 	}
 	d.Set("action_hash", "")
 	d.Set("action_dir_name", "")
-	if err := d.Set("action_conditions", []interface{}{}); err != nil {
+	if err := d.Set("action_conditions", []any{}); err != nil {
 		diags = append(diags, diag.FromErr(err)...)
 	}
 	if err := d.Set("aggregated", `{"action_hash":"","action":[],"groups":[]}`); err != nil {
 		diags = append(diags, diag.FromErr(err)...)
 	}
 	d.Set("hits_count", 0)
-	if err := d.Set("hits", []interface{}{}); err != nil {
+	if err := d.Set("hits", []any{}); err != nil {
 		diags = append(diags, diag.FromErr(err)...)
 	}
 	return diags
 }
 
-// schemaActionToDetails converts []map[string]interface{} (schema format) to []ActionDetails
+// schemaActionToDetails converts []map[string]any (schema format) to []ActionDetails
 // for use with ConditionsHash. Handles the schema convention where point-value types
 // (action_name, method, etc.) store the value in the point map, not the value field.
-func schemaActionToDetails(action []map[string]interface{}) []wallarm.ActionDetails {
+func schemaActionToDetails(action []map[string]any) []wallarm.ActionDetails {
 	details := make([]wallarm.ActionDetails, 0, len(action))
 	for _, m := range action {
 		condType, _ := m["type"].(string)
 		condValue, _ := m["value"].(string)
-		pointMap, _ := m["point"].(map[string]interface{})
+		pointMap, _ := m["point"].(map[string]any)
 
-		var point []interface{}
-		var value interface{}
+		var point []any
+		var value any
 
 		for key, val := range pointMap {
 			valStr, _ := val.(string)
 			switch key {
 			case hitsPointKeyHeader, "query":
-				point = []interface{}{key, valStr}
+				point = []any{key, valStr}
 				value = condValue
 			case "path":
 				idx, _ := strconv.Atoi(valStr)
-				point = []interface{}{key, float64(idx)}
+				point = []any{key, float64(idx)}
 				if condType == hitsCondTypeAbsent {
 					value = nil
 				} else {
 					value = condValue
 				}
 			case hitsPointKeyInstance, hitsPointKeyActionName, "action_ext", "method", "proto", "scheme", "uri":
-				point = []interface{}{key}
+				point = []any{key}
 				if condType == hitsCondTypeAbsent {
 					value = nil
 				} else {
@@ -600,8 +600,8 @@ func schemaActionToDetails(action []map[string]interface{}) []wallarm.ActionDeta
 }
 
 // actionToSchemaSet converts action conditions to a schema.Set.
-func actionToSchemaSet(action []map[string]interface{}) *schema.Set {
-	ifaces := make([]interface{}, len(action))
+func actionToSchemaSet(action []map[string]any) *schema.Set {
+	ifaces := make([]any, len(action))
 	for i, a := range action {
 		ifaces[i] = a
 	}
@@ -609,25 +609,25 @@ func actionToSchemaSet(action []map[string]interface{}) *schema.Set {
 }
 
 // hitsToSchemaList converts wallarm.Hit objects to the schema list format.
-func hitsToSchemaList(hits []*wallarm.Hit) []interface{} {
-	result := make([]interface{}, 0, len(hits))
+func hitsToSchemaList(hits []*wallarm.Hit) []any {
+	result := make([]any, 0, len(hits))
 	for _, h := range hits {
-		pointStrings := make([]interface{}, 0, len(h.Point))
+		pointStrings := make([]any, 0, len(h.Point))
 		for _, p := range h.Point {
 			pointStrings = append(pointStrings, fmt.Sprintf("%v", p))
 		}
 
 		pointWrapped := resourcerule.WrapPointElements(h.Point)
-		wrappedForSchema := make([]interface{}, 0, len(pointWrapped))
+		wrappedForSchema := make([]any, 0, len(pointWrapped))
 		for _, pw := range pointWrapped {
-			inner := make([]interface{}, 0, len(pw))
+			inner := make([]any, 0, len(pw))
 			for _, s := range pw {
 				inner = append(inner, s)
 			}
 			wrappedForSchema = append(wrappedForSchema, inner)
 		}
 
-		result = append(result, map[string]interface{}{
+		result = append(result, map[string]any{
 			"id":            h.ID,
 			"type":          h.Type,
 			"ip":            h.IP,
@@ -666,27 +666,27 @@ func hitsToSchemaList(hits []*wallarm.Hit) []interface{} {
 //	path (absent) | absent | ""     | {"path": "<N>"}
 //	action_name   | equal  | ""     | {"action_name": name}
 //	action_ext    | equal  | ""     | {"action_ext": ext}
-func buildActionFromHit(domain, urlPath string, poolID int, includeInstance bool) []map[string]interface{} {
-	var conditions []map[string]interface{}
+func buildActionFromHit(domain, urlPath string, poolID int, includeInstance bool) []map[string]any {
+	var conditions []map[string]any
 
 	// Instance — included when includeInstance is true (default). Skipped only
 	// for poolID==0 (unspecified); -1 (default app) and positive pool IDs are
 	// emitted to match the API's ActionReadByHitID response on instance-included
 	// clients.
 	if includeInstance && poolID != 0 {
-		conditions = append(conditions, map[string]interface{}{
+		conditions = append(conditions, map[string]any{
 			"type":  "equal",
 			"value": "",
-			"point": map[string]interface{}{hitsPointKeyInstance: strconv.Itoa(poolID)},
+			"point": map[string]any{hitsPointKeyInstance: strconv.Itoa(poolID)},
 		})
 	}
 
 	// HOST header — always iequal.
 	if domain != "" {
-		conditions = append(conditions, map[string]interface{}{
+		conditions = append(conditions, map[string]any{
 			"type":  "iequal",
 			"value": domain,
-			"point": map[string]interface{}{hitsPointKeyHeader: "HOST"},
+			"point": map[string]any{hitsPointKeyHeader: "HOST"},
 		})
 	}
 
@@ -703,7 +703,7 @@ func buildActionFromHit(domain, urlPath string, poolID int, includeInstance bool
 
 // locationToConditions converts a URL path into action conditions.
 // Port of the Ruby LocationToConditions class.
-func locationToConditions(location string) []map[string]interface{} {
+func locationToConditions(location string) []map[string]any {
 	// URI point is mutually exclusive with path/action_name/action_ext (validated
 	// in ActionScopeCustomizeDiff). Path is always decomposed into segments.
 
@@ -714,16 +714,16 @@ func locationToConditions(location string) []map[string]interface{} {
 
 	// Root path "/" → action_name is empty string, path[0] is absent.
 	if len(parts) == 0 {
-		return []map[string]interface{}{
+		return []map[string]any{
 			{
 				"type":  "equal",
 				"value": "",
-				"point": map[string]interface{}{hitsPointKeyActionName: ""},
+				"point": map[string]any{hitsPointKeyActionName: ""},
 			},
 			{
 				"type":  hitsCondTypeAbsent,
 				"value": "",
-				"point": map[string]interface{}{"path": "0"},
+				"point": map[string]any{"path": "0"},
 			},
 		}
 	}
@@ -732,23 +732,23 @@ func locationToConditions(location string) []map[string]interface{} {
 	pathParts := parts[:len(parts)-1]
 
 	// Pre-allocate: len(pathParts) path conditions + up to 2 from actionNameExtConditions + 1 terminating absent.
-	conditions := make([]map[string]interface{}, 0, len(parts)+2)
+	conditions := make([]map[string]any, 0, len(parts)+2)
 
 	conditions = append(conditions, actionNameExtConditions(last)...)
 
 	for i, part := range pathParts {
-		conditions = append(conditions, map[string]interface{}{
+		conditions = append(conditions, map[string]any{
 			"type":  "equal",
 			"value": part,
-			"point": map[string]interface{}{"path": strconv.Itoa(i)},
+			"point": map[string]any{"path": strconv.Itoa(i)},
 		})
 	}
 
 	// Terminating absent — fixes the length of the path chain.
-	conditions = append(conditions, map[string]interface{}{
+	conditions = append(conditions, map[string]any{
 		"type":  hitsCondTypeAbsent,
 		"value": "",
-		"point": map[string]interface{}{"path": strconv.Itoa(len(pathParts))},
+		"point": map[string]any{"path": strconv.Itoa(len(pathParts))},
 	})
 
 	return conditions
@@ -756,34 +756,34 @@ func locationToConditions(location string) []map[string]interface{} {
 
 // actionNameExtConditions splits a path segment into action_name / action_ext.
 // The matched string goes in the point map value; value field is always "".
-func actionNameExtConditions(segment string) []map[string]interface{} {
+func actionNameExtConditions(segment string) []map[string]any {
 	if dotIdx := strings.LastIndex(segment, "."); dotIdx >= 0 {
 		name := segment[:dotIdx]
 		ext := segment[dotIdx+1:]
-		return []map[string]interface{}{
+		return []map[string]any{
 			{
 				"type":  "equal",
 				"value": "",
-				"point": map[string]interface{}{hitsPointKeyActionName: name},
+				"point": map[string]any{hitsPointKeyActionName: name},
 			},
 			{
 				"type":  "equal",
 				"value": "",
-				"point": map[string]interface{}{"action_ext": ext},
+				"point": map[string]any{"action_ext": ext},
 			},
 		}
 	}
 
-	return []map[string]interface{}{
+	return []map[string]any{
 		{
 			"type":  "equal",
 			"value": "",
-			"point": map[string]interface{}{hitsPointKeyActionName: segment},
+			"point": map[string]any{hitsPointKeyActionName: segment},
 		},
 		{
 			"type":  hitsCondTypeAbsent,
 			"value": "",
-			"point": map[string]interface{}{"action_ext": ""},
+			"point": map[string]any{"action_ext": ""},
 		},
 	}
 }
@@ -791,7 +791,7 @@ func actionNameExtConditions(segment string) []map[string]interface{} {
 // groupHitsForRules groups hits by point_hash, filtering by allowed attack types,
 // and converts action details to schema format. Returns the groups and schema actions
 // for use by both the expanded rules output and the aggregated output.
-func groupHitsForRules(hits []*wallarm.Hit, actionDetails []wallarm.ActionDetails, attackTypes []string) (map[string]*pointGroup, []map[string]interface{}) {
+func groupHitsForRules(hits []*wallarm.Hit, actionDetails []wallarm.ActionDetails, attackTypes []string) (map[string]*pointGroup, []map[string]any) {
 	// Build attack type filter set.
 	attackTypeSet := make(map[string]bool, len(attackTypes))
 	for _, at := range attackTypes {
@@ -846,16 +846,16 @@ func groupHitsForRules(hits []*wallarm.Hit, actionDetails []wallarm.ActionDetail
 	}
 
 	// Convert action details to schema format.
-	schemaActions := make([]map[string]interface{}, 0, len(actionDetails))
+	schemaActions := make([]map[string]any, 0, len(actionDetails))
 	for _, ad := range actionDetails {
 		item := resourcerule.ActionDetailToSchemaItem(ad)
-		pointMap := make(map[string]interface{})
-		if pm, ok := item["point"].(map[string]interface{}); ok {
+		pointMap := make(map[string]any)
+		if pm, ok := item["point"].(map[string]any); ok {
 			for k, v := range pm {
 				pointMap[k] = fmt.Sprintf("%v", v)
 			}
 		}
-		schemaActions = append(schemaActions, map[string]interface{}{
+		schemaActions = append(schemaActions, map[string]any{
 			"type":  item["type"],
 			"value": item["value"],
 			"point": pointMap,
@@ -879,14 +879,14 @@ type aggregatedGroup struct {
 
 // aggregatedOutput is the compact representation stored in the aggregated field.
 type aggregatedOutput struct {
-	ActionHash string                   `json:"action_hash"`
-	Action     []map[string]interface{} `json:"action"`
-	Groups     []aggregatedGroup        `json:"groups"`
+	ActionHash string            `json:"action_hash"`
+	Action     []map[string]any  `json:"action"`
+	Groups     []aggregatedGroup `json:"groups"`
 }
 
 // buildAggregatedJSON builds the compact JSON for the aggregated output.
 // ruleTypes filters which data is included: stamps for disable_stamp, attack_types for disable_attack_type.
-func buildAggregatedJSON(actionHash string, schemaActions []map[string]interface{}, groups map[string]*pointGroup, ruleTypes []string) (string, error) {
+func buildAggregatedJSON(actionHash string, schemaActions []map[string]any, groups map[string]*pointGroup, ruleTypes []string) (string, error) {
 	rtSet := make(map[string]bool, len(ruleTypes))
 	for _, rt := range ruleTypes {
 		rtSet[rt] = true

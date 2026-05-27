@@ -34,7 +34,7 @@ func resourceWallarmBruteForceCounter() *schema.Resource {
 	}
 }
 
-func resourceWallarmBruteForceCounterCreate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceWallarmBruteForceCounterCreate(ctx context.Context, d *schema.ResourceData, m any) diag.Diagnostics {
 	client := apiClient(m)
 	clientID, err := retrieveClientID(d, m)
 	if err != nil {
@@ -74,7 +74,7 @@ func resourceWallarmBruteForceCounterCreate(ctx context.Context, d *schema.Resou
 	return resourceWallarmBruteForceCounterRead(ctx, d, m)
 }
 
-func resourceWallarmBruteForceCounterRead(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceWallarmBruteForceCounterRead(_ context.Context, d *schema.ResourceData, m any) diag.Diagnostics {
 	clientID, err := retrieveClientID(d, m)
 	if err != nil {
 		return diag.FromErr(err)

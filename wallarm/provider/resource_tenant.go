@@ -80,7 +80,7 @@ func readTenantByID(client wallarm.API, tenantClientID int) (*wallarm.ClientInfo
 // resourceWallarmTenantImport handles terraform import.
 // Format: {client_id}
 // Example: terraform import wallarm_tenant.my_tenant 110310
-func resourceWallarmTenantImport(_ context.Context, d *schema.ResourceData, m interface{}) ([]*schema.ResourceData, error) {
+func resourceWallarmTenantImport(_ context.Context, d *schema.ResourceData, m any) ([]*schema.ResourceData, error) {
 	tenantClientID, err := strconv.Atoi(d.Id())
 	if err != nil {
 		return nil, fmt.Errorf("invalid tenant client_id %q: %w", d.Id(), err)
@@ -102,7 +102,7 @@ func resourceWallarmTenantImport(_ context.Context, d *schema.ResourceData, m in
 	return []*schema.ResourceData{d}, nil
 }
 
-func resourceWallarmTenantCreate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceWallarmTenantCreate(ctx context.Context, d *schema.ResourceData, m any) diag.Diagnostics {
 	client := apiClient(m)
 	meta := m.(*ProviderMeta)
 
@@ -142,7 +142,7 @@ func resourceWallarmTenantCreate(ctx context.Context, d *schema.ResourceData, m 
 	return resourceWallarmTenantRead(ctx, d, m)
 }
 
-func resourceWallarmTenantRead(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceWallarmTenantRead(_ context.Context, d *schema.ResourceData, m any) diag.Diagnostics {
 	client := apiClient(m)
 
 	tenantClientID, err := strconv.Atoi(d.Id())
@@ -170,7 +170,7 @@ func resourceWallarmTenantRead(_ context.Context, d *schema.ResourceData, m inte
 	return nil
 }
 
-func resourceWallarmTenantUpdate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceWallarmTenantUpdate(ctx context.Context, d *schema.ResourceData, m any) diag.Diagnostics {
 	client := apiClient(m)
 
 	tenantClientID, err := strconv.Atoi(d.Id())
@@ -190,7 +190,7 @@ func resourceWallarmTenantUpdate(ctx context.Context, d *schema.ResourceData, m 
 	return resourceWallarmTenantRead(ctx, d, m)
 }
 
-func resourceWallarmTenantDelete(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceWallarmTenantDelete(_ context.Context, d *schema.ResourceData, m any) diag.Diagnostics {
 	client := apiClient(m)
 
 	tenantClientID, err := strconv.Atoi(d.Id())

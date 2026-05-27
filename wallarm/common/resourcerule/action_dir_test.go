@@ -22,11 +22,11 @@ func TestActionDirName_Default(t *testing.T) {
 func TestActionDirName_SimplePath(t *testing.T) {
 	// /import/mode/test → _import_mode_test_{hash8}
 	conditions := []wallarm.ActionDetails{
-		{Type: "equal", Point: []interface{}{"path", float64(0)}, Value: "import"},
-		{Type: "equal", Point: []interface{}{"path", float64(1)}, Value: "mode"},
-		{Type: "absent", Point: []interface{}{"path", float64(2)}, Value: nil},
-		{Type: "equal", Point: []interface{}{"action_name"}, Value: "test"},
-		{Type: "absent", Point: []interface{}{"action_ext"}, Value: nil},
+		{Type: "equal", Point: []any{"path", float64(0)}, Value: "import"},
+		{Type: "equal", Point: []any{"path", float64(1)}, Value: "mode"},
+		{Type: "absent", Point: []any{"path", float64(2)}, Value: nil},
+		{Type: "equal", Point: []any{"action_name"}, Value: "test"},
+		{Type: "absent", Point: []any{"action_ext"}, Value: nil},
 	}
 	got := ActionDirName(conditions)
 	hash := ConditionsHash(conditions)[:8]
@@ -39,10 +39,10 @@ func TestActionDirName_SimplePath(t *testing.T) {
 func TestActionDirName_DomainAndRootPath(t *testing.T) {
 	// example.com / → example.com_root_{hash8}
 	conditions := []wallarm.ActionDetails{
-		{Type: "iequal", Point: []interface{}{"header", "HOST"}, Value: "example.com"},
-		{Type: "absent", Point: []interface{}{"path", float64(0)}, Value: nil},
-		{Type: "equal", Point: []interface{}{"action_name"}, Value: ""},
-		{Type: "absent", Point: []interface{}{"action_ext"}, Value: nil},
+		{Type: "iequal", Point: []any{"header", "HOST"}, Value: "example.com"},
+		{Type: "absent", Point: []any{"path", float64(0)}, Value: nil},
+		{Type: "equal", Point: []any{"action_name"}, Value: ""},
+		{Type: "absent", Point: []any{"action_ext"}, Value: nil},
 	}
 	got := ActionDirName(conditions)
 	hash := ConditionsHash(conditions)[:8]
@@ -55,17 +55,17 @@ func TestActionDirName_DomainAndRootPath(t *testing.T) {
 func TestActionDirName_Complex(t *testing.T) {
 	// i13 example.com /path/action.ext + method, query, headers
 	conditions := []wallarm.ActionDetails{
-		{Type: "equal", Point: []interface{}{"method"}, Value: "POST"},
-		{Type: "iequal", Point: []interface{}{"header", "HOST"}, Value: "example.com"},
-		{Type: "equal", Point: []interface{}{"path", float64(0)}, Value: "path"},
-		{Type: "absent", Point: []interface{}{"path", float64(1)}, Value: nil},
-		{Type: "equal", Point: []interface{}{"action_name"}, Value: "action"},
-		{Type: "equal", Point: []interface{}{"action_ext"}, Value: "ext"},
-		{Type: "equal", Point: []interface{}{"get", "key"}, Value: "val"},
-		{Type: "equal", Point: []interface{}{"instance"}, Value: "13"},
-		{Type: "equal", Point: []interface{}{"proto"}, Value: "1.1"},
-		{Type: "equal", Point: []interface{}{"scheme"}, Value: "https"},
-		{Type: "regex", Point: []interface{}{"header", "CONTENT-TYPE"}, Value: "application/.*"},
+		{Type: "equal", Point: []any{"method"}, Value: "POST"},
+		{Type: "iequal", Point: []any{"header", "HOST"}, Value: "example.com"},
+		{Type: "equal", Point: []any{"path", float64(0)}, Value: "path"},
+		{Type: "absent", Point: []any{"path", float64(1)}, Value: nil},
+		{Type: "equal", Point: []any{"action_name"}, Value: "action"},
+		{Type: "equal", Point: []any{"action_ext"}, Value: "ext"},
+		{Type: "equal", Point: []any{"get", "key"}, Value: "val"},
+		{Type: "equal", Point: []any{"instance"}, Value: "13"},
+		{Type: "equal", Point: []any{"proto"}, Value: "1.1"},
+		{Type: "equal", Point: []any{"scheme"}, Value: "https"},
+		{Type: "regex", Point: []any{"header", "CONTENT-TYPE"}, Value: "application/.*"},
 	}
 	got := ActionDirName(conditions)
 	hash := ConditionsHash(conditions)[:8]
@@ -78,7 +78,7 @@ func TestActionDirName_Complex(t *testing.T) {
 func TestActionDirName_WildcardPath(t *testing.T) {
 	// /api/**/*.* → _api_.._._. + hash
 	conditions := []wallarm.ActionDetails{
-		{Type: "equal", Point: []interface{}{"path", float64(0)}, Value: "api"},
+		{Type: "equal", Point: []any{"path", float64(0)}, Value: "api"},
 	}
 	got := ActionDirName(conditions)
 	hash := ConditionsHash(conditions)[:8]
@@ -101,7 +101,7 @@ func TestActionDirName_GlobalWildcard(t *testing.T) {
 func TestActionDirName_DomainOnly(t *testing.T) {
 	// domain with no path constraints → domain + /**/*.* path (empty path part)
 	conditions := []wallarm.ActionDetails{
-		{Type: "iequal", Point: []interface{}{"header", "HOST"}, Value: "example.com"},
+		{Type: "iequal", Point: []any{"header", "HOST"}, Value: "example.com"},
 	}
 	got := ActionDirName(conditions)
 	hash := ConditionsHash(conditions)[:8]
@@ -115,13 +115,13 @@ func TestActionDirName_DomainOnly(t *testing.T) {
 func TestActionDirName_MaxLength(t *testing.T) {
 	// Very long domain + path should be truncated to 64 chars.
 	conditions := []wallarm.ActionDetails{
-		{Type: "iequal", Point: []interface{}{"header", "HOST"}, Value: "api.staging.very-long-subdomain.example.com"},
-		{Type: "equal", Point: []interface{}{"path", float64(0)}, Value: "v2"},
-		{Type: "equal", Point: []interface{}{"path", float64(1)}, Value: "organizations"},
-		{Type: "equal", Point: []interface{}{"path", float64(2)}, Value: "members"},
-		{Type: "absent", Point: []interface{}{"path", float64(3)}, Value: nil},
-		{Type: "equal", Point: []interface{}{"action_name"}, Value: "permissions"},
-		{Type: "absent", Point: []interface{}{"action_ext"}, Value: nil},
+		{Type: "iequal", Point: []any{"header", "HOST"}, Value: "api.staging.very-long-subdomain.example.com"},
+		{Type: "equal", Point: []any{"path", float64(0)}, Value: "v2"},
+		{Type: "equal", Point: []any{"path", float64(1)}, Value: "organizations"},
+		{Type: "equal", Point: []any{"path", float64(2)}, Value: "members"},
+		{Type: "absent", Point: []any{"path", float64(3)}, Value: nil},
+		{Type: "equal", Point: []any{"action_name"}, Value: "permissions"},
+		{Type: "absent", Point: []any{"action_ext"}, Value: nil},
 	}
 	got := ActionDirName(conditions)
 	if len(got) > 64 {

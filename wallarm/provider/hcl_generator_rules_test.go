@@ -48,7 +48,7 @@ func TestGenerateFromRulesJSON_MultipleActionScopes(t *testing.T) {
 	dir := t.TempDir()
 
 	r := resourceWallarmRuleGenerator()
-	d := newTestResourceData(t, r, map[string]interface{}{
+	d := newTestResourceData(t, r, map[string]any{
 		"output_dir": dir,
 		"rules_json": allRulesJSON,
 		"source":     "rules",
@@ -121,7 +121,7 @@ func TestGenerateFromRulesJSON_ActionConditionFormat(t *testing.T) {
 	dir := t.TempDir()
 
 	r := resourceWallarmRuleGenerator()
-	d := newTestResourceData(t, r, map[string]interface{}{
+	d := newTestResourceData(t, r, map[string]any{
 		"output_dir": dir,
 		"rules_json": rulesJSON,
 		"source":     "rules",
@@ -180,7 +180,7 @@ func readFileStr(t *testing.T, path string) string {
 
 // newTestResourceData creates a ResourceData from a schema and raw values,
 // suitable for calling generateRuleFiles directly.
-func newTestResourceData(t *testing.T, r *schema.Resource, values map[string]interface{}) *schema.ResourceData {
+func newTestResourceData(t *testing.T, r *schema.Resource, values map[string]any) *schema.ResourceData {
 	t.Helper()
 	return schema.TestResourceDataRaw(t, r.Schema, values)
 }

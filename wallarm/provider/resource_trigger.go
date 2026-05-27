@@ -136,7 +136,7 @@ func resourceWallarmTrigger() *schema.Resource {
 	}
 }
 
-func resourceWallarmTriggerCreate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceWallarmTriggerCreate(ctx context.Context, d *schema.ResourceData, m any) diag.Diagnostics {
 	var (
 		err         error
 		triggerResp *wallarm.TriggerCreateResp
@@ -242,7 +242,7 @@ func resourceWallarmTriggerCreate(ctx context.Context, d *schema.ResourceData, m
 	return resourceWallarmTriggerRead(ctx, d, m)
 }
 
-func resourceWallarmTriggerRead(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceWallarmTriggerRead(_ context.Context, d *schema.ResourceData, m any) diag.Diagnostics {
 	client := apiClient(m)
 	clientID, err := retrieveClientID(d, m)
 	if err != nil {
@@ -266,7 +266,7 @@ func resourceWallarmTriggerRead(_ context.Context, d *schema.ResourceData, m int
 	return nil
 }
 
-func resourceWallarmTriggerUpdate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceWallarmTriggerUpdate(ctx context.Context, d *schema.ResourceData, m any) diag.Diagnostics {
 	var (
 		err         error
 		triggerResp *wallarm.TriggerCreateResp
@@ -344,7 +344,7 @@ func resourceWallarmTriggerUpdate(ctx context.Context, d *schema.ResourceData, m
 	return resourceWallarmTriggerRead(ctx, d, m)
 }
 
-func resourceWallarmTriggerDelete(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceWallarmTriggerDelete(_ context.Context, d *schema.ResourceData, m any) diag.Diagnostics {
 	client := apiClient(m)
 	clientID, err := retrieveClientID(d, m)
 	if err != nil {
@@ -362,7 +362,7 @@ func resourceWallarmTriggerDelete(_ context.Context, d *schema.ResourceData, m i
 // resourceWallarmTriggerImport handles terraform import.
 // Format: {client_id}/{template_id}/{trigger_id}
 // Example: terraform import wallarm_trigger.my_trigger 8649/attacks_exceeded/123
-func resourceWallarmTriggerImport(_ context.Context, d *schema.ResourceData, _ interface{}) ([]*schema.ResourceData, error) {
+func resourceWallarmTriggerImport(_ context.Context, d *schema.ResourceData, _ any) ([]*schema.ResourceData, error) {
 	parts := strings.SplitN(d.Id(), "/", 3)
 	if len(parts) != 3 {
 		return nil, fmt.Errorf("invalid id %q, expected format: {client_id}/{template_id}/{trigger_id}", d.Id())
@@ -385,8 +385,8 @@ func resourceWallarmTriggerImport(_ context.Context, d *schema.ResourceData, _ i
 	return []*schema.ResourceData{d}, nil
 }
 
-func expandWallarmTriggerFilter(d interface{}) (*[]wallarm.TriggerFilters, error) {
-	cfg := d.([]interface{})
+func expandWallarmTriggerFilter(d any) (*[]wallarm.TriggerFilters, error) {
+	cfg := d.([]any)
 	filters := []wallarm.TriggerFilters{}
 	if len(cfg) == 0 || cfg[0] == nil {
 		return &filters, nil
@@ -394,7 +394,7 @@ func expandWallarmTriggerFilter(d interface{}) (*[]wallarm.TriggerFilters, error
 
 	for _, conf := range cfg {
 
-		m := conf.(map[string]interface{})
+		m := conf.(map[string]any)
 		t := wallarm.TriggerFilters{}
 		filterID, ok := m["filter_id"]
 		if ok {
@@ -408,12 +408,12 @@ func expandWallarmTriggerFilter(d interface{}) (*[]wallarm.TriggerFilters, error
 
 		value, ok := m["value"]
 		if ok {
-			value := value.([]interface{})
+			value := value.([]any)
 			responseFallthrough := false
 
 			switch filterID {
 			case "pool", "api_spec_ids":
-				var values []interface{}
+				var values []any
 				for _, v := range value {
 					vString := v.(string)
 					vInt, err := strconv.Atoi(vString)
@@ -424,7 +424,7 @@ func expandWallarmTriggerFilter(d interface{}) (*[]wallarm.TriggerFilters, error
 				}
 				t.Values = values
 			case "response_status":
-				var values []interface{}
+				var values []any
 				for _, v := range value {
 					vString := v.(string)
 					if vString[len(vString)-2:] != "xx" {
@@ -452,8 +452,8 @@ func expandWallarmTriggerFilter(d interface{}) (*[]wallarm.TriggerFilters, error
 	return &filters, nil
 }
 
-func expandWallarmTriggerAction(d interface{}) *[]wallarm.TriggerActions {
-	cfg := d.([]interface{})
+func expandWallarmTriggerAction(d any) *[]wallarm.TriggerActions {
+	cfg := d.([]any)
 	actions := []wallarm.TriggerActions{}
 	if len(cfg) == 0 || cfg[0] == nil {
 		return &actions
@@ -461,7 +461,7 @@ func expandWallarmTriggerAction(d interface{}) *[]wallarm.TriggerActions {
 
 	for _, conf := range cfg {
 
-		m := conf.(map[string]interface{})
+		m := conf.(map[string]any)
 		a := wallarm.TriggerActions{}
 		actionID, ok := m["action_id"]
 		if ok {
@@ -470,7 +470,7 @@ func expandWallarmTriggerAction(d interface{}) *[]wallarm.TriggerActions {
 
 		integrationID, ok := m["integration_id"]
 		if ok {
-			integrationID := integrationID.([]interface{})
+			integrationID := integrationID.([]any)
 			var integrationIDs []int
 			for _, intID := range integrationID {
 				integrationIDs = append(integrationIDs, intID.(int))
@@ -515,9 +515,9 @@ func expandWallarmTriggerAction(d interface{}) *[]wallarm.TriggerActions {
 	return &actions
 }
 
-func expandWallarmTriggerThreshold(cfg interface{}) (*wallarm.TriggerThreshold, error) {
+func expandWallarmTriggerThreshold(cfg any) (*wallarm.TriggerThreshold, error) {
 	threshold := wallarm.TriggerThreshold{}
-	m := cfg.(map[string]interface{})
+	m := cfg.(map[string]any)
 
 	period, ok := m["period"]
 	if ok {

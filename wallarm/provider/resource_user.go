@@ -42,7 +42,7 @@ func resourceWallarmUser() *schema.Resource {
 				Type:      schema.TypeString,
 				Optional:  true,
 				Sensitive: true,
-				ValidateFunc: func(val interface{}, _ string) (warns []string, errs []error) {
+				ValidateFunc: func(val any, _ string) (warns []string, errs []error) {
 					v := val.(string)
 					if isPasswordValid(v) {
 						return
@@ -89,7 +89,7 @@ func resourceWallarmUser() *schema.Resource {
 	}
 }
 
-func resourceWallarmUserCreate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceWallarmUserCreate(ctx context.Context, d *schema.ResourceData, m any) diag.Diagnostics {
 	client := apiClient(m)
 	clientID, err := retrieveClientID(d, m)
 	if err != nil {
@@ -140,7 +140,7 @@ func resourceWallarmUserCreate(ctx context.Context, d *schema.ResourceData, m in
 
 	return resourceWallarmUserRead(ctx, d, m)
 }
-func resourceWallarmUserRead(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceWallarmUserRead(_ context.Context, d *schema.ResourceData, m any) diag.Diagnostics {
 	client := apiClient(m)
 	clientID, err := retrieveClientID(d, m)
 	if err != nil {
@@ -183,7 +183,7 @@ func resourceWallarmUserRead(_ context.Context, d *schema.ResourceData, m interf
 	return nil
 }
 
-func resourceWallarmUserUpdate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceWallarmUserUpdate(ctx context.Context, d *schema.ResourceData, m any) diag.Diagnostics {
 	if d.HasChange("email") || d.HasChange("password") {
 		if diags := resourceWallarmUserDelete(ctx, d, m); diags != nil {
 			return diags
@@ -295,7 +295,7 @@ func isPasswordValid(s string) bool {
 	return hasMinLen && hasUpper && hasLower && hasNumber && hasSpecial
 }
 
-func resourceWallarmUserDelete(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceWallarmUserDelete(_ context.Context, d *schema.ResourceData, m any) diag.Diagnostics {
 	client := apiClient(m)
 	clientID, err := retrieveClientID(d, m)
 	if err != nil {
@@ -315,7 +315,7 @@ func resourceWallarmUserDelete(_ context.Context, d *schema.ResourceData, m inte
 }
 
 // resourceWallarmUserImport parses a 2-part import ID "{client_id}/{user_id}".
-func resourceWallarmUserImport(_ context.Context, d *schema.ResourceData, _ interface{}) ([]*schema.ResourceData, error) {
+func resourceWallarmUserImport(_ context.Context, d *schema.ResourceData, _ any) ([]*schema.ResourceData, error) {
 	parts := strings.SplitN(d.Id(), "/", 3)
 	if len(parts) != 2 {
 		return nil, fmt.Errorf("invalid id (%q) specified, should be in format \"{client_id}/{user_id}\"", d.Id())

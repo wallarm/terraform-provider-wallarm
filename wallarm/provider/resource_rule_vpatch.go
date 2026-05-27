@@ -44,7 +44,7 @@ func resourceWallarmVpatch() *schema.Resource {
 	}
 }
 
-func resourceWallarmVpatchCreate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceWallarmVpatchCreate(ctx context.Context, d *schema.ResourceData, m any) diag.Diagnostics {
 	client := apiClient(m)
 	clientID, err := retrieveClientID(d, m)
 	if err != nil {
@@ -53,7 +53,7 @@ func resourceWallarmVpatchCreate(ctx context.Context, d *schema.ResourceData, m 
 	fields := getCommonResourceRuleFieldsDTOFromResourceData(d)
 	attackType := d.Get("attack_type").(string)
 
-	ps := d.Get("point").([]interface{})
+	ps := d.Get("point").([]any)
 	if err := d.Set("point", ps); err != nil {
 		return diag.FromErr(fmt.Errorf("error setting point: %w", err))
 	}
@@ -100,7 +100,7 @@ func resourceWallarmVpatchCreate(ctx context.Context, d *schema.ResourceData, m 
 	return resourceWallarmVpatchRead(ctx, d, m)
 }
 
-func resourceWallarmVpatchRead(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceWallarmVpatchRead(_ context.Context, d *schema.ResourceData, m any) diag.Diagnostics {
 	clientID, err := retrieveClientID(d, m)
 	if err != nil {
 		return diag.FromErr(err)
