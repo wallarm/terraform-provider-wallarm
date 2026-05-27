@@ -669,10 +669,11 @@ func hitsToSchemaList(hits []*wallarm.Hit) []interface{} {
 func buildActionFromHit(domain, urlPath string, poolID int, includeInstance bool) []map[string]interface{} {
 	var conditions []map[string]interface{}
 
-	// Instance — included when includeInstance is true (default).
-	// Note: the API's ActionReadByHitID does NOT include instance in conditions,
-	// so validation strips it before comparing hashes.
-	if includeInstance && poolID > 0 {
+	// Instance — included when includeInstance is true (default). Skipped only
+	// for poolID==0 (unspecified); -1 (default app) and positive pool IDs are
+	// emitted to match the API's ActionReadByHitID response on instance-included
+	// clients.
+	if includeInstance && poolID != 0 {
 		conditions = append(conditions, map[string]interface{}{
 			"type":  "equal",
 			"value": "",

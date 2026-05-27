@@ -1,3 +1,9 @@
+## [Unreleased]
+
+### Bug Fixes
+
+* **`data.wallarm_hits`: emit `instance` condition for default-app (poolID=-1) hits** — fixes 4-vs-5 condition hash mismatch on instance-included API clients.
+
 ## [v2.3.9] - 2026-05-04
 
 > Rules polish batch — naming cleanup, schema-shape audit (symmetric remove-restores-default), safety hardening, test gap fills. Bumps `wallarm-go` to v0.12.2.

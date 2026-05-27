@@ -52,6 +52,33 @@ func TestBuildActionFromHit_BasicWithInstance(t *testing.T) {
 	}
 }
 
+func TestBuildActionFromHit_DefaultAppPoolID(t *testing.T) {
+	result := buildActionFromHit("example.com", "/api", -1, true)
+
+	if len(result) == 0 {
+		t.Fatal("expected non-empty result")
+	}
+
+	found := false
+	for _, c := range result {
+		pm, _ := c["point"].(map[string]interface{})
+		v, ok := pm["instance"]
+		if !ok {
+			continue
+		}
+		found = true
+		if v != "-1" {
+			t.Errorf("expected instance=-1, got %v", v)
+		}
+		if c["type"] != "equal" {
+			t.Errorf("expected type=equal for instance, got %v", c["type"])
+		}
+	}
+	if !found {
+		t.Error("expected instance condition for default app (poolID=-1) when includeInstance=true")
+	}
+}
+
 func TestBuildActionFromHit_WithoutInstance(t *testing.T) {
 	result := buildActionFromHit("example.com", "/api", 42, false)
 
