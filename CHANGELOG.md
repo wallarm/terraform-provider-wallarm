@@ -10,7 +10,7 @@
 
 ### Internal
 
-* **Committed reference data** — promoted 13 reference docs, `spec/point_map.json`, `spec/actions_examples.json`, and `scripts/fetch_point_refs.py` out of gitignored `.claude/` into the repo. Dedupe of `spec/actions_examples.json` (343 raw samples → 82 unique shapes; 18,447 → 4,776 lines). Real domains in `spec/actions_examples.json` scrubbed to `example.com`. Dead `init-plugin` Makefile target and `plugindircheck.sh` removed.
+* **Committed reference data** — added 13 reference docs, `spec/point_map.json`, `spec/actions_examples.json`, and `scripts/fetch_point_refs.py` to the repo. Dedupe of `spec/actions_examples.json` (343 raw samples → 82 unique shapes; 18,447 → 4,776 lines). Real domains in `spec/actions_examples.json` scrubbed to `example.com`. Dead `init-plugin` Makefile target and `plugindircheck.sh` removed.
 * **Lint modernization** — `interface{}` → `any` across `wallarm/` and `scripts/` (~990 sites); `WriteString(fmt.Sprintf)` → `fmt.Fprintf` (25 sites); 2 tagged-switch conversions. No behavior change.
 
 ## [v2.3.9] - 2026-05-04
