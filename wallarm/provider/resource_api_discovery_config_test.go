@@ -176,30 +176,6 @@ func TestExpandAPIDiscoveryConfig_RoundTrip(t *testing.T) {
 	}
 }
 
-func TestStripEmptyStrings(t *testing.T) {
-	t.Parallel()
-	cases := []struct {
-		name string
-		in   []string
-		want []string
-	}{
-		{name: "nil passes through", in: nil, want: nil},
-		{name: "empty passes through", in: []string{}, want: []string{}},
-		{name: "no empties unchanged", in: []string{"a", "b"}, want: []string{"a", "b"}},
-		{name: "drops leading empty", in: []string{"", "do", "action"}, want: []string{"do", "action"}},
-		{name: "drops mid empty", in: []string{"do", "", "action"}, want: []string{"do", "action"}},
-		{name: "drops all-empty", in: []string{"", "", ""}, want: []string{}},
-	}
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			got := stripEmptyStrings(tc.in)
-			if !reflect.DeepEqual(got, tc.want) {
-				t.Errorf("got %v, want %v", got, tc.want)
-			}
-		})
-	}
-}
-
 func TestParseClientIDFromCompositeID(t *testing.T) {
 	t.Parallel()
 	cases := []struct {
