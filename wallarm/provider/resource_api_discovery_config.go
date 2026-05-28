@@ -185,6 +185,21 @@ func resourceWallarmAPIDiscoveryConfig() *schema.Resource {
 	}
 }
 
+// stripEmptyStrings filters out "" entries; used on flatten for TypeList(TypeString)
+// fields whose API values may contain "" (which SDKv2 renders as null in state).
+func stripEmptyStrings(in []string) []string {
+	if len(in) == 0 {
+		return in
+	}
+	out := make([]string, 0, len(in))
+	for _, s := range in {
+		if s != "" {
+			out = append(out, s)
+		}
+	}
+	return out
+}
+
 // parseClientIDFromCompositeID extracts the numeric client_id prefix from a
 // composite "<client_id>/<suffix>" or a bare numeric ID. Returns ok=false when
 // the ID is empty or the prefix can't be parsed as an int.
@@ -339,8 +354,13 @@ func flattenAPIDiscoveryConfig(cfg *wallarm.APIDiscoveryConfig) map[string]any {
 			}},
 		}},
 		"extensions_whitelist": []map[string]any{{
-			"enabled":    cfg.ExtensionsWhitelist.Enabled,
-			"extensions": cfg.ExtensionsWhitelist.Extensions,
+			"enabled": cfg.ExtensionsWhitelist.Enabled,
+			// SDKv2 TypeList(TypeString) renders "" as null in `terraform show`,
+			// which would force a perpetual diff against the API value (the API
+			// keeps "" as a real entry meaning "no extension"). Strip "" here so
+			// state display stays self-consistent. The Update path re-reads the
+			// live API value before POST, so the "" round-trips on the wire.
+			"extensions": stripEmptyStrings(cfg.ExtensionsWhitelist.Extensions),
 		}},
 	}
 }
