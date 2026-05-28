@@ -1,8 +1,8 @@
-## [Unreleased]
+## [v2.3.10] - 2026-05-12
 
 ### New Features
 
-* **`wallarm_api_discovery_config`** — singleton resource managing the API Discovery configuration (Settings → API Discovery). Editable: enabled flag, protocols (REST/GraphQL/SOAP/GRPC/MCP), content-type filter, endpoint-stability thresholds, parameter-type and PII detection thresholds, disabled-apps list. Read-only attributes mirror the rest of the API response for drift visibility. Bumps `wallarm-go` to add `APIDiscovery` interface.
+* **`wallarm_api_discovery_config`** — singleton resource managing the API Discovery configuration (Settings → API Discovery). Editable: enabled flag, protocols (REST/GraphQL/SOAP/GRPC/MCP), content-type filter, endpoint-stability thresholds, parameter-type and PII detection thresholds, disabled-apps list. Read-only attributes mirror the rest of the API response for drift visibility. Bumps `wallarm-go` to v0.13.0 to add `APIDiscovery` interface.
 
 ### Bug Fixes
 
@@ -10,6 +10,7 @@
 
 ### Internal
 
+* **Committed reference data** — promoted 13 reference docs, `spec/point_map.json`, `spec/actions_examples.json`, and `scripts/fetch_point_refs.py` out of gitignored `.claude/` into the repo. Dedupe of `spec/actions_examples.json` (343 raw samples → 82 unique shapes; 18,447 → 4,776 lines). Real domains scrubbed (`80.lv`, `mall-cms.x.la` → `example.com`). Dead `init-plugin` Makefile target and `plugindircheck.sh` removed.
 * **Lint modernization** — `interface{}` → `any` across `wallarm/` and `scripts/` (~990 sites); `WriteString(fmt.Sprintf)` → `fmt.Fprintf` (25 sites); 2 tagged-switch conversions. No behavior change.
 
 ## [v2.3.9] - 2026-05-04
