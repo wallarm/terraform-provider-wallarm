@@ -1,5 +1,9 @@
 ## [Unreleased]
 
+### New Features
+
+* **`wallarm_api_discovery_config`** — singleton resource managing the API Discovery configuration (Settings → API Discovery). Editable: enabled flag, protocols (REST/GraphQL/SOAP/GRPC/MCP), content-type filter, endpoint-stability thresholds, parameter-type and PII detection thresholds, disabled-apps list. Read-only attributes mirror the rest of the API response for drift visibility. Bumps `wallarm-go` to add `APIDiscovery` interface.
+
 ### Bug Fixes
 
 * **`data.wallarm_hits`: emit `instance` condition for default-app (poolID=-1) hits** — fixes 4-vs-5 condition hash mismatch on instance-included API clients.
