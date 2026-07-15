@@ -1,15 +1,64 @@
-# Proton Types — Attack Types & Point Types
+# Proton types (attack types and point types)
 
-Reference extracted from Wallarm's Proton library type definitions. Two stable enumerations the API and provider depend on:
+Reference for the two stable enumerations the Wallarm API and provider depend
+on, extracted from Wallarm's Proton library. Point *chaining* rules are in
+`point.md`; this doc is the type IDs, flags, and attack-type catalog.
 
-1. **Attack types** — numeric IDs paired with attack-name symbols, grouped by purpose.
-2. **Point types** — request-parser elements with classification flags (simple / keys / array / parser / immutable / pollution) and a rating.
+Upstream source: `libs/c/libproton/ruby/lib/proton/types.rb` in the Wallarm node
+repository. Re-sync when the API evolves (every 30 days).
 
-Upstream source: `gl.wallarm.com/wallarm-node/meganode/-/blob/main/libs/c/libproton/ruby/lib/proton/types.rb`. Re-sync from upstream when the API evolves.
+## 1. Overview
 
----
+- **Attack types** - numeric IDs paired with attack-name symbols, grouped by
+  purpose. The provider's `attack_type` validators expose curated subsets.
+- **Point types** - request-parser elements, each with classification flags
+  (simple / keys / array / parser / immutable / pollution) and a rating.
 
-## Attack types
+## 2. Model
+
+```mermaid
+flowchart LR
+  PT["point type<br/>(name, id, rating)"] --> FL["flags"]
+  FL --> DS["derived sets<br/>(SIMPLE / KEY / ARRAY / IMMUTABLE / PARSER)"]
+  DS --> V["validators<br/>(Proton.valid_parser?, attack_type subsets)"]
+```
+
+A point type's flags decide its shape and how it validates; the derived sets
+(§6.4) are just the flag columns transposed. Rating orders which point is
+checked first (higher first).
+
+## 3. Elements
+
+| Flag | Meaning |
+|---|---|
+| `simple` | non-paired terminal, e.g. `["post"]` |
+| `keys` | paired with a string key, e.g. `["header","HOST"]` |
+| `array` | paired with an integer index, e.g. `["path",0]` |
+| `parser` | drives a parser (checked by `Proton.valid_parser?`) |
+| `immutable` | protected from mutation |
+| `pollution` | eligible for HTTP-parameter-pollution analysis |
+
+The provider consumes these via its `attack_type` validators
+(`wallarm_rule_disable_attack_type`, `_vpatch`, `_regex`) and its point-key
+handling (`point.md`, `PointValuePoints` in `rules-core.md`).
+
+## 4. Behavior
+
+- The `attack_type` validators are **curated subsets** of the full enum below.
+  Many entries are internal and not user-settable: `warn`, `marker`, `bot`, the
+  API-Policy-Enforcement group (32-38), and the GraphQL-parser group (39-45).
+- Flags determine a point's valid shape (§3) and gate parser chaining
+  (`parser` -> `Proton.valid_parser?`).
+- Rating is a relative priority; higher-rated points are checked first.
+
+## 5. Parameters
+
+None - this doc is pure reference data. The fields that reference these IDs are
+documented per resource in `rules_api_fields.md`.
+
+## 6. Reference data
+
+### 6.1 Attack types
 
 | ID | Name |
 |----|------|
@@ -46,7 +95,7 @@ Upstream source: `gl.wallarm.com/wallarm-node/meganode/-/blob/main/libs/c/libpro
 | 30 | `data_bomb` |
 | 31 | `vpatch` |
 
-**API Policy Enforcement group (32–38):**
+**API Policy Enforcement group (32-38):**
 
 | ID | Name |
 |----|------|
@@ -58,7 +107,7 @@ Upstream source: `gl.wallarm.com/wallarm-node/meganode/-/blob/main/libs/c/libpro
 | 37 | `invalid_request` |
 | 38 | `processing_overlimit` |
 
-**GraphQL parser group (39–45):**
+**GraphQL parser group (39-45):**
 
 | ID | Name |
 |----|------|
@@ -70,7 +119,7 @@ Upstream source: `gl.wallarm.com/wallarm-node/meganode/-/blob/main/libs/c/libpro
 | 44 | `gql_introspection` |
 | 45 | `gql_debug` |
 
-**ACL group (46–58):** additional to `21: api_abuse`.
+**ACL group (46-58)** (additional to `21: api_abuse`):
 
 | ID | Name |
 |----|------|
@@ -88,24 +137,9 @@ Upstream source: `gl.wallarm.com/wallarm-node/meganode/-/blob/main/libs/c/libpro
 | 57 | `mcp_parameter_violation` |
 | 58 | `mcp_acl_violation` |
 
-> The provider's `attack_type` validators (`wallarm_rule_disable_attack_type`, `_vpatch`, `_regex`) are curated subsets — many entries above are internal (`warn`, `marker`, `bot`, the API-Policy-Enforcement group, the GraphQL-parser group) and not user-settable.
+### 6.2 Point types by category
 
----
-
-## Point types
-
-Each point element has:
-- **ID** — numeric type id (used in low-level structures).
-- **Flags** — categorisation:
-  - `simple` — non-paired terminal (e.g. `["post"]`).
-  - `keys` — paired with a string key (e.g. `["header", "HOST"]`).
-  - `array` — paired with an integer index (e.g. `["path", 0]`).
-  - `parser` — element drives a parser (consumed by `Proton.valid_parser?`).
-  - `immutable` — protected from mutation.
-  - `pollution` — eligible for HTTP-parameter-pollution analysis.
-- **Rating** — relative priority (higher = checked first).
-
-### Core / structural
+**Core / structural**
 
 | Name | ID | Flags | Rating |
 |---|---|---|---|
@@ -114,7 +148,7 @@ Each point element has:
 | `path` | 39 | array | 36 |
 | `pollution` | 5 | simple | 1 |
 
-### ViewState
+**ViewState**
 
 | Name | ID | Flags | Rating |
 |---|---|---|---|
@@ -127,7 +161,7 @@ Each point element has:
 | `viewstate_dict_key` | 30 | simple, immutable | 81 |
 | `viewstate_dict_value` | 31 | simple, immutable | 80 |
 
-### Request line / URI
+**Request line / URI**
 
 | Name | ID | Flags | Rating |
 |---|---|---|---|
@@ -137,7 +171,7 @@ Each point element has:
 | `route` | 40 | simple | 71 |
 | `remote_addr` | 52 | simple | 72 |
 
-### HTTP
+**HTTP**
 
 | Name | ID | Flags | Rating |
 |---|---|---|---|
@@ -152,7 +186,7 @@ Each point element has:
 | `response_body` | 54 | simple | 76 |
 | `response_header` | 53 | keys, pollution | 70 |
 
-### XML
+**XML**
 
 | Name | ID | Flags | Rating |
 |---|---|---|---|
@@ -165,7 +199,7 @@ Each point element has:
 | `xml_attr` | 10 | keys | 61 |
 | `xml_comment` | 17 | array | 60 |
 
-### JSON
+**JSON**
 
 | Name | ID | Flags | Rating |
 |---|---|---|---|
@@ -174,13 +208,13 @@ Each point element has:
 | `json_array` | 24 | array | 52 |
 | `json` | 2 | keys | 50 |
 
-### JWT
+**JWT**
 
 | Name | ID | Flags | Rating |
 |---|---|---|---|
 | `jwt` | 51 | keys, parser | 91 |
 
-### gRPC / Protobuf
+**gRPC / Protobuf**
 
 | Name | ID | Flags | Rating |
 |---|---|---|---|
@@ -190,7 +224,7 @@ Each point element has:
 | `protobuf_int64` | 49 | simple | 57 |
 | `protobuf_varint` | 50 | simple | 57 |
 
-### GraphQL
+**GraphQL**
 
 | Name | ID | Flags | Rating |
 |---|---|---|---|
@@ -207,7 +241,7 @@ Each point element has:
 | `gql_inline` | 65 | simple | 89 |
 | `gql_var` | 66 | keys | 89 |
 
-### Encoding parsers
+**Encoding parsers**
 
 | Name | ID | Flags | Rating |
 |---|---|---|---|
@@ -217,16 +251,21 @@ Each point element has:
 | `htmljs` | 33 | simple, immutable, parser | 28 |
 | `hex` | 67 | simple, parser | 28 |
 
----
+### 6.3 Derived sets (computed in `types.rb`)
 
-## Derived sets (computed in `types.rb`)
+Exposed by `Proton.simple_types`, `Proton.key_types`, etc., and used by
+validators:
 
-These are exposed by `Proton.simple_types`, `Proton.key_types`, etc., and used by validators:
+- `SIMPLE_TYPES` - entries with `simple: true`.
+- `KEY_TYPES` - entries with `keys: true`.
+- `ARRAY_TYPES` - entries with `array: true`.
+- `IMMUTABLE_TYPES` - entries with `immutable: true`.
+- `PARSER_TYPES` - entries with `parser: true` (validated by `Proton.valid_parser?`).
+- `TYPES_BY_ID` - inverse map.
+- `TYPES_BY_RATING` - names sorted by descending rating.
 
-- **`SIMPLE_TYPES`** — all entries with `simple: true`.
-- **`KEY_TYPES`** — all entries with `keys: true`.
-- **`ARRAY_TYPES`** — all entries with `array: true`.
-- **`IMMUTABLE_TYPES`** — all entries with `immutable: true`.
-- **`PARSER_TYPES`** — all entries with `parser: true`. Validated by `Proton.valid_parser?`.
-- **`TYPES_BY_ID`** — inverse map.
-- **`TYPES_BY_RATING`** — names sorted by descending rating.
+## 7. References
+
+- `point.md` - how these point types chain into a `point`.
+- `rules-core.md` - attack-type allowlists and the `point` schema.
+- Upstream: `libs/c/libproton/ruby/lib/proton/types.rb`.

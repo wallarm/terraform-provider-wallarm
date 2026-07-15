@@ -15,9 +15,9 @@ import (
 // via path/domain/method/etc. instead of explicit action blocks.
 // These are added to every rule resource via lo.Assign alongside commonResourceRuleFields.
 //
-// When scope fields are set, action blocks are computed by CustomizeDiff.
-// When action blocks are set directly, scope fields are ignored.
-// ConflictsWith prevents mixing both styles.
+// When scope fields are set, action blocks are computed by CustomizeDiff and
+// take priority (overwriting any explicit action blocks via SetNew).
+// When no scope field is set, explicit action blocks are used as-is.
 var ActionScopeFields = map[string]*schema.Schema{
 	"action_path": {
 		Type:        schema.TypeString,
