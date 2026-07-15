@@ -39,7 +39,7 @@ A Condition has three fields:
 | Field | Meaning |
 |---|---|
 | `point` | single-key map naming the request part, e.g. `{header="HOST"}`, `{path="0"}`, `{action_name=...}` |
-| `type` | match type: `equal` / `iequal` / `regex` / `absent` (or `""` for point-value points) |
+| `type` | match type: `equal` / `iequal` / `regex` / `absent`; `""` is also accepted (unspecified) |
 | `value` | the matched content - or `""` when the content lives in the point map (see below) |
 
 **Point-value vs paired-value points.** For some points the matched content sits
@@ -186,7 +186,7 @@ fields are `Optional` (no `Computed`).
 | Sub-field | Meaning |
 |---|---|
 | `point` | single-key map; key from the point table (§6.1) |
-| `type` | `equal` / `iequal` / `regex` / `absent`; send `""` (rendered `null`) for point-value points that carry no type |
+| `type` | `equal` / `iequal` / `regex` / `absent`; `""` is accepted (unspecified). The `action_*` expansion emits `equal` for point-value points, and instance is forced to `equal` (`action_expand.go:58`) |
 | `value` | matched content for paired-value points; `""` for point-value points |
 
 ## 6. Reference data
@@ -214,7 +214,7 @@ fields are `Optional` (no `Computed`).
 | `iequal` | case-insensitive (downcased server-side; used for HOST) |
 | `regex` | regular expression (`regex.md`) |
 | `absent` | the field must not exist |
-| `""` | no type check (point-value points: method, scheme, proto, instance) |
+| `""` | unspecified; accepted by the schema (`StringInSlice`, `action_scope.go:173`) but not what the provider stores - the `action_*` expansion emits `equal` for point-value points, and instance is forced to `equal` (`action_expand.go:58`) |
 
 ### 6.3 Condition order
 
