@@ -328,7 +328,8 @@ live set: `GET /v2/attack_types`. Offline: `proton-types.md`.
 - `proton-types.md` - Proton type/attack-type IDs.
 - `rules_api_fields.md` - probe-derived per-hint field ground truth.
 - `schema-decisions.md` - schema attribute decision tree.
-- `spec/actions_examples.json` - 82 representative action condition examples
-  (one per distinct shape; deduped from a 343-sample probe).
+- `spec/actions_examples.json` - representative action condition examples (unique
+  shapes deduped from a 343-sample probe, plus the `/.env` dotfile case). Single
+  source; the round-trip test reads this file directly.
 - `create-rule-resource` skill - canonical build flow for a new `rule_*` resource.
 - `hits-to-rules.md` - FP-suppression rules from hits. Counters/triggers: T-004.
