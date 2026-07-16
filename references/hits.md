@@ -1,35 +1,93 @@
-# Hits, Attacks & False Positive Suppression
+# Hits and attacks
 
-## Domain model
+Reference for the Wallarm hits/attacks domain model and the false-positive
+suppression concept. The provider flow that turns hits into rules is
+`hits-to-rules.md`; this doc is the domain model those pieces operate on.
 
-A **hit** represents a single detected threat within an HTTP request. Hits sharing the same HTTP request are linked by `request_id`. Hits from the same attack campaign share an `attack_id`.
+## 1. Overview
 
-**IMPORTANT: Hits are ephemeral** — they have a retention period and can be dropped from the API at any time.
+A **hit** is a single detected threat within an HTTP request. Hits are
+**ephemeral** - they have a retention period and can be dropped from the API at
+any time. Some hits are false positives (legitimate traffic flagged as an
+attack); the fix is a suppression rule scoped to a request point. This doc
+defines the entities; `hits-to-rules.md` is the implementation that captures
+them into Terraform state.
 
-## False positive workflow
+## 2. Model
 
-1. **Fetch**: `wallarm_hits` data source retrieves hits for given `request_id`(s)
-2. **Group by Action**: Hits grouped by Host header + URI path (the Action scope)
-3. **Group by Point**: Within each action, grouped by detection point
-4. **Generate Rules**: Two rule types for FP suppression:
-   - **`disable_stamp`** — allows specific attack signatures (stamps) at a given point
-   - **`disable_attack_type`** — allows specific attack types at a given point
-5. **One resource per rule**: Each stamp and each attack_type is a separate Terraform resource, matching the API 1:1. The `for_each` key is `{action_hash}_{point_hash}_{attack_type}_{stamp}` for stamp rules or `{action_hash}_{point_hash}_{attack_type}` for attack_type rules. Hash prefixes are 16 hex chars.
+```mermaid
+erDiagram
+  REQUEST ||--o{ HIT : "request_id"
+  ATTACK  ||--o{ HIT : "attack_id"
+  HIT {
+    string attack_type "sqli / xss / ..."
+    array  stamps "numeric signature IDs"
+    array  point "detection point"
+    string domain
+    string path
+    int    poolid
+  }
+```
 
-**Stampless attack types:** `xxe` and `invalid_xml` do not produce stamps. Hits of these types can only be suppressed via `disable_attack_type` rules.
+A hit carries a detection **point** (where in the request the signature
+matched), one or more **stamps** (numeric signature IDs), an **attack type**,
+and request metadata (`domain`, `path`, `poolid`, `request_id`, `attack_id`).
+Hits of the same HTTP request share `request_id`; hits of the same campaign
+share `attack_id`. Suppression is expressed against an **action** (the match
+scope: host + URL path + optionally the application instance) and a **point**.
 
-## Data source: `wallarm_hits`
+## 3. Elements
 
-**Input**: `request_id` (single string) + `mode` variable (`"request"` or `"attack"`). Called per-request_id via `for_each` in HCL.
+| Entity | Meaning |
+|---|---|
+| hit | one detected threat in a request |
+| stamp | a numeric signature ID (a specific attack fingerprint) |
+| attack type | the attack category (`sqli`, `xss`, ...) |
+| action | the match scope (host + path + optional instance) a rule targets |
+| point | the detection point within the request |
+| `data.wallarm_hits` | the data source that fetches and transforms hits (see `hits-to-rules.md`) |
 
-**Hit filtering — allowed attack types:**
-`xss`, `sqli`, `rce`, `ptrav`, `crlf`, `redir`, `nosqli`, `ldapi`, `scanner`, `mass_assignment`, `ssrf`, `ssi`, `mail_injection`, `ssti`, `xxe`, `invalid_xml`
+## 4. Behavior
 
-**Key computed outputs:**
-- `aggregated` — compact JSON with `action_hash` (16 chars), `action` conditions, and `groups` (each keyed by `point_hash_16 + "_" + attack_type`, containing `stamps`, `attack_type`, and `disable_attack_type` bool controlled by `rule_types` filter)
-- `action_hash` — Ruby-compatible `ConditionsHash`
-- Action validation via `ActionReadByHitID` hash comparison
+The false-positive suppression workflow:
 
-## Hits-to-rules flow
+1. **Fetch** - `data.wallarm_hits` retrieves hits for the given `request_id`(s).
+2. **Group by action** - hits are grouped by their Host + URL-path scope.
+3. **Group by point** - within each action, by detection point.
+4. **Generate rules** - two suppression shapes:
+   - `disable_stamp` - allow one specific signature (stamp) at a point;
+   - `disable_attack_type` - allow a whole attack type at a point.
+5. **One resource per rule** - each stamp and each attack type is a separate
+   Terraform resource, matching the API 1:1.
 
-Three components: `wallarm_hits_index` (gating), `data.wallarm_hits` (fetching), `terraform_data.cache` (persistence). Deduplication by action_hash in HCL locals. See `docs/guides/hits_to_rules.md`.
+Because hits age out of the API, the suppression config is captured into state
+once and then persists independently of live hits (`hits-to-rules.md §4.2`).
+**Stampless attack types** (`xxe`, `invalid_xml`) produce no stamps, so they can
+be suppressed only via `disable_attack_type`.
+
+## 5. Parameters
+
+The `data.wallarm_hits` inputs/outputs and the `disable_stamp` /
+`disable_attack_type` resource fields are in `hits-to-rules.md §5`; this doc adds
+no parameters of its own.
+
+## 6. Reference data
+
+- **Default attack-type filter (16)** (`data.wallarm_hits`): `xss`, `sqli`,
+  `rce`, `ptrav`, `crlf`, `redir`, `nosqli`, `ldapi`, `scanner`,
+  `mass_assignment`, `ssrf`, `ssi`, `mail_injection`, `ssti`, `xxe`,
+  `invalid_xml`.
+- **Stampless types**: `xxe`, `invalid_xml` (no stamps; `disable_attack_type`
+  only).
+- **`for_each` key formats**: `{action_hash}_{point_hash}_{attack_type}_{stamp}`
+  (stamp rules) or `{action_hash}_{point_hash}_{attack_type}` (attack-type
+  rules); hash prefixes are 16 hex chars (`ConditionsHash` / `PointHash`
+  truncated, `hits-to-rules.md §6.5`).
+
+## 7. References
+
+- `hits-to-rules.md` - the provider flow, data source, and rule behavior.
+- `rules-core.md` - Action/Condition/Hint model; the `disable_stamp` /
+  `disable_attack_type` rules.
+- `action.md` - action-scope construction from a hit.
+- `docs/guides/hits_to_rules.md` - operator how-to.
