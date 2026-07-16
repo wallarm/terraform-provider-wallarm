@@ -116,9 +116,40 @@ mode). All others use the 3-part default.
 
 ### 3.5 Resource catalog and shape mapping
 
-26 `rule_*` resources (`wallarm_rule_generator` is an HCL emitter, not an API
-rule - see the hcl-generator doc). The **shape** is what discriminates two
-hints on the same scope; it decides whether `existingHintForAction` applies.
+The 26 `rule_*` resources (`wallarm_rule_generator` is an HCL emitter, not an
+API rule - see `hcl-generator.md`), grouped by purpose:
+
+| Resource | Group | Definition |
+|---|---|---|
+| `mode` | filtration mode | per-scope filtration mode (`block` / `monitoring` / `off` / `default`) |
+| `api_abuse_mode` | filtration mode | toggles API Abuse Prevention per scope; primarily allowlisting trusted crawlers |
+| `graphql_detection` | mitigation control | GraphQL protection (depth/size/alias/batch/introspection limits) |
+| `enum` | mitigation control | enumeration (parameter-based) protection |
+| `bola` | mitigation control | BOLA / IDOR protection |
+| `forced_browsing` | mitigation control | forced-browsing protection |
+| `brute` | mitigation control | brute-force protection |
+| `rate_limit_enum` | mitigation control | DoS / rate-limiting protection (enumerated) |
+| `file_upload_size_limit` | mitigation control | file-upload size restriction policy |
+| `bruteforce_counter` | counter | brute-force hit counter |
+| `dirbust_counter` | counter | directory-busting hit counter |
+| `bola_counter` | counter | BOLA hit counter |
+| `regex` | pattern matching | user-defined attack signature (Pire regex); also covers `experimental_regex` |
+| `ignore_regex` | pattern matching | suppress matches of an existing user regex at a point |
+| `rate_limit` | rate limiting | per-scope request rate limit (rate / burst / delay / response status) |
+| `disable_attack_type` | FP suppression | allow a specific attack type at a point |
+| `disable_stamp` | FP suppression | allow a specific attack signature (stamp) at a point; requires Administrator (extended) |
+| `credential_stuffing_regex` | credential stuffing | credential-stuffing detection by login + credential regex (`login_regex` + `regex`) |
+| `credential_stuffing_point` | credential stuffing | credential-stuffing detection by login + credential points (`login_point` + `point`) |
+| `masking` | data handling | mask sensitive request data before storage / display |
+| `binary_data` | data handling | treat a request part as binary (skip detect signatures) |
+| `uploads` | data handling | mark a request part as a file upload |
+| `parser_state` | data handling | enable / disable a parser (`json_doc`, `xml`, `jwt`, `gql`, ...) at a point |
+| `set_response_header` | data handling | inject a response header on matched requests |
+| `vpatch` | data handling | virtual patch: block specific attack types at a point |
+| `overlimit_res_settings` | data handling | per-scope handling of requests exceeding processing limits |
+
+The **shape** is what discriminates two hints on the same scope; it decides
+whether `existingHintForAction` applies (§3.2):
 
 | Shape | Discriminator | Resources | guard? |
 |---|---|---|---|
@@ -128,9 +159,8 @@ hints on the same scope; it decides whether `existingHintForAction` applies.
 | distinct rule identity | `regex_id` / login+regex | `regex` (incl. experimental), `credential_stuffing_regex`, `credential_stuffing_point` | no |
 | counter | bound to `wallarm_trigger` | `bruteforce_counter`, `dirbust_counter`, `bola_counter` | no |
 
-Per-resource prose descriptions live in the registry user docs
-(`docs/resources/rule_*.md`); per-hint field ground truth is
-`rules_api_fields.md`.
+Full per-resource user docs are `docs/resources/rule_*.md`; per-hint field
+ground truth is `rules_api_fields.md`.
 
 ### 3.6 wallarm-go Action API surface
 
