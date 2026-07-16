@@ -155,7 +155,8 @@ func TestReverseMapActions(t *testing.T) {
 	}
 }
 
-// TestReverseMapRealExamples validates against 343 real API examples.
+// TestReverseMapRealExamples validates against the curated real API examples in
+// spec/actions_examples.json (the single source; see rules-core.md).
 func TestReverseMapRealExamples(t *testing.T) {
 	type example struct {
 		Conditions []wallarm.ActionDetails `json:"conditions"`
@@ -167,7 +168,7 @@ func TestReverseMapRealExamples(t *testing.T) {
 		Proto      string                  `json:"proto"`
 	}
 
-	data, err := os.ReadFile("testdata/actions_examples.json")
+	data, err := os.ReadFile("../../../spec/actions_examples.json")
 	if err != nil {
 		t.Skipf("Skipping real examples test: %v", err)
 	}
@@ -392,7 +393,7 @@ func TestRealExamplesRoundTrip(t *testing.T) {
 		Headers    []HeaderParam           `json:"headers"`
 	}
 
-	data, err := os.ReadFile("testdata/actions_examples.json")
+	data, err := os.ReadFile("../../../spec/actions_examples.json")
 	if err != nil {
 		t.Skipf("Skipping: %v", err)
 	}
