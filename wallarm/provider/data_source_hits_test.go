@@ -328,6 +328,26 @@ func TestActionNameExtConditions_WithoutExtension(t *testing.T) {
 	}
 }
 
+func TestActionNameExtConditions_MultiDot(t *testing.T) {
+	// R-002: a multi-dot final segment must split on the FIRST dot to match the
+	// API (archive.tar.gz -> action_name "archive", action_ext "tar.gz").
+	result := actionNameExtConditions("archive.tar.gz")
+
+	if len(result) != 2 {
+		t.Fatalf("expected 2 conditions, got %d", len(result))
+	}
+
+	pm0, _ := result[0]["point"].(map[string]any)
+	if v := pm0["action_name"]; v != "archive" {
+		t.Errorf("expected action_name=archive, got %v", v)
+	}
+
+	pm1, _ := result[1]["point"].(map[string]any)
+	if v := pm1["action_ext"]; v != "tar.gz" {
+		t.Errorf("expected action_ext=tar.gz, got %v", v)
+	}
+}
+
 func TestMergeHits_NoOverlap(t *testing.T) {
 	direct := []*wallarm.Hit{
 		{ID: []string{"a", "1"}, Type: "sqli"},

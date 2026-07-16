@@ -438,11 +438,8 @@ func expandPath(path string) []wallarm.ActionDetails {
 
 // parseLastSegment splits "name.ext" into name and ext parts.
 func parseLastSegment(seg string) (name, ext string, hasDot bool) {
-	dotIdx := strings.LastIndex(seg, ".")
-	if dotIdx < 0 {
-		return seg, "", false
-	}
-	return seg[:dotIdx], seg[dotIdx+1:], true
+	name, ext, hasDot = strings.Cut(seg, ".")
+	return
 }
 
 // --- Helper functions ---

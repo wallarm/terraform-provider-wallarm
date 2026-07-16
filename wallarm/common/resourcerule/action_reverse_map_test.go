@@ -201,6 +201,27 @@ func TestReverseMapRealExamples(t *testing.T) {
 }
 
 // TestExpandPathToActions tests the forward mapping.
+func TestParseLastSegment(t *testing.T) {
+	tests := []struct {
+		name, seg, wantName, wantExt string
+		wantHasDot                   bool
+	}{
+		{"no dot", "login", "login", "", false},
+		{"single dot", "data.json", "data", "json", true},
+		// R-002: a multi-dot segment splits on the FIRST dot to match the API.
+		{"multi dot", "archive.tar.gz", "archive", "tar.gz", true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			name, ext, hasDot := parseLastSegment(tt.seg)
+			if name != tt.wantName || ext != tt.wantExt || hasDot != tt.wantHasDot {
+				t.Errorf("parseLastSegment(%q) = (%q, %q, %v), want (%q, %q, %v)",
+					tt.seg, name, ext, hasDot, tt.wantName, tt.wantExt, tt.wantHasDot)
+			}
+		})
+	}
+}
+
 func TestExpandPathToActions(t *testing.T) {
 	tests := []struct {
 		name     string
