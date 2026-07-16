@@ -1,515 +1,278 @@
-# Action Conditions & Path Expansion — Internal Reference
+# Action conditions and path expansion
 
-This file documents how Wallarm rule `action` conditions work, how paths are
-expanded into conditions, and how the Terraform module implements this.
-Use as authoritative reference when modifying custom_rules or fp_rules modules.
+Reference for how a Wallarm rule's **Action** (its match scope) is defined and
+built in the provider: the condition structure, the two provider-side ways to
+author conditions, and the path-to-action derivation used by the hits flow. The
+shared Action/Condition/Hint model and CRUD machinery are in `rules-core.md`;
+this doc is the condition-authoring and path-expansion detail.
 
----
+## 1. Overview
 
-## 1. Action Condition Structure
+An Action is an ordered list of **Conditions**; each Condition matches one part
+of a request (a header, a path segment, the method, ...). The provider produces
+that condition list three ways, all yielding the same Wallarm Action:
 
-Every `action` block in a `wallarm_rule_*` resource has three fields:
+| Source | Where | Used by |
+|---|---|---|
+| Explicit `action {}` blocks | user HCL, validated in `ActionScopeCustomizeDiff` | any `wallarm_rule_*` resource |
+| Human-friendly `action_*` scope fields | expanded provider-side (`ExpandPathToActions`) | any `wallarm_rule_*` resource |
+| Derived from a hit (path-to-action) | `buildActionFromHit` (`data_source_hits.go`) | `data.wallarm_hits` -> FP-suppression rules (`hits-to-rules.md`) |
 
-```hcl
-action {
-  type  = "<match_type>"   # "equal", "iequal", "regex", "absent", or null
-  value = "<match_value>"  # The value to match against, or ""
-  point = { <key> = "<val>" }  # Exactly one key identifying what to match
-}
+When any `action_*` scope field is set it takes priority and the provider
+computes the `action` set from it; with no scope field, explicit `action {}`
+blocks are used as-is. The hit-derivation path is internal to the hits data
+source and never mixes with either. Heavy expansion logic lives in the provider
+(Go), not in HCL; the `examples/` modules are thin consumers.
+
+## 2. Model
+
+```mermaid
+flowchart LR
+  A["action {} blocks"] --> C["Condition list"]
+  B["action_* scope fields"] -->|ExpandPathToActions| C
+  H["hit (domain + path + pool)"] -->|buildActionFromHit| C
+  C --> W["Wallarm Action (find_or_create by conditions_hash)"]
 ```
 
-### Point Keys (what is being matched)
+A Condition has three fields:
 
-| Point Key      | Meaning                          | Example point map              |
-|----------------|----------------------------------|--------------------------------|
-| `instance`     | Application pool ID              | `{ instance = "101" }`         |
-| `header`       | HTTP request header (UPPERCASED) | `{ header = "HOST" }`          |
-| `path`         | URL path segment by index (0-based) | `{ path = "0" }`           |
-| `action_name`  | Filename/endpoint (last path segment without ext) | `{ action_name = "users" }` |
-| `action_ext`   | File extension of last segment   | `{ action_ext = "php" }`       |
-| `uri`          | Full URI (fallback for too-deep paths) | `{ uri = "/a/b/c/d/..." }` |
-| `method`       | HTTP method                      | `{ method = "POST" }`          |
-| `scheme`       | URL scheme                       | `{ scheme = "https" }`         |
-| `proto`        | HTTP protocol version            | `{ proto = "1.1" }`            |
-| `query`        | Query parameter by name          | `{ query = "search" }`         |
+| Field | Meaning |
+|---|---|
+| `point` | single-key map naming the request part, e.g. `{header="HOST"}`, `{path="0"}`, `{action_name=...}` |
+| `type` | match type: `equal` / `iequal` / `regex` / `absent`; `""` is also accepted (unspecified) |
+| `value` | the matched content - or `""` when the content lives in the point map (see below) |
 
-### Match Types
+**Point-value vs paired-value points.** For some points the matched content sits
+in the point map and `value` must be empty; for others the content is in `value`:
 
-| Type      | Meaning                                    |
-|-----------|--------------------------------------------|
-| `equal`   | Exact match (case-sensitive)               |
-| `iequal`  | Case-insensitive match (used for HOST)     |
-| `regex`   | Regular expression match                   |
-| `absent`  | The field must not exist                   |
-| `""` (empty/null) | No type check (used for method, scheme, proto) |
+- **Point-value** (`PointValuePoints`, `value=""`): `action_name`, `action_ext`,
+  `method`, `proto`, `scheme`, `uri`, `instance`.
+- **Paired-value** (content in `value`): `header` (name in the point map, matched
+  value in `value`), `query` (key in the point map, value in `value`), and
+  `path` (index in the point map, segment string in `value`).
 
-### Special Conventions
+## 3. Elements
 
-- **`instance`**: type="equal" value="" — the instance ID goes in the point map value
-- **`header`**: header names are ALWAYS uppercased in the point map (`upper(v)` in TF)
-- **`method`/`scheme`/`proto`**: type="" — the value goes in the point map value
-- **`action_name`/`action_ext`**: type="equal" value="" — the actual name/ext goes in the point map value
-- **`path`**: type="equal" value=segment — the segment value goes in `value`, the index goes in point map
+### 3.1 Schema surfaces
 
----
+| Element (`action_scope.go`) | Responsibility |
+|---|---|
+| `ScopeActionSchema()` | `action {}` set schema - Optional+Computed, `ForceNew`, hashed by `HashActionDetails` (a scope change is a different hint) |
+| `ScopeActionSchemaMutable()` | same element shape without `ForceNew`/`Computed`, for APIs that update conditions in place (e.g. `wallarm_api_spec_policy` PUT) |
+| `ActionScopeFields` | the human-friendly scope fields (`action_path`, `action_domain`, `action_instance`, `action_method`, `action_scheme`, `action_proto`, `action_query`, `action_header`) added to every rule resource via `lo.Assign` |
 
-## 2. Path-to-Action Expansion Algorithm
+### 3.2 Expansion and validation code
 
-The module takes a user-friendly `path` string and expands it into a list of
-action conditions. This mirrors the Go functions in the provider:
-`buildActionFromHit()` + `locationToConditions()` + `actionNameExtConditions()`
+| Function | File | Role |
+|---|---|---|
+| `ActionScopeCustomizeDiff` | `action_scope.go:206` | validates `action {}` blocks; when scope fields are set, computes the `action` set via `SetNew` |
+| `ExpandPathToActions` | `action_reverse_map.go:263` | scope fields -> `[]ActionDetails` (instance, domain, headers, path, method, scheme, proto, query) |
+| `expandPath` / `parseLastSegment` | `action_reverse_map.go:341` / `:439` | path string -> path/action_name/action_ext conditions, incl. `*` / `**` handling |
+| `validateActionSet` | `action_scope.go:365` | point-key, single-key, URI-conflict, and type/value rules for explicit blocks |
+| `buildActionFromHit` / `locationToConditions` / `actionNameExtConditions` | `data_source_hits.go:669` / `:706` / `:759` | hit-derived path-to-action |
 
-### Input Fields (from variable)
+### 3.3 Consumers
 
-```hcl
-{
-  path     = "/api/v1/users.json"  # URL path
-  domain   = "example.com"         # HOST header match
-  instance = "101"                 # Pool ID
-  method   = "POST"                # HTTP method
-  scheme   = "https"               # URL scheme
-  proto    = "1.1"                 # HTTP version
-  headers  = [...]                 # Additional header conditions
-  query    = [...]                 # Query parameter conditions
-}
+The `examples/` modules are thin consumers, not logic holders:
+
+- `examples/hits-to-rules/` - exercises `data.wallarm_hits` and the hit-derived
+  action scope (`hits-to-rules.md`).
+- `examples/import-rules/` - bulk import via `data.wallarm_rules`.
+
+## 4. Behavior
+
+### 4.1 Choosing an authoring style
+
+- Setting any `action_*` scope field makes the `action` set **Computed** from
+  those fields, which override any explicit `action {}` blocks via `SetNew`
+  (scope fields take priority); explicit blocks are used verbatim only when no
+  scope field is set. There is no `ConflictsWith` guard - priority resolves the
+  overlap.
+- On an existing resource the action set is recomputed only when a scope field
+  actually changes (`anyScopeFieldChanged`); all scope fields are `ForceNew`, so
+  a scope change replaces the hint.
+
+### 4.2 `action_path` expansion (human-friendly)
+
+`expandPath` decomposes `action_path`:
+
+- `""` -> no path conditions.
+- `/**/*.*` (`pathGlobalWildcard`) -> no conditions (match everything).
+- `/` (root) -> `action_name=""` (equal) + `action_ext` absent + `path[0]` absent.
+- otherwise split on `/`; the last segment is the action component, the rest are
+  directory segments:
+  - `action_name`: emitted `equal` unless it is `*` (then skipped = match any).
+  - `action_ext`: `equal` for a specific extension; skipped when the extension is
+    `*` (`name.*`); `absent` when the segment has no dot.
+  - directory segments: `path[i]=segment` (`equal`), each `*` segment skipped.
+  - **limiter**: a trailing `path[N]` `absent` (N = directory-segment count) that
+    fixes the path depth, so a deeper path does not match. Suppressed when a `**`
+    globstar is present.
+- `**` globstar: allowed only as the last directory segment; it is stripped and
+  suppresses the limiter, allowing any depth after the prefix.
+
+The last segment decomposes into `action_name` / `action_ext` by splitting on
+the **first** dot (`parseLastSegment`): `archive.tar.gz` -> name `archive`, ext
+`tar.gz`. See the R-002 note in §4.3 - the hits side and this side use the same
+split.
+
+### 4.3 Hit-derived path-to-action
+
+`buildActionFromHit(domain, urlPath, poolID, includeInstance)`:
+
+- **instance** emitted when `includeInstance` is true and `poolID != 0` (`-1`, the
+  default app, and positive IDs are emitted; `0` = unspecified is skipped), to
+  match the API's `ActionReadByHitID` response on instance-included clients.
+- **HOST header** (`iequal`) when `domain != ""`.
+- `urlPath == "[multiple]"` (`hitsPathMultiple`, the attack spans paths) -> no
+  path/action_name/action_ext conditions, giving a HOST-only wildcard scope.
+- otherwise `locationToConditions` decomposes the path: root -> `action_name=""` +
+  `path[0]` absent; else `actionNameExtConditions(last)` + `path[i]=segment` for
+  each directory segment + a terminating `path[N]` absent.
+
+The last segment splits into `action_name` / `action_ext` on the **first** dot,
+matching the API's own decomposition and the `action_path` side (§4.2):
+`archive.tar.gz` -> name `archive`, ext `tar.gz`. Unlike `action_path`, the hit
+path has no `*` / `**` / global-wildcard handling - it always fully decomposes
+the observed path. It still emits the terminating `path[N]` absent limiter that
+fixes the depth (there is just no `**` case to suppress it).
+
+> **Known bug (R-002):** the code currently splits on the **last** dot
+> (`strings.LastIndex`) at both sites - `actionNameExtConditions`
+> (`data_source_hits.go:760`) and `parseLastSegment`
+> (`action_reverse_map.go:441`) - so `archive.tar.gz` wrongly yields ext `gz` and
+> the hit-derived scope disagrees with the API (a hard error in the hits flow).
+> The fix is `strings.Index` at both sites; tracked as R-002. This section
+> describes the intended first-dot behavior. See `hits-to-rules.md §4.4`.
+
+### 4.4 Condition normalization
+
+- `iequal` values are downcased server-side; the provider mirrors this so state
+  stays stable, and `suppressIequalValueCaseDiff` /
+  `suppressIequalPointValueCaseDiff` suppress case-only diffs on `iequal`
+  point-value and paired-value fields.
+- Header **names** are uppercased on both authoring paths (`strings.ToUpper`);
+  header-name case diffs are always suppressed (RFC 7230 case-insensitive).
+
+### 4.5 Validation (`validateActionSet`, explicit blocks)
+
+- Each `point` map must contain exactly one key.
+- The key must be one of `validPointKeys` (typo guard).
+- `uri` conflicts with `path` / `action_name` / `action_ext` / `query` (a full-URI
+  match cannot mix with decomposed parts).
+- A `PointValuePoints` key with a non-`absent` type must have `value=""`.
+- `header` and `query` with a non-`absent` type must have a non-empty `value`.
+
+## 5. Parameters
+
+### 5.1 `ActionScopeFields`
+
+| Field | Type | Default | Meaning |
+|---|---|---|---|
+| `action_path` | string | computed | URL path pattern; `*` = any segment, `**` = any depth |
+| `action_domain` | string | computed | HOST-header match; `*` = any domain (no condition) |
+| `action_instance` | string | computed | application pool (instance) ID |
+| `action_method` | string | computed | HTTP method |
+| `action_scheme` | string | computed | URL scheme (`http`/`https`) |
+| `action_proto` | string | computed | HTTP version (`1.0`/`1.1`/`2.0`) |
+| `action_query` | list(key,value,type) | - | query-parameter conditions; per-entry `type` default `equal` |
+| `action_header` | list(name,value,type) | - | extra header conditions; per-entry `type` default `equal` |
+
+All are `ForceNew`. The scalar fields are `Optional+Computed`; the two list
+fields are `Optional` (no `Computed`).
+
+### 5.2 `action {}` block
+
+| Sub-field | Meaning |
+|---|---|
+| `point` | single-key map; key from the point table (§6.1) |
+| `type` | `equal` / `iequal` / `regex` / `absent`; `""` is accepted (unspecified). The `action_*` expansion emits `equal` for point-value points, and instance is forced to `equal` (`action_expand.go:58`) |
+| `value` | matched content for paired-value points; `""` for point-value points |
+
+## 6. Reference data
+
+### 6.1 Point keys
+
+| Point key | Matches | Content location |
+|---|---|---|
+| `instance` | application pool ID | point map |
+| `header` | request header (name uppercased) | `value` |
+| `path` | path segment by 0-based index | `value` (index in point map) |
+| `action_name` | last-segment name (no extension) | point map |
+| `action_ext` | last-segment extension | point map |
+| `uri` | full URI (exclusive with path/name/ext/query) | point map |
+| `method` | HTTP method | point map |
+| `scheme` | URL scheme | point map |
+| `proto` | HTTP version | point map |
+| `query` | query parameter by name | `value` (key in point map) |
+
+### 6.2 Match types
+
+| Type | Meaning |
+|---|---|
+| `equal` | exact, case-sensitive |
+| `iequal` | case-insensitive (downcased server-side; used for HOST) |
+| `regex` | regular expression (`regex.md`) |
+| `absent` | the field must not exist |
+| `""` | unspecified; accepted by the schema (`StringInSlice`, `action_scope.go:173`) but not what the provider stores - the `action_*` expansion emits `equal` for point-value points, and instance is forced to `equal` (`action_expand.go:58`) |
+
+### 6.3 Condition order
+
+`ExpandPathToActions` emits: instance -> domain(HOST) -> custom headers ->
+path (`action_name`, `action_ext`, `path[i]`, limiter) -> method -> scheme ->
+proto -> query. `buildActionFromHit` emits: instance -> HOST -> path
+(`action_name`/`action_ext` then `path[i]` then terminating absent).
+
+### 6.4 Worked expansions (traced through `expandPath` / `locationToConditions`)
+
+`action_path = "/api/v1/users"`, `action_domain = "example.com"`:
+
+```
+{ iequal, "example.com", {header:"HOST"} }
+{ equal,  "users",       {action_name} }
+{ absent, -,             {action_ext} }
+{ equal,  "api",         {path:0} }
+{ equal,  "v1",          {path:1} }
+{ absent, -,             {path:2} }        # limiter
 ```
 
-### Expansion Steps
-
-Given `path = "/api/v1/users.json"`:
-
-1. **Strip leading `/`** and **split by `/`**:
-   `raw_parts = ["api", "v1", "users.json"]`
-
-2. **Separate directory segments from last segment**:
-   - `dir_segments = ["api", "v1"]` (all but last)
-   - `last_segment = "users.json"` (the action component)
-
-3. **Split last segment into action_name / action_ext**:
-   - If contains `.`: `action_name = "users"`, `action_ext = "json"`
-   - If no `.`: `action_name = "users"`, `action_ext = absent`
-
-4. **Build conditions list** (in this order):
-   ```
-   instance  → { type: "equal",  value: "",             point: { instance: "101" } }
-   domain    → { type: "iequal", value: "example.com",  point: { header: "HOST" } }
-   headers   → { type: <type>,   value: <value>,        point: { header: "<NAME>" } }  // per header
-   action_name → { type: "equal", value: "",            point: { action_name: "users" } }
-   action_ext  → { type: "equal", value: "",            point: { action_ext: "json" } }
-   path[0]   → { type: "equal",  value: "api",          point: { path: "0" } }
-   path[1]   → { type: "equal",  value: "v1",           point: { path: "1" } }
-   limiter   → { type: "absent", value: "",             point: { path: "2" } }
-   method    → { type: "equal",  value: "",              point: { method: "POST" } }
-   scheme    → { type: "equal",  value: "",              point: { scheme: "https" } }
-   proto     → { type: "equal",  value: "",              point: { proto: "1.1" } }
-   query     → { type: <type>,   value: <value>,         point: { query: "<key>" } }  // per entry
-   ```
-
-### The Limiter
-
-The **limiter** is an `absent` condition on `path[N]` where N = number of
-directory segments. It fixes the path length — ensures the rule only matches
-paths with exactly this many segments, not deeper paths.
-
-Example: `/api/v1/users` → limiter at `path[2]` means `/api/v1/users/extra`
-does NOT match.
-
-The limiter is **suppressed** when `**` (globstar) is present.
-
----
-
-## 3. Special Path Cases
-
-### Root Path (`/` or `""`)
-
-```
-action_name → { type: "equal",  value: "", point: { action_name: "" } }
-action_ext  → { type: "absent", value: "", point: { action_ext: "" } }
-path limiter→ { type: "absent", value: "", point: { path: "0" } }
-```
-
-### Too-Deep Path (> max_path_depth segments, default 10)
-
-Falls back to a single URI condition:
-```
-uri → { type: "equal", value: "/the/full/path/...", point: { uri: "/the/full/path/..." } }
-```
-The `**` wildcard exempts a path from the too-deep check.
-
-### No-Dot Last Segment (e.g. `/api/users`)
-
-When the last segment has no `.`, the extension is `absent`:
-```
-action_name → { type: "equal",  value: "", point: { action_name: "users" } }
-action_ext  → { type: "absent", value: "", point: { action_ext: "" } }
-```
-
-### Dot in Last Segment (e.g. `/api/users.json`)
-
-Extension is extracted and matched:
-```
-action_name → { type: "equal", value: "", point: { action_name: "users" } }
-action_ext  → { type: "equal", value: "", point: { action_ext: "json" } }
-```
-
----
-
-## 4. Wildcard Support
-
-### Single-Star `*` — Match Any Value
-
-Can appear in any position. The condition for that position is **skipped**
-(not emitted), which means "match anything".
-
-| Position         | Effect                                |
-|------------------|---------------------------------------|
-| Path segment     | `path[N]` condition skipped           |
-| Last segment     | `action_name` condition skipped       |
-| Extension        | `action_ext` condition skipped        |
-| Domain           | HOST header condition skipped         |
-
-Examples:
-- `/api/*/users` → path[0]="api", path[1] skipped (any), action_name="users"
-- `/api/*.json` → path[0]="api", action_name skipped, action_ext="json"
-- `domain = "*"` → no HOST header condition emitted
-
-### Double-Star `**` — Any Depth (Globstar)
-
-Allows matching paths of any depth beyond the specified prefix.
-
-**Rules:**
-- `**` MUST be the last **directory** segment (second-to-last element in raw_parts)
-- `**` CANNOT be the final path component (there must be an action component after it)
-- `**` is stripped from indexed_segments and suppresses the limiter
-
-**Valid:** `/api/**/users` — matches `/api/users`, `/api/v1/users`, `/api/v1/v2/users`, etc.
-**Invalid:** `/api/**` — no action component after `**`
-**Invalid:** `/api/**/v1/**/users` — `**` can only appear once as last dir segment
-
-Example: `path = "/api/**/users"`
-```
-raw_parts = ["api", "**", "users"]
-dir_segments = ["api", "**"]
-last_segment = "users"
-has_globstar = true (** is last dir segment)
-indexed_segments = ["api"]  (** stripped)
-has_limiter = false (suppressed by **)
-```
-
-Generated conditions:
-```
-action_name → { type: "equal",  value: "", point: { action_name: "users" } }
-action_ext  → { type: "absent", value: "", point: { action_ext: "" } }
-path[0]     → { type: "equal",  value: "api", point: { path: "0" } }
-// NO limiter — any depth allowed after "api"
-```
-
-### Validation
-
-The module validates `**` patterns at plan time via `terraform_data.path_validation`:
-- Final segment must not be `**`
-- `**` must not appear in indexed_segments (only allowed as last dir, which gets stripped)
-
----
-
-## 5. Header Conditions
-
-Headers are added via the `headers` variable field:
-
-```hcl
-headers = [
-  { name = "Content-Type", value = "application/json", type = "iequal" },
-  { name = "X-Custom",     value = "test",             type = "equal" },
-]
-```
-
-Each entry becomes:
-```
-{ type: "<type>", value: "<value>", point: { header: "<NAME_UPPERCASED>" } }
-```
-
-**Important:** The `domain` field is syntactic sugar for a HOST header condition
-with type `iequal`. When `domain` is set, it generates:
-```
-{ type: "iequal", value: "<domain>", point: { header: "HOST" } }
-```
-
----
-
-## 6. Query Parameter Conditions
-
-Query parameters are matched via the `query` variable field:
-
-```hcl
-query = [
-  { key = "page",   value = "1",    type = "equal" },
-  { key = "search", value = ".*",   type = "regex" },
-]
-```
-
-Each entry becomes:
-```
-{ type: "<type>", value: "<value>", point: { query: "<key>" } }
-```
-
----
-
-## 7. Expansion Order in Generated Action List
-
-The conditions are concatenated in this exact order:
-
-1. **Instance** (if set)
-2. **Domain** → HOST header (if set, skipped when `"*"`)
-3. **Custom headers** (each entry)
-4. **Too-deep fallback** → single URI condition (if path too deep)
-5. **Root path** → action_name="" + action_ext absent + path[0] absent (if `/`)
-6. **action_name** (if not wildcard `*`)
-7. **action_ext** → absent (no dot), equal (specific), or skipped (wildcard `*`)
-8. **Path segments** → path[N] for each dir segment (skip `*` wildcards)
-9. **Limiter** → path[N] absent (suppressed when `**`)
-10. **Method** (if set)
-11. **Scheme** (if set)
-12. **Proto** (if set)
-13. **Query parameters** (each entry)
-
----
-
-## 8. Provider-Side Go Functions
-
-Source: `terraform-provider-wallarm/wallarm/provider/data_source_hits.go`
-
-### `buildActionFromHit(domain, urlPath string, poolID int)`
-
-Top-level function. Combines:
-1. Instance condition (if poolID > 0)
-2. HOST header condition (if domain != "")
-3. `locationToConditions(urlPath)` results
-
-### `locationToConditions(location string)`
-
-Parses URL path into action conditions:
-1. If path depth > maxPathDepth → single `{ uri: location }` fallback
-2. Split by `/`, strip leading empty
-3. Root path → `action_name=""` + `path[0] absent`
-4. Normal: `actionNameExtConditions(last)` + `path[i]=segment` for dirs + terminating `path[N] absent`
-
-### `actionNameExtConditions(segment string)`
-
-Splits last path segment:
-- Has dot: `action_name=name` + `action_ext=ext`
-- No dot: `action_name=segment` + `action_ext absent`
-
----
-
-## 9. Concrete Expansion Examples
-
-### `/api/v1/users` on `example.com`
-```
-{ type: "iequal", value: "example.com", point: { header: "HOST" } }
-{ type: "equal",  value: "",            point: { action_name: "users" } }
-{ type: "absent", value: "",            point: { action_ext: "" } }
-{ type: "equal",  value: "api",         point: { path: "0" } }
-{ type: "equal",  value: "v1",          point: { path: "1" } }
-{ type: "absent", value: "",            point: { path: "2" } }
-```
-
-### `/api/*/users` on `example.com` (wildcard segment)
-```
-{ type: "iequal", value: "example.com", point: { header: "HOST" } }
-{ type: "equal",  value: "",            point: { action_name: "users" } }
-{ type: "absent", value: "",            point: { action_ext: "" } }
-{ type: "equal",  value: "api",         point: { path: "0" } }
-// path[1] SKIPPED — * matches any
-{ type: "absent", value: "",            point: { path: "2" } }
-```
-
-### `/api/**/users` on `example.com` (globstar)
-```
-{ type: "iequal", value: "example.com", point: { header: "HOST" } }
-{ type: "equal",  value: "",            point: { action_name: "users" } }
-{ type: "absent", value: "",            point: { action_ext: "" } }
-{ type: "equal",  value: "api",         point: { path: "0" } }
-// NO limiter — ** allows any depth
-```
-
-### `/api/data.json` on `*` (any domain)
-```
-// NO HOST condition — domain="*" skipped
-{ type: "equal",  value: "",            point: { action_name: "data" } }
-{ type: "equal",  value: "",            point: { action_ext: "json" } }
-{ type: "equal",  value: "api",         point: { path: "0" } }
-{ type: "absent", value: "",            point: { path: "1" } }
-```
-
-### `/` (root path) with instance 101
-```
-{ type: "equal",  value: "",            point: { instance: "101" } }
-{ type: "equal",  value: "",            point: { action_name: "" } }
-{ type: "absent", value: "",            point: { action_ext: "" } }
-{ type: "absent", value: "",            point: { path: "0" } }
-```
-
----
-
-## 10. Variables-First Config Pattern
-
-Rule configs use a three-way merge where variables are authoritative:
-
-```hcl
-merge(
-  yaml_base,            # 1st — YAML file provides defaults only
-  variable_values,      # 2nd — Variable values OVERRIDE yaml
-  { action = computed } # 3rd — Action is always computed from path expansion
-)
-```
-
-This means:
-- Editing a YAML config file provides defaults for fields not set in variables
-- Changing a variable value always takes effect (no stale YAML override)
-- The `action` field is never read from YAML — always recomputed
-
----
-
-## 11. Resource Types and Their Special Fields
-
-| Resource Type | Key Fields |
-|---------------|-----------|
-| `wallarm_rule_binary_data` | point |
-| `wallarm_rule_masking` | point |
-| `wallarm_rule_disable_attack_type` | attack_types (expanded: one resource per type) |
-| `wallarm_rule_disable_stamp` | stamps (expanded: one resource per stamp) |
-| `wallarm_rule_vpatch` | attack_types (expanded: one resource per type) |
-| `wallarm_rule_uploads` | file_type |
-| `wallarm_rule_ignore_regex` | regex_id OR regex_rule (cross-reference) |
-| `wallarm_rule_parser_state` | parser, state |
-| `wallarm_rule_regex` | attack_type, regex, experimental |
-| `wallarm_rule_file_upload_size_limit` | mode, size, size_unit |
-| `wallarm_rule_rate_limit` | delay, burst, rate, rsp_status, time_unit |
-| `wallarm_rule_credential_stuffing_point` | point, login_point, cred_stuff_type |
-| `wallarm_rule_credential_stuffing_regex` | regex, login_regex, case_sensitive, cred_stuff_type |
-| `wallarm_rule_mode` | mode (monitoring/safe_blocking/block/off/default) |
-| `wallarm_rule_set_response_header` | header_name, header_mode, header_values |
-| `wallarm_rule_overlimit_res_settings` | overlimit_time, mode |
-| `wallarm_rule_graphql_detection` | mode, max_depth, max_value_size_kb, max_doc_size_kb, max_alias_size_kb, max_doc_per_batch, introspection, debug_enabled |
-| `wallarm_rule_bruteforce_counter` | (counter only, no special fields) |
-| `wallarm_rule_dirbust_counter` | (counter only, no special fields) |
-| `wallarm_rule_bola_counter` | (counter only, no special fields) |
-| `wallarm_rule_brute` | mode, threshold, reaction, enumerated_parameters |
-| `wallarm_rule_bola` | mode, threshold, reaction, enumerated_parameters |
-| `wallarm_rule_enum` | mode, threshold, reaction, enumerated_parameters |
-| `wallarm_rule_rate_limit_enum` | mode, threshold, reaction |
-| `wallarm_rule_forced_browsing` | mode, threshold, reaction |
-
-### Multi-Value Expansion
-
-- **`attack_types`** list → one `wallarm_rule_disable_attack_type` or `wallarm_rule_vpatch` per entry
-  - Key format: `"${name}_${attack_type}"`
-- **`stamps`** list → one `wallarm_rule_disable_stamp` per entry
-  - Key format: `"${name}_${stamp}"`
-
-### Cross-References
-
-`wallarm_rule_ignore_regex` can reference a `wallarm_rule_regex` by name:
-```hcl
-{ name = "my_regex", resource_type = "wallarm_rule_regex", ... }
-{ name = "ignore_it", resource_type = "wallarm_rule_ignore_regex", regex_rule = "my_regex", ... }
-```
-The module resolves `regex_rule` → `wallarm_rule_regex.this["my_regex"].regex_id`.
-
----
-
-## 12. Action Block in Resources — Common Pattern
-
-All 25 resource types use the same dynamic action block:
-
-```hcl
-dynamic "action" {
-  for_each = try(local.rule_configs[each.key].action, [])
-  content {
-    type  = action.value.type == "" ? null : action.value.type
-    value = try(action.value.value, "")
-    point = { for k, v in action.value.point : k => k == "header" ? upper(v) : v }
-  }
-}
-```
-
-Key details:
-- `type = ""` → sent as `null` to the provider (instance, method, scheme, proto)
-- Header names are always uppercased: `k == "header" ? upper(v) : v`
-- Point is a single-key map — never multiple keys in one point
-
----
-
-## 13. Key Implementation Files
-
-| File | Purpose |
-|------|---------|
-| `modules/wallarm_rules/modules/custom_rules/main.tf` | Path expansion logic, action building, all 25 resource blocks |
-| `modules/wallarm_rules/modules/custom_rules/variables.tf` | Full variable type definition with all fields |
-| `modules/wallarm_rules/modules/custom_rules/EXAMPLES.tfvars` | Commented examples for all 25 resource types |
-| `modules/wallarm_rules/modules/fp_rules/` | False-positive rules from hits (simpler, only disable_stamp + disable_attack_type) |
-| `terraform-provider-wallarm/.../data_source_hits.go` | Go source: buildActionFromHit, locationToConditions, actionNameExtConditions |
-
----
-
-## 14. Server-side Data Model (Action / Condition / Hint)
-
-This section documents the API's database structure. The provider does not exercise these tables directly — it talks to HTTP endpoints — but knowing the shape clarifies why certain provider behaviors exist (`existingHintForAction`, `ConditionsHash`, the auto-cleanup of empty Actions).
-
-### Action table (`actions`)
-
-| Field | Notes |
-|-------|-------|
-| `id` | Unique Action ID (`action_id` in Terraform) |
-| `clientid` | Tenant/client ID |
-| `name` | Optional, validated `[A-Za-z0-9_.-]+`, unique per client |
-| `conditions` | Ordered list of Condition objects |
-| `conditions_hash` | SHA256 of serialized conditions; UNIQUE on `(clientid, conditions_hash)` |
-| `conditions_count` | Denormalized count, 0–60 |
-| `endpoint_path` / `endpoint_domain` / `endpoint_instance` | Cached scope fields |
-| `endpoint` (bool) / `endpoint_url` / `method` | |
-| `actual` / `internal` / `hidden` / `orphan` | Booleans |
-| `endpoint_risk_score` | decimal(3,1), range 1–10 |
-| `hits_count` / `request_stats` | Stats; `request_stats` is JSONB |
-| `discovered_at` / `changed_at` / `created_at` / `updated_at` | Timestamps |
-
-**Behavior:**
-
-- **`find_or_create`** — same conditions reuse the existing Action (not duplicated). The provider's `existingHintForAction` relies on this contract.
-- **`conditions_hash`** is the primary equality key. Two Actions with identical conditions produce the same hash. `ConditionsHash` in `wallarm/provider/hash.go` reproduces the Ruby `Action.calculate_conditions_hash` deterministically.
-- **`nested`** — finds Actions whose conditions are a subset of this Action's, used for rule inheritance: a rule on `/api/*` applies to `/api/users`. The `with_nested` delete parameter cascades to parent Actions.
-- After commit, the API triggers LOM compilation (`ScheduleLomCompilation`) and rule application (`ApplyAllForSingleAction`).
-
-### Condition table (`action_conditions`)
-
-Each row maps to one `action {}` block in Terraform.
-
-| Field | Notes |
-|-------|-------|
-| `type` | `equal` / `iequal` / `regex` / `absent` (default `equal`) |
-| `point` | JSON-serialized Proton Point array |
-| `value` | Match value (absent for `type=absent`) |
-
-**Behavior:**
-
-- `iequal` values are **always lowercased** server-side (`before_validation :iequal_values_downcase`). The provider must lowercase these client-side to keep state consistent.
-- `point` is stored as JSON and deserialized via `PointJsonDecoder` into `Proton::Point` objects.
-- `to_h` output: `{ type: :equal, point: [...], value: "..." }` — this is the format the API returns and the provider processes.
-
-### Hint table (`hints`)
-
-| Field | Notes |
-|-------|-------|
-| `actionid` | FK → `actions.id` |
-| `type` | Rule type string (`wallarm_mode`, `disable_stamp`, `bruteforce_counter`, ...) |
-| `system` (bool) | System-managed flag |
-| `data` | msgpack blob containing the full rule payload (`point`, `regex_id`, `clientid`, ...) |
-
-The provider's `HintCreate`/`HintDelete` API calls map to inserts/deletes in this table; both trigger LOM recompilation.
-
-### Action lifecycle
-
-1. **FindOrCreate** — looks up by `conditions_hash + clientid`; creates transactionally if not found; handles race conditions with retry.
-2. **Rules attached** — Hints are created pointing to the Action via `actionid` FK.
-3. **LOM compilation** — `Action.with_payload` loads Actions, converts via `to_lom_action`, compiles into binary LOM.
-4. **Delete cascade** — when all rules are removed from an Action, the API auto-cleans empty Actions: an Action with conditions and no rules becomes eligible for cleanup; an Action with no conditions persists. The provider only ever calls `HintDelete`, never `ActionDelete`, and relies on this auto-cleanup.
+`action_path = "/api/**/users"` (globstar) drops the limiter; `action_path = "/api/*/users"`
+skips the `path:1` condition but keeps the `path:2` limiter.
+
+### 6.5 Server-side data model
+
+The API stores the scope as Action + Condition + Hint rows. The provider talks to
+HTTP endpoints, not these tables, but the shape explains provider behavior
+(`find_or_create`, `ConditionsHash`, empty-Action auto-cleanup).
+
+**`actions`**: `id` (=`action_id`), `clientid`, `name` (`[A-Za-z0-9_.-]+`, unique
+per client), `conditions` (ordered list), `conditions_hash` (SHA256, UNIQUE on
+`(clientid, conditions_hash)`), `conditions_count` (0-60), cached scope fields
+(`endpoint_*`, `method`), booleans (`actual`/`internal`/`hidden`/`orphan`),
+`endpoint_risk_score` (1-10), stats, timestamps.
+
+- `find_or_create` reuses an Action with identical conditions; `existingHintForAction`
+  relies on it. `ConditionsHash` (`hash.go`) reproduces the Ruby
+  `Action.calculate_conditions_hash`.
+- `nested` matches Actions whose conditions are a subset (rule inheritance:
+  `/api/*` applies to `/api/users`).
+- On commit the API schedules LOM compilation and rule application.
+
+**`action_conditions`**: `type` (default `equal`), `point` (JSON Proton Point
+array), `value` (absent for `absent`). `iequal` downcased server-side
+(`before_validation :iequal_values_downcase`).
+
+**`hints`**: `actionid` (FK), `type` (rule-type string), `system` (bool), `data`
+(msgpack payload). `HintCreate`/`HintDelete` insert/delete here; both trigger LOM
+recompilation. When an Action's last Hint is removed, an Action that has
+conditions is auto-cleaned; a condition-less Action persists. The provider only
+ever calls `HintDelete`, never `ActionDelete`.
+
+## 7. References
+
+- `rules-core.md` - shared Action/Condition/Hint model, CRUD machinery, catalog.
+- `point.md` - point chaining tables; `spec/point_map.json` (raw data).
+- `regex.md` - Pire engine syntax + HCL escaping for `regex` conditions.
+- `hits-to-rules.md` - the hits FP-suppression flow that consumes `buildActionFromHit`.
+- `spec/actions_examples.json` - real API action-condition examples.
+- `examples/hits-to-rules/`, `examples/import-rules/` - thin consumer modules.
