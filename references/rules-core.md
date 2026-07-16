@@ -204,10 +204,9 @@ the full algorithm (wildcards, headers, query, root path, `uri` exclusivity) is
 in `action.md`. Point values chain through the parser tree as 2D
 paired/simple lists (`point.md`, authority `WrapPointElements`).
 
-> **Known bug (R-002):** the path decomposition currently splits the final
-> segment on the *last* dot at both sites (`actionNameExtConditions`,
-> `parseLastSegment`); the correct/API split is the *first* dot. See
-> `action.md §4.3` and `hits-to-rules.md §4.4`.
+The final path segment decomposes into `action_name` / `action_ext` on the
+**first** dot at both sites (`actionNameExtConditions`, `parseLastSegment`),
+matching the API. See `action.md §4.3`.
 
 ### 4.3 Variativity (load-bearing)
 
