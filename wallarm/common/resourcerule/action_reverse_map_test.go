@@ -208,7 +208,7 @@ func TestParseLastSegment(t *testing.T) {
 	}{
 		{"no dot", "login", "login", "", false},
 		{"single dot", "data.json", "data", "json", true},
-		// R-002: a multi-dot segment splits on the FIRST dot to match the API.
+		// A multi-dot segment splits on the FIRST dot to match the API.
 		{"multi dot", "archive.tar.gz", "archive", "tar.gz", true},
 	}
 	for _, tt := range tests {

@@ -329,8 +329,8 @@ func TestActionNameExtConditions_WithoutExtension(t *testing.T) {
 }
 
 func TestActionNameExtConditions_MultiDot(t *testing.T) {
-	// R-002: a multi-dot final segment must split on the FIRST dot to match the
-	// API (archive.tar.gz -> action_name "archive", action_ext "tar.gz").
+	// A multi-dot final segment must split on the FIRST dot to match the API
+	// (archive.tar.gz -> action_name "archive", action_ext "tar.gz").
 	result := actionNameExtConditions("archive.tar.gz")
 
 	if len(result) != 2 {
