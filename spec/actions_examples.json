@@ -4772,5 +4772,49 @@
     ],
     "instance": "5",
     "path": "/api/v2/project/*/items/physical_good/delivery/shipping_methods/cart/current"
+  },
+  {
+    "conditions": [
+      {
+        "point": [
+          "instance"
+        ],
+        "type": "equal",
+        "value": "-1"
+      },
+      {
+        "point": [
+          "header",
+          "HOST"
+        ],
+        "type": "iequal",
+        "value": "example.com"
+      },
+      {
+        "point": [
+          "path",
+          0
+        ],
+        "type": "absent",
+        "value": null
+      },
+      {
+        "point": [
+          "action_name"
+        ],
+        "type": "equal",
+        "value": ""
+      },
+      {
+        "point": [
+          "action_ext"
+        ],
+        "type": "equal",
+        "value": "env"
+      }
+    ],
+    "domain": "example.com",
+    "instance": "-1",
+    "path": "/.env"
   }
 ]

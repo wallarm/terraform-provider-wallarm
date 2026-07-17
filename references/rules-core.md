@@ -204,10 +204,9 @@ the full algorithm (wildcards, headers, query, root path, `uri` exclusivity) is
 in `action.md`. Point values chain through the parser tree as 2D
 paired/simple lists (`point.md`, authority `WrapPointElements`).
 
-> **Known bug (R-002):** the path decomposition currently splits the final
-> segment on the *last* dot at both sites (`actionNameExtConditions`,
-> `parseLastSegment`); the correct/API split is the *first* dot. See
-> `action.md §4.3` and `hits-to-rules.md §4.4`.
+The final path segment decomposes into `action_name` / `action_ext` on the
+**first** dot at both sites (`actionNameExtConditions`, `parseLastSegment`),
+matching the API. See `action.md §4.3`.
 
 ### 4.3 Variativity (load-bearing)
 
@@ -329,7 +328,8 @@ live set: `GET /v2/attack_types`. Offline: `proton-types.md`.
 - `proton-types.md` - Proton type/attack-type IDs.
 - `rules_api_fields.md` - probe-derived per-hint field ground truth.
 - `schema-decisions.md` - schema attribute decision tree.
-- `spec/actions_examples.json` - 82 representative action condition examples
-  (one per distinct shape; deduped from a 343-sample probe).
+- `spec/actions_examples.json` - representative action condition examples (unique
+  shapes deduped from a 343-sample probe, plus the `/.env` dotfile case). Single
+  source; the round-trip test reads this file directly.
 - `create-rule-resource` skill - canonical build flow for a new `rule_*` resource.
 - `hits-to-rules.md` - FP-suppression rules from hits. Counters/triggers: T-004.

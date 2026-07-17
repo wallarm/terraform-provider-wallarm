@@ -7,6 +7,34 @@ import (
 	wallarm "github.com/wallarm/wallarm-go"
 )
 
+func TestValidateActionPath(t *testing.T) {
+	valid := []string{
+		"", "/", "/**/*.*",
+		"/reports/report.*",  // ext wildcard
+		"/reports/*",         // name wildcard
+		"/reports/*.json",    // name wildcard + literal ext
+		"/api/*/users",       // segment wildcard
+		"/api/**/users",      // globstar
+		"/dl/archive.tar.gz", // multi-dot, no wildcard
+	}
+	for _, p := range valid {
+		if err := validateActionPath(p); err != nil {
+			t.Errorf("validateActionPath(%q) = %v, want nil", p, err)
+		}
+	}
+	invalid := []string{
+		"/reports/report.2024.*", // "*" fused into the extension
+		"/reports/re*port",       // "*" fused into the name
+		"/reports/report.j*son",  // "*" fused into the extension
+		"/api/rep*/users",        // "*" fused into a segment
+	}
+	for _, p := range invalid {
+		if err := validateActionPath(p); err == nil {
+			t.Errorf("validateActionPath(%q) = nil, want error", p)
+		}
+	}
+}
+
 func TestValidateActionSet_Valid(t *testing.T) {
 	set := newActionSet(
 		map[string]any{"type": "iequal", "value": "example.com", "point": map[string]any{"header": "HOST"}},
