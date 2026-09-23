@@ -12,7 +12,7 @@ Reads the attack vectors of a request from the Wallarm API and provides them in 
 
 ~> **Important:** Hits are **ephemeral** — they have a retention period and can be dropped from the API at any time. This data source should only be used for the initial fetch. Rules derived from hits must be cached in Terraform state (e.g., via `terraform_data` with `ignore_changes`) to survive after the source hits expire. Re-fetching on every plan will cause rules to be destroyed when hits are no longer available. See the [Hits to Rules Guide](../guides/hits_to_rules) for the recommended caching pattern.
 
-A single HTTP request can carry several attack vectors, one per attack detected in a part of the request. Each vector becomes one element of `hits`. A read returns at most 100 vectors of the request and applies no filter by hit kind or time. All vectors of the request must share the same host, path and application ID, from which the action conditions are built; otherwise the read fails.
+A single HTTP request can carry several attack vectors, one per attack detected in a part of the request. Each vector becomes one element of `hits`. A read returns at most 100 vectors of the request and does not filter them by attack type, state (such as false positive) or time. All vectors of the request must share the same host, path and application ID, from which the action conditions are built; otherwise the read fails.
 
 ## Example Usage
 
@@ -46,7 +46,7 @@ data "wallarm_hits" "sqli_stamps" {
 
 ## Attributes Reference
 
-* `action` - Rule action conditions derived from the hit's domain, path, and pool ID. Uses the same schema as `wallarm_rule_*` action blocks, so the output can be passed directly to rule resources.
+* `action` - Rule action conditions derived from the vector's host, path and application ID. Uses the same schema as `wallarm_rule_*` action blocks, so the output can be passed directly to rule resources.
 * `action_hash` - SHA256 hash of the sorted action conditions, used for grouping rules with the same scope.
 * `aggregated` - JSON-encoded compact representation of the grouped hits data. Structure: `{action_hash (16 hex chars), action (conditions list), groups (list)}`. Each group is keyed by `point_hash_attack_type` and contains: `stamps` for that attack type at that point, `attack_type` (always set), and `disable_attack_type` (bool, controlled by `rule_types` filter). Stampless types (`xxe`, `invalid_xml`) have empty stamps. Use this for caching in `terraform_data` with `ignore_changes`. See the [Hits to Rules Guide](../guides/hits_to_rules) for the recommended caching pattern.
 * `hits` - List of hit objects, one per attack vector, each containing:
@@ -60,7 +60,7 @@ data "wallarm_hits" "sqli_stamps" {
   * `stamps_hash` - Hash of stamps.
   * `point` - Detection point as a flat string list.
   * `point_wrapped` - Detection point in 2D nested list structure (matches rule point format).
-  * `poolid` - The vector's application ID.
+  * `poolid` - The vector's application ID; `-1` when the request has no application.
   * `block_status` - Whether the request was blocked.
   * `request_id` - Request ID.
   * `domain` - Request domain (Host header).

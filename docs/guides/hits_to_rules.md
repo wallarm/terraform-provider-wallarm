@@ -59,7 +59,7 @@ Each request ID maps to a JSON config string. Use `"{}"` for defaults.
 
 ```hcl
 request_ids = {
-  # Default: all rule types, default attack types
+  # Default: all supported rule and attack types
   "abc123" = "{}"
 
   # Filter: only generate disable_stamp rules
@@ -78,7 +78,7 @@ request_ids = {
 | Key | Values | Default | Description |
 |-----|--------|---------|-------------|
 | `rule_types` | `["disable_stamp"]`, `["disable_attack_type"]` | all types | Filter which rule types to generate. |
-| `attack_types` | `["sqli"]`, `["xss","rce"]`, etc. | all standard types | Filter which attack types produce rules. |
+| `attack_types` | `["sqli"]`, `["xss","rce"]`, etc. | all supported types | Filter which attack types produce rules. |
 
 ## How It Works
 

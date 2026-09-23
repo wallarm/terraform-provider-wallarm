@@ -2,7 +2,7 @@ api_token = "your-api-token"
 api_host  = "https://us1.api.wallarm.com"
 
 # Map of request_id → config JSON.
-# Empty JSON object "{}" = default attack types, all rule types.
+# Empty JSON object "{}" = all supported rule and attack types.
 # Specify attack_types and/or rule_types per request_id as JSON.
 #
 # First apply: leave request_ids empty (or omit this file) to initialize state.

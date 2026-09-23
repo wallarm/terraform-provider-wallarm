@@ -72,7 +72,7 @@ Append an entry to the `probes` slice in `main.go`. Each entry needs:
 - `RuleType` — the API hint-type string (e.g. `"graphql_detection"`).
 - `Base` — `map[string]any` of fields to send on the initial Create attempt. Usually just enough to prevent immediate "can't be blank" rejections (e.g. `{"mode": "block"}`).
 - *(optional)* `Label` — disambiguator for cases where one type has multiple meaningful body shapes (e.g. `brute_exact` vs `brute_regexp`).
-- *(optional)* `TokenEnv` — env var name carrying a token that replaces the default one for this probe.
+- *(optional)* `TokenEnv` — env var name carrying a token that replaces the default one for this probe. The probe is skipped when that variable is unset.
 
 The retry loop's `candidateValues` map (also in `main.go`) provides values for fields the API reports as "can't be blank" — extend it if a new rule type requires a field that's not already covered.
 

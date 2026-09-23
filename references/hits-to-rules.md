@@ -150,7 +150,7 @@ WithAttackType)`, Delete through `resourcerule.Delete`, Import through
 
 - **instance** condition emitted when `include_instance` is true and
   `poolid != 0` (`{instance: <poolid>}`, `equal`, empty value).
-- **HOST** header always `iequal` to `domain`.
+- **HOST** header always `iequal` to the vector's `host` (the `domain` output).
 - **path** split on `/` into `equal` segment conditions, terminated by an
   `absent` condition one index past the last segment (fixes chain length).
 - final path segment splits into `action_name` + `action_ext` on the **first**
