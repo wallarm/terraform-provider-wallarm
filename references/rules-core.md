@@ -137,7 +137,7 @@ API rule - see `hcl-generator.md`), grouped by purpose:
 | `ignore_regex` | pattern matching | suppress matches of an existing user regex at a point |
 | `rate_limit` | rate limiting | per-scope request rate limit (rate / burst / delay / response status) |
 | `disable_attack_type` | FP suppression | allow a specific attack type at a point |
-| `disable_stamp` | FP suppression | allow a specific attack signature (stamp) at a point; requires Administrator (extended) |
+| `disable_stamp` | FP suppression | allow a specific attack signature (stamp) at a point |
 | `credential_stuffing_regex` | credential stuffing | credential-stuffing detection by login + credential regex (`login_regex` + `regex`) |
 | `credential_stuffing_point` | credential stuffing | credential-stuffing detection by login + credential points (`login_point` + `point`) |
 | `masking` | data handling | mask sensitive request data before storage / display |

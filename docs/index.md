@@ -42,7 +42,7 @@ resource "wallarm_rule_vpatch" "vpatch" {
 
 The following arguments are supported in `provider "wallarm"`:
 
-* `api_token` - (**required**) your Wallarm [API token](https://docs.wallarm.com/user-guides/settings/api-tokens/). Note that the most operations with Wallarm API are allowed only for the users with the **Administrator** role. Managing `disable_stamp` rules (false positive suppression by signature) requires the **Administrator (extended)** or **Global Administrator (extended)** role. This can also be specified with the `WALLARM_API_TOKEN` shell environment variable.
+* `api_token` - (**required**) your Wallarm [API token](https://docs.wallarm.com/user-guides/settings/api-tokens/). Note that the most operations with Wallarm API are allowed only for the users with the **Administrator** role. This can also be specified with the `WALLARM_API_TOKEN` shell environment variable.
 * `api_host` - (optional) Wallarm API URL. Can be: `https://us1.api.wallarm.com` for the [US Cloud](https://docs.wallarm.com/about-wallarm/overview/#us-cloud), `https://api.wallarm.com` for the [EU Cloud](https://docs.wallarm.com/about-wallarm/overview/#eu-cloud). This can also be specified with the `WALLARM_API_HOST` shell environment variable. Default: `https://api.wallarm.com`.
 * `client_id` - (optional) ID of the client (tenant). The value is required for [multi-tenant scenarios][2]. This can also be specified with the `WALLARM_API_CLIENT_ID` shell environment variable. Default: client ID of the authenticated user defined by api_token.
 * `retries` - (optional) maximum number of retries to perform when an API request fails. Default: 12. This can also be specified with the `WALLARM_API_RETRIES` shell environment variable.
