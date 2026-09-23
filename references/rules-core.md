@@ -168,7 +168,7 @@ ground truth is `rules_api_fields.md`.
 |---|---|---|
 | `ActionList(params)` | `POST /v1/objects/action` | list actions by filter |
 | `ActionReadByID(id)` | `GET /v3/action/{id}` | read one action |
-| `ActionReadByHitID(ids)` | `POST /v1/objects/action/by_hit` | derive an action scope from hits (`hits-to-rules.md`) |
+| `ActionReadByHitID(ids)` | `POST /v1/objects/action/by_hit` | not used by the provider |
 
 Two provider resources sit directly on this surface: `wallarm_action`
 (read-only manual action tracking) and `data.wallarm_actions` (paginated
