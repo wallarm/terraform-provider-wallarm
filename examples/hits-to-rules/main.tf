@@ -20,10 +20,9 @@
 # Per-request config via JSON:
 #   request_ids = {
 #     "abc123" = "{}"                                          # defaults
-#     "def456" = "{\"mode\":\"attack\"}"                       # attack mode
 #     "ghi789" = "{\"rule_types\":[\"disable_stamp\"]}"        # stamp rules only
 #     "jkl012" = "{\"attack_types\":[\"sqli\"]}"               # only sqli hits
-#     "mno345" = "{\"mode\":\"attack\", \"attack_types\":[\"xss\",\"rce\"]}"
+#     "mno345" = "{\"attack_types\":[\"xss\",\"rce\"], \"rule_types\":[\"disable_attack_type\"]}"
 #   }
 
 terraform {
@@ -58,11 +57,6 @@ variable "request_ids" {
   type        = map(string)
   default     = {}
   description = "Map of request_id → config JSON. Empty object {} = defaults. Leave empty on first apply to initialize state."
-}
-
-variable "default_mode" {
-  type    = string
-  default = "request"
 }
 
 variable "include_instance" {
