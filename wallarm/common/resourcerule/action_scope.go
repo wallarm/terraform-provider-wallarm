@@ -203,6 +203,32 @@ func scopeActionSchema(forceNew, computed bool) *schema.Schema {
 //
 // Also validates that "uri" conditions are not mixed with "path", "action_name",
 // "action_ext", or "query" conditions (mutually exclusive in the Wallarm API).
+// validateActionPath rejects an action_path whose wildcard tokens are malformed.
+// A "*" is valid only as a whole path segment, whole action_name, or whole
+// action_ext; "**" only as a whole directory segment. A "*" fused into a larger
+// value (e.g. "report.2024.*") would silently build a rule that matches nothing,
+// so it is rejected at plan time.
+func validateActionPath(path string) error {
+	if path == "" || path == "/" || path == pathGlobalWildcard {
+		return nil
+	}
+	parts := strings.Split(strings.TrimPrefix(path, "/"), "/")
+	last := parts[len(parts)-1]
+	for _, seg := range parts[:len(parts)-1] {
+		if strings.Contains(seg, "*") && seg != "*" && seg != "**" {
+			return fmt.Errorf("action_path %q: %q is not a valid path segment - use a literal, \"*\" (any one segment), or \"**\" (any depth)", path, seg)
+		}
+	}
+	name, ext, hasDot := strings.Cut(last, ".")
+	if strings.Contains(name, "*") && name != "*" {
+		return fmt.Errorf("action_path %q: %q is not a valid filename - use a literal or \"*\" (any name)", path, name)
+	}
+	if hasDot && strings.Contains(ext, "*") && ext != "*" {
+		return fmt.Errorf("action_path %q: %q is not a valid extension - use a literal or \".*\" (any extension)", path, ext)
+	}
+	return nil
+}
+
 func ActionScopeCustomizeDiff(_ context.Context, d *schema.ResourceDiff, _ any) error {
 	// Validate explicit action blocks (point keys, URI conflicts, type/value rules).
 	if err := validateActionBlocks(d); err != nil {
@@ -211,6 +237,10 @@ func ActionScopeCustomizeDiff(_ context.Context, d *schema.ResourceDiff, _ any) 
 
 	// Check if scope fields are set in config.
 	actionPath := d.Get("action_path").(string)
+
+	if err := validateActionPath(actionPath); err != nil {
+		return err
+	}
 
 	hasScopeFields := actionPath != "" ||
 		d.Get("action_domain").(string) != "" ||

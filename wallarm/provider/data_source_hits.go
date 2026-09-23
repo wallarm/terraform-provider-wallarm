@@ -757,9 +757,7 @@ func locationToConditions(location string) []map[string]any {
 // actionNameExtConditions splits a path segment into action_name / action_ext.
 // The matched string goes in the point map value; value field is always "".
 func actionNameExtConditions(segment string) []map[string]any {
-	if dotIdx := strings.LastIndex(segment, "."); dotIdx >= 0 {
-		name := segment[:dotIdx]
-		ext := segment[dotIdx+1:]
+	if name, ext, found := strings.Cut(segment, "."); found {
 		return []map[string]any{
 			{
 				"type":  "equal",

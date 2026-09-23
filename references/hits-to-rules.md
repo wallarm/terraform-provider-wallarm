@@ -145,10 +145,7 @@ WithAttackType)`, Delete through `resourcerule.Delete`, Import through
   `absent` condition one index past the last segment (fixes chain length).
 - final path segment splits into `action_name` + `action_ext` on the **first**
   dot, matching the API (`archive.tar.gz` -> name `archive`, ext `tar.gz`); no
-  dot -> `action_name` = segment and `action_ext` `absent`. **Known bug (R-002):**
-  the code currently splits on the *last* dot (`actionNameExtConditions` here and
-  `parseLastSegment` on the `action_path` side); the fix is `strings.Index` at
-  both sites. See `action.md §4.3`.
+  dot -> `action_name` = segment and `action_ext` `absent`.
 - root path `/` -> `action_name` empty + `path[0]` absent.
 - `path == "[multiple]"` -> host-only wildcard scope (no path/action_name/
   action_ext conditions).

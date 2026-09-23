@@ -112,9 +112,8 @@ The `examples/` modules are thin consumers, not logic holders:
   suppresses the limiter, allowing any depth after the prefix.
 
 The last segment decomposes into `action_name` / `action_ext` by splitting on
-the **first** dot (`parseLastSegment`): `archive.tar.gz` -> name `archive`, ext
-`tar.gz`. See the R-002 note in §4.3 - the hits side and this side use the same
-split.
+the **first** dot (`parseLastSegment`, via `strings.Cut`): `archive.tar.gz` ->
+name `archive`, ext `tar.gz`. The hits side (§4.3) uses the same split.
 
 ### 4.3 Hit-derived path-to-action
 
@@ -136,14 +135,6 @@ matching the API's own decomposition and the `action_path` side (§4.2):
 path has no `*` / `**` / global-wildcard handling - it always fully decomposes
 the observed path. It still emits the terminating `path[N]` absent limiter that
 fixes the depth (there is just no `**` case to suppress it).
-
-> **Known bug (R-002):** the code currently splits on the **last** dot
-> (`strings.LastIndex`) at both sites - `actionNameExtConditions`
-> (`data_source_hits.go:760`) and `parseLastSegment`
-> (`action_reverse_map.go:441`) - so `archive.tar.gz` wrongly yields ext `gz` and
-> the hit-derived scope disagrees with the API (a hard error in the hits flow).
-> The fix is `strings.Index` at both sites; tracked as R-002. This section
-> describes the intended first-dot behavior. See `hits-to-rules.md §4.4`.
 
 ### 4.4 Condition normalization
 
