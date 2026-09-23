@@ -12,6 +12,7 @@
 ### Documentation
 
 * **hits-to-rules:** the example drops `variable "default_mode"` and the `mode` key from its per-request config samples.
+* **`disable_stamp` roles:** the provider and `wallarm_user` docs no longer say `disable_stamp` rules need the Administrator (extended) or Global Administrator (extended) role — a regular Administrator or Global Administrator token reads and creates them.
 
 ### Other Changes
 
