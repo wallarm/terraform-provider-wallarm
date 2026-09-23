@@ -1,3 +1,18 @@
+## [Unreleased]
+
+### Upgrade Steps
+
+* [ACTION REQUIRED] `data.wallarm_hits`: remove `mode` and `time` from the `data "wallarm_hits"` block and stop reading `hits[*].attack_id`.
+
+### Breaking Changes
+
+* **`data.wallarm_hits`: `mode`, `time` and `hits[*].attack_id` removed** — HCL setting or reading them now fails validation.
+* **`data.wallarm_hits` reads the request's attack vectors** — `hits` and `hits_count` hold one element per vector, at most 100 vectors per read (previously at most 500 hits in the default `request` mode). `hits[*].id` is `[<vector_id>]` instead of the hit `id` list. Warn and infoleak hits, hits marked as false positives, experimental hits and AASM events are no longer excluded from `hits`, and the default 6-month time window is gone. The read no longer checks `action` against the conditions the API reports for the request's first hit, so a condition mismatch no longer fails the read. The data source id is always `hits_<client_id>_<request_id>` (the `_attack` suffix is gone). `action`, `action_hash`, `action_conditions`, `action_dir_name` and the shape of `aggregated` are unchanged.
+
+### Other Changes
+
+* **build(deps):** bump `wallarm-go` to `v0.14.0` — adds `AttackVectorsByRequest`.
+
 ## [v2.3.10] - 2026-05-12
 
 ### New Features

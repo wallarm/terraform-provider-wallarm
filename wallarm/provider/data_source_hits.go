@@ -45,18 +45,10 @@ func dataSourceWallarmHits() *schema.Resource {
 				Description: "The unique request identifier to fetch all related hits",
 			},
 
-			"mode": {
-				Type:         schema.TypeString,
-				Optional:     true,
-				Default:      "request",
-				ValidateFunc: validation.StringInSlice([]string{"request", "attack"}, false),
-				Description:  "Fetch mode: 'request' fetches hits for the request_id only; 'attack' expands to all related hits by attack_id",
-			},
-
 			"attack_types": {
 				Type:        schema.TypeList,
 				Optional:    true,
-				Description: "Allowed attack types for filtering. In attack mode, controls which types to fetch from the API. In all modes, only hits matching these types produce rules. Defaults to the standard FP-relevant types.",
+				Description: "Allowed attack types for filtering. Only hits matching these types produce rules. Defaults to the standard FP-relevant types.",
 				Elem:        &schema.Schema{Type: schema.TypeString},
 			},
 
@@ -75,14 +67,6 @@ func dataSourceWallarmHits() *schema.Resource {
 				Optional:    true,
 				Default:     true,
 				Description: "Include instance (pool ID) in action conditions. When true (default), rules are scoped to the hit's application instance.",
-			},
-
-			"time": {
-				Type:        schema.TypeList,
-				Optional:    true,
-				MaxItems:    2,
-				Description: "Time range as [from, to] unix timestamps. Defaults to [6 months ago, now]",
-				Elem:        &schema.Schema{Type: schema.TypeInt},
 			},
 
 			// Uses the exact same schema as all rule resources so the output
@@ -196,11 +180,6 @@ func dataSourceWallarmHits() *schema.Resource {
 							Type:     schema.TypeInt,
 							Computed: true,
 						},
-						"attack_id": {
-							Type:     schema.TypeList,
-							Computed: true,
-							Elem:     &schema.Schema{Type: schema.TypeString},
-						},
 						"block_status": {
 							Type:     schema.TypeString,
 							Computed: true,
@@ -245,92 +224,44 @@ func dataSourceWallarmHitsRead(_ context.Context, d *schema.ResourceData, m any)
 		return diag.FromErr(err)
 	}
 	requestID := d.Get("request_id").(string)
-	mode := d.Get("mode").(string)
 	attackTypes := resolveAttackTypes(d)
 	ruleTypes := resolveRuleTypes(d)
+	includeInstance := d.Get("include_instance").(bool)
 
-	timeRange := buildTimeRange(d)
-
-	// Phase 1: Fetch direct hits by request_id.
-	directHits, err := fetchDirectHits(client, clientID, requestID, timeRange)
+	resp, err := client.AttackVectorsByRequest(clientID, &wallarm.AttackVectorsByRequestParams{RequestID: requestID})
 	if err != nil {
-		return diag.FromErr(err)
+		return diag.FromErr(fmt.Errorf("error reading attack vectors for request_id %s: %w", requestID, err))
 	}
 
-	// Set stable resource ID.
-	resourceID := fmt.Sprintf("hits_%d_%s", clientID, requestID)
-	if mode == "attack" {
-		resourceID += "_attack"
-	}
-	d.SetId(resourceID)
+	d.SetId(fmt.Sprintf("hits_%d_%s", clientID, requestID))
 
-	if len(directHits) == 0 {
+	if len(resp.Data) == 0 {
 		return setEmptyHitsState(d)
 	}
 
-	// Validate all direct hits share the same action.
-	refDomain := directHits[0].Domain
-	refPath := directHits[0].Path
-	refPoolID := directHits[0].PoolID
-	for _, h := range directHits[1:] {
-		if h.Domain != refDomain || h.Path != refPath || h.PoolID != refPoolID {
+	vectors, err := decodeHitVectors(resp.Data)
+	if err != nil {
+		return diag.FromErr(fmt.Errorf("error decoding attack vectors for request_id %s: %w", requestID, err))
+	}
+
+	ref := vectors[0]
+	for _, v := range vectors[1:] {
+		if v.Host != ref.Host || v.Path != ref.Path || v.ApplicationID != ref.ApplicationID {
 			return diag.FromErr(fmt.Errorf(
-				"inconsistent hit data for request_id %s: expected domain=%s path=%s poolid=%d, got domain=%s path=%s poolid=%d",
-				requestID, refDomain, refPath, refPoolID, h.Domain, h.Path, h.PoolID,
+				"inconsistent attack vectors for request_id %s: expected host=%s path=%s application_id=%d, got host=%s path=%s application_id=%d",
+				requestID, ref.Host, ref.Path, ref.ApplicationID, v.Host, v.Path, v.ApplicationID,
 			))
 		}
 	}
 
-	// Phase 2 & 3: In attack mode, expand to related hits.
-	allHits := directHits
-	if mode == "attack" {
-		relatedHits, err := fetchRelatedHitsByAttackIDs(client, clientID, directHits, attackTypes, timeRange, refDomain, refPath, refPoolID)
-		if err != nil {
-			return diag.FromErr(err)
-		}
-		allHits = mergeHits(directHits, relatedHits)
-	}
-
-	// Phase 4: Build action conditions, compute hash and dir name.
-	includeInstance := d.Get("include_instance").(bool)
-	action := buildActionFromHit(refDomain, refPath, refPoolID, includeInstance)
+	action := buildActionFromHit(ref.Host, ref.Path, ref.ApplicationID, includeInstance)
 	actionDetails := schemaActionToDetails(action)
 	actionHash := resourcerule.ConditionsHash(actionDetails)
 	actionDirName := resourcerule.ActionDirName(actionDetails)
 
-	// Phase 5c: Validate action conditions against API (ActionReadByHitID).
-	if len(directHits[0].ID) >= 2 {
-		apiResp, err := client.ActionReadByHitID(directHits[0].ID)
-		if err != nil {
-			log.Printf("[WARN] wallarm_hits: failed to validate action via ActionReadByHitID: %v", err)
-		} else {
-			apiHash := resourcerule.ConditionsHash(apiResp.Body.Conditions)
+	groups, schemaActions := groupVectorsForRules(vectors, actionDetails, attackTypes)
 
-			if apiHash != actionHash {
-				var msg strings.Builder
-				fmt.Fprintf(&msg, "wallarm_hits: action conditions mismatch for hit %v\n", directHits[0].ID)
-				fmt.Fprintf(&msg, "  provider hash=%s, API hash=%s\n", actionHash[:16], apiHash[:16])
-				fmt.Fprintf(&msg, "  provider conditions (%d):\n", len(actionDetails))
-				for i, c := range actionDetails {
-					fmt.Fprintf(&msg, "    [%d] type=%q point=%v value=%v\n", i, c.Type, c.Point, c.Value)
-				}
-				fmt.Fprintf(&msg, "  API conditions (%d):\n", len(apiResp.Body.Conditions))
-				for i, c := range apiResp.Body.Conditions {
-					fmt.Fprintf(&msg, "    [%d] type=%q point=%v value=%v\n", i, c.Type, c.Point, c.Value)
-				}
-				return diag.Errorf("%s", msg.String())
-			}
-			log.Printf("[DEBUG] wallarm_hits: action hash validated against API: %s", actionHash[:8])
-		}
-	}
-
-	actionSet := actionToSchemaSet(action)
-	hitsForSchema := hitsToSchemaList(allHits)
-
-	// Group hits by point for aggregated output.
-	groups, schemaActions := groupHitsForRules(allHits, actionDetails, attackTypes)
-
-	if err := d.Set("action", actionSet); err != nil {
+	if err := d.Set("action", actionToSchemaSet(action)); err != nil {
 		return diag.FromErr(fmt.Errorf("error setting action: %s", err))
 	}
 	if err := d.Set("action_hash", actionHash); err != nil {
@@ -343,7 +274,6 @@ func dataSourceWallarmHitsRead(_ context.Context, d *schema.ResourceData, m any)
 		return diag.FromErr(fmt.Errorf("error setting action_dir_name: %s", err))
 	}
 
-	// Build aggregated output: compact representation for caching.
 	aggregatedJSON, err := buildAggregatedJSON(actionHash, schemaActions, groups, ruleTypes)
 	if err != nil {
 		return diag.FromErr(err)
@@ -352,12 +282,29 @@ func dataSourceWallarmHitsRead(_ context.Context, d *schema.ResourceData, m any)
 		return diag.FromErr(fmt.Errorf("error setting aggregated: %s", err))
 	}
 
-	d.Set("hits_count", len(allHits))
-	if err := d.Set("hits", hitsForSchema); err != nil {
+	d.Set("hits_count", len(vectors))
+	if err := d.Set("hits", vectorsToSchemaList(vectors)); err != nil {
 		return diag.FromErr(fmt.Errorf("error setting hits: %s", err))
 	}
 
 	return nil
+}
+
+type hitVector struct {
+	wallarm.AttackVector
+	decodedPoint []any
+}
+
+func decodeHitVectors(in []wallarm.AttackVector) ([]hitVector, error) {
+	out := make([]hitVector, 0, len(in))
+	for _, v := range in {
+		var point []any
+		if err := json.Unmarshal([]byte(v.Point), &point); err != nil {
+			return nil, fmt.Errorf("vector %s point %q: %w", v.VectorID, v.Point, err)
+		}
+		out = append(out, hitVector{AttackVector: v, decodedPoint: point})
+	}
+	return out, nil
 }
 
 // buildTimeRange extracts the time range from schema or defaults to 6 months.
@@ -608,6 +555,58 @@ func actionToSchemaSet(action []map[string]any) *schema.Set {
 	return schema.NewSet(resourcerule.HashActionDetails, ifaces)
 }
 
+func vectorsToSchemaList(vectors []hitVector) []any {
+	result := make([]any, 0, len(vectors))
+	for _, v := range vectors {
+		pointStrings := make([]any, 0, len(v.decodedPoint))
+		for _, p := range v.decodedPoint {
+			pointStrings = append(pointStrings, fmt.Sprintf("%v", p))
+		}
+
+		pointWrapped := resourcerule.WrapPointElements(v.decodedPoint)
+		wrappedForSchema := make([]any, 0, len(pointWrapped))
+		for _, pw := range pointWrapped {
+			inner := make([]any, 0, len(pw))
+			for _, s := range pw {
+				inner = append(inner, s)
+			}
+			wrappedForSchema = append(wrappedForSchema, inner)
+		}
+
+		ip := v.RemoteAddr4
+		if ip == "" {
+			ip = v.RemoteAddr6
+		}
+		knownAttack := []string{}
+		if v.KnownAttack != "" {
+			knownAttack = strings.Split(v.KnownAttack, ",")
+		}
+
+		result = append(result, map[string]any{
+			"id":            []string{v.VectorID},
+			"type":          v.Type,
+			"ip":            ip,
+			"statuscode":    v.ResponseStatusCode,
+			"time":          v.RequestTime / 1000,
+			"value":         v.Value,
+			"stamps":        v.Stamps,
+			"stamps_hash":   v.StampsHash,
+			"point":         pointStrings,
+			"point_wrapped": wrappedForSchema,
+			"point_hash":    resourcerule.PointHash(v.decodedPoint),
+			"poolid":        v.ApplicationID,
+			"block_status":  v.BlockStatus,
+			"request_id":    v.RequestID,
+			"domain":        v.Host,
+			"path":          v.Path,
+			"protocol":      v.Protocol,
+			"known_attack":  knownAttack,
+			"node_uuid":     v.NodeUUID,
+		})
+	}
+	return result
+}
+
 // hitsToSchemaList converts wallarm.Hit objects to the schema list format.
 func hitsToSchemaList(hits []*wallarm.Hit) []any {
 	result := make([]any, 0, len(hits))
@@ -784,6 +783,72 @@ func actionNameExtConditions(segment string) []map[string]any {
 			"point": map[string]any{"action_ext": ""},
 		},
 	}
+}
+
+func groupVectorsForRules(vectors []hitVector, actionDetails []wallarm.ActionDetails, attackTypes []string) (map[string]*pointGroup, []map[string]any) {
+	attackTypeSet := make(map[string]bool, len(attackTypes))
+	for _, at := range attackTypes {
+		attackTypeSet[at] = true
+	}
+
+	groups := make(map[string]*pointGroup)
+	for _, v := range vectors {
+		if !attackTypeSet[v.Type] {
+			continue
+		}
+
+		ph := resourcerule.PointHash(v.decodedPoint)
+		if ph == "" {
+			continue
+		}
+
+		groupKey := ph
+		if v.Type != "" {
+			groupKey = ph + "_" + v.Type
+		}
+
+		g, exists := groups[groupKey]
+		if !exists {
+			wrapped := resourcerule.WrapPointElements(v.decodedPoint)
+			pointStrs := make([][]string, 0, len(wrapped))
+			pointStrs = append(pointStrs, wrapped...)
+			g = &pointGroup{PointWrapped: pointStrs}
+			groups[groupKey] = g
+		}
+
+		for _, s := range v.Stamps {
+			if s > 0 && !containsInt(g.Stamps, s) {
+				g.Stamps = append(g.Stamps, s)
+			}
+		}
+
+		if v.Type != "" && !containsStr(g.AttackTypes, v.Type) {
+			g.AttackTypes = append(g.AttackTypes, v.Type)
+		}
+	}
+
+	for _, g := range groups {
+		sort.Ints(g.Stamps)
+		sort.Strings(g.AttackTypes)
+	}
+
+	schemaActions := make([]map[string]any, 0, len(actionDetails))
+	for _, ad := range actionDetails {
+		item := resourcerule.ActionDetailToSchemaItem(ad)
+		pointMap := make(map[string]any)
+		if pm, ok := item["point"].(map[string]any); ok {
+			for k, val := range pm {
+				pointMap[k] = fmt.Sprintf("%v", val)
+			}
+		}
+		schemaActions = append(schemaActions, map[string]any{
+			"type":  item["type"],
+			"value": item["value"],
+			"point": pointMap,
+		})
+	}
+
+	return groups, schemaActions
 }
 
 // groupHitsForRules groups hits by point_hash, filtering by allowed attack types,

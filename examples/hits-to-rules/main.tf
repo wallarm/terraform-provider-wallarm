@@ -109,7 +109,6 @@ data "wallarm_hits" "new" {
   for_each         = local._request_ids_to_fetch
   client_id        = var.client_id
   request_id       = each.key
-  mode             = try(local._request_configs[each.key].mode, var.default_mode)
   attack_types     = try(local._request_configs[each.key].attack_types, [])
   rule_types       = try(local._request_configs[each.key].rule_types, [])
   include_instance = var.include_instance
