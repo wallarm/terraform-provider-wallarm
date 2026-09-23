@@ -12,7 +12,7 @@ Reads the attack vectors of a request from the Wallarm API and provides them in 
 
 ~> **Important:** Hits are **ephemeral** — they have a retention period and can be dropped from the API at any time. This data source should only be used for the initial fetch. Rules derived from hits must be cached in Terraform state (e.g., via `terraform_data` with `ignore_changes`) to survive after the source hits expire. Re-fetching on every plan will cause rules to be destroyed when hits are no longer available. See the [Hits to Rules Guide](../guides/hits_to_rules) for the recommended caching pattern.
 
-A single HTTP request can carry several attack vectors, one per attack detected in a part of the request. Each vector becomes one element of `hits`. A read returns at most 100 vectors of the request and does not filter them by attack type, state (such as false positive) or time. All vectors of the request must share the same host, path and application ID, from which the action conditions are built; otherwise the read fails.
+A single HTTP request can carry several attack vectors, one per attack detected in a part of the request. Each vector becomes one element of `hits`. A read returns the vectors of that one request, at most 100. By default the API does not return experimental vectors, AASM events or Wallarm scanner vectors. All vectors of the request must share the same host, path and application ID, from which the action conditions are built; otherwise the read fails.
 
 ## Example Usage
 
@@ -49,22 +49,22 @@ data "wallarm_hits" "sqli_stamps" {
 * `action` - Rule action conditions derived from the vector's host, path and application ID. Uses the same schema as `wallarm_rule_*` action blocks, so the output can be passed directly to rule resources.
 * `action_hash` - SHA256 hash of the sorted action conditions, used for grouping rules with the same scope.
 * `aggregated` - JSON-encoded compact representation of the grouped hits data. Structure: `{action_hash (16 hex chars), action (conditions list), groups (list)}`. Each group is keyed by `point_hash_attack_type` and contains: `stamps` for that attack type at that point, `attack_type` (always set), and `disable_attack_type` (bool, controlled by `rule_types` filter). Stampless types (`xxe`, `invalid_xml`) have empty stamps. Use this for caching in `terraform_data` with `ignore_changes`. See the [Hits to Rules Guide](../guides/hits_to_rules) for the recommended caching pattern.
-* `hits` - List of hit objects, one per attack vector, each containing:
+* `hits` - The request's attack vectors, one element per vector:
   * `id` - `[<vector id>]`, a one-element list holding the attack vector ID.
   * `type` - Attack type (e.g., `sqli`, `xss`, `rce`).
   * `ip` - Source IP address: the vector's IPv4 address, or its IPv6 address when there is no IPv4 one.
   * `statuscode` - HTTP response status code.
   * `time` - Request time of the vector (unix seconds).
-  * `value` - Hit value / payload.
-  * `stamps` - Detection stamp values.
+  * `value` - The vector's value.
+  * `stamps` - Stamp IDs of the vector.
   * `stamps_hash` - Hash of stamps.
   * `point` - Detection point as a flat string list.
   * `point_wrapped` - Detection point in 2D nested list structure (matches rule point format).
   * `poolid` - The vector's application ID; `-1` when the request has no application.
-  * `block_status` - Whether the request was blocked.
+  * `block_status` - Block status of the request, e.g. `blocked` or `monitored`.
   * `request_id` - Request ID.
-  * `domain` - Request domain (Host header).
+  * `domain` - The vector's host, which can include a port (e.g. `127.0.0.1:8080`).
   * `path` - Request URI path.
   * `protocol` - Request protocol.
-  * `known_attack` - Known attack type classifications.
-  * `node_uuid` - Wallarm node UUID(s) that detected the hit.
+  * `known_attack` - Known-attack identifiers, split from the API's comma-separated string (e.g. `generic_ptrav`, `CVE-2024-3094`).
+  * `node_uuid` - Wallarm node UUIDs of the vector.

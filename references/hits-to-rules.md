@@ -239,7 +239,10 @@ the data-source default filter).
 | `request_id` | the data source's `request_id` |
 | `limit` | not set by the provider; `wallarm-go` sends `AttackVectorsDefaultLimit` (100) |
 
-These are the only parameters: no type, state, time or noise filter is sent.
+The route returns only the vectors of that one request. By default the API does
+not return experimental vectors, AASM events or Wallarm scanner vectors; the
+provider sends none of the `include_experimental`, `include_aasm_event` or
+`include_wallarm_scanner` opt-ins.
 One call is made per read, so at most the first 100 vectors of a request are
 read; `has_more` and `cursor` in the response are not followed.
 
