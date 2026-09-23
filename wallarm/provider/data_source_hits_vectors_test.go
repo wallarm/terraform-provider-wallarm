@@ -118,3 +118,15 @@ func TestDataSourceHitsRead_EmptyAndBadPoint(t *testing.T) {
 		t.Fatal("expected a point decode error")
 	}
 }
+
+func TestDataSourceHitsSchema_Removals(t *testing.T) {
+	s := dataSourceWallarmHits().Schema
+	for _, k := range []string{"mode", "time"} {
+		if _, ok := s[k]; ok {
+			t.Errorf("input %s still in schema", k)
+		}
+	}
+	if _, ok := s["hits"].Elem.(*schema.Resource).Schema["attack_id"]; ok {
+		t.Error("hits.attack_id still in schema")
+	}
+}

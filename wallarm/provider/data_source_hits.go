@@ -45,18 +45,10 @@ func dataSourceWallarmHits() *schema.Resource {
 				Description: "The unique request identifier to fetch all related hits",
 			},
 
-			"mode": {
-				Type:         schema.TypeString,
-				Optional:     true,
-				Default:      "request",
-				ValidateFunc: validation.StringInSlice([]string{"request", "attack"}, false),
-				Description:  "Fetch mode: 'request' fetches hits for the request_id only; 'attack' expands to all related hits by attack_id",
-			},
-
 			"attack_types": {
 				Type:        schema.TypeList,
 				Optional:    true,
-				Description: "Allowed attack types for filtering. In attack mode, controls which types to fetch from the API. In all modes, only hits matching these types produce rules. Defaults to the standard FP-relevant types.",
+				Description: "Allowed attack types for filtering. Only hits matching these types produce rules. Defaults to the standard FP-relevant types.",
 				Elem:        &schema.Schema{Type: schema.TypeString},
 			},
 
@@ -75,14 +67,6 @@ func dataSourceWallarmHits() *schema.Resource {
 				Optional:    true,
 				Default:     true,
 				Description: "Include instance (pool ID) in action conditions. When true (default), rules are scoped to the hit's application instance.",
-			},
-
-			"time": {
-				Type:        schema.TypeList,
-				Optional:    true,
-				MaxItems:    2,
-				Description: "Time range as [from, to] unix timestamps. Defaults to [6 months ago, now]",
-				Elem:        &schema.Schema{Type: schema.TypeInt},
 			},
 
 			// Uses the exact same schema as all rule resources so the output
@@ -195,11 +179,6 @@ func dataSourceWallarmHits() *schema.Resource {
 						"poolid": {
 							Type:     schema.TypeInt,
 							Computed: true,
-						},
-						"attack_id": {
-							Type:     schema.TypeList,
-							Computed: true,
-							Elem:     &schema.Schema{Type: schema.TypeString},
 						},
 						"block_status": {
 							Type:     schema.TypeString,

@@ -595,23 +595,6 @@ func TestAccDataSourceHits(t *testing.T) {
 	})
 }
 
-func TestAccDataSourceHitsAttackMode(t *testing.T) {
-	resource.Test(t, resource.TestCase{
-		PreCheck:  func() { testAccPreCheck(t) },
-		Providers: testAccProviders,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccDataSourceHitsAttackModeConfig("nonexistent-request-id"),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckDataSourceHitsExists("data.wallarm_hits.test_attack"),
-					resource.TestCheckResourceAttr("data.wallarm_hits.test_attack", "hits.#", "0"),
-					resource.TestCheckResourceAttr("data.wallarm_hits.test_attack", "mode", "attack"),
-				),
-			},
-		},
-	})
-}
-
 func testAccCheckDataSourceHitsExists(n string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[n]
@@ -630,12 +613,5 @@ func testAccCheckDataSourceHitsExists(n string) resource.TestCheckFunc {
 func testAccDataSourceHitsConfig(requestID string) string {
 	return fmt.Sprintf(`data "wallarm_hits" "test" {
   request_id = "%s"
-}`, requestID)
-}
-
-func testAccDataSourceHitsAttackModeConfig(requestID string) string {
-	return fmt.Sprintf(`data "wallarm_hits" "test_attack" {
-  request_id = "%s"
-  mode       = "attack"
 }`, requestID)
 }
