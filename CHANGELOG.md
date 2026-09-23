@@ -11,7 +11,7 @@
 
 ### Other Changes
 
-* **build(deps):** bump `wallarm-go` to `v0.14.0` — adds the client call that lists a request's attack vectors.
+* **build(deps):** bump `wallarm-go` to `v0.14.0` — adds `AttackVectorsByRequest`.
 
 ## [v2.3.10] - 2026-05-12
 
