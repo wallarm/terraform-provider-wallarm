@@ -59,11 +59,8 @@ Each request ID maps to a JSON config string. Use `"{}"` for defaults.
 
 ```hcl
 request_ids = {
-  # Default: request mode, all rule types, all attack types
+  # Default: all rule types, default attack types
   "abc123" = "{}"
-
-  # Attack mode: expand to all related hits by attack_id
-  "def456" = "{\"mode\":\"attack\"}"
 
   # Filter: only generate disable_stamp rules
   "ghi789" = "{\"rule_types\":[\"disable_stamp\"]}"
@@ -71,8 +68,8 @@ request_ids = {
   # Filter: only create rules for sqli hits
   "jkl012" = "{\"attack_types\":[\"sqli\"]}"
 
-  # Combined: attack mode, only xss and rce hits
-  "mno345" = "{\"mode\":\"attack\", \"attack_types\":[\"xss\",\"rce\"]}"
+  # Combined: only xss and rce hits, only disable_attack_type rules
+  "mno345" = "{\"attack_types\":[\"xss\",\"rce\"], \"rule_types\":[\"disable_attack_type\"]}"
 }
 ```
 
@@ -80,16 +77,15 @@ request_ids = {
 
 | Key | Values | Default | Description |
 |-----|--------|---------|-------------|
-| `mode` | `request`, `attack` | `request` | `request` fetches direct hits only. `attack` expands to all related hits sharing the same attack campaign. |
 | `rule_types` | `["disable_stamp"]`, `["disable_attack_type"]` | all types | Filter which rule types to generate. |
-| `attack_types` | `["sqli"]`, `["xss","rce"]`, etc. | all standard types | Filter which attack types produce rules. In attack mode, also controls which types to fetch from the API. |
+| `attack_types` | `["sqli"]`, `["xss","rce"]`, etc. | all standard types | Filter which attack types produce rules. |
 
 ## How It Works
 
 The module uses three components:
 
 1. **`wallarm_hits_index`** -- tracks which request IDs have been fetched. Exposes `ready` (false on first create, true after) and `cached_request_ids` (set of known IDs) for gating.
-2. **`data.wallarm_hits`** -- fetches hit data from the API. Gated by `wallarm_hits_index` to only query new request IDs.
+2. **`data.wallarm_hits`** -- reads the request's attack vectors from the API. Gated by `wallarm_hits_index` to only query new request IDs.
 3. **`terraform_data.cache`** -- stores the `aggregated` output from `data.wallarm_hits` per request_id with `ignore_changes` on input. Data persists even after hits expire.
 
 HCL locals then build a deduplicated map keyed by `action_hash` -- multiple request IDs sharing the same action (same host and path) are merged, with stamps unioned and new point groups added. Actions are stored separately to avoid duplication. Rules are expanded from this deduplicated map.
@@ -203,7 +199,6 @@ Remove a request ID from `terraform.tfvars` and apply. Terraform will:
 | `api_host` | `string` | `https://us1.api.wallarm.com` | Wallarm API endpoint |
 | `client_id` | `number` | `null` | Client ID (uses provider default if null) |
 | `request_ids` | `map(string)` | `{}` | Map of request_id to config JSON |
-| `default_mode` | `string` | `request` | Default fetch mode |
 | `include_instance` | `bool` | `true` | Include instance (pool ID) in action conditions. Set to `false` if your account excludes instance from actions. |
 | `generate_configs` | `bool` | `false` | Generate HCL config files |
 | `output_dir` | `string` | `./generated_rules` | Output directory for generated configs |
