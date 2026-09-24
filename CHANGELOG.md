@@ -1,4 +1,4 @@
-## [Unreleased]
+## [v2.4.0] - 2026-09-24
 
 ### Upgrade Steps
 
