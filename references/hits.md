@@ -18,7 +18,6 @@ them into Terraform state.
 ```mermaid
 erDiagram
   REQUEST ||--o{ HIT : "request_id"
-  ATTACK  ||--o{ HIT : "attack_id"
   HIT {
     string attack_type "sqli / xss / ..."
     array  stamps "numeric signature IDs"
@@ -31,10 +30,10 @@ erDiagram
 
 A hit carries a detection **point** (where in the request the signature
 matched), one or more **stamps** (numeric signature IDs), an **attack type**,
-and request metadata (`domain`, `path`, `poolid`, `request_id`, `attack_id`).
-Hits of the same HTTP request share `request_id`; hits of the same campaign
-share `attack_id`. Suppression is expressed against an **action** (the match
-scope: host + URL path + optionally the application instance) and a **point**.
+and request metadata (`domain`, `path`, `poolid`, `request_id`). Hits of the
+same HTTP request share `request_id`. Suppression is expressed against an
+**action** (the match scope: host + URL path + optionally the application
+instance) and a **point**.
 
 ## 3. Elements
 

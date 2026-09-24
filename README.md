@@ -182,7 +182,7 @@ Request-level rules for detection tuning, virtual patching, and data handling. T
 | `wallarm_applications` | List applications (supports bulk import) |
 | `wallarm_actions` | Discover rule action scopes |
 | `wallarm_rules` | Read all rules (hints) |
-| `wallarm_hits` | Fetch detected hits for FP analysis |
+| `wallarm_hits` | Read a request's attack vectors for FP analysis |
 | `wallarm_ip_lists` | Read IP list entries |
 | `wallarm_security_issues` | Query security issues |
 

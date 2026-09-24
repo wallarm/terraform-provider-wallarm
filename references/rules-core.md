@@ -137,7 +137,7 @@ API rule - see `hcl-generator.md`), grouped by purpose:
 | `ignore_regex` | pattern matching | suppress matches of an existing user regex at a point |
 | `rate_limit` | rate limiting | per-scope request rate limit (rate / burst / delay / response status) |
 | `disable_attack_type` | FP suppression | allow a specific attack type at a point |
-| `disable_stamp` | FP suppression | allow a specific attack signature (stamp) at a point; requires Administrator (extended) |
+| `disable_stamp` | FP suppression | allow a specific attack signature (stamp) at a point |
 | `credential_stuffing_regex` | credential stuffing | credential-stuffing detection by login + credential regex (`login_regex` + `regex`) |
 | `credential_stuffing_point` | credential stuffing | credential-stuffing detection by login + credential points (`login_point` + `point`) |
 | `masking` | data handling | mask sensitive request data before storage / display |
@@ -168,7 +168,7 @@ ground truth is `rules_api_fields.md`.
 |---|---|---|
 | `ActionList(params)` | `POST /v1/objects/action` | list actions by filter |
 | `ActionReadByID(id)` | `GET /v3/action/{id}` | read one action |
-| `ActionReadByHitID(ids)` | `POST /v1/objects/action/by_hit` | derive an action scope from hits (`hits-to-rules.md`) |
+| `ActionReadByHitID(ids)` | `POST /v1/objects/action/by_hit` | not used by the provider |
 
 Two provider resources sit directly on this surface: `wallarm_action`
 (read-only manual action tracking) and `data.wallarm_actions` (paginated

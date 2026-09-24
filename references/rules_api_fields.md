@@ -79,7 +79,7 @@ noted.
 | `wallarm_mode` | `mode` | `variativity_disabled=true` |
 | `api_abuse_mode` | `mode` | `variativity_disabled=true` |
 | `disable_attack_type` | `attack_type`, `point` | `variativity_disabled=false` |
-| `disable_stamp` | `stamp`, `point` | `variativity_disabled=false`; **Administrator (extended)** - plain Admin gets 403 |
+| `disable_stamp` | `stamp`, `point` | `variativity_disabled=false` |
 | `regex` | `attack_type`, `point`, `regex` | `variativity_disabled=true` |
 | `experimental_regex` | `attack_type`, `point`, `regex` | same as `regex`, differs by `type` discriminator |
 | `disable_regex` (`ignore_regex`) | `regex_id` (existing experimental_regex, same client), `point` | probe blocked - needs a real `regex_id` |

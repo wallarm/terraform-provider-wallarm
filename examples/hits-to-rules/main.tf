@@ -20,10 +20,9 @@
 # Per-request config via JSON:
 #   request_ids = {
 #     "abc123" = "{}"                                          # defaults
-#     "def456" = "{\"mode\":\"attack\"}"                       # attack mode
 #     "ghi789" = "{\"rule_types\":[\"disable_stamp\"]}"        # stamp rules only
 #     "jkl012" = "{\"attack_types\":[\"sqli\"]}"               # only sqli hits
-#     "mno345" = "{\"mode\":\"attack\", \"attack_types\":[\"xss\",\"rce\"]}"
+#     "mno345" = "{\"attack_types\":[\"xss\",\"rce\"], \"rule_types\":[\"disable_attack_type\"]}"
 #   }
 
 terraform {
@@ -58,11 +57,6 @@ variable "request_ids" {
   type        = map(string)
   default     = {}
   description = "Map of request_id → config JSON. Empty object {} = defaults. Leave empty on first apply to initialize state."
-}
-
-variable "default_mode" {
-  type    = string
-  default = "request"
 }
 
 variable "include_instance" {
@@ -162,11 +156,11 @@ locals {
     for ah, mg in local._merged_groups : {
       for gk, g_list in mg.groups :
       "${ah}_${gk}" => {
-        action               = local.actions[ah]
-        point                = g_list[0].point
-        attack_type          = try(g_list[0].attack_type, "")
-        stamps               = distinct(flatten([for g in g_list : try(g.stamps, [])]))
-        disable_attack_type  = try(g_list[0].disable_attack_type, false)
+        action              = local.actions[ah]
+        point               = g_list[0].point
+        attack_type         = try(g_list[0].attack_type, "")
+        stamps              = distinct(flatten([for g in g_list : try(g.stamps, [])]))
+        disable_attack_type = try(g_list[0].disable_attack_type, false)
       }
     }
   ]...)

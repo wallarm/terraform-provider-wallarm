@@ -30,8 +30,9 @@ behavior is in `hcl-generator.md`.
 A hit carries a detection **point** (where in the request the signature
 matched), one or more **stamps** (numeric signature IDs), an **attack type**
 (`sqli`, `xss`, ...), and request metadata (`domain`, `path`, `poolid`,
-`attack_id`, `request_id`). Hits of the same HTTP request share `request_id`;
-hits of the same campaign share `attack_id`.
+`request_id`). Hits of the same HTTP request share `request_id`. The data
+source reads them as the request's **attack vectors**: each vector is one hit,
+and its `host`, `path` and `application_id` fill `domain`, `path` and `poolid`.
 
 Suppression is expressed against an **action** (the match scope: host + URL path
 + optionally the application instance) and a **point**. Two rule shapes exist:
@@ -42,7 +43,7 @@ Suppression is expressed against an **action** (the match scope: host + URL path
 
 ```mermaid
 flowchart LR
-  H[Hits in API<br/>ephemeral] -->|request_id| DS[data.wallarm_hits]
+  H[Attack vectors in API<br/>ephemeral] -->|request_id| DS[data.wallarm_hits]
   IDX[wallarm_hits_index<br/>ready + cached_request_ids] -->|gates new ids only| DS
   DS -->|aggregated JSON| CACHE[terraform_data.cache<br/>persists in state]
   CACHE -->|dedup by action_hash in HCL locals| EXP{{expand per stamp / type}}
@@ -60,7 +61,7 @@ argument.
 
 | Element | Kind | Responsibility |
 |---|---|---|
-| `data.wallarm_hits` | data source | Fetch hits for one `request_id`, validate their action is consistent, optionally expand by attack campaign, compute the action scope + hash, group signatures per point, emit the compact `aggregated` payload. |
+| `data.wallarm_hits` | data source | Read the attack vectors of one `request_id`, check they share host, path and application, compute the action scope + hash, group signatures per point, emit the compact `aggregated` payload. |
 | `wallarm_hits_index` | resource | Persistent per-client index of already-fetched request IDs. Exposes `ready` and `cached_request_ids` so HCL can gate the data source to new IDs only. Holds no API state (`Delete` is state-only). |
 | `wallarm_rule_disable_stamp` | resource | Create/read/update/delete a `disable_stamp` rule (allow one `stamp` at a `point`/`action`). |
 | `wallarm_rule_disable_attack_type` | resource | Same lifecycle for a `disable_attack_type` rule (allow one `attack_type`). |
@@ -73,30 +74,39 @@ argument.
 
 `dataSourceWallarmHitsRead` runs in phases:
 
-1. **Fetch direct hits** (`fetchDirectHits`) - `HitRead` filtered by
-   `client_id` + `request_id`, time range, and noise filters (see § 6.3).
-   Empty result -> `setEmptyHitsState` (empty `action`, `aggregated` with empty
-   arrays, `hits_count = 0`) and return; this is what makes a re-fetch of
-   expired hits destroy rules, and is why fetching is gated (§ 4.2).
-2. **Action-consistency check** - all direct hits must share `domain`, `path`,
-   and `poolid`; otherwise the read fails with an `inconsistent hit data` error.
-   The first hit is the reference (`refDomain`/`refPath`/`refPoolID`).
-3. **Attack expansion** (mode `attack` only) -
-   `fetchRelatedHitsByAttackIDs` collects unique `attack_id`s, pages `HitRead`
-   (batch `HitFetchBatchSize`) filtered to `attack_types`, keeps only hits whose
-   action matches the reference, then `mergeHits` dedupes by hit ID. When
-   `refPath` is `[multiple]`, matching is on `domain` + `poolid` only.
-4. **Build action + hashes** - `buildActionFromHit` turns
-   domain/path/poolid into action conditions; `ConditionsHash` -> `action_hash`,
-   `ActionDirName` -> `action_dir_name`.
-5. **API validation** - if the hit ID has >=2 elements, `ActionReadByHitID`
-   fetches the API's own conditions and compares hashes. A fetch error is a
-   `[WARN]` (read proceeds); a **hash mismatch is a hard error** with a
-   full condition-by-condition diff.
-6. **Group + aggregate** - `groupHitsForRules` groups by `point_hash` +
-   attack type, unions stamps, drops hits whose type is not in `attack_types`.
-   `buildAggregatedJSON` filters by `rule_types`, truncates hashes to 16 chars,
-   and marshals `{action_hash, action, groups[]}`.
+1. **Fetch vectors** - one `AttackVectorsByRequest` call with the
+   `client_id` and `request_id` (see § 6.3). A call error fails the read
+   (`error reading attack vectors for request_id ...`). The data source ID is
+   then set to `hits_<client_id>_<request_id>`. Empty `data` ->
+   `setEmptyHitsState` (empty `action`, `aggregated` with empty arrays,
+   `hits_count = 0`) and return; this is what makes a re-fetch of expired hits
+   destroy rules, and is why fetching is gated (§ 4.2).
+2. **Point decode** - `decodeHitVectors` parses each vector's `point`, which
+   the API sends as a JSON-encoded string. A parse error fails the read
+   (`error decoding attack vectors for request_id ...`, naming the vector ID
+   and its raw point).
+3. **Action-consistency check** - all vectors must share `host`, `path` and
+   `application_id`; otherwise the read fails with an
+   `inconsistent attack vectors` error naming the expected and the mismatching
+   values. The first vector is the reference.
+4. **Build action + hashes** - `buildActionFromHit` turns the first vector's
+   `host`/`path`/`application_id` into action conditions (§ 4.4); the
+   vector's own `action_conditions` are not read. `ConditionsHash` ->
+   `action_hash`, `ActionDirName` -> `action_dir_name`. The hash is not
+   checked against the API: no `ActionReadByHitID` call is made.
+5. **Group + aggregate** - `groupVectorsForRules` groups by `point_hash` +
+   attack type, unions stamps, and drops vectors whose type is not in
+   `attack_types` or whose point hash is empty. `buildAggregatedJSON` filters
+   by `rule_types`, truncates hashes to 16 chars, and marshals
+   `{action_hash, action, groups[]}`.
+6. **Per-vector output** - `hits_count` is the number of vectors read and
+   `hits` has one element per vector (`vectorsToSchemaList`), both before the
+   `attack_types` filter.
+
+The legacy hit-fetch helpers (`fetchDirectHits`,
+`fetchRelatedHitsByAttackIDs`, `mergeHits`, `groupHitsForRules`,
+`hitsToSchemaList`, `buildTimeRange`) stay in `data_source_hits.go`; the read
+does not call them.
 
 ### 4.2 Gating and persistence
 
@@ -140,7 +150,7 @@ WithAttackType)`, Delete through `resourcerule.Delete`, Import through
 
 - **instance** condition emitted when `include_instance` is true and
   `poolid != 0` (`{instance: <poolid>}`, `equal`, empty value).
-- **HOST** header always `iequal` to `domain`.
+- **HOST** header always `iequal` to the vector's `host` (the `domain` output).
 - **path** split on `/` into `equal` segment conditions, terminated by an
   `absent` condition one index past the last segment (fixes chain length).
 - final path segment splits into `action_name` + `action_ext` on the **first**
@@ -154,10 +164,9 @@ WithAttackType)`, Delete through `resourcerule.Delete`, Import through
 
 | Situation | Handling |
 |---|---|
-| Direct hits disagree on domain/path/poolid | Hard error (`inconsistent hit data`). |
-| Provider action hash != API hash | Hard error with per-condition diff. |
-| `ActionReadByHitID` call fails | `[WARN]`, read proceeds unvalidated. |
-| No hits (or all expired) | Empty state; downstream rules destroyed if not cached. |
+| Vectors disagree on host/path/application_id | Hard error (`inconsistent attack vectors`). |
+| A vector's `point` is not valid JSON | Hard error (`error decoding attack vectors`). |
+| No vectors (or all expired) | Empty state; downstream rules destroyed if not cached. |
 | Stampless attack type (`xxe`, `invalid_xml`) | No stamps; only `disable_attack_type` rules. With `rule_types=["disable_stamp"]` they yield nothing. |
 | `nil` stamps slice | Coerced to `[]` before marshal (JSON `null` breaks HCL). |
 
@@ -168,21 +177,21 @@ WithAttackType)`, Delete through `resourcerule.Delete`, Import through
 | input | type | req? | default | notes |
 |---|---|---|---|---|
 | `client_id` | int | optional | provider default | tenant scope; resolved via `retrieveClientID`. |
-| `request_id` | string | **required** | - | the request whose hits to fetch. |
-| `mode` | string | optional | `request` | `request` \| `attack` (validated). |
-| `attack_types` | list(string) | optional | 16 default types (§ 6.1) | filter; in `attack` mode also limits what is fetched. |
+| `request_id` | string | **required** | - | the request whose attack vectors to read. |
+| `attack_types` | list(string) | optional | 16 default types (§ 6.1) | filters what is grouped into rules; not sent to the API. |
 | `rule_types` | list(string) | optional | both | `disable_stamp` \| `disable_attack_type` (validated). |
 | `include_instance` | bool | optional | `true` | include `instance`/poolid in action scope. |
-| `time` | list(int), max 2 | optional | [6 months ago, now] | `[from, to]` unix timestamps. |
-| `action` | set(block) | optional/computed | computed from hits | rule-compatible action scope. |
+| `action` | set(block) | optional/computed | computed from the first vector | rule-compatible action scope. |
 
 Computed outputs: `action_hash` (16-char-truncated in keys/aggregated, full
 SHA256 in the `action_hash` attribute), `action_dir_name`, `action_conditions`
 (type/point/value list), `aggregated` (JSON, see § 6.4), `hits_count`, and
-`hits` (per-hit detail: `id`, `type`, `ip`, `statuscode`, `time`, `value`,
-`stamps`, `stamps_hash`, `point`, `point_wrapped`, `point_hash`, `poolid`,
-`attack_id`, `block_status`, `request_id`, `domain`, `path`, `protocol`,
+`hits` (one element per vector: `id`, `type`, `ip`, `statuscode`, `time`,
+`value`, `stamps`, `stamps_hash`, `point`, `point_wrapped`, `point_hash`,
+`poolid`, `block_status`, `request_id`, `domain`, `path`, `protocol`,
 `known_attack`, `node_uuid`).
+
+ID: `hits_<client_id>_<request_id>`.
 
 ### 5.2 `wallarm_hits_index`
 
@@ -222,18 +231,20 @@ per § 4.3.
 The 16 above plus `any` (the resource's `StringInSlice`; note `any` is not in
 the data-source default filter).
 
-### 6.3 Hit fetch filters
+### 6.3 Attack-vectors request
 
-| filter | direct | attack-related |
-|---|---|---|
-| `NotType` | `warn`, `infoleak` | - |
-| `Type` (allowlist) | - | `attack_types` |
-| `NotState` | `falsepositive` | `falsepositive` |
-| `NotExperimental` / `NotAasmEvent` | yes | yes |
-| `NotWallarmScanner` | - | yes |
-| batch / order | `HitFetchBatchSize`, `time` desc | same, paged by offset |
+| parameter | value |
+|---|---|
+| route | `POST /v1/client/{client_id}/attack-vectors/by-request` |
+| `request_id` | the data source's `request_id` |
+| `limit` | not set by the provider; `wallarm-go` sends `AttackVectorsDefaultLimit` (100) |
 
-`HitFetchBatchSize = 500` (`constants.go`).
+The route returns only the vectors of that one request. By default the API does
+not return experimental vectors, AASM events or Wallarm scanner vectors; the
+provider sends none of the `include_experimental`, `include_aasm_event` or
+`include_wallarm_scanner` opt-ins.
+One call is made per read, so at most the first 100 vectors of a request are
+read; `has_more` and `cursor` in the response are not followed.
 
 ### 6.4 `aggregated` JSON shape
 
