@@ -45,10 +45,10 @@ import (
 )
 
 // Probe defines a starting body for a single rule type. base is mutated
-// during discovery — start with the minimum every rule type needs.
+// during discovery - start with the minimum every rule type needs.
 //
-// TokenEnv overrides the token env var name for rule types that need
-// elevated permissions (e.g. disable_stamp requires Administrator (extended)).
+// TokenEnv optionally names an env var carrying a token that replaces the
+// default one for this probe. The probe is skipped when that variable is unset.
 //
 // Label disambiguates two probes that share a RuleType but probe different
 // shapes (e.g. enumerated_parameters mode=exact vs mode=regexp). Defaults
@@ -66,7 +66,7 @@ var probes = []Probe{
 	{RuleType: "wallarm_mode", Base: map[string]any{"mode": "monitoring"}},
 	{RuleType: "api_abuse_mode", Base: map[string]any{"mode": "disabled"}},
 	{RuleType: "disable_attack_type", Base: map[string]any{"attack_type": "xss", "point": [][]string{{"get_all"}}}},
-	{RuleType: "disable_stamp", Base: map[string]any{"stamp": 1, "point": [][]string{{"get_all"}}}, TokenEnv: "WALLARM_API_TOKEN_EXTENDED"},
+	{RuleType: "disable_stamp", Base: map[string]any{"stamp": 1, "point": [][]string{{"get_all"}}}},
 	{RuleType: "regex", Base: map[string]any{"regex": ".*", "attack_type": "xss", "point": [][]string{{"get_all"}}}},
 	{RuleType: "experimental_regex", Base: map[string]any{"regex": ".*", "attack_type": "xss", "point": [][]string{{"get_all"}}}},
 	// disable_regex needs an existing regex_id from the same client. Skipped
