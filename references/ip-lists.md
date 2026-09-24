@@ -3,8 +3,7 @@
 Reference for the `wallarm_allowlist` / `wallarm_denylist` / `wallarm_graylist`
 resources: the config-driven Read, the incremental Update, the provider-level
 cache, and the limits. Full field lists are the registry docs
-(`docs/resources/{allowlist,denylist,graylist}.md`); the cache strategy is the
-`terraform-provider-caching` skill.
+(`docs/resources/{allowlist,denylist,graylist}.md`).
 
 ## 1. Overview
 
@@ -50,9 +49,8 @@ changes (§4).
     re-runs Create to rebuild the entry.
 - **Cache** sits on `ProviderMeta`, fetches per list type, serializes Creates,
   and retries a refresh after Create (`IPListCacheMaxRetries` /
-  `IPListCacheRetryDelay`). See the `terraform-provider-caching` skill.
-- **Counts** validation via the `/access_rules/counts` endpoint is planned
-  (roadmap **IPL1**).
+  `IPListCacheRetryDelay`).
+- **Counts** validation via the `/access_rules/counts` endpoint is planned.
 
 ## 5. Parameters
 
@@ -82,6 +80,4 @@ Full shapes per list type are in the registry docs.
 
 ## 7. References
 
-- `terraform-provider-caching` skill - the `IPListCache` strategy.
-- Roadmap `IPL1` - counts API validation.
 - `docs/resources/{allowlist,denylist,graylist}.md` - full field lists.

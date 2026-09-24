@@ -35,7 +35,7 @@ methods reset the response slice before each page to avoid reuse bugs.
   gzip responses; request bodies are uncompressed JSON.
 - **Pagination safety**: the paginating methods set `response.Body.Objects = nil`
   before each `json.Unmarshal`, preventing slice reuse across pages.
-- Integration tests for the retry logic are a planned addition (roadmap **WG1**).
+- Integration tests for the retry logic are a planned addition.
 
 ## 5. Parameters
 
@@ -64,5 +64,4 @@ the type. Full per-field classification: `rules_api_fields.md §4.2`.
 ## 7. References
 
 - `rules_api_fields.md §4.2` - the pointer/int classification per field.
-- Roadmap `WG1` - retry-logic integration tests.
 - `rules-core.md §3.4` - `CachedClient` wrapping on `ProviderMeta`.

@@ -36,12 +36,12 @@ singleton-style account setting.
   `WALLARM_ALLOW_CLIENT_DELETE` is set (`resource_tenant.go:211-218`); otherwise
   it logs a warning and no-ops, leaving the tenant disabled but not deleted.
 - **`wallarm_node`.** `partner_mode` is `Optional+Computed` and **not set by
-  Read**, so out-of-band toggles are not drift-detected (roadmap **INF2**). The
+  Read**, so out-of-band toggles are not drift-detected. The
   node schema has no `app_id` field.
 - **`wallarm_user`.** Accounts are created with `username`, which equals `email`
   per the domain model. `email` is `Required` but **not set by Read**, so after
-  import the user must re-add `email = "..."` by hand (roadmap **INF1**; Read
-  could mirror `email = username`).
+  import the user must re-add `email = "..."` by hand (Read could mirror
+  `email = username`).
 - **`wallarm_application`.** Carries `app_id`, `client_id`, `name`; the default
   application (`app_id = -1`) is protected from deletion
   (`resource_application.go:146-149`).
@@ -76,5 +76,4 @@ Key fields (full shapes in the registry docs):
 
 ## 7. References
 
-- Roadmap `INF1` (`user.email` Read), `INF2` (`node.partner_mode` drift).
 - `docs/resources/{tenant,node,user,application,global_mode}.md` - full fields.

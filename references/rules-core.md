@@ -331,5 +331,4 @@ live set: `GET /v2/attack_types`. Offline: `proton-types.md`.
 - `spec/actions_examples.json` - representative action condition examples (unique
   shapes deduped from a 343-sample probe, plus the `/.env` dotfile case). Single
   source; the round-trip test reads this file directly.
-- `create-rule-resource` skill - canonical build flow for a new `rule_*` resource.
-- `hits-to-rules.md` - FP-suppression rules from hits. Counters/triggers: T-004.
+- `hits-to-rules.md` - FP-suppression rules from hits.

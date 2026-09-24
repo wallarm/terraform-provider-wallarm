@@ -127,7 +127,6 @@ The treatment differs by type because SDKv2 has type-specific normalisation quir
 
 ## References
 
-- `sdkv2-patterns` skill - canonical SDKv2 mechanics (schema types, behaviors, validators, CustomizeDiff helpers, ImportState, retries, testing).
 - `action.md` - provider-internal reference for action conditions and the server-side data model.
 - `point.md` - point-element chaining tables.
 - `rules_api_fields.md` - probe-derived API ground truth per rule type (defaults, required fields, range constraints).

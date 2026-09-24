@@ -64,10 +64,11 @@ It has no flatten counterpart - the reason Read is incomplete (§4).
     and transport config `null`, all `event {}` blocks missing).
   - Drift from console edits to events / config is invisible to plan.
 
-  Known limitation tracked as roadmap **I1**. Import sections were removed from
-  the 11 registry docs to avoid misleading users; they return when I1 lands.
-- **No provider-level cache** backs integration Read yet (roadmap **I2**).
-- The 11 resources duplicate CRUD structure; a shared factory is roadmap **I3**.
+  Import sections were removed from the 11 registry docs to avoid misleading
+  users; they return once Read sets every field.
+- **No provider-level cache** backs integration Read yet.
+- The 11 resources duplicate CRUD structure; a shared factory is not yet
+  extracted.
 
 ## 5. Parameters
 
@@ -96,6 +97,5 @@ all 11 (§4).
 
 ## 7. References
 
-- Roadmap `I1` (Read completeness), `I2` (cache), `I3` (factory extraction).
 - `docs/resources/integration_*.md` - full per-integration field lists.
-- `rules-core.md §3.4` - the `ProviderMeta` cache pattern a future I2 would follow.
+- `rules-core.md §3.4` - the `ProviderMeta` cache pattern a future integration cache would follow.

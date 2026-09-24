@@ -32,7 +32,7 @@ references a spec and sets how each violation type is handled.
 ## 4. Behavior
 
 - **URL-only ingestion.** The spec is provided via `file_remote_url`; direct
-  file upload (multipart) is not yet supported (roadmap **AS1**) - host the spec
+  file upload (multipart) is not yet supported - host the spec
   at a URL or manage it via the console + import.
 - **Drift tracking.** `file_changed_at` and the nested `file.checksum` (inside
   the computed `file` block) track the source document; `api_detection` toggles
@@ -40,8 +40,7 @@ references a spec and sets how each violation type is handled.
 - **Policy.** `wallarm_api_spec_policy` sets the action per violation type
   against a referenced spec.
 - **Pagination.** wallarm-go `APISpecList` is single-page (caller iterates); an
-  auto-paginating `APISpecListAll` is deferred until a consumer exists (roadmap
-  **AS2**).
+  auto-paginating `APISpecListAll` is deferred until a consumer exists.
 
 ## 5. Parameters
 
@@ -64,11 +63,11 @@ references a spec and sets how each violation type is handled.
 
 ## 6. Reference data
 
-- `file_remote_url` is the only ingestion mode today (AS1 tracks file upload).
-- `APISpecList(clientID, page, perPage)` is single-page (AS2 tracks
-  `APISpecListAll`).
+- `file_remote_url` is the only ingestion mode today; file upload is not yet
+  supported.
+- `APISpecList(clientID, page, perPage)` is single-page; `APISpecListAll` is not
+  yet available.
 
 ## 7. References
 
-- Roadmap `AS1` (file-upload mode), `AS2` (auto-paginating list).
 - `docs/resources/api_spec.md`, `docs/resources/api_spec_policy.md`.

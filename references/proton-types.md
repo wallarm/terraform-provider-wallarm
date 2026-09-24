@@ -4,8 +4,7 @@ Reference for the two stable enumerations the Wallarm API and provider depend
 on, extracted from Wallarm's Proton library. Point *chaining* rules are in
 `point.md`; this doc is the type IDs, flags, and attack-type catalog.
 
-Upstream source: `libs/c/libproton/ruby/lib/proton/types.rb` in the Wallarm node
-repository. Re-sync when the API evolves (every 30 days).
+Upstream source: `types.rb` in Wallarm's Proton library. Re-sync when the API evolves (every 30 days).
 
 ## 1. Overview
 
@@ -268,4 +267,4 @@ validators:
 
 - `point.md` - how these point types chain into a `point`.
 - `rules-core.md` - attack-type allowlists and the `point` schema.
-- Upstream: `libs/c/libproton/ruby/lib/proton/types.rb`.
+- Upstream: `types.rb` in Wallarm's Proton library.
