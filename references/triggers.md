@@ -48,12 +48,12 @@ There are no `flatten*` counterparts - the reason Read is incomplete (§4).
   - Drift from console edits is invisible (Read never inspects those fields).
   - Acceptance tests cannot use `ImportStateVerify: true`.
 
-  Known limitation tracked as roadmap **T1** (needs `flattenTriggerFilters` /
-  `flattenTriggerActions` / `flattenTriggerThreshold` + `d.Set` for every field).
+  Fixing it needs `flattenTriggerFilters` / `flattenTriggerActions` /
+  `flattenTriggerThreshold` + `d.Set` for every field.
 - `comment` and `lock_time` carry the same SDKv2 zero-value masking risk as the
-  rule-side fields; addressed alongside T1 as roadmap **T2**.
-- The registry doc's `## Import` section is deferred until T1 lands (**T3**);
-  trigger-complexity reduction is **T4**.
+  rule-side fields.
+- The registry doc's `## Import` section is deferred until Read sets every
+  field.
 
 ## 5. Parameters
 
@@ -79,7 +79,5 @@ reference is removed.
 
 ## 7. References
 
-- Roadmap `T1` (Read completeness), `T2` (`comment`/`lock_time` zero-value),
-  `T3` (import docs), `T4` (complexity).
 - `rules-core.md` - counter rules and the counter/trigger coupling.
 - `docs/resources/trigger.md` - full field lists.

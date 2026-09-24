@@ -106,15 +106,14 @@ API defaults: `debug_enabled=true`, `introspection=true`, `max_aliases=5`,
 
 - The GraphQL alias limit is the API field `max_aliases` (default 5); the
   provider schema and wallarm-go use the same name (aligned in wallarm-go
-  v0.12.2). Roadmap **R6** tracks a create-rejection investigated under this
-  field.
+  v0.12.2). A create rejection under this field is still being investigated.
 - Making the omitted bool defaults (`introspection`, `debug_enabled`) round-trip
-  cleanly is roadmap **R5**.
+  cleanly is an open follow-up.
 
 ### 6.2 Known follow-ups
 
 - `rate_limit.suffix` - read-only API field, not in the provider schema (Read
-  filters it via `setIfExists`). Whether to expose it is roadmap **R3**.
+  filters it via `setIfExists`). Whether to expose it is still open.
 
 ## 7. References
 
