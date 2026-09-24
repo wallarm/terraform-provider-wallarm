@@ -7,7 +7,12 @@
 ### Breaking Changes
 
 * **`data.wallarm_hits`: `mode`, `time` and `hits[*].attack_id` removed** — HCL setting or reading them now fails validation.
-* **`data.wallarm_hits` reads the request's attack vectors** — `hits` and `hits_count` hold one element per vector, at most 100 vectors per read. `hits[*].id` is `[<vector_id>]` instead of the hit `id` list. The read no longer checks `action` against the conditions the API reports for the request's first hit, so a condition mismatch no longer fails the read. The data source id is always `hits_<client_id>_<request_id>` (the `_attack` suffix is gone). `action`, `action_hash`, `action_conditions`, `action_dir_name` and the shape of `aggregated` are unchanged.
+* **`data.wallarm_hits` reads the request's attack vectors** — `hits` and `hits_count` hold one element per vector, at most 100 vectors per read. `hits[*].id` is `[<vector_id>]` instead of the hit `id` list. The read no longer checks `action` against the conditions the API reports for the request's first hit, so a condition mismatch no longer fails the read. The data source id is always `hits_<client_id>_<request_id>` (the `_attack` suffix is gone). `action`, `action_hash`, `action_conditions`, `action_dir_name` and the shape of `aggregated` are unchanged for paths whose last segment has at most one dot.
+* **`action_path`: a `*` fused into a larger value is rejected at plan time** — e.g. `report.2024.*`; use `*` as a whole segment, name or extension.
+
+### Bug Fixes
+
+* **Action `action_ext` split on the first dot** — `action_path` expansion and `data.wallarm_hits` split the last path segment into `action_name` and `action_ext` on the first dot, as the API does (`archive.tar.gz` is `archive` + `tar.gz`). For such paths `data.wallarm_hits` returns new `action_hash` and `action_dir_name` values; existing `action_path` resources keep their conditions until a scope field changes.
 
 ### Documentation
 
